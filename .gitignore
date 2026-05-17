@@ -1,0 +1,53 @@
+# Everywear OS monorepo
+
+# Dependencies
+node_modules/
+target/
+
+# Build output
+dist/
+out/
+.next/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+src-tauri/gen/
+
+# Rust
+**/*.rs.bk
+
+# Inference binaries (large, not committed)
+engines/sd-server/sd-server*
+engines/ace-server/ace-server*
+engines/llama-server/llama-server*
+!engines/*/README.md
+
+# Models (never committed)
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+models/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*

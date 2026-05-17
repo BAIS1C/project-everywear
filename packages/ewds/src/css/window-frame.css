@@ -1,0 +1,63 @@
+/* ═══════════════════════════════════════════════════════════════════
+   EWDS · Window-frame design tokens
+   Extends --ew-* namespace with --ew-wf-* window-chrome variables.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ew-wf-titlebar-height: 36px;
+  --ew-wf-titlebar-padding-x: 12px;
+  --ew-wf-titlebar-gap: 8px;
+  --ew-wf-titlebar-logo-size: 16px;
+
+  --ew-wf-control-size: 12px;
+  --ew-wf-control-gap: 8px;
+  --ew-wf-control-well: 28px;
+  --ew-wf-control-well-height: 36px;
+
+  --ew-wf-chamfer: 0px;
+  --ew-wf-chamfer-radius: 10px;
+
+  --ew-wf-frame-border-width: 1px;
+  --ew-wf-frame-border-color: var(--ew-chrome-border, var(--ew-border, oklch(40% 0.03 240)));
+
+  --ew-wf-frame-accent-width: 0px;
+  --ew-wf-frame-accent-color: var(--ew-primary);
+
+  --ew-wf-titlebar-bg: var(--ew-titlebar-bg, var(--ew-surface-raised, oklch(18% 0.012 240)));
+  --ew-wf-titlebar-fg: var(--ew-text-muted);
+  --ew-wf-titlebar-fg-active: var(--ew-text);
+
+  --ew-wf-vibrancy-blur: 24px;
+  --ew-wf-vibrancy-saturate: 140%;
+  --ew-wf-vibrancy-tint: 0.72;
+
+  --ew-wf-z-titlebar: 100;
+
+  --ew-wf-shadow-focused:
+    0 28px 56px -14px rgba(0, 0, 0, 0.65),
+    0 10px 20px -6px  rgba(0, 0, 0, 0.35),
+    0 0 0 1px var(--ew-wf-frame-border-color),
+    0 0 32px -8px oklch(72% 0.15 195 / 0.18);
+  --ew-wf-shadow-blurred:
+    0 18px 40px -16px rgba(0, 0, 0, 0.55),
+    0 6px 12px -4px   rgba(0, 0, 0, 0.25),
+    0 0 0 1px var(--ew-wf-frame-border-color);
+
+  --ew-wf-logo-gradient-start: oklch(72% 0.15 195);
+  --ew-wf-logo-gradient-mid:   oklch(78% 0.13 200);
+  --ew-wf-logo-gradient-end:   oklch(70% 0.18 220);
+  --ew-wf-logo-superscript:    var(--ew-primary);
+
+  --ew-chrome-bg: var(--ew-bg);
+  --ew-chrome-border: var(--ew-border, oklch(40% 0.03 240));
+}
+
+/* Platform overrides */
+[data-platform="darwin"] { --ew-wf-titlebar-height: 38px; --ew-wf-titlebar-gap: 12px; --ew-wf-control-well-height: 38px; --ew-wf-chamfer-radius: 10px; }
+[data-platform="win32"]  { --ew-wf-titlebar-height: 32px; --ew-wf-control-well: 46px; --ew-wf-control-well-height: 32px; --ew-wf-chamfer-radius: 0px; }
+[data-platform="linux"]  { --ew-wf-titlebar-height: 34px; --ew-wf-control-well: 40px; --ew-wf-control-well-height: 34px; --ew-wf-chamfer-radius: 0px; }
+
+/* Skin overrides */
+[data-skin="classic"]  { --ew-wf-chamfer: 0px; --ew-wf-frame-accent-width: 1px; --ew-wf-frame-border-width: 1px; }
+[data-skin="refined"]  { --ew-wf-chamfer: 0px; --ew-wf-chamfer-radius: 12px; --ew-wf-frame-accent-width: 0px; --ew-wf-frame-border-width: 1px; --ew-wf-titlebar-bg: oklch(96% 0.005 240); --ew-chrome-bg: oklch(99% 0.003 240); --ew-chrome-border: oklch(88% 0.008 240); --ew-wf-titlebar-fg: oklch(35% 0.015 240); --ew-wf-titlebar-fg-active: oklch(16% 0.015 240); }
+[data-skin="terminal"] { --ew-wf-chamfer: 0px; --ew-wf-chamfer-radius: 0px; --ew-wf-frame-accent-width: 0px; --ew-wf-frame-border-width: 2px; --ew-wf-titlebar-bg: oklch(76% 0.14 75); --ew-chrome-bg: oklch(11% 0.012 240); --ew-chrome-border: oklch(40% 0.03 240); --ew-wf-titlebar-fg: oklch(20% 0.015 240); --ew-wf-titlebar-fg-active: oklch(14% 0.015 240); --ew-wf-shadow-focused: 0 0 0 2px oklch(76% 0.14 75 / 0.4), 0 18px 40px -16px rgba(0, 0, 0, 0.65); }

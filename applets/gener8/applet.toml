@@ -1,0 +1,246 @@
+# Gener8 Applet Manifest
+# Read by the Everywear OS shell to gate, provision, and launch this applet.
+# Engine: ACE-Step 1.5 GGUF inference server (sidecar on :8080)
+# HF repo: Serveurperso/ACE-Step-1.5-GGUF
+#
+# IMPORTANT: model_groups declare the BASE INSTALL (Gener8 tier).
+# Base tier ships xl-turbo (8-step fast generation DiT).
+# Pro tier adds xl-base (sftturbo50 distillation, renamed to xl-base on disk)
+# via the upgrade_packs system, NOT through model_groups.
+# Creator Studio inherits Pro + adds creator_studio_bundle.
+# See WIKI.md "ACE-Step GGUF Naming Convention" for the rename convention.
+
+[applet]
+id = "gener8"
+name = "Gener8"
+version = "0.1.0"
+description = "AI music generation, stem mixing, and production powered by ACE-Step"
+icon = "gener8"
+transport = "ipc"
+
+[engine]
+type = "audio"
+backend = "server"
+server_binary = "ace-server"
+
+# ── Base install model groups ────────────────────────────────────────
+# Shell walks groups top-down, picks the first where ALL required
+# models fit within the VRAM budget.
+#
+# ACE-Step needs 4 models: DiT (generation), LM (language model),
+# VAE (audio decode), Text Encoder (prompt encoding).
+# DiT has a quant ladder (xl-turbo variants); the other 3 are fixed.
+#
+# xl-turbo is the base-tier DiT: 8-step fast generation, covers
+# text2music natively. Cover/reference available but quality-limited
+# (turbo distillation). Pro upgrade adds xl-base (sftturbo50) for
+# full-quality cover/reference/extract/lego/complete.
+
+[[model_groups]]
+label = "Turbo Q8_0 (16 GB+)"
+min_vram_mb = 16384
+
+  [[model_groups.models]]
+  key = "acestep-turbo-q8"
+  role = "Primary"
+  required = true
+  vram_mb = 8192
+  filename = "acestep-v15-xl-turbo-Q8_0.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-turbo-Q8_0.gguf"
+  size_bytes = 5_000_000_000
+
+  [[model_groups.models]]
+  key = "acestep-lm"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+  filename = "acestep-5Hz-lm-0.6B-Q8_0.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-5Hz-lm-0.6B-Q8_0.gguf"
+  size_bytes = 710_000_000
+
+  [[model_groups.models]]
+  key = "acestep-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 512
+  filename = "vae-BF16.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "vae-BF16.gguf"
+  size_bytes = 337_000_000
+
+  [[model_groups.models]]
+  key = "acestep-text-encoder"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+  filename = "Qwen3-Embedding-0.6B-Q8_0.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "Qwen3-Embedding-0.6B-Q8_0.gguf"
+  size_bytes = 784_000_000
+
+[[model_groups]]
+label = "Turbo Q6_K (12 GB+)"
+min_vram_mb = 12288
+
+  [[model_groups.models]]
+  key = "acestep-turbo-q6k"
+  role = "Primary"
+  required = true
+  vram_mb = 6144
+  filename = "acestep-v15-xl-turbo-Q6_K.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-turbo-Q6_K.gguf"
+  size_bytes = 3_900_000_000
+
+  [[model_groups.models]]
+  key = "acestep-lm"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+  [[model_groups.models]]
+  key = "acestep-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "acestep-text-encoder"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+[[model_groups]]
+label = "Turbo Q5_K_M (8 GB+)"
+min_vram_mb = 8192
+
+  [[model_groups.models]]
+  key = "acestep-turbo-q5km"
+  role = "Primary"
+  required = true
+  vram_mb = 4096
+  filename = "acestep-v15-xl-turbo-Q5_K_M.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-turbo-Q5_K_M.gguf"
+  size_bytes = 3_300_000_000
+
+  [[model_groups.models]]
+  key = "acestep-lm"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+  [[model_groups.models]]
+  key = "acestep-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "acestep-text-encoder"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+[[model_groups]]
+label = "Turbo Q4_K_M (6 GB+)"
+min_vram_mb = 6144
+
+  [[model_groups.models]]
+  key = "acestep-turbo-q4km"
+  role = "Primary"
+  required = true
+  vram_mb = 3072
+  filename = "acestep-v15-xl-turbo-Q4_K_M.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-turbo-Q4_K_M.gguf"
+  size_bytes = 2_500_000_000
+
+  [[model_groups.models]]
+  key = "acestep-lm"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+  [[model_groups.models]]
+  key = "acestep-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "acestep-text-encoder"
+  role = "Encoder"
+  required = true
+  vram_mb = 1024
+
+# ── Upgrade packs (licence-gated, NOT part of base install) ─────────
+# Provisioned by the shell after base model_groups when the user's
+# licence tier entitles them. VRAM-gated quant selection uses the
+# same logic as model_groups (highest quant that fits).
+
+[upgrade_packs.better_models]
+label = "Better Models (Pro)"
+min_tier = "gener8_pro"
+description = "Adds xl-base (sftturbo50 distillation) DiT for full-quality cover song, reference audio, and advanced task types. HF files named sftturbo50; renamed to xl-base on disk for ace-server compatibility."
+unlocks = ["cover_full_quality", "reference_full_quality"]
+status = "active"
+
+  # VRAM-gated quant ladder: shell picks the highest that fits.
+  # hf_file != filename: mandatory sftturbo50 -> xl-base rename.
+  [[upgrade_packs.better_models.quants]]
+  quant = "Q4_K_M"
+  min_vram_mb = 6144
+  key = "acestep-base-q4km"
+  role = "Primary"
+  filename = "acestep-v15-xl-base-Q4_K_M.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-sftturbo50-Q4_K_M.gguf"
+  size_bytes = 2_990_000_000
+
+  [[upgrade_packs.better_models.quants]]
+  quant = "Q5_K_M"
+  min_vram_mb = 8192
+  key = "acestep-base-q5km"
+  role = "Primary"
+  filename = "acestep-v15-xl-base-Q5_K_M.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-sftturbo50-Q5_K_M.gguf"
+  size_bytes = 3_530_000_000
+
+  [[upgrade_packs.better_models.quants]]
+  quant = "Q6_K"
+  min_vram_mb = 12288
+  key = "acestep-base-q6k"
+  role = "Primary"
+  filename = "acestep-v15-xl-base-Q6_K.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-sftturbo50-Q6_K.gguf"
+  size_bytes = 4_100_000_000
+
+  [[upgrade_packs.better_models.quants]]
+  quant = "Q8_0"
+  min_vram_mb = 16384
+  key = "acestep-base-q8"
+  role = "Primary"
+  filename = "acestep-v15-xl-base-Q8_0.gguf"
+  hf_repo = "Serveurperso/ACE-Step-1.5-GGUF"
+  hf_file = "acestep-v15-xl-sftturbo50-Q8_0.gguf"
+  size_bytes = 5_310_000_000
+
+[upgrade_packs.creator_studio_bundle]
+label = "Creator Studio Bundle"
+min_tier = "creator_studio"
+description = "Adds AI Director orchestration LLM, Wan 2.2 I2V video generation, stem separator, cover art generation, and Style Forge (music LoRA training). 16 GB VRAM hard floor."
+inherits = ["better_models"]
+unlocks = ["ai_director", "stem_separation", "style_training", "local_video", "cover_art", "repaint", "extract", "lego", "complete"]
+status = "placeholder"
+# Models TBD: AI Director LLM (Qwen2.5-7B or Llama-3.2-3B Q4_K_M),
+# Wan 2.2 I2V distilled (high_noise + low_noise expert pair),
+# UMT5-XXL text encoder, Wan 2.2 VAE, Qwen-Image for cover art.
+# Pinned filenames and sizes to be added when creator studio ships.
+
+[requirements]
+cuda_compute = "7.0"

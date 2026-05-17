@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════════
+   EWDS · GLOBAL GLUE
+   Imports the EWDS triplet (fonts, tokens, components, icons)
+   and adds the app-level bridges that route existing Tailwind
+   class surfaces through --ew-* tokens so skin flips propagate.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('./fonts.css');
+@import url('./tokens.css');
+@import url('./components.css');
+@import url('./icons.css');
+
+/* ── Legacy --s3-* / --accent-* bridge ─────────────────────────
+   Tailwind config resolves bg-s3-card, text-s3-text-primary,
+   border-accent-500 etc. via var(--s3-*) and var(--accent-*).
+   We remap to --ew-* tokens scoped to body[data-skin]. */
+body[data-skin],
+.ew[data-skin] {
+  /* Surface ramp */
+  --s3-bg:           var(--ew-bg);
+  --s3-dark:         var(--ew-sunken);
+  --s3-sidebar:      var(--ew-chrome-bg);
+  --s3-panel:        var(--ew-surface);
+  --s3-card:         var(--ew-surface-raised);
+  --s3-hover:        var(--ew-surface-overlay);
+  --s3-surface:      var(--ew-surface-overlay);
+  --s3-border:       var(--ew-border);
+  --s3-cyan:         var(--ew-primary);
+  --s3-purple:       var(--ew-premium);
+  --s3-text-primary: var(--ew-text);
+  --s3-text-muted:   var(--ew-text-muted);
+
+  /* Accent ramp */
+  --accent:     var(--ew-primary);
+  --accent-50:  color-mix(in oklab, var(--ew-primary) 8%,  white);
+  --accent-100: color-mix(in oklab, var(--ew-primary) 18%, white);
+  --accent-200: color-mix(in oklab, var(--ew-primary) 32%, white);
+  --accent-300: color-mix(in oklab, var(--ew-primary) 50%, white);
+  --accent-400: color-mix(in oklab, var(--ew-primary) 70%, white);
+  --accent-500: var(--ew-primary);
+  --accent-600: color-mix(in oklab, var(--ew-primary) 80%, black);
+  --accent-700: color-mix(in oklab, var(--ew-primary) 60%, black);
+  --accent-800: color-mix(in oklab, var(--ew-primary) 40%, black);
+  --accent-900: color-mix(in oklab, var(--ew-primary) 25%, black);
+
+  /* Radius bridge */
+  --radius:    var(--ew-radius-md);
+  --radius-lg: var(--ew-radius-lg);
+}
+
+/* ── Body typography default ──────────────────────────────────── */
+body.ew {
+  font-family: var(--ew-font-body);
+  background: var(--ew-bg);
+  color: var(--ew-text);
+}
+body.ew h1, body.ew h2, body.ew h3,
+body.ew h4, body.ew h5, body.ew h6,
+body.ew .font-display {
+  font-family: var(--ew-font-display);
+}
+
+/* ── Scrollbar — skin-aware ───────────────────────────────────── */
+body.ew ::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--ew-primary) 25%, transparent); }
+body.ew ::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--ew-primary) 45%, transparent); }
+body.ew * { scrollbar-color: color-mix(in oklab, var(--ew-primary) 25%, transparent) transparent; }
+body.ew ::selection { background: color-mix(in oklab, var(--ew-primary) 28%, transparent); }
+
+/* ── Gradient text ─────────────────────────────────────────────── */
+body.ew .gradient-text {
+  background: linear-gradient(to right, var(--ew-primary), var(--ew-premium), var(--ew-expressive));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* ── Skin transition — colours ease, type/bevel snap ────────── */
+body.ew,
+body.ew .ew-card, body.ew .ew-btn, body.ew .ew-input,
+body.ew [class*="bg-s3"], body.ew [class*="text-s3"],
+body.ew [class*="border-s3"], body.ew [class*="accent"] {
+  transition:
+    background-color var(--ew-t-med) var(--ew-ease-servo),
+    border-color     var(--ew-t-med) var(--ew-ease-servo),
+    color            var(--ew-t-med) var(--ew-ease-servo);
+}
+
+/* ── REFINED: legacy Tailwind card chamfer ────────────────────── */
+body[data-skin="refined"] .bg-s3-card,
+body[data-skin="refined"] .dark\:bg-s3-card,
+body[data-skin="refined"] [class*="bg-s3-card"],
+.ew[data-skin="refined"] .bg-s3-card,
+.ew[data-skin="refined"] [class*="bg-s3-card"] {
+  clip-path: var(--ew-clip-card);
+  border-radius: 0 !important;
+}
+body[data-skin="refined"] .bg-s3-panel,
+body[data-skin="refined"] [class*="bg-s3-panel"],
+.ew[data-skin="refined"] .bg-s3-panel,
+.ew[data-skin="refined"] [class*="bg-s3-panel"] {
+  clip-path: var(--ew-clip-card);
+  border-radius: 0 !important;
+}
+
+/* OPT-OUT: .ew-no-clip drops chamfer for containers hosting dropdowns */
+body[data-skin="refined"] [class*="bg-s3-card"].ew-no-clip,
+body[data-skin="refined"] [class*="bg-s3-panel"].ew-no-clip,
+.ew[data-skin="refined"] [class*="bg-s3-card"].ew-no-clip,
+.ew[data-skin="refined"] [class*="bg-s3-panel"].ew-no-clip {
+  clip-path: none;
+}

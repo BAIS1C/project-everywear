@@ -1,0 +1,295 @@
+//! Model manager: GGUF discovery, manifest, and HuggingFace downloads.
+//!
+//! Follows the shared GGUF Discovery pattern: scans LM Studio, Ollama,
+//! HuggingFace Hub cache, and the app's own models/ directory before
+//! downloading anything.
+
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
+use tauri::Emitter;
+use tracing::{info, warn};
+
+/// Metadata about an available model.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelInfo {
+    pub key: String,
+    pub name: String,
+    pub filename: String,
+    pub size_bytes: u64,
+    pub sha256: Option<String>,
+    pub hf_repo: String,
+    pub hf_file: String,
+    pub path: Option<PathBuf>,
+    pub downloaded: bool,
+    pub model_type: ModelType,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ModelType {
+    TextToImage,
+    ImageEdit,
+    Encoder,
+    Vae,
+}
+
+/// Built-in model manifest for Z-Image.
+fn default_manifest() -> Vec<ModelInfo> {
+    vec![
+        // ── DiT (main generation model) ─────────────────────────────
+        // Source: gguf-org/z-image-gguf (ComfyUI official quantizations)
+        // leejet/Z-Image-Turbo-GGUF also available (sd.cpp author)
+        ModelInfo {
+            key: "z-image-turbo-q4km".into(),
+            name: "Z-Image Turbo Q4_K_M (recommended)".into(),
+            filename: "z-image-turbo-q4_k_m.gguf".into(),
+            size_bytes: 4_511_501_376,
+            sha256: Some("c1d3bf7163a8ae9122118e6c82768ad0426971d6ea7cfaf5f1c300bbd110c321".into()),
+            hf_repo: "gguf-org/z-image-gguf".into(),
+            hf_file: "z-image-turbo-q4_k_m.gguf".into(),
+            path: None,
+            downloaded: false,
+            model_type: ModelType::TextToImage,
+        },
+        ModelInfo {
+            key: "z-image-turbo-q8".into(),
+            name: "Z-Image Turbo Q8_0 (quality)".into(),
+            filename: "z-image-turbo-q8_0.gguf".into(),
+            size_bytes: 7_224_691_776,
+            sha256: Some("39674cec3b98e737276443cbf02f29b0aea616164e465c731f19903b00363cfd".into()),
+            hf_repo: "gguf-org/z-image-gguf".into(),
+            hf_file: "z-image-turbo-q8_0.gguf".into(),
+            path: None,
+            downloaded: false,
+            model_type: ModelType::TextToImage,
+        },
+        // ── Text encoder (Qwen3 4B) ────────────────────────────────
+        ModelInfo {
+            key: "qwen3-4b-encoder-q4".into(),
+            name: "Qwen3 4B Text Encoder IQ4_NL".into(),
+            filename: "qwen3_4b_f32-iq4_nl.gguf".into(),
+            size_bytes: 2_263_352_832,
+            sha256: Some("591d7a568fc0bcc9a6bf921d0e4aa69653b604ebc17193716fd35c9ed3359d4e".into()),
+            hf_repo: "gguf-org/z-image-gguf".into(),
+            hf_file: "qwen3_4b_f32-iq4_nl.gguf".into(),
+            path: None,
+            downloaded: false,
+            model_type: ModelType::Encoder,
+        },
+        // ── VAE ─────────────────────────────────────────────────────
+        ModelInfo {
+            key: "pig-flux-vae".into(),
+            name: "PIG FLUX VAE FP16".into(),
+            filename: "pig_flux_vae_fp32-f16.gguf".into(),
+            size_bytes: 167_788_736,
+            sha256: Some("7e9b2072ef8d8bde202804362b273a96233e54e4b52c820662cdc70b3e08b27a".into()),
+            hf_repo: "gguf-org/z-image-gguf".into(),
+            hf_file: "pig_flux_vae_fp32-f16.gguf".into(),
+            path: None,
+            downloaded: false,
+            model_type: ModelType::Vae,
+        },
+    ]
+}
+
+pub struct ModelManager {
+    models_dir: PathBuf,
+    manifest: Vec<ModelInfo>,
+}
+
+impl ModelManager {
+    pub fn new() -> Self {
+        let models_dir = dirs::data_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("1magen")
+            .join("models");
+
+        let mut mgr = Self {
+            models_dir,
+            manifest: default_manifest(),
+        };
+        mgr.scan();
+        mgr
+    }
+
+    /// Scan all known locations for already-downloaded GGUF files.
+    pub fn scan(&mut self) {
+        let search_dirs = self.discovery_paths();
+        for model in &mut self.manifest {
+            for dir in &search_dirs {
+                let candidate = dir.join(&model.filename);
+                if candidate.exists() {
+                    info!(model = %model.key, path = %candidate.display(), "Found model");
+                    model.path = Some(candidate);
+                    model.downloaded = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    /// GGUF Discovery: directories to search for existing models.
+    fn discovery_paths(&self) -> Vec<PathBuf> {
+        let mut paths = vec![self.models_dir.clone()];
+
+        let home = dirs::home_dir().unwrap_or_default();
+
+        // LM Studio
+        paths.push(home.join(".cache").join("lm-studio").join("models"));
+        // Windows LM Studio path
+        paths.push(home.join(".lmstudio").join("models"));
+
+        // Ollama
+        if let Ok(ollama) = std::env::var("OLLAMA_MODELS") {
+            paths.push(PathBuf::from(ollama));
+        }
+        paths.push(home.join(".ollama").join("models").join("blobs"));
+
+        // HuggingFace Hub cache
+        let hf_cache = std::env::var("HF_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| home.join(".cache").join("huggingface").join("hub"));
+        paths.push(hf_cache);
+
+        // GPT4All
+        paths.push(home.join(".local").join("share").join("nomic.ai").join("GPT4All"));
+        // Windows GPT4All
+        if let Some(appdata) = dirs::data_local_dir() {
+            paths.push(appdata.join("nomic.ai").join("GPT4All"));
+        }
+
+        paths
+    }
+
+    /// List all models in the manifest with their download status.
+    pub fn list_available(&self) -> Vec<ModelInfo> {
+        self.manifest.clone()
+    }
+
+    /// Download a model by its manifest key.
+    pub async fn download(
+        &mut self,
+        app: &tauri::AppHandle,
+        model_key: &str,
+    ) -> Result<PathBuf> {
+        let model = self
+            .manifest
+            .iter()
+            .find(|m| m.key == model_key)
+            .context("model not found in manifest")?
+            .clone();
+
+        if let Some(path) = &model.path {
+            if path.exists() {
+                info!(model = %model_key, "Model already downloaded");
+                return Ok(path.clone());
+            }
+        }
+
+        // Ensure models dir exists
+        std::fs::create_dir_all(&self.models_dir)
+            .context("failed to create models directory")?;
+
+        let dest = self.models_dir.join(&model.filename);
+        let url = format!(
+            "https://huggingface.co/{}/resolve/main/{}",
+            model.hf_repo, model.hf_file
+        );
+
+        info!(url = %url, dest = %dest.display(), "Downloading model");
+
+        download_with_progress(app, &url, &dest, &model.key).await?;
+
+        // Verify SHA256 if we have it
+        if let Some(expected) = &model.sha256 {
+            let actual = sha256_file(&dest)?;
+            if &actual != expected {
+                std::fs::remove_file(&dest).ok();
+                anyhow::bail!(
+                    "SHA256 mismatch for {}: expected {expected}, got {actual}",
+                    model.filename
+                );
+            }
+        }
+
+        // Update manifest
+        if let Some(m) = self.manifest.iter_mut().find(|m| m.key == model_key) {
+            m.path = Some(dest.clone());
+            m.downloaded = true;
+        }
+
+        Ok(dest)
+    }
+
+    /// Get the path for a downloaded model.
+    pub fn model_path(&self, key: &str) -> Option<PathBuf> {
+        self.manifest
+            .iter()
+            .find(|m| m.key == key)
+            .and_then(|m| m.path.clone())
+    }
+}
+
+/// Download a file with progress events emitted to the frontend.
+async fn download_with_progress(
+    app: &tauri::AppHandle,
+    url: &str,
+    dest: &Path,
+    model_key: &str,
+) -> Result<()> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(url)
+        .header("User-Agent", "1magen/0.1")
+        .send()
+        .await
+        .context("download request failed")?;
+
+    let total = resp.content_length().unwrap_or(0);
+    let mut stream = resp.bytes_stream();
+    let mut file = tokio::fs::File::create(dest)
+        .await
+        .context("failed to create destination file")?;
+
+    let mut downloaded: u64 = 0;
+    let mut last_pct: u64 = 0;
+
+    use futures_util::StreamExt;
+    use tokio::io::AsyncWriteExt;
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.context("download stream error")?;
+        file.write_all(&chunk).await.context("write error")?;
+        downloaded += chunk.len() as u64;
+
+        // Emit progress at ~1% granularity
+        if total > 0 {
+            let pct = (downloaded * 100) / total;
+            if pct != last_pct {
+                last_pct = pct;
+                let _ = app.emit(
+                    "download-progress",
+                    serde_json::json!({
+                        "model_key": model_key,
+                        "downloaded": downloaded,
+                        "total": total,
+                        "percent": pct,
+                    }),
+                );
+            }
+        }
+    }
+
+    file.flush().await?;
+    info!(model = model_key, bytes = downloaded, "Download complete");
+    Ok(())
+}
+
+/// Compute SHA256 of a file.
+fn sha256_file(path: &Path) -> Result<String> {
+    let bytes = std::fs::read(path).context("failed to read file for hashing")?;
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    Ok(hex::encode(hasher.finalize()))
+}

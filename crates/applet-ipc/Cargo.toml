@@ -1,0 +1,25 @@
+[package]
+name = "applet-ipc"
+description = "Named-pipe / Unix-socket command channel between Everywear OS shell and applets"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+
+# Optional: HMAC authentication for envelope mode
+hmac = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+
+[features]
+default = []
+hmac = ["dep:hmac", "dep:sha2", "dep:hex"]

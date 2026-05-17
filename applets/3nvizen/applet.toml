@@ -1,0 +1,93 @@
+# 3nvizen Applet Manifest
+# Provisional local-video contract for Everywear OS.
+# This applet is server-backed because the current preferred local path is
+# the official LTX Python runtime wrapped in a managed sidecar.
+
+[applet]
+id = "3nvizen"
+name = "3nvizen"
+version = "0.1.0"
+description = "Local AI video generation, sequential segment chaining, and lip-synced patch workflows"
+icon = "icons/3nvizen.png"
+transport = "tauri"
+
+[engine]
+type = "diffusion"
+backend = "server"
+server_binary = "3nvizen-ltx-sidecar"
+
+# Model groups remain provisional until measured on the actual official LTX
+# runtime. These should map to user-facing quality ladders in Everywear rather
+# than exposing raw model names in the UI.
+
+[[model_groups]]
+label = "Draft Local 540p"
+min_vram_mb = 8192
+
+  [[model_groups.models]]
+  key = "ltx-2.3-22b-distilled-1.1"
+  role = "Primary"
+  required = true
+  vram_mb = 6400
+
+  [[model_groups.models]]
+  key = "ltx-2.3-text-projection"
+  role = "Projection"
+  required = true
+  vram_mb = 384
+
+  [[model_groups.models]]
+  key = "ltx-2.3-video-vae"
+  role = "VideoVae"
+  required = true
+  vram_mb = 384
+
+  [[model_groups.models]]
+  key = "ltx-2.3-audio-vae"
+  role = "AudioVae"
+  required = true
+  vram_mb = 384
+
+  [[model_groups.models]]
+  key = "gemma-3-video-text-encoder"
+  role = "TextEncoder"
+  required = true
+  vram_mb = 640
+
+[[model_groups]]
+label = "Standard Local 540p"
+min_vram_mb = 12288
+
+  [[model_groups.models]]
+  key = "ltx-2.3-22b-distilled-1.1"
+  role = "Primary"
+  required = true
+  vram_mb = 8448
+
+  [[model_groups.models]]
+  key = "ltx-2.3-text-projection"
+  role = "Projection"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "ltx-2.3-video-vae"
+  role = "VideoVae"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "ltx-2.3-audio-vae"
+  role = "AudioVae"
+  required = true
+  vram_mb = 512
+
+  [[model_groups.models]]
+  key = "gemma-3-video-text-encoder"
+  role = "TextEncoder"
+  required = true
+  vram_mb = 1024
+
+[requirements]
+cuda_compute = "7.0"
+

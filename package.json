@@ -1,0 +1,29 @@
+{
+  "name": "everywear",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Everywear OS: the Steam OS of AI one-click apps",
+  "author": "Sean Uddin <somo@metafintek.xyz>",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "platform/everywear-os",
+    "applets/1magen",
+    "applets/s3studio",
+    "applets/3nvizen",
+    "applets/kasai",
+    "applets/mymories",
+    "applets/strands-game"
+  ],
+  "scripts": {
+    "dev:shell": "cd platform/everywear-os && npm run dev",
+    "dev:1magen": "cd applets/1magen && npm run tauri dev",
+    "build:ewds": "cd packages/ewds && npm run build",
+    "lint": "eslint . --ext .ts,.tsx",
+    "clean": "rm -rf node_modules packages/*/node_modules applets/*/node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.5",
+    "eslint": "^9"
+  }
+}

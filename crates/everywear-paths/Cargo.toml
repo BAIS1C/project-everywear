@@ -1,0 +1,11 @@
+[package]
+name = "everywear-paths"
+description = "Single source of truth for all Everywear filesystem paths"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+dirs = { workspace = true }

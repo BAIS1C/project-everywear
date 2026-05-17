@@ -1,0 +1,12 @@
+{
+  "name": "@everywear/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Common types, utilities, and constants shared across Everywear applets",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
+}

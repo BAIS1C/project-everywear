@@ -1,0 +1,12 @@
+{
+  "name": "@everywear/transport",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tauri IPC and WebSocket transport abstraction layer",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
+}

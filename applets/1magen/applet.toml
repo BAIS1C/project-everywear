@@ -1,0 +1,67 @@
+# 1magen Applet Manifest
+# Read by the Everywear OS shell to gate, provision, and launch this applet.
+# See WIKI.md Section 6 "Applet Manifest Schema" for the full spec.
+
+[applet]
+id = "1magen"
+name = "1magen"
+version = "0.1.0"
+description = "Local AI image generation and editing powered by Z-Image"
+icon = "icons/1magen.png"
+transport = "tauri"
+
+[engine]
+type = "diffusion"
+backend = "ffi"
+server_binary = ""
+
+# Model groups: ordered by preference (first viable group wins).
+# Shell walks groups top-down, picks the first where ALL required
+# models fit within the VRAM budget.
+
+[[model_groups]]
+label = "High Quality"
+min_vram_mb = 10240
+
+  [[model_groups.models]]
+  key = "z-image-turbo-q8"
+  role = "Primary"
+  required = true
+  vram_mb = 7200
+
+  [[model_groups.models]]
+  key = "qwen3-4b-encoder-q4"
+  role = "Encoder"
+  required = true
+  vram_mb = 2400
+
+  [[model_groups.models]]
+  key = "pig-flux-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 200
+
+[[model_groups]]
+label = "Standard"
+min_vram_mb = 7400
+
+  [[model_groups.models]]
+  key = "z-image-turbo-q4km"
+  role = "Primary"
+  required = true
+  vram_mb = 4800
+
+  [[model_groups.models]]
+  key = "qwen3-4b-encoder-q4"
+  role = "Encoder"
+  required = true
+  vram_mb = 2400
+
+  [[model_groups.models]]
+  key = "pig-flux-vae"
+  role = "Vae"
+  required = true
+  vram_mb = 200
+
+[requirements]
+cuda_compute = "7.0"

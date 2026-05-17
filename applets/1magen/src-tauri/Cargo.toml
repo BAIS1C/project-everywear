@@ -1,0 +1,61 @@
+[package]
+name = "onemagen"
+version = "0.1.0"
+edition = "2021"
+description = "1magen — local AI image generation and editing powered by Z-Image"
+authors = ["Sean Uddin <somo@metafintek.xyz>"]
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "onemagen_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# --- Tauri core ---
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-process = "2"
+
+# --- Image inference (direct FFI to stable-diffusion.cpp) ---
+diffusion-rs = { version = "0.1", features = ["cuda"] }
+image = "0.25"
+
+# --- Async runtime ---
+tokio = { version = "1", features = ["full"] }
+
+# --- Serialization ---
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# --- Shared crates ---
+applet-ipc = { path = "../../../crates/applet-ipc" }
+model-manager = { path = "../../../crates/model-manager" }
+everywear-paths = { path = "../../../crates/everywear-paths" }
+
+# --- Utilities ---
+anyhow = "1"
+thiserror = "2"
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "6"
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+open = "5"
+base64 = "0.22"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"

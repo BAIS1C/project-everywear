@@ -1,0 +1,395 @@
+/* ═══════════════════════════════════════════════════
+   EWDS · TOKENS  v1.0.0
+   EveryWear Design System — shared across all Everywear
+   applets and the platform shell. Canonical source.
+   ═══════════════════════════════════════════════════ */
+
+/* ── ROOT: universal tokens (not skin-dependent) ───── */
+:root {
+  /* Fonts */
+  --ew-font-display: 'Orbitron', system-ui, sans-serif;
+  --ew-font-body: 'Rajdhani', system-ui, sans-serif;
+  --ew-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Font weights */
+  --ew-fw-body: 400;
+  --ew-fw-body-strong: 500;
+  --ew-fw-display: 700;
+  --ew-fw-display-heavy: 900;
+
+  /* Spacing scale */
+  --ew-space-0: 0;
+  --ew-space-1: 4px;
+  --ew-space-2: 8px;
+  --ew-space-3: 12px;
+  --ew-space-4: 16px;
+  --ew-space-5: 20px;
+  --ew-space-6: 24px;
+  --ew-space-7: 32px;
+  --ew-space-8: 40px;
+  --ew-space-9: 56px;
+  --ew-space-10: 80px;
+
+  /* Radii (used by skins that support rounded corners) */
+  --ew-radius-xs: 2px;
+  --ew-radius: 4px;
+  --ew-radius-md: 6px;
+  --ew-radius-lg: 10px;
+  --ew-radius-xl: 16px;
+
+  /* Bevel scale (for clip-path corner cuts) */
+  --ew-bevel-xs: 6px;
+  --ew-bevel-sm: 8px;
+  --ew-bevel-md: 12px;
+  --ew-bevel-lg: 16px;
+  --ew-bevel-xl: 24px;
+
+  /* Cut scalars — Demo Site parity (--cut-win/md/sm). Skins override. */
+  --ew-cut-win: 16px;
+  --ew-cut-md: 10px;
+  --ew-cut-sm: 8px;
+
+  /* Motion */
+  --ew-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ew-ease-servo: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ew-t-fast: 120ms;
+  --ew-t-med: 180ms;
+  --ew-t-slow: 320ms;
+
+  /* Z-index */
+  --ew-z-bg: -1;
+  --ew-z-content: 1;
+  --ew-z-chrome: 100;
+  --ew-z-nav: 1000;
+  --ew-z-overlay: 9000;
+  --ew-z-toast: 9500;
+
+  /* Chroma multiplier — per-skin override lets us dial saturation */
+  --ew-chroma-mult: 1;
+
+  /* Primary-hue decomposed for live rotation (OKLCH) */
+  --ew-primary-h: 215;
+  --ew-primary-l: 0.72;
+  --ew-primary-c: 0.12;
+
+  /* Corner cuts — TR+BL directional cut (NE-SW grain).
+     Cut by default on all backing boxes/tombstones per Sean 2026-04-18.
+     TL and BR stay square. Opt-out by setting clip-path: none per-component. */
+  --ew-corner-tl: 0;
+  --ew-corner-tr: var(--ew-bevel-md);
+  --ew-corner-br: 0;
+  --ew-corner-bl: var(--ew-bevel-md);
+
+  /* Clip-path: card */
+  --ew-clip-card: polygon(
+    var(--ew-corner-tl) 0,
+    calc(100% - var(--ew-corner-tr)) 0,
+    100% var(--ew-corner-tr),
+    100% calc(100% - var(--ew-corner-br)),
+    calc(100% - var(--ew-corner-br)) 100%,
+    var(--ew-corner-bl) 100%,
+    0 calc(100% - var(--ew-corner-bl)),
+    0 var(--ew-corner-tl)
+  );
+  /* Card inner — 12px cut, Demo Site parity for nested surfaces */
+  --ew-clip-card-inner: polygon(
+    0 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% 100%,
+    12px 100%,
+    0 calc(100% - 12px)
+  );
+  --ew-clip-button: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+  --ew-clip-button-sm: polygon(
+    0 0,
+    calc(100% - 8px) 0,
+    100% 8px,
+    100% 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   SKIN: CLASSIC  (default — cyberpunk glass, current brand)
+   ═══════════════════════════════════════════════════ */
+body[data-skin="classic"],
+.ew[data-skin="classic"] {
+  /* Fonts */
+  --ew-font-display: 'Orbitron', system-ui, sans-serif;
+  --ew-font-body: 'Rajdhani', system-ui, sans-serif;
+  --ew-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Chroma */
+  --ew-chroma-mult: 1.25;
+
+  /* CLASSIC: NO oblique cuts. Reverted 2026-04-25 SGT per Sean.
+     Chamfer is reserved for Refined as its signature design element;
+     Terminal stays sharp 0px (industrial); Classic preserves the v0
+     rounded box aesthetic via --ew-radius-* (10px lg / 6px md). */
+  --ew-corner-tl: 0;
+  --ew-corner-tr: 0;
+  --ew-corner-br: 0;
+  --ew-corner-bl: 0;
+  --ew-cut-win: 0;
+  --ew-cut-md: 0;
+  --ew-cut-sm: 0;
+  --ew-clip-card: none;
+  --ew-clip-card-inner: none;
+  --ew-clip-button: none;
+  --ew-clip-button-sm: none;
+}
+body[data-skin="classic"][data-mode="dark"],
+.ew[data-skin="classic"][data-mode="dark"] {
+  /* Surfaces */
+  --ew-bg: #0A0B0D;
+  --ew-sunken: #05060A;
+  --ew-surface: rgba(20, 21, 28, 0.85);
+  --ew-surface-raised: rgba(31, 35, 48, 0.9);
+  --ew-surface-overlay: rgba(37, 42, 56, 0.95);
+  --ew-surface-sunken: rgba(5, 6, 10, 0.6);
+  --ew-chrome-bg: rgba(8, 9, 12, 0.9);
+  --ew-chrome-border: rgba(255, 255, 255, 0.08);
+
+  /* Borders */
+  --ew-border: rgba(255, 255, 255, 0.06);
+  --ew-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Ink */
+  --ew-text: #E2E8F0;
+  --ew-text-muted: #A0AEC0;
+  --ew-text-faint: #6B7280;
+  --ew-text-inverse: #03121A;
+
+  /* Primary — cyan */
+  --ew-primary: #00C2FF;
+  --ew-primary-hover: #33D0FF;
+  --ew-primary-press: #00A0D8;
+  --ew-primary-soft: rgba(0, 194, 255, 0.08);
+  --ew-primary-fg: #03121A;
+
+  /* Expressive (magenta — never a CTA, only for statement moments) */
+  --ew-expressive: #F000B8;
+
+  /* Premium (purple — tier signal) */
+  --ew-premium: #8B5CF6;
+
+  /* Reserved warm (amber — human/local/community ONLY) */
+  --ew-warm: #F9B960;
+  --ew-warm-soft: rgba(249, 185, 96, 0.1);
+
+  /* Status */
+  --ew-success: #22C55E;
+  --ew-warning: #F9E100;
+  --ew-danger: #FF4444;
+
+  /* Shadows (glow-budget: one per hierarchy) */
+  --ew-shadow-glow: 0 0 18px color-mix(in oklab, var(--ew-primary) 50%, transparent);
+  --ew-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --ew-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════
+   SKIN: REFINED  (calmer cyan, lower chroma, long-session)
+   ═══════════════════════════════════════════════════ */
+body[data-skin="refined"],
+.ew[data-skin="refined"] {
+  --ew-font-display: 'Chakra Petch', system-ui, sans-serif;
+  --ew-font-body: 'Rajdhani', system-ui, sans-serif;
+  --ew-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --ew-chroma-mult: 0.8;
+
+  --ew-corner-tl: 0;
+  --ew-corner-tr: var(--ew-bevel-md);
+  --ew-corner-br: 0;
+  --ew-corner-bl: var(--ew-bevel-md);
+  --ew-cut-win: 14px;
+  --ew-cut-md: 8px;
+  --ew-cut-sm: 6px;
+}
+body[data-skin="refined"][data-mode="dark"],
+.ew[data-skin="refined"][data-mode="dark"] {
+  --ew-bg: oklch(14% .02 240);
+  --ew-sunken: oklch(10% .02 240);
+  --ew-surface: oklch(18% .03 245 / .88);
+  --ew-surface-raised: oklch(22% .05 245 / .95);
+  --ew-surface-overlay: oklch(22% .05 245 / .55);
+  --ew-surface-sunken: oklch(12% .02 240 / .6);
+  --ew-chrome-bg: oklch(12% .02 240 / .9);
+  --ew-chrome-border: oklch(70% .12 220 / .18);
+
+  --ew-border: oklch(70% .12 220 / .18);
+  --ew-border-strong: oklch(70% .12 220 / .32);
+
+  --ew-text: oklch(92% .02 240);
+  --ew-text-muted: oklch(70% .03 240);
+  --ew-text-faint: oklch(55% .03 240);
+  --ew-text-inverse: oklch(14% .02 240);
+
+  --ew-primary: oklch(72% .15 220);
+  --ew-primary-hover: oklch(76% .16 220);
+  --ew-primary-press: oklch(66% .14 220);
+  --ew-primary-soft: oklch(72% .15 220 / .08);
+  --ew-primary-fg: oklch(14% .02 240);
+
+  --ew-expressive: oklch(60% .12 350);
+  --ew-premium: oklch(58% .16 285);
+
+  --ew-warm: oklch(78% .14 75);
+  --ew-warm-soft: oklch(78% .14 75 / .12);
+
+  --ew-success: oklch(74% .18 150);
+  --ew-warning: oklch(78% .14 75);
+  --ew-danger: oklch(60% .20 25);
+
+  --ew-shadow-glow: 0 0 14px color-mix(in oklab, var(--ew-primary) 35%, transparent);
+  --ew-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --ew-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════
+   SKIN: TERMINAL  (industrial studio tool — amber, sharp)
+   ═══════════════════════════════════════════════════ */
+body[data-skin="terminal"],
+.ew[data-skin="terminal"] {
+  --ew-font-display: 'IBM Plex Mono', ui-monospace, monospace;
+  --ew-font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --ew-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --ew-chroma-mult: 1;
+
+  --ew-corner-tl: 0;
+  --ew-corner-tr: 0;
+  --ew-corner-br: 0;
+  --ew-corner-bl: 0;
+  --ew-cut-win: 0;
+  --ew-cut-md: 0;
+  --ew-cut-sm: 0;
+
+  --ew-clip-card: none;
+  --ew-clip-card-inner: none;
+  --ew-clip-button: none;
+  --ew-clip-button-sm: none;
+
+  --ew-radius-xs: 0;
+  --ew-radius: 0;
+  --ew-radius-md: 0;
+  --ew-radius-lg: 0;
+  --ew-radius-xl: 0;
+}
+body[data-skin="terminal"][data-mode="dark"],
+.ew[data-skin="terminal"][data-mode="dark"] {
+  --ew-bg: #12100E;
+  --ew-sunken: #0A0907;
+  --ew-surface: #1A1714;
+  --ew-surface-raised: #211D19;
+  --ew-surface-overlay: rgba(212, 183, 127, .06);
+  --ew-surface-sunken: #0E0C0A;
+  --ew-chrome-bg: #0E0C0A;
+  --ew-chrome-border: rgba(212, 183, 127, .22);
+
+  --ew-border: rgba(212, 183, 127, .22);
+  --ew-border-strong: rgba(212, 183, 127, .38);
+
+  --ew-text: #E8DFD0;
+  --ew-text-muted: #9A8F7D;
+  --ew-text-faint: rgba(232, 223, 208, .5);
+  --ew-text-inverse: #1A1108;
+
+  --ew-primary: #FF8800;
+  --ew-primary-hover: #FFA033;
+  --ew-primary-press: #D97200;
+  --ew-primary-soft: rgba(255, 136, 0, .14);
+  --ew-primary-fg: #1A1108;
+
+  --ew-expressive: #D4571F;
+  --ew-premium: #9A8F7D;
+
+  --ew-warm: #D4571F;
+  --ew-warm-soft: rgba(212, 87, 31, .1);
+
+  --ew-success: #7FB069;
+  --ew-warning: #FFB000;
+  --ew-danger: #D4571F;
+
+  --ew-shadow-glow: none;
+  --ew-shadow-float: 0 2px 0 rgba(0, 0, 0, 0.9);
+  --ew-shadow-inset: none;
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHT MODE — placeholder (v1.1 ships fully)
+   ═══════════════════════════════════════════════════ */
+body[data-skin="classic"][data-mode="light"],
+body[data-skin="refined"][data-mode="light"],
+body[data-skin="terminal"][data-mode="light"] {
+  color-scheme: light;
+}
+
+/* ═══════════════════════════════════════════════════
+   LEGACY ALIAS LAYER  (for StrandsNation + Demo OS migration)
+   Existing --c-* call sites keep working during migration.
+   Purge this block in Phase 4.
+   ═══════════════════════════════════════════════════ */
+body[data-skin],
+.ew[data-skin] {
+  --c-accent: var(--ew-primary);
+  --c-pink: var(--ew-expressive);
+  --c-yellow: var(--ew-warm);
+  --c-purple: var(--ew-premium);
+  --c-red: var(--ew-danger);
+  --c-green: var(--ew-success);
+  --c-bg: var(--ew-bg);
+  --c-surface: var(--ew-surface);
+  --c-surface-hover: var(--ew-primary-soft);
+  --c-text: var(--ew-text);
+  --c-sub: var(--ew-text-muted);
+  --c-dim: var(--ew-text-faint);
+  --c-border: var(--ew-border);
+  --c-glass: var(--ew-surface-raised);
+
+  --font-display: var(--ew-font-display);
+  --font-body: var(--ew-font-body);
+  --font-mono: var(--ew-font-mono);
+
+  --fw-body: var(--ew-fw-body);
+  --fw-body-strong: var(--ew-fw-body-strong);
+  --fw-display: var(--ew-fw-display);
+  --fw-display-heavy: var(--ew-fw-display-heavy);
+
+  --clip-card: var(--ew-clip-card);
+  --clip-card-inner: var(--ew-clip-card-inner);
+  --clip-button: var(--ew-clip-button);
+  --clip-button-sm: var(--ew-clip-button-sm);
+
+  --cut-win: var(--ew-cut-win);
+  --cut-md: var(--ew-cut-md);
+  --cut-sm: var(--ew-cut-sm);
+
+  --ease-out: var(--ew-ease);
+  --t-fast: var(--ew-t-fast);
+  --t-med: var(--ew-t-med);
+
+  --a-accent-bg:    color-mix(in oklab, var(--ew-primary) 4%,  transparent);
+  --a-accent-hover: color-mix(in oklab, var(--ew-primary) 8%,  transparent);
+  --a-pink-bg:      color-mix(in oklab, var(--ew-expressive) 4%, transparent);
+  --a-pink-hover:   color-mix(in oklab, var(--ew-expressive) 8%, transparent);
+  --a-yellow-bg:    color-mix(in oklab, var(--ew-warm) 4%,    transparent);
+  --a-purple-bg:    color-mix(in oklab, var(--ew-premium) 4%, transparent);
+  --a-red-bg:       color-mix(in oklab, var(--ew-danger) 4%,  transparent);
+}

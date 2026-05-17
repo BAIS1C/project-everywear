@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Everywear OS</title>
+  <script>
+    // Pre-paint: apply saved skin + mode before first render to avoid flash
+    (function () {
+      const skin = localStorage.getItem('ew-skin') || 'classic';
+      const mode = localStorage.getItem('ew-mode') || 'dark';
+      const accent = localStorage.getItem('ew-accent') || 'signal';
+      document.documentElement.setAttribute('data-skin', skin);
+      document.documentElement.setAttribute('data-mode', mode);
+      document.documentElement.setAttribute('data-accent', accent);
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gener8 — S3 Music Studio</title>
+
+  <!-- Pre-paint: apply skin + mode BEFORE React hydrates to avoid FOUC.
+       Reads localStorage, sets data-skin + data-mode on <body>. -->
+  <script>
+    (function() {
+      var s = 'classic', m = 'dark', a = 'signal';
+      try { s = localStorage.getItem('ew-skin')   || s; } catch(e){}
+      try { m = localStorage.getItem('ew-mode')    || m; } catch(e){}
+      try { a = localStorage.getItem('ew-accent')  || a; } catch(e){}
+      var b = document.body || document.createElement('body');
+      b.dataset.skin = s;
+      b.dataset.mode = m;
+      b.classList.add('ew', 'dark');
+      // Apply accent overrides if not 'signal'
+      var accents = {
+        amber:  { '--ew-primary':'oklch(0.78 0.14 70)','--ew-primary-hover':'oklch(0.84 0.15 70)','--ew-primary-press':'oklch(0.70 0.13 70)','--ew-primary-soft':'color-mix(in oklab, oklch(0.78 0.14 70) 12%, transparent)','--ew-primary-fg':'#1A1108' },
+        plasma: { '--ew-primary':'oklch(0.62 0.26 340)','--ew-primary-hover':'oklch(0.68 0.27 340)','--ew-primary-press':'oklch(0.54 0.24 340)','--ew-primary-soft':'color-mix(in oklab, oklch(0.62 0.26 340) 12%, transparent)','--ew-primary-fg':'#0A0010' }
+      };
+      if (accents[a]) {
+        var ov = accents[a];
+        for (var k in ov) b.style.setProperty(k, ov[k]);
+      }
+    })();
+  </script>
+</head>
+<body class="ew dark" data-skin="classic" data-mode="dark">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

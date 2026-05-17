@@ -1,0 +1,26 @@
+{
+  "name": "@everywear/ewds",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Everywear Design System: tokens, components, skins, ThemeContext, and Tailwind preset",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./css/global.css": "./src/css/global.css",
+    "./css/tokens.css": "./src/css/tokens.css",
+    "./css/components.css": "./src/css/components.css",
+    "./css/fonts.css": "./src/css/fonts.css",
+    "./css/icons.css": "./src/css/icons.css",
+    "./css/window-frame.css": "./src/css/window-frame.css",
+    "./css/window-frame-component.css": "./src/css/window-frame-component.css",
+    "./tailwind-preset": "./tailwind-preset.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  }
+}

@@ -1,0 +1,127 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/applet-ipc",
+    "crates/beats-engine",
+    "crates/data-migration",
+    "crates/model-manager",
+    "crates/vault",
+    "crates/mait",
+    "crates/everywear-paths",
+    "crates/video-encoder",
+    # Platform shell
+    "platform/everywear-os/src-tauri",
+    # Applet backends (each has its own src-tauri/Cargo.toml)
+    # Listed here for workspace-level dep unification
+    "applets/1magen/src-tauri",
+    "applets/3nvizen/src-tauri",
+    "applets/kasai/src-tauri",
+    "applets/gener8/src-tauri",
+    # "applets/mymories/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Sean Uddin <somo@metafintek.xyz>"]
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+# Tauri
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-build = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-process = "2"
+
+# Inference FFI
+diffusion-rs = { version = "0.1", features = ["cuda"] }
+# llama-cpp-2 = "0.1"  # uncomment when Kasai applet joins
+
+# Async
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+
+# HTTP
+reqwest = { version = "0.12", features = ["stream", "json", "multipart"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Image
+image = "0.25"
+
+# GPU
+nvml-wrapper = "0.10"
+
+# Search (vault crate)
+tantivy = "0.22"
+# lancedb = "0.4"  # uncomment when ready
+
+# Security
+sha2 = "0.10"
+hex = "0.4"
+
+# Web framework (Gener8 shim, future shell HTTP)
+axum = "0.8"
+tower-http = { version = "0.6", features = ["cors", "fs"] }
+
+# Audio analysis
+aubio-rs = "0.2"
+symphonia = { version = "0.5", features = ["all"] }
+
+# Caching
+lru = "0.12"
+
+# Security / crypto
+hmac = "0.12"
+
+# CLI / progress
+indicatif = "0.17"
+
+# System info
+hostname = "0.4"
+whoami = "1"
+which = "6"
+
+# Logging
+tracing-appender = "0.2"
+
+# Encoding
+encoding_rs = "0.8"
+
+# Config parsing
+toml = "0.8"
+
+# Tauri updater
+tauri-plugin-updater = "2"
+
+# Utilities
+anyhow = "1"
+thiserror = "2"
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "6"
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+base64 = "0.22"
+open = "5"
+
+# Workspace crates (internal)
+applet-ipc = { path = "crates/applet-ipc" }
+beats-engine = { path = "crates/beats-engine" }
+model-manager = { path = "crates/model-manager" }
+ew-vault = { path = "crates/vault" }
+mait = { path = "crates/mait" }
+everywear-paths = { path = "crates/everywear-paths" }
+video-encoder = { path = "crates/video-encoder" }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"

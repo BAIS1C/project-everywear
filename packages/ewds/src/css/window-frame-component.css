@@ -1,0 +1,91 @@
+/* ═══════════════════════════════════════════════════════════════════
+   WindowFrame.tsx — companion stylesheet
+   Reads exclusively from --ew-wf-* and --ew-* tokens.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ew-wf {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--ew-chrome-bg);
+  color: var(--ew-text);
+  font-family: var(--ew-font-body);
+  border-radius: var(--ew-wf-chamfer-radius);
+  overflow: hidden;
+  box-shadow: var(--ew-wf-shadow-focused);
+  transition: box-shadow var(--ew-dur-base) var(--ew-ease-out);
+}
+.ew-wf[data-focused="false"] { box-shadow: var(--ew-wf-shadow-blurred); }
+
+[data-vibrancy="on"] .ew-wf {
+  background: color-mix(in oklab, var(--ew-chrome-bg) calc(var(--ew-wf-vibrancy-tint) * 100%), transparent);
+  backdrop-filter: blur(var(--ew-wf-vibrancy-blur)) saturate(var(--ew-wf-vibrancy-saturate));
+  -webkit-backdrop-filter: blur(var(--ew-wf-vibrancy-blur)) saturate(var(--ew-wf-vibrancy-saturate));
+}
+
+/* Title bar */
+.ew-wf-titlebar {
+  display: flex; align-items: center;
+  gap: var(--ew-wf-titlebar-gap);
+  height: var(--ew-wf-titlebar-height);
+  padding: 0 var(--ew-wf-titlebar-padding-x);
+  background: var(--ew-titlebar-bg);
+  border-bottom: var(--ew-wf-frame-border-width) solid var(--ew-wf-frame-border-color);
+  user-select: none; -webkit-user-select: none;
+  z-index: var(--ew-wf-z-titlebar);
+}
+.ew-wf-brand { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+.ew-wf-title {
+  font-family: var(--ew-font-mono); font-size: var(--ew-text-xs); font-weight: 500;
+  letter-spacing: var(--ew-track-wider); text-transform: uppercase;
+  color: var(--ew-wf-titlebar-fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: color var(--ew-dur-quick) var(--ew-ease-out);
+}
+[data-focused="true"] .ew-wf-title { color: var(--ew-wf-titlebar-fg-active); }
+.ew-wf-titlebar-spacer { flex: 1; }
+
+[data-platform="darwin"] .ew-wf-titlebar { gap: var(--ew-space-3); padding-left: 12px; }
+[data-platform="darwin"] .ew-wf-title { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; }
+
+/* Window controls */
+.ew-wf-controls { display: inline-flex; align-items: center; }
+.ew-wf-controls--darwin { gap: var(--ew-wf-control-gap); }
+.ew-wf-traffic {
+  width: var(--ew-wf-control-size); height: var(--ew-wf-control-size);
+  border: none; border-radius: var(--ew-radius-full);
+  cursor: pointer; padding: 0; background: var(--ew-border-strong);
+  transition: filter var(--ew-dur-quick) var(--ew-ease-out);
+}
+.ew-wf-traffic--close { background: oklch(62% 0.19 25); }
+.ew-wf-traffic--min   { background: oklch(76% 0.16 75); }
+.ew-wf-traffic--max   { background: oklch(70% 0.16 145); }
+[data-focused="false"] .ew-wf-traffic { background: var(--ew-border-strong); }
+.ew-wf-traffic:hover { filter: brightness(0.92) saturate(1.15); }
+
+.ew-wf-cap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--ew-wf-control-well); height: var(--ew-wf-control-well-height);
+  background: transparent; border: none; color: var(--ew-text-muted); cursor: pointer;
+  transition: background var(--ew-dur-quick) var(--ew-ease-out), color var(--ew-dur-quick) var(--ew-ease-out);
+}
+.ew-wf-cap:hover { background: var(--ew-surface-raised); color: var(--ew-text); }
+.ew-wf-cap--close:hover { background: oklch(62% 0.19 25); color: oklch(98% 0 0); }
+
+/* Inner frame */
+.ew-wf-frame { flex: 1; position: relative; background: var(--ew-bg); overflow: hidden; }
+[data-skin="classic"] .ew-wf-frame {
+  clip-path: polygon(0 0, calc(100% - var(--ew-wf-chamfer)) 0, 100% var(--ew-wf-chamfer), 100% 100%, var(--ew-wf-chamfer) 100%, 0 calc(100% - var(--ew-wf-chamfer)));
+}
+.ew-wf-frame-accent { position: absolute; inset: 0; pointer-events: none; border: var(--ew-wf-frame-accent-width) solid var(--ew-wf-frame-accent-color); }
+[data-skin="classic"] .ew-wf-frame-accent {
+  clip-path: polygon(0 0, calc(100% - var(--ew-wf-chamfer)) 0, 100% var(--ew-wf-chamfer), 100% 100%, var(--ew-wf-chamfer) 100%, 0 calc(100% - var(--ew-wf-chamfer)));
+}
+
+.ew-wf-body { position: absolute; inset: 0; overflow: auto; transform: translateZ(0); }
+
+/* Resize handles */
+.ew-wf-resize { position: absolute; z-index: 50; background: transparent; }
+.ew-wf-resize--s  { bottom: 0; left: 8px; right: 8px; height: 5px; cursor: ns-resize; }
+.ew-wf-resize--e  { top: 40px; bottom: 8px; right: 0; width: 4px; cursor: ew-resize; }
+.ew-wf-resize--w  { top: 40px; bottom: 8px; left: 0; width: 4px; cursor: ew-resize; }
+.ew-wf-resize--se { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; z-index: 60; }
+.ew-wf-resize--sw { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; z-index: 60; }

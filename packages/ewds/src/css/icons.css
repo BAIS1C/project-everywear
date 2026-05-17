@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════════════════════════
+   EVERYWEAR — ICON SYSTEM
+   Two families:
+     .ew-icon       — monoline system glyphs (16/20/24px, currentColor stroke)
+     .ew-glyph      — chunky filled "game" glyphs (32/48/64px)
+   Both render via inline <svg>; sizes set on the wrapper.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ew-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  color: currentColor;
+  vertical-align: -0.125em;
+}
+.ew-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+}
+
+/* Sizes */
+.ew-icon--12 { font-size: 12px; }
+.ew-icon--14 { font-size: 14px; }
+.ew-icon--16 { font-size: 16px; }
+.ew-icon--20 { font-size: 20px; }
+.ew-icon--24 { font-size: 24px; }
+.ew-icon--32 { font-size: 32px; }
+
+/* Skin: Classic */
+body[data-skin="classic"] .ew-icon svg, .ew[data-skin="classic"] .ew-icon svg { stroke-width: 1.75; stroke-linecap: square; stroke-linejoin: miter; }
+/* Skin: Terminal */
+body[data-skin="terminal"] .ew-icon svg, .ew[data-skin="terminal"] .ew-icon svg { stroke-width: 2; stroke-linecap: butt; stroke-linejoin: miter; }
+
+/* ── LUCIDE-REACT SKIN OVERRIDE ─────────────────────── */
+body[data-skin="refined"] svg.lucide, .ew[data-skin="refined"] svg.lucide { stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
+body[data-skin="terminal"] svg.lucide, .ew[data-skin="terminal"] svg.lucide { stroke-width: 2; stroke-linecap: butt; stroke-linejoin: miter; }
+body[data-skin="classic"] svg.lucide, .ew[data-skin="classic"] svg.lucide { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Glyph family ───────────────────────────────────── */
+.ew-glyph {
+  display: inline-grid; place-items: center;
+  width: 48px; height: 48px; flex-shrink: 0;
+  background: var(--ew-surface-raised);
+  border: 1px solid var(--ew-border);
+  border-radius: var(--ew-radius-md);
+  position: relative; overflow: hidden;
+}
+.ew-glyph svg { width: 70%; height: 70%; display: block; }
+.ew-glyph .gl-bg { fill: var(--ew-primary-soft); }
+.ew-glyph .gl-fg { fill: var(--ew-primary); }
+.ew-glyph .gl-stroke { stroke: var(--ew-primary); stroke-width: 1.5; fill: none; }
+.ew-glyph .gl-warm  { fill: var(--ew-warm); }
+.ew-glyph .gl-text  { fill: var(--ew-text); }
+.ew-glyph .gl-muted { fill: var(--ew-text-muted); }
+
+.ew-glyph--32 { width: 32px; height: 32px; border-radius: var(--ew-radius); }
+.ew-glyph--48 { width: 48px; height: 48px; }
+.ew-glyph--64 { width: 64px; height: 64px; border-radius: var(--ew-radius-lg); }
+.ew-glyph--80 { width: 80px; height: 80px; border-radius: var(--ew-radius-lg); }
+
+/* Classic glyph */
+body[data-skin="classic"] .ew-glyph, .ew[data-skin="classic"] .ew-glyph {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  background: linear-gradient(135deg, var(--ew-surface-raised) 0%, var(--ew-surface) 100%);
+  border-color: var(--ew-border-strong);
+}
+body[data-skin="classic"] .ew-glyph::before, .ew[data-skin="classic"] .ew-glyph::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 60%, var(--ew-primary-soft) 100%);
+  pointer-events: none;
+}
+
+/* Terminal glyph */
+body[data-skin="terminal"] .ew-glyph, .ew[data-skin="terminal"] .ew-glyph { border-radius: 0; background: transparent; border: 1.5px solid var(--ew-primary); }
+body[data-skin="terminal"] .ew-glyph .gl-bg, .ew[data-skin="terminal"] .ew-glyph .gl-bg { fill: transparent; }
+body[data-skin="terminal"] .ew-glyph .gl-fg, .ew[data-skin="terminal"] .ew-glyph .gl-fg { fill: var(--ew-primary); }
+body[data-skin="terminal"] .ew-glyph .gl-warm, .ew[data-skin="terminal"] .ew-glyph .gl-warm { fill: var(--ew-primary); }
+
+/* 3D background treatment */
+.ew-glyph--3d {
+  background: radial-gradient(circle at 30% 20%, color-mix(in oklab, var(--ew-primary) 35%, transparent) 0%, transparent 60%),
+    linear-gradient(160deg, var(--ew-surface-raised) 0%, var(--ew-surface-sunken) 100%);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 14%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, black 30%, transparent),
+    0 4px 12px color-mix(in oklab, var(--ew-primary) 18%, transparent);
+}
+body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3d { background: var(--ew-bg); box-shadow: none; }

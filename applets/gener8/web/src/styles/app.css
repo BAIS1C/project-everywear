@@ -1,0 +1,15 @@
+/* Gener8 applet-local styles.
+   EWDS global.css is imported in main.tsx; this file adds
+   Gener8-specific overrides and Tailwind directives. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Applet body fills the WindowFrame body area ─── */
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}

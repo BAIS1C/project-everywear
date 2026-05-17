@@ -1,0 +1,2 @@
+//! Tantivy + LanceDB index management.
+

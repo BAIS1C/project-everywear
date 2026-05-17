@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / Rust ${{ matrix.rust }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
+        rust:
+          - stable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust Setup
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Node Setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Windows CUDA Setup
+        if: runner.os == 'Windows'
+        uses: Jimver/cuda-toolkit@v0.2.14
+        with:
+          cuda: '12.2.0'
+          method: network
+
+      - name: Set CUDA_PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.2" >> $env:GITHUB_ENV
+
+      - name: Mac Prerequisites
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          if [ -d /Applications/Xcode_15.app/Contents/Developer ]; then
+            sudo xcode-select -s /Applications/Xcode_15.app/Contents/Developer
+          else
+            sudo xcode-select -s "$(ls -d /Applications/Xcode*.app/Contents/Developer | sort -V | tail -n 1)"
+          fi
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Tauri Dist Placeholders
+        shell: bash
+        run: |
+          mkdir -p platform/everywear-os/dist
+          printf '<html></html>\n' > platform/everywear-os/dist/index.html
+          mkdir -p applets/1magen/dist
+          printf '<html></html>\n' > applets/1magen/dist/index.html
+
+      - name: Workspace Check
+        run: cargo check --workspace
+
+      - name: Build Shell
+        shell: bash
+        run: |
+          cd platform/everywear-os
+          npm run tauri build
+
+      - name: Upload Windows Artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: everywear-os-windows
+          path: target/release/bundle/msi/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload macOS Artifacts
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: everywear-os-macos
+          path: target/release/bundle/dmg/
+          if-no-files-found: warn
+          retention-days: 7

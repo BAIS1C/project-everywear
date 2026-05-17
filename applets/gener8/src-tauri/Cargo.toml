@@ -1,0 +1,83 @@
+[package]
+name = "gener8"
+description = "Gener8 applet: music generation engine for the Everywear platform"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "gener8"
+path = "src/main.rs"
+
+[dependencies]
+# --- Workspace crates ---
+applet-ipc = { workspace = true, features = ["hmac"] }
+everywear-paths = { workspace = true }
+model-manager = { workspace = true }
+beats-engine = { workspace = true }
+video-encoder = { workspace = true }
+
+# --- Async runtime ---
+tokio = { workspace = true }
+futures-util = { workspace = true }
+
+# --- HTTP ---
+reqwest = { workspace = true }
+
+# --- Web framework (in-process axum shim on :3001) ---
+axum = { workspace = true }
+tower-http = { workspace = true }
+
+# --- Serialization ---
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# --- Security / crypto ---
+sha2 = { workspace = true }
+hex = { workspace = true }
+hmac = { workspace = true }
+
+# --- Audio analysis ---
+aubio-rs = { workspace = true }
+symphonia = { workspace = true }
+
+# --- Caching ---
+lru = { workspace = true }
+
+# --- Logging ---
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+
+# --- Utilities ---
+anyhow = { workspace = true }
+chrono = { workspace = true }
+dirs = { workspace = true }
+uuid = { workspace = true }
+base64 = { workspace = true }
+open = { workspace = true }
+
+# --- LLM inference (Creator Studio AI Director) ---
+llama-cpp-2 = { version = "0.1", optional = true, features = ["cuda"] }
+encoding_rs = { workspace = true, optional = true }
+
+# --- ZIP (dependency bootstrap: ffmpeg extraction) ---
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+# --- System identity ---
+hostname = { workspace = true }
+whoami = { workspace = true }
+which = { workspace = true }
+
+[features]
+default = []
+creator-studio = ["dep:llama-cpp-2", "dep:encoding_rs"]
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
