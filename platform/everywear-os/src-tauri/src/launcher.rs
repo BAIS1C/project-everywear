@@ -8,7 +8,8 @@
 //! 2. Budget check: does it fit in free VRAM?
 //! 3. User confirmation: show what will be purged (ALL tiers)
 //! 4. Purge cycle: unload + NVML verify
-//! 5. Provision: download missing models
+//! 5a. Provision: download missing models
+//! 5b. Provision: ensure sidecar binaries in ~/.everywear/bin/
 //! 6. Handoff: launch binary or URL with model paths
 
 use crate::budget::{
@@ -402,6 +403,145 @@ pub async fn provision_models(
             .with_context(|| format!("failed to download model {key}"))?;
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Sidecar provisioning (step 5b)
+// ---------------------------------------------------------------------------
+
+/// Ensure a sidecar engine binary bundle exists in the managed directory.
+///
+/// For applets with `backend = "server"` and a `[engine.sidecar]` declaration,
+/// the shell must verify that the executable and its companion files (DLLs,
+/// codecs) are present at `~/.everywear/bin/<name>/` before launch.
+///
+/// Resolution order:
+///   1. Target dir already populated (previously provisioned): no-op
+///   2. `source_dir` exists on disk (local build): copy bundle
+///   3. `source_url` provided: download and extract (TODO: Phase 2)
+///   4. Error: cannot provision
+pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
+    // Only relevant for server-backend applets with a sidecar declaration
+    if manifest.engine.backend != "server" {
+        return Ok(());
+    }
+    let sidecar = match &manifest.engine.sidecar {
+        Some(s) => s,
+        None => {
+            // No sidecar declared; applet is responsible for finding its own binary
+            // (legacy locate_binary() path in ace_server.rs etc.)
+            return Ok(());
+        }
+    };
+
+    let bundle_name = sidecar
+        .name
+        .as_deref()
+        .unwrap_or(&manifest.engine.server_binary);
+    let target_dir = everywear_paths::bin_dir().join(bundle_name);
+    std::fs::create_dir_all(&target_dir)
+        .with_context(|| format!("failed to create sidecar dir {}", target_dir.display()))?;
+
+    let exe_target = target_dir.join(&sidecar.executable);
+
+    // 1. Already provisioned?
+    if exe_target.exists() {
+        info!(
+            sidecar = bundle_name,
+            path = %exe_target.display(),
+            "Sidecar already provisioned"
+        );
+        return Ok(());
+    }
+
+    // 2. Copy from local source_dir (dev/build machine)
+    if let Some(ref source) = sidecar.source_dir {
+        let source_dir = expand_path(source);
+        if source_dir.is_dir() {
+            info!(
+                sidecar = bundle_name,
+                source = %source_dir.display(),
+                target = %target_dir.display(),
+                "Provisioning sidecar from local build"
+            );
+
+            // Copy executable
+            let exe_source = source_dir.join(&sidecar.executable);
+            if !exe_source.exists() {
+                anyhow::bail!(
+                    "Sidecar executable {} not found in source_dir {}",
+                    sidecar.executable,
+                    source_dir.display()
+                );
+            }
+            std::fs::copy(&exe_source, &exe_target).with_context(|| {
+                format!(
+                    "failed to copy {} -> {}",
+                    exe_source.display(),
+                    exe_target.display()
+                )
+            })?;
+
+            // Copy companions (DLLs, codecs, etc.)
+            for companion in &sidecar.companions {
+                let src = source_dir.join(companion);
+                let dst = target_dir.join(companion);
+                if src.exists() {
+                    std::fs::copy(&src, &dst).with_context(|| {
+                        format!("failed to copy companion {} -> {}", src.display(), dst.display())
+                    })?;
+                    info!(file = companion, "  Copied companion");
+                } else {
+                    warn!(
+                        file = companion,
+                        source = %source_dir.display(),
+                        "Companion file not found in source_dir (skipping)"
+                    );
+                }
+            }
+
+            info!(sidecar = bundle_name, "Sidecar provisioned successfully");
+            return Ok(());
+        } else {
+            warn!(
+                source_dir = %source_dir.display(),
+                "Sidecar source_dir does not exist; falling through"
+            );
+        }
+    }
+
+    // 3. Download from URL (Phase 2)
+    if let Some(ref _url) = sidecar.source_url {
+        // TODO: download archive, extract, verify SHA256
+        anyhow::bail!(
+            "Sidecar download not yet implemented. \
+             Expected {} at {} or a valid source_dir.",
+            sidecar.executable,
+            exe_target.display()
+        );
+    }
+
+    anyhow::bail!(
+        "Cannot provision sidecar '{}': executable {} not found at {} \
+         and no source_dir or source_url resolved.",
+        bundle_name,
+        sidecar.executable,
+        exe_target.display()
+    )
+}
+
+/// Expand `~` and environment variables in a path string.
+fn expand_path(path: &str) -> std::path::PathBuf {
+    let expanded = if path.starts_with('~') {
+        if let Some(home) = dirs::home_dir() {
+            path.replacen('~', &home.to_string_lossy(), 1)
+        } else {
+            path.to_string()
+        }
+    } else {
+        path.to_string()
+    };
+    std::path::PathBuf::from(expanded)
 }
 
 // ---------------------------------------------------------------------------

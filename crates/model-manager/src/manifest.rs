@@ -284,6 +284,44 @@ pub struct EngineMeta {
     pub backend: String,
     #[serde(default)]
     pub server_binary: String,
+    /// Sidecar provisioning: declares the binary bundle that must exist
+    /// at `~/.everywear/bin/<server_binary>/` before the applet can launch.
+    /// Only relevant when `backend = "server"`.
+    #[serde(default)]
+    pub sidecar: Option<SidecarBundle>,
+}
+
+/// Declares a sidecar engine binary bundle that the shell must provision
+/// into `~/.everywear/bin/<name>/` before applet launch.
+///
+/// Source resolution order:
+///   1. `source_dir` (absolute path to a local build, e.g. acestep.cpp/build/Release)
+///   2. `source_url` (download URL for a release archive)
+///   3. Shell errors if neither resolves to a valid binary.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SidecarBundle {
+    /// Directory name under `~/.everywear/bin/`. Defaults to `server_binary` if omitted.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// Primary executable filename (platform-specific).
+    pub executable: String,
+    /// Additional files that must accompany the executable (DLLs, codecs, etc.).
+    #[serde(default)]
+    pub companions: Vec<String>,
+    /// Local directory containing pre-built binaries (dev/build machines).
+    /// Shell copies from here if it exists. Supports `~` and env var expansion.
+    #[serde(default)]
+    pub source_dir: Option<String>,
+    /// URL to a release archive (.zip/.tar.gz) containing the binary bundle.
+    /// Shell downloads and extracts if source_dir is unavailable.
+    #[serde(default)]
+    pub source_url: Option<String>,
+    /// SHA256 of the primary executable for integrity verification.
+    #[serde(default)]
+    pub sha256: Option<String>,
+    /// Human-readable version tag for the sidecar build.
+    #[serde(default)]
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -401,6 +439,7 @@ mod tests {
                 engine_type: "llm".to_string(),
                 backend: "server".to_string(),
                 server_binary: String::new(),
+                sidecar: None,
             },
             model_groups: vec![
                 ModelGroup {

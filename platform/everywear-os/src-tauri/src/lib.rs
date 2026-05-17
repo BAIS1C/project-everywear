@@ -486,6 +486,22 @@ async fn request_applet_switch(
         drop(model_mgr_mut);
     }
 
+    // ── 5c. Sidecar engine provisioning ──
+    if manifest.engine.backend == "server" && manifest.engine.sidecar.is_some() {
+        let _ = app.emit(
+            "applet-switch-progress",
+            launcher::SwitchProgressPayload {
+                stage: launcher::SwitchStage::Downloading,
+                message: format!(
+                    "Provisioning {} engine binary...",
+                    manifest.engine.server_binary
+                ),
+            },
+        );
+        launcher::provision_sidecar(&manifest)
+            .map_err(|e| format!("Sidecar provisioning failed: {e}"))?;
+    }
+
     // ── 6. Handoff ──
     let _ = app.emit(
         "applet-switch-progress",

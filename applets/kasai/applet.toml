@@ -1,7 +1,14 @@
 # Kasai Local Applet Manifest
 # Read by the Everywear OS shell to gate, provision, and launch this applet.
-# Engine: llama-cpp-2 (Rust FFI to llama.cpp)
-# Kasai is the agentic LLM engine: orchestrator + tool harness + RAG
+# Engine: llama-cpp-2 / llama.cpp-compatible GGUF runtime.
+#
+# Distribution goal:
+# - Kasai Lite: one compact model that works on modest GPUs and CPU fallback.
+# - Kasai Local: stronger single-model agent on 8-16 GB GPUs.
+# - Kasai Local Full: larger orchestrator plus compact worker on 24 GB+ GPUs.
+#
+# Model groups are ordered highest-quality first. The shell walks top-down and
+# selects the first group whose min_vram_mb fits the current VRAM plan.
 
 [applet]
 id = "kasai"
@@ -16,51 +23,95 @@ type = "llm"
 backend = "ffi"
 server_binary = ""
 
-# Model groups: ordered by preference (first viable group wins).
-# Kasai needs an orchestrator LLM (Qwen3 family).
-# Higher VRAM = larger model = better reasoning.
+[[model_groups]]
+label = "Kasai Local Full 24GB (30B-A3B orchestrator + 4B worker)"
+min_vram_mb = 24576
+
+  [[model_groups.models]]
+  key = "kasai-orchestrator-qwen3-30b-a3b-2507-q4km"
+  role = "Primary"
+  required = true
+  vram_mb = 19000
+  filename = "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF"
+  hf_file = "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf"
+  size_bytes = 18_556_686_752
+
+  [[model_groups.models]]
+  key = "kasai-worker-qwen3-4b-q4km"
+  role = "Encoder"
+  required = true
+  vram_mb = 3000
+  filename = "Qwen3-4B-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-4B-GGUF"
+  hf_file = "Qwen3-4B-Q4_K_M.gguf"
+  size_bytes = 2_497_281_312
 
 [[model_groups]]
-label = "Full Agent (9B Q8)"
+label = "Kasai Local Pro 16GB (14B orchestrator + 4B worker)"
+min_vram_mb = 16384
+
+  [[model_groups.models]]
+  key = "kasai-orchestrator-qwen3-14b-q4km"
+  role = "Primary"
+  required = true
+  vram_mb = 9800
+  filename = "Qwen3-14B-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-14B-GGUF"
+  hf_file = "Qwen3-14B-Q4_K_M.gguf"
+  size_bytes = 9_001_753_984
+
+  [[model_groups.models]]
+  key = "kasai-worker-qwen3-4b-q4km"
+  role = "Encoder"
+  required = true
+  vram_mb = 3000
+  filename = "Qwen3-4B-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-4B-GGUF"
+  hf_file = "Qwen3-4B-Q4_K_M.gguf"
+  size_bytes = 2_497_281_312
+
+[[model_groups]]
+label = "Kasai Local 12GB (8B high-quality single agent)"
 min_vram_mb = 12288
 
   [[model_groups.models]]
-  key = "qwen3-9b-agent-q8"
+  key = "kasai-agent-qwen3-8b-q5km"
   role = "Primary"
   required = true
-  vram_mb = 10240
-  filename = "Qwen3-8B-Q8_0.gguf"
+  vram_mb = 7000
+  filename = "Qwen3-8B-Q5_K_M.gguf"
   hf_repo = "unsloth/Qwen3-8B-GGUF"
-  hf_file = "Qwen3-8B-Q8_0.gguf"
-  size_bytes = 8_540_000_000
+  hf_file = "Qwen3-8B-Q5_K_M.gguf"
+  size_bytes = 5_851_113_280
 
 [[model_groups]]
-label = "Standard Agent (9B Q4)"
+label = "Kasai Local 8GB (8B efficient single agent)"
 min_vram_mb = 8192
 
   [[model_groups.models]]
-  key = "qwen3-9b-agent-q4km"
+  key = "kasai-agent-qwen3-8b-q4km"
   role = "Primary"
   required = true
-  vram_mb = 6144
+  vram_mb = 6000
   filename = "Qwen3-8B-Q4_K_M.gguf"
   hf_repo = "unsloth/Qwen3-8B-GGUF"
   hf_file = "Qwen3-8B-Q4_K_M.gguf"
-  size_bytes = 5_120_000_000
+  size_bytes = 5_027_784_512
 
 [[model_groups]]
-label = "Lite Agent (4B Q8)"
+label = "Kasai Lite 4GB (4B compact agent)"
 min_vram_mb = 4096
 
   [[model_groups.models]]
-  key = "qwen3-4b-agent-q8"
+  key = "kasai-lite-qwen3-4b-q4km"
   role = "Primary"
   required = true
-  vram_mb = 3072
-  filename = "Qwen3-4B-Q8_0.gguf"
+  vram_mb = 3000
+  filename = "Qwen3-4B-Q4_K_M.gguf"
   hf_repo = "unsloth/Qwen3-4B-GGUF"
-  hf_file = "Qwen3-4B-Q8_0.gguf"
-  size_bytes = 4_680_000_000
+  hf_file = "Qwen3-4B-Q4_K_M.gguf"
+  size_bytes = 2_497_281_312
 
 [requirements]
 cuda_compute = "7.0"

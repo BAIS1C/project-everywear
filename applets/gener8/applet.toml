@@ -23,6 +23,20 @@ type = "audio"
 backend = "server"
 server_binary = "ace-server"
 
+[engine.sidecar]
+executable = "ace-server.exe"
+companions = [
+    "ggml.dll",
+    "ggml-base.dll",
+    "ggml-cpu.dll",
+    "ggml-cuda.dll",
+    "neural-codec.exe",
+    "mp3-codec.exe",
+]
+# Local build path (dev machines with acestep.cpp checked out)
+source_dir = "C:\\Users\\MAG MSI\\Project Ace\\S3 STUDIO\\acestep.cpp\\build\\Release"
+version = "0.1.0-acestep-1.5"
+
 # ── Base install model groups ────────────────────────────────────────
 # Shell walks groups top-down, picks the first where ALL required
 # models fit within the VRAM budget.

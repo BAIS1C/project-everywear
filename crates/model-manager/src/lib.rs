@@ -17,7 +17,8 @@ pub mod verify;
 pub use download::DownloadProgress;
 pub use manifest::{
     plan_for_vram, AppletManifest, LicenceTier, ModelGroup, ModelInfo, ModelManifest,
-    ModelRequirement, ModelRole, ModelType, UpgradePack, UpgradePackFile, UpgradePackQuant,
+    ModelRequirement, ModelRole, ModelType, SidecarBundle, UpgradePack, UpgradePackFile,
+    UpgradePackQuant,
 };
 
 use anyhow::{Context, Result};
