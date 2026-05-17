@@ -51,3 +51,15 @@ desktop.ini
 # Logs
 *.log
 npm-debug.log*
+
+# Internal docs (not for repo; keep LICENCE.md and README.md)
+/ARCHITECTURE.md
+/CONTEXT.md
+/EVALUATION.md
+/EVERYWEAR_ARCHITECTURE_*.md
+/HANDOVER_*.md
+/MIGRATION_ARCHITECTURE.md
+/WIKI.md
+
+# Reference materials (local only)
+/*.html
