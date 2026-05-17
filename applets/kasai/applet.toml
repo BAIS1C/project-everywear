@@ -24,42 +24,66 @@ backend = "ffi"
 server_binary = ""
 
 [[model_groups]]
-label = "Kasai Local Full 24GB (30B-A3B orchestrator + 4B worker)"
+label = "Kasai Local Ultra 32GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q8 agent)"
+min_vram_mb = 32768
+
+  [[model_groups.models]]
+  key = "kasai-orchestrator-qwen3-6-35b-a3b-q4km"
+  role = "Primary"
+  required = true
+  vram_mb = 20500
+  filename = "Qwen3.6-35B-A3B-Q4_K_M.gguf"
+  hf_repo = "lmstudio-community/Qwen3.6-35B-A3B-GGUF"
+  hf_file = "Qwen3.6-35B-A3B-Q4_K_M.gguf"
+  size_bytes = 21_166_757_728
+
+  [[model_groups.models]]
+  key = "kasai-agent-qwen3-5-9b-q8"
+  role = "Encoder"
+  required = true
+  vram_mb = 9200
+  filename = "Qwen3.5-9B-Q8_0.gguf"
+  hf_repo = "lmstudio-community/Qwen3.5-9B-GGUF"
+  hf_file = "Qwen3.5-9B-Q8_0.gguf"
+  size_bytes = 9_527_501_216
+
+[[model_groups]]
+label = "Kasai Local Full 24GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q4 agent)"
 min_vram_mb = 24576
 
   [[model_groups.models]]
-  key = "kasai-orchestrator-qwen3-30b-a3b-2507-q4km"
+  key = "kasai-orchestrator-qwen3-6-35b-a3b-q4km"
   role = "Primary"
   required = true
-  vram_mb = 19000
-  filename = "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf"
-  hf_repo = "unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF"
-  hf_file = "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf"
-  size_bytes = 18_556_686_752
+  vram_mb = 20500
+  filename = "Qwen3.6-35B-A3B-Q4_K_M.gguf"
+  hf_repo = "lmstudio-community/Qwen3.6-35B-A3B-GGUF"
+  hf_file = "Qwen3.6-35B-A3B-Q4_K_M.gguf"
+  size_bytes = 21_166_757_728
 
   [[model_groups.models]]
-  key = "kasai-worker-qwen3-4b-q4km"
+  key = "kasai-agent-qwen3-5-9b-q4km"
   role = "Encoder"
   required = true
-  vram_mb = 3000
-  filename = "Qwen3-4B-Q4_K_M.gguf"
-  hf_repo = "unsloth/Qwen3-4B-GGUF"
-  hf_file = "Qwen3-4B-Q4_K_M.gguf"
-  size_bytes = 2_497_281_312
+  vram_mb = 5400
+  filename = "Qwen3.5-9B-Q4_K_M.gguf"
+  hf_repo = "lmstudio-community/Qwen3.5-9B-GGUF"
+  hf_file = "Qwen3.5-9B-Q4_K_M.gguf"
+  size_bytes = 5_627_044_256
 
 [[model_groups]]
-label = "Kasai Local Pro 16GB (14B orchestrator + 4B worker)"
+label = "Kasai Local Pro 16GB (Qwen3.5 9B high-quality orchestrator + 4B worker)"
 min_vram_mb = 16384
 
   [[model_groups.models]]
-  key = "kasai-orchestrator-qwen3-14b-q4km"
+  key = "kasai-orchestrator-qwen3-5-9b-q5km"
   role = "Primary"
   required = true
-  vram_mb = 9800
-  filename = "Qwen3-14B-Q4_K_M.gguf"
-  hf_repo = "unsloth/Qwen3-14B-GGUF"
-  hf_file = "Qwen3-14B-Q4_K_M.gguf"
-  size_bytes = 9_001_753_984
+  vram_mb = 6500
+  filename = "Qwen3.5-9B-Q5_K_M.gguf"
+  hf_repo = "bartowski/Qwen3.5-9B-GGUF"
+  hf_file = "Qwen3.5-9B-Q5_K_M.gguf"
+  size_bytes = 6_500_000_000
 
   [[model_groups.models]]
   key = "kasai-worker-qwen3-4b-q4km"
@@ -72,32 +96,32 @@ min_vram_mb = 16384
   size_bytes = 2_497_281_312
 
 [[model_groups]]
-label = "Kasai Local 12GB (8B high-quality single agent)"
+label = "Kasai Local 12GB (Qwen3.5 9B efficient single agent)"
 min_vram_mb = 12288
 
   [[model_groups.models]]
-  key = "kasai-agent-qwen3-8b-q5km"
+  key = "kasai-agent-qwen3-5-9b-q4km"
   role = "Primary"
   required = true
-  vram_mb = 7000
-  filename = "Qwen3-8B-Q5_K_M.gguf"
-  hf_repo = "unsloth/Qwen3-8B-GGUF"
-  hf_file = "Qwen3-8B-Q5_K_M.gguf"
-  size_bytes = 5_851_113_280
+  vram_mb = 5400
+  filename = "Qwen3.5-9B-Q4_K_M.gguf"
+  hf_repo = "lmstudio-community/Qwen3.5-9B-GGUF"
+  hf_file = "Qwen3.5-9B-Q4_K_M.gguf"
+  size_bytes = 5_627_044_256
 
 [[model_groups]]
-label = "Kasai Local 8GB (8B efficient single agent)"
+label = "Kasai Lite 8GB (Nemotron 3 Nano compact agent)"
 min_vram_mb = 8192
 
   [[model_groups.models]]
-  key = "kasai-agent-qwen3-8b-q4km"
+  key = "kasai-lite-nemotron-3-nano-4b-q4km"
   role = "Primary"
   required = true
-  vram_mb = 6000
-  filename = "Qwen3-8B-Q4_K_M.gguf"
-  hf_repo = "unsloth/Qwen3-8B-GGUF"
-  hf_file = "Qwen3-8B-Q4_K_M.gguf"
-  size_bytes = 5_027_784_512
+  vram_mb = 3000
+  filename = "NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  hf_repo = "lmstudio-community/NVIDIA-Nemotron-3-Nano-4B-GGUF"
+  hf_file = "NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf"
+  size_bytes = 2_837_072_896
 
 [[model_groups]]
 label = "Kasai Lite 4GB (4B compact agent)"
