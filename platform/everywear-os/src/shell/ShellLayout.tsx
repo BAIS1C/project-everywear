@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
 import {
@@ -39,13 +39,15 @@ interface SystemIcon {
 }
 
 const SYSTEM_ICONS: SystemIcon[] = [
-  { id: 'settings', label: 'Settings', monogram: '⚙', color: 'var(--ew-text-muted)' },
-  { id: 'vault',    label: 'Vault',    monogram: '▦', color: 'var(--ew-text-muted)' },
+  { id: 'settings', label: 'Settings', monogram: '⚙', color: 'var(--ew-primary)' },
+  { id: 'vault',    label: 'Vault',    monogram: '▦', color: 'var(--ew-primary)' },
 ];
 
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
 const THEME_OPTIONS = ['light', 'classic', 'refined', 'terminal'] as const;
+const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', '3nvizen']);
+const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', '3nvizen'];
 
 function VaultPanel() {
   const [section, setSection] = useState<VaultSection>('media');
@@ -230,6 +232,59 @@ function DesktopCanvas({ theme, gpu }: { theme: string; gpu: SystemGpuState | nu
   return null;
 }
 
+function S3StudioFolder({
+  applets,
+  iconHealth,
+  launchingId,
+  isOpen,
+  onToggle,
+  onLaunch,
+}: {
+  applets: AppletEntry[];
+  iconHealth: Record<string, 'online' | 'offline' | 'checking'>;
+  launchingId: string | null;
+  isOpen: boolean;
+  onToggle: () => void;
+  onLaunch: (applet: AppletEntry) => void;
+}) {
+  if (applets.length === 0) return null;
+
+  return (
+    <div className={`ew-desktop-folder ${isOpen ? 'ew-desktop-folder--open' : ''}`}>
+      <button
+        type="button"
+        className="ew-desktop-icon ew-desktop-icon--folder"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-label="S3 Studio folder"
+      >
+        <div className="ew-folder-icon__badge">
+          <span className="ew-folder-icon__tab" />
+          <span className="ew-folder-icon__mark">S3</span>
+          <span className="ew-folder-icon__count">{applets.length}</span>
+        </div>
+        <span className="ew-desktop-icon__label">S3 Studio</span>
+      </button>
+
+      {isOpen && (
+        <div className="ew-folder-tray" role="group" aria-label="S3 Studio apps">
+          <div className="ew-folder-tray__rail">
+            {applets.map((applet) => (
+              <AppletIcon
+                key={applet.id}
+                applet={applet}
+                health={iconHealth[applet.id] ?? 'checking'}
+                isLaunching={launchingId === applet.id}
+                onClick={() => onLaunch(applet)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ShellLayout ──
 
 export function ShellLayout() {
@@ -251,6 +306,7 @@ export function ShellLayout() {
   const [assessments, setAssessments] = useState<ModelAssessment[]>([]);
   const [iconHealth, setIconHealth] = useState<Record<string, 'online' | 'offline' | 'checking'>>({});
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [s3FolderOpen, setS3FolderOpen] = useState(false);
   const { user: authUser, tier } = useAuth();
   const { skin, mode, theme, setTheme } = useTheme();
   const effectiveSkin = theme === 'light' ? 'classic' : skin;
@@ -487,9 +543,18 @@ export function ShellLayout() {
   const displayName = authUser?.handle || profile?.display_name || 'User';
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
-  // Show the registry as the desktop source of truth. NotBuilt applets render
-  // dimmed and do not launch, matching S3's "soon" icon behaviour.
-  const visibleApplets = registryApplets;
+  // Show the registry as the desktop source of truth. S3 Studio is a desktop
+  // folder, not a web shortcut; its child applets still come from the registry.
+  const s3FolderApplets = useMemo(
+    () => registryApplets
+      .filter((applet) => S3_FOLDER_APPLET_IDS.has(applet.id))
+      .sort((a, b) => S3_FOLDER_ORDER.indexOf(a.id) - S3_FOLDER_ORDER.indexOf(b.id)),
+    [registryApplets]
+  );
+  const visibleApplets = useMemo(
+    () => registryApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio'),
+    [registryApplets]
+  );
 
   // GPU status for footer
   const gpuLabel = gpu?.backend?.type === 'Cuda'
@@ -552,6 +617,15 @@ export function ShellLayout() {
 
         {/* Icon grid: registry applets + system icons */}
         <div className="ew-icon-grid">
+          <S3StudioFolder
+            applets={s3FolderApplets}
+            iconHealth={iconHealth}
+            launchingId={launchingId}
+            isOpen={s3FolderOpen}
+            onToggle={() => setS3FolderOpen((open) => !open)}
+            onLaunch={handleAppletLaunch}
+          />
+
           {visibleApplets.map((applet) => (
             <AppletIcon
               key={applet.id}
@@ -565,7 +639,7 @@ export function ShellLayout() {
           {SYSTEM_ICONS.map((icon) => (
             <div
               key={icon.id}
-              className="ew-desktop-icon"
+              className="ew-desktop-icon ew-desktop-icon--system"
               onClick={() => handleSystemClick(icon.id)}
             >
               <div className="ew-desktop-icon__badge" style={{ borderColor: icon.color, color: icon.color }}>

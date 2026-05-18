@@ -59,3 +59,12 @@ Completed chunk: morning visual correction from localhost 5173 screenshots.
 - Classic and Refined now use the same centered clock/status HUD composition as Terminal, toned by their active theme tokens.
 - The HUD is responsively offset away from the left applet columns so node/status text does not sit underneath desktop icons.
 - Cargo was not run.
+
+Completed chunk: S3 folder + per-theme icon sets.
+
+- S3 Studio is now a desktop folder surface instead of a web shortcut. Its child applets are still sourced from the registry/manifest list, then folded into a horizontal concertina tray.
+- The root desktop is less cluttered: S3 child apps (`1magen`, `Gener8`, `Vid Studio`, `3nvizen`) live inside the S3 Studio folder, while non-S3 applets and system tools remain on the desktop.
+- Settings and Vault desktop controls were raised in contrast so they read on Light and dark themes.
+- Applet icons now vary by theme: Classic keeps the animated particle tile, Light uses plain high-contrast SVG icons, Refined uses holographic SVG tiles, and Terminal uses amber console-style SVG tiles.
+- Verification: `npm run build` in `platform/everywear-os` passed. The in-app browser rejected localhost navigation under its URL policy, so browser visual QA was not completed in this chunk.
+- Cargo was not run.
