@@ -94,3 +94,211 @@ body[data-skin="terminal"] .ew-glyph .gl-warm, .ew[data-skin="terminal"] .ew-gly
     0 4px 12px color-mix(in oklab, var(--ew-primary) 18%, transparent);
 }
 body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3d { background: var(--ew-bg); box-shadow: none; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EWDS DESKTOP ICON FAMILY — CANONICAL
+
+   The desktop icon set is a theme-aware OS icon language:
+     Light    : plain high-contrast SVG tile.
+     Classic  : S3 particle jewel with oversized readable monogram.
+     Refined  : cyan projected hologram from an oval plinth.
+     Terminal : amber projected hologram from an oval plinth.
+
+   Rendering contract:
+     - App identity must remain readable at 56px.
+     - The projection beam sits behind/below the glyph; it must not cross
+       the monogram or silhouette face.
+     - System icons and folders use the same themed renderer as applets.
+     - Sparkles are subtle motion, not decorative noise.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ew-desktop-icon__glyph-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.ew-icon-svg {
+  width: 56px;
+  height: 56px;
+  display: block;
+}
+
+.ew-icon-svg text {
+  font-family: var(--ew-font-display);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.ew-icon-svg--plain rect {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: rgba(30, 43, 66, 0.82);
+  stroke-width: 1.4;
+}
+
+.ew-icon-svg--plain path {
+  fill: none;
+  stroke: rgba(30, 43, 66, 0.78);
+  stroke-width: 1.2;
+  stroke-linecap: square;
+}
+
+.ew-icon-svg--plain .ew-icon-svg__plain-glyph {
+  fill: color-mix(in oklab, var(--ew-applet-color) 12%, transparent);
+  stroke: rgba(30, 43, 66, 0.68);
+}
+
+.ew-icon-svg--plain .ew-icon-svg__plain-corner {
+  stroke: var(--ew-applet-color);
+  stroke-width: 1.35;
+}
+
+.ew-icon-svg--plain circle {
+  fill: var(--ew-applet-color);
+}
+
+.ew-icon-svg--plain text {
+  fill: rgba(20, 31, 50, 0.96);
+  font-size: 12px;
+}
+
+.ew-icon-svg--holograph {
+  filter:
+    drop-shadow(0 0 9px rgba(25, 220, 255, 0.98))
+    drop-shadow(0 0 24px rgba(25, 220, 255, 0.64))
+    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-shadow {
+  fill: rgba(0, 0, 0, 0.7);
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-plinth {
+  fill: rgba(18, 24, 30, 0.96);
+  stroke: rgba(165, 238, 255, 0.7);
+  stroke-width: 1;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-ring {
+  fill: rgba(25, 210, 255, 0.18);
+  stroke: rgba(109, 231, 255, 0.9);
+  stroke-width: 1.2;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-beam {
+  opacity: 0.5;
+  stroke: rgba(210, 252, 255, 0.52);
+  stroke-width: 1;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-shape {
+  fill: rgba(25, 210, 255, 0.06);
+  stroke: rgba(192, 250, 255, 0.96);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-detail,
+.ew-icon-svg--holograph .ew-icon-svg__holo-sparkles {
+  fill: none;
+  stroke: rgba(192, 250, 255, 0.78);
+  stroke-width: 1;
+  stroke-linecap: square;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-core {
+  fill: rgba(192, 250, 255, 0.14);
+  stroke: rgba(192, 250, 255, 0.95);
+  stroke-width: 1.2;
+}
+
+.ew-icon-svg--holograph .ew-icon-svg__holo-text {
+  fill: #ecfdff;
+  font-size: 16px;
+  paint-order: stroke fill;
+  stroke: rgba(0, 18, 28, 0.78);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 9px rgba(25, 210, 255, 1));
+}
+
+.ew-icon-svg--terminal {
+  filter:
+    drop-shadow(0 0 9px rgba(255, 150, 20, 0.95))
+    drop-shadow(0 0 22px rgba(255, 136, 0, 0.5))
+    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.46));
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-shadow {
+  fill: rgba(0, 0, 0, 0.72);
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-plinth {
+  fill: rgba(22, 14, 4, 0.96);
+  stroke: rgba(255, 183, 75, 0.72);
+  stroke-width: 1;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-ring {
+  fill: rgba(255, 136, 0, 0.18);
+  stroke: rgba(255, 183, 75, 0.9);
+  stroke-width: 1.2;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-beam {
+  fill: rgba(255, 136, 0, 0.1);
+  stroke: rgba(255, 198, 103, 0.48);
+  stroke-width: 1;
+  opacity: 0.68;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-shape {
+  fill: rgba(255, 136, 0, 0.04);
+  stroke: rgba(255, 185, 79, 0.96);
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-detail,
+.ew-icon-svg--terminal .ew-icon-svg__terminal-sparkles {
+  fill: none;
+  stroke: rgba(255, 185, 79, 0.72);
+  stroke-width: 1;
+  stroke-linecap: square;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-core {
+  fill: rgba(255, 136, 0, 0.12);
+  stroke: rgba(255, 185, 79, 0.96);
+  stroke-width: 1.2;
+}
+
+.ew-icon-svg--terminal .ew-icon-svg__terminal-text {
+  fill: #ffd08a;
+  font-size: 16px;
+  paint-order: stroke fill;
+  stroke: rgba(22, 8, 0, 0.86);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 9px rgba(255, 136, 0, 0.95));
+}
+
+.ew-icon-svg__sparkle-a {
+  animation: ew-holo-sparkle-a 1.9s ease-in-out infinite;
+}
+
+.ew-icon-svg__sparkle-b {
+  animation: ew-holo-sparkle-b 2.4s ease-in-out infinite;
+}
+
+@keyframes ew-holo-sparkle-a {
+  0%, 100% { opacity: 0.38; transform: translateY(0); }
+  45% { opacity: 1; transform: translateY(-1px); }
+}
+
+@keyframes ew-holo-sparkle-b {
+  0%, 100% { opacity: 0.2; transform: translateY(0); }
+  55% { opacity: 0.9; transform: translateY(1px); }
+}

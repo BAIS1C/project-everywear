@@ -175,7 +175,7 @@ function HolographIcon({ appletId }: { appletId: string }) {
       <ellipse className="ew-icon-svg__holo-shadow" cx="28" cy="47" rx="17" ry="4" />
       <ellipse className="ew-icon-svg__holo-plinth" cx="28" cy="43" rx="17" ry="5" />
       <ellipse className="ew-icon-svg__holo-ring" cx="28" cy="41" rx="12" ry="3" />
-      <path className="ew-icon-svg__holo-beam" d="M13 43 24 5h8l11 38Z" fill={`url(#${gradientId})`} />
+      <path className="ew-icon-svg__holo-beam" d="M15 43 22 22h12l7 21Z" fill={`url(#${gradientId})`} />
       <ProjectedGlyphShape appletId={appletId} stem="holo" />
       <path className="ew-icon-svg__holo-sparkles ew-icon-svg__sparkle-a" d="M9 15h5M11.5 12.5v5M43 10h5M45.5 7.5v5M39 34h5M41.5 31.5v5" />
       <path className="ew-icon-svg__holo-sparkles ew-icon-svg__sparkle-b" d="M16 8h3M17.5 6.5v3M47 25h4M49 23v4M12 35h3M13.5 33.5v3" />
@@ -189,7 +189,7 @@ function TerminalSvgIcon({ appletId }: { appletId: string }) {
       <ellipse className="ew-icon-svg__terminal-shadow" cx="28" cy="47" rx="17" ry="4" />
       <ellipse className="ew-icon-svg__terminal-plinth" cx="28" cy="43" rx="17" ry="5" />
       <ellipse className="ew-icon-svg__terminal-ring" cx="28" cy="41" rx="12" ry="3" />
-      <path className="ew-icon-svg__terminal-beam" d="M13 43 24 5h8l11 38Z" />
+      <path className="ew-icon-svg__terminal-beam" d="M15 43 22 22h12l7 21Z" />
       <ProjectedGlyphShape appletId={appletId} stem="terminal" />
       <path className="ew-icon-svg__terminal-sparkles ew-icon-svg__sparkle-a" d="M9 15h5M11.5 12.5v5M43 10h5M45.5 7.5v5M39 34h5M41.5 31.5v5" />
       <path className="ew-icon-svg__terminal-sparkles ew-icon-svg__sparkle-b" d="M16 8h3M17.5 6.5v3M47 25h4M49 23v4M12 35h3M13.5 33.5v3" />

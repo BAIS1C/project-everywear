@@ -91,3 +91,11 @@ Completed chunk: projection/sparkle + Classic monogram scale.
 - Refined holograph icons now project higher from the plinth, with brighter cyan beams/glow.
 - Refined and Terminal sparkle strokes now animate subtly so the projected icons feel alive instead of static.
 - Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.
+
+Completed chunk: icon canonization.
+
+- Accepted desktop icon direction is now canonized in EWDS under `packages/ewds/src/css/icons.css` as `EWDS DESKTOP ICON FAMILY`.
+- The shell now imports `@everywear/ewds/css/icons.css`; shell-local projected icon CSS was removed so EWDS is the source of truth for the desktop icon family.
+- Projection layering was corrected: beams now rise from the plinth below the glyph and do not overlap/obscure the projected icon face.
+- `WIKI.md` now has `Desktop Icon Canon` under the EWDS section, including Classic, Refined, Terminal, Light, system/folder icon, and projection-layering rules.
+- Verification: `npm run build --workspace @everywear/ewds` and `npm run build` in `platform/everywear-os` passed. Cargo was not run.

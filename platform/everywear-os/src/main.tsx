@@ -8,6 +8,7 @@ import { initLogger, getLogger } from '@everywear/shared';
 import '@everywear/ewds/css/tokens.css';
 import '@everywear/ewds/css/components.css';
 import '@everywear/ewds/css/fonts.css';
+import '@everywear/ewds/css/icons.css';
 import '@everywear/ewds/css/window-frame.css';
 import './styles/shell.css';
 
