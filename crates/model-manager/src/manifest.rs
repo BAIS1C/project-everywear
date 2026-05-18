@@ -56,6 +56,14 @@ pub enum ModelRole {
     Vae,
     /// LoRA adapters. Optional, purged with primary.
     Lora,
+    /// Video/text projection module.
+    Projection,
+    /// Video VAE decoder.
+    VideoVae,
+    /// Audio VAE decoder.
+    AudioVae,
+    /// Text encoder using applet-specific naming.
+    TextEncoder,
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +281,11 @@ pub struct AppletMeta {
     pub icon: String,
     /// "tauri" | "web" | "hybrid"
     pub transport: String,
+    /// Port the applet's web frontend listens on (e.g. 3001 for Gener8's axum shim).
+    /// Shell creates a WebviewWindow pointing at http://127.0.0.1:{frontend_port}
+    /// after the headless backend is running.
+    #[serde(default)]
+    pub frontend_port: Option<u16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -434,6 +447,7 @@ mod tests {
                 description: "Test applet".to_string(),
                 icon: "icon.png".to_string(),
                 transport: "tauri".to_string(),
+                frontend_port: None,
             },
             engine: EngineMeta {
                 engine_type: "llm".to_string(),

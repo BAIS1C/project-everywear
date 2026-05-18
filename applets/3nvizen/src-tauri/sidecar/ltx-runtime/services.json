@@ -1,0 +1,8 @@
+{
+  "services": {
+    "fast_video_pipeline": "G:\\LTX\\LTX Desktop\\resources\\backend\\services\\fast_video_pipeline",
+    "a2v_pipeline": "G:\\LTX\\LTX Desktop\\resources\\backend\\services\\a2v_pipeline",
+    "retake_pipeline": "G:\\LTX\\LTX Desktop\\resources\\backend\\services\\retake_pipeline",
+    "ic_lora_pipeline": "G:\\LTX\\LTX Desktop\\resources\\backend\\services\\ic_lora_pipeline"
+  }
+}

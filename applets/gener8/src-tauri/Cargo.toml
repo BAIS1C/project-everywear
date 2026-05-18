@@ -41,6 +41,7 @@ hmac = { workspace = true }
 
 # --- Audio analysis ---
 aubio-rs = { workspace = true }
+cpal = { workspace = true }
 symphonia = { workspace = true }
 
 # --- Caching ---

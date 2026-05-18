@@ -17,6 +17,7 @@ version = "0.1.0"
 description = "AI music generation, stem mixing, and production powered by ACE-Step"
 icon = "gener8"
 transport = "ipc"
+frontend_port = 3001
 
 [engine]
 type = "audio"

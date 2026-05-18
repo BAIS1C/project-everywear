@@ -124,23 +124,7 @@ export interface Transaction {
   block: number | null;
 }
 
-export interface DiscourseUser {
-  username: string;
-  name: string | null;
-  avatar_url: string | null;
-  trust_level: number;
-  unread_notifications: number;
-}
-
-export interface DiscoursePost {
-  id: number;
-  topic_title: string;
-  topic_url: string;
-  author: string;
-  excerpt: string;
-  created_at: string;
-  category: string;
-}
+// Discourse types removed: community.strandsnation.xyz is embedded as a web applet (iframe).
 
 export interface AppletEntry {
   id: string;
@@ -154,6 +138,9 @@ export interface AppletEntry {
   tags: string[];
   launch_url: string | null;
   launch_binary: string | null;
+  frontend_port: number | null;
+  frontend_route: string | null;
+  shares_backend: string | null;
 }
 
 export interface PlatformStatus {
@@ -236,19 +223,30 @@ export const walletTransactions = (limit?: number) =>
   invoke<Transaction[]>('wallet_transactions', { limit });
 export const walletDisconnect = () => invoke<void>('wallet_disconnect');
 
-// ─── Discourse ──────────────────────────────────────────────────────────────
-
-export const discourseOAuthUrl = () => invoke<string>('discourse_oauth_url');
-export const discourseUser = () => invoke<DiscourseUser | null>('discourse_user');
-export const discourseLatest = (limit?: number) =>
-  invoke<DiscoursePost[]>('discourse_latest', { limit });
-export const discourseDisconnect = () => invoke<void>('discourse_disconnect');
+// Discourse IPC commands removed: community panel embeds community.strandsnation.xyz directly.
 
 // ─── Registry ───────────────────────────────────────────────────────────────
 
 export const listApplets = () => invoke<AppletEntry[]>('list_applets');
 export const getApplet = (id: string) => invoke<AppletEntry | null>('get_applet', { id });
 export const launchApplet = (id: string) => invoke<void>('launch_applet', { id });
+export const closeAppletWebview = (appletId: string) =>
+  invoke<void>('close_applet_webview', { appletId });
+
+// ─── Video Encoder Sidecar ──────────────────────────────────────────────────
+
+export interface EncoderHealth {
+  encoder: string;
+  label: string;
+  hardware: boolean;
+}
+
+/** Acquire the shared video-encoder sidecar; returns the WS port (9877). */
+export const requestVideoEncoder = () => invoke<number>('request_video_encoder');
+/** Release one consumer; sidecar stops when count hits 0. */
+export const releaseVideoEncoder = () => invoke<void>('release_video_encoder');
+/** Health-check the running encoder sidecar. */
+export const videoEncoderHealth = () => invoke<EncoderHealth>('video_encoder_health');
 
 // ─── Platform ───────────────────────────────────────────────────────────────
 

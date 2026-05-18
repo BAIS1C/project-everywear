@@ -24,6 +24,18 @@ pub struct AppletEntry {
     pub tags: Vec<String>,
     pub launch_url: Option<String>,
     pub launch_binary: Option<String>,
+    /// Port for the applet's web frontend. Shell spawns a WebviewWindow at
+    /// http://127.0.0.1:{frontend_port} after the headless backend starts.
+    pub frontend_port: Option<u16>,
+    /// Optional route suffix appended to the frontend URL.
+    /// e.g. "/vid" navigates to http://127.0.0.1:{frontend_port}/vid
+    /// Used by sub-applets that share a backend (Vid shares Gener8).
+    #[serde(default)]
+    pub frontend_route: Option<String>,
+    /// If set, this applet shares another applet's backend process.
+    /// The shell will launch the parent's binary instead of its own.
+    #[serde(default)]
+    pub shares_backend: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -59,12 +71,15 @@ impl AppletRegistry {
                 description: "AI image generation and editing powered by Z-Image".into(),
                 version: "0.1.0".into(),
                 icon: "1magen".into(),
-                status: AppletStatus::Active, // scaffolded
+                status: AppletStatus::Active,
                 engine_type: "diffusion".into(),
                 min_vram_mb: 7400,
                 tags: vec!["image".into(), "generation".into(), "editing".into()],
                 launch_url: None,
                 launch_binary: Some("onemagen".into()),
+                frontend_port: Some(3002),
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "gener8".into(),
@@ -84,6 +99,29 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: Some("gener8".into()),
+                frontend_port: Some(3001),
+                frontend_route: None,
+                shares_backend: None,
+            },
+            // Vid Studio: standalone frontend-only applet.
+            // Uses the shell-owned video-encoder sidecar (port 9877) on
+            // demand via request_video_encoder IPC. No backend binary,
+            // no VRAM reservation, instant launch.
+            AppletEntry {
+                id: "vid".into(),
+                name: "Vid Studio".into(),
+                description: "Audio-reactive visualiser and music video creation".into(),
+                version: "0.1.0".into(),
+                icon: "vid".into(),
+                status: AppletStatus::Active,
+                engine_type: "none".into(),
+                min_vram_mb: 0, // NVENC uses dedicated encoder chip, not CUDA cores
+                tags: vec!["video".into(), "visualiser".into(), "music".into()],
+                launch_url: None,
+                launch_binary: None,       // frontend-only: no backend process
+                frontend_port: Some(3006), // own Vite dev server
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "s3studio".into(),
@@ -91,7 +129,7 @@ impl AppletRegistry {
                 description: "Strands Sound Studio: cloud music generation (legacy web)".into(),
                 version: "0.1.0".into(),
                 icon: "s3studio".into(),
-                status: AppletStatus::Active, // live at s3studio.xyz
+                status: AppletStatus::Active,
                 engine_type: "audio".into(),
                 min_vram_mb: 0,
                 tags: vec![
@@ -102,6 +140,9 @@ impl AppletRegistry {
                 ],
                 launch_url: Some("https://s3studio.xyz".into()),
                 launch_binary: None,
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "strands-game".into(),
@@ -109,12 +150,15 @@ impl AppletRegistry {
                 description: "The game: Three.js desktop OS world".into(),
                 version: "0.1.0".into(),
                 icon: "strands-game".into(),
-                status: AppletStatus::Active, // live at game.strandsnation.xyz
+                status: AppletStatus::Active,
                 engine_type: "none".into(),
                 min_vram_mb: 0,
                 tags: vec!["game".into(), "social".into(), "world".into()],
                 launch_url: Some("https://game.strandsnation.xyz".into()),
                 launch_binary: None,
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "kasai".into(),
@@ -134,6 +178,9 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: Some("everywear-kasai".into()),
+                frontend_port: Some(3003),
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "3nvizen".into(),
@@ -147,6 +194,30 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "generation".into()],
                 launch_url: None,
                 launch_binary: Some("everywear-3nvizen".into()),
+                frontend_port: Some(3004),
+                frontend_route: None,
+                shares_backend: None,
+            },
+            AppletEntry {
+                id: "character-studio".into(),
+                name: "Avatar Studio".into(),
+                description: "3D avatar creation and customization for Strands Blanks".into(),
+                version: "0.1.0".into(),
+                icon: "character-studio".into(),
+                status: AppletStatus::Active,
+                engine_type: "none".into(),
+                min_vram_mb: 0, // WebGL only, no CUDA
+                tags: vec![
+                    "avatar".into(),
+                    "3d".into(),
+                    "character".into(),
+                    "nft".into(),
+                ],
+                launch_url: None,
+                launch_binary: None, // frontend-only: no backend process
+                frontend_port: Some(3007),
+                frontend_route: None,
+                shares_backend: None,
             },
             AppletEntry {
                 id: "mymories".into(),
@@ -160,6 +231,9 @@ impl AppletRegistry {
                 tags: vec!["knowledge".into(), "memory".into(), "rag".into()],
                 launch_url: None,
                 launch_binary: Some("mymories".into()),
+                frontend_port: Some(3005),
+                frontend_route: None,
+                shares_backend: None,
             },
         ]
     }

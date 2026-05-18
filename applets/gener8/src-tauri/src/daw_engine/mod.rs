@@ -175,6 +175,25 @@ impl DawEngine {
         self.transport.stop();
     }
 
+    /// Start playback through the system output device.
+    pub fn start_playback(&mut self) -> anyhow::Result<()> {
+        self.playback_handle = None;
+        let handle = playback::PlaybackHandle::start(
+            self.project.tracks.clone(),
+            self.decode_cache.clone(),
+            self.transport.position_ms(),
+            self.transport.loop_range.clone(),
+        )?;
+        self.playback_handle = Some(handle);
+        self.transport.play();
+        Ok(())
+    }
+
+    pub fn pause_playback(&mut self) {
+        self.playback_handle = None;
+        self.transport.pause();
+    }
+
     /// Flush all caches (decode, peaks).
     pub fn flush_caches(&mut self) {
         self.decode_cache.clear();

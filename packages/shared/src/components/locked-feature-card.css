@@ -1,0 +1,114 @@
+/**
+ * LockedFeatureCard — EWDS-native styles.
+ * All values reference EWDS tokens. Zero hardcoded colors.
+ * Prefix: lfc- (Locked Feature Card)
+ */
+
+.lfc-card {
+  border: 1px dashed var(--ew-border);
+  border-radius: var(--ew-radius, 6px);
+  background: var(--ew-surface-sunken, var(--ew-bg));
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Header ────────────────────────────────────────── */
+
+.lfc-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lfc-card__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.lfc-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ew-text);
+  flex: 1;
+}
+
+.lfc-card__tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ew-warning, var(--ew-status-amber));
+  background: color-mix(in oklab, var(--ew-warning, var(--ew-status-amber)) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.lfc-card__lock {
+  font-size: 10px;
+}
+
+/* ── Description ───────────────────────────────────── */
+
+.lfc-card__desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ew-text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Footer ────────────────────────────────────────── */
+
+.lfc-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lfc-card__status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: var(--ew-surface-raised, var(--ew-surface));
+  color: var(--ew-text-muted);
+}
+
+.lfc-card__status--planned {
+  color: var(--ew-text-faint);
+}
+
+.lfc-card__status--in-development {
+  color: var(--ew-primary);
+  background: color-mix(in oklab, var(--ew-primary) 10%, transparent);
+}
+
+.lfc-card__status--beta {
+  color: var(--ew-status-green);
+  background: color-mix(in oklab, var(--ew-status-green) 10%, transparent);
+}
+
+.lfc-card__status--coming-soon {
+  color: var(--ew-text-muted);
+}
+
+.lfc-card__link {
+  font-size: 11px;
+  color: var(--ew-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.lfc-card__link:hover {
+  text-decoration: underline;
+}

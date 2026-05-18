@@ -15,6 +15,10 @@ use tokio::time::{sleep, Duration};
 
 const APPLET_ID: &str = "3nvizen";
 const ENGINE_ID: &str = "3nvizen.video";
+// CODEX_NEEDED: 3nvizen frontend uses direct fetch() to the LTX adapter at
+// http://127.0.0.1:8787 for generation/progress/model calls. This Rust IPC
+// path remains for shell lifecycle, legacy ExecuteJob dispatch, and unload.
+// If the shell later proxies all applet traffic, forward to /api/generate here.
 
 type HmacSha256 = Hmac<Sha256>;
 type SharedWriter = Arc<Mutex<OwnedWriteHalf>>;
@@ -153,7 +157,7 @@ fn spawn_shutdown_monitor(disconnected: Arc<AtomicBool>) {
             tracing::warn!("Shell IPC lost; starting 10-second 3nvizen self-shutdown timer");
             sleep(Duration::from_secs(10)).await;
             if disconnected.load(Ordering::SeqCst) {
-                unload_models().await;
+                let _ = unload_models().await;
                 std::process::exit(0);
             }
         }
@@ -206,11 +210,11 @@ async fn handle_command(
     match command {
         CommandKind::Ping | CommandKind::QueryStatus => Ok(json!({"status": "alive"})),
         CommandKind::UnloadModel => {
-            unload_models().await;
-            Ok(json!({"status": "unloaded"}))
+            let status = unload_models().await;
+            Ok(status)
         }
         CommandKind::Shutdown => {
-            unload_models().await;
+            let _ = unload_models().await;
             std::process::exit(0);
         }
         CommandKind::ExecuteJob { job } => {
@@ -283,8 +287,194 @@ async fn execute_job(job: serde_json::Value) -> Result<serde_json::Value, String
     }))
 }
 
-async fn unload_models() {
-    tracing::info!("3nvizen unload requested; sidecar model unload hook pending");
+async fn unload_models() -> serde_json::Value {
+    let sidecar_url = sidecar_url();
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .build()
+    {
+        Ok(client) => client,
+        Err(error) => {
+            return json!({
+                "status": "error",
+                "engine_id": ENGINE_ID,
+                "sidecar_url": sidecar_url,
+                "error": format!("failed to build HTTP client: {error}"),
+            });
+        }
+    };
+
+    tracing::info!(%sidecar_url, "3nvizen unload requested");
+
+    let before = probe_sidecar(&client, &sidecar_url).await;
+    if matches!(before.state, SidecarProbeState::Unreachable) {
+        tracing::info!(%sidecar_url, "3nvizen sidecar is not reachable; treating models as unloaded");
+        return json!({
+            "status": "sidecar_unreachable",
+            "engine_id": ENGINE_ID,
+            "sidecar_url": sidecar_url,
+            "models_loaded": false,
+            "probe": before.payload,
+        });
+    }
+
+    let unload = send_unload_signal(&client, &sidecar_url).await;
+    let after = probe_sidecar(&client, &sidecar_url).await;
+    let models_loaded = after.models_loaded();
+    let status = if unload.ok && !models_loaded {
+        "unloaded"
+    } else if unload.ok {
+        "unload_sent"
+    } else {
+        "unload_failed"
+    };
+
+    tracing::info!(
+        %sidecar_url,
+        unload_ok = unload.ok,
+        models_loaded,
+        "3nvizen unload sequence completed"
+    );
+
+    json!({
+        "status": status,
+        "engine_id": ENGINE_ID,
+        "sidecar_url": sidecar_url,
+        "unload_endpoint": unload.endpoint,
+        "unload_response": unload.payload,
+        "models_loaded": models_loaded,
+        "pre_unload_probe": before.payload,
+        "post_unload_probe": after.payload,
+    })
+}
+
+fn sidecar_url() -> String {
+    std::env::var("THREENVIZEN_SIDECAR_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8787".to_string())
+        .trim_end_matches('/')
+        .to_string()
+}
+
+#[derive(Debug)]
+struct UnloadAttempt {
+    ok: bool,
+    endpoint: Option<String>,
+    payload: serde_json::Value,
+}
+
+#[derive(Debug)]
+struct SidecarProbe {
+    state: SidecarProbeState,
+    payload: serde_json::Value,
+}
+
+#[derive(Debug)]
+enum SidecarProbeState {
+    Healthy,
+    Error,
+    Unreachable,
+}
+
+impl SidecarProbe {
+    fn models_loaded(&self) -> bool {
+        self.payload
+            .get("models_loaded")
+            .or_else(|| self.payload.get("loaded"))
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false)
+    }
+}
+
+async fn send_unload_signal(client: &reqwest::Client, sidecar_url: &str) -> UnloadAttempt {
+    let candidates = [
+        "/api/v1/models/unload",
+        "/api/v1/unload",
+        "/api/v1/runtime/unload",
+        "/unload",
+    ];
+
+    let mut last_error = json!({"error": "no unload endpoint attempted"});
+    for endpoint in candidates {
+        let url = format!("{sidecar_url}{endpoint}");
+        match client
+            .post(&url)
+            .json(&json!({ "engine_id": ENGINE_ID, "reason": "shell_unload" }))
+            .send()
+            .await
+        {
+            Ok(response) if response.status().is_success() => {
+                let payload = response
+                    .json()
+                    .await
+                    .unwrap_or_else(|_| json!({ "status": "ok" }));
+                return UnloadAttempt {
+                    ok: true,
+                    endpoint: Some(endpoint.to_string()),
+                    payload,
+                };
+            }
+            Ok(response) => {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                last_error = json!({
+                    "endpoint": endpoint,
+                    "status": status.as_u16(),
+                    "body": body,
+                });
+            }
+            Err(error) => {
+                last_error = json!({
+                    "endpoint": endpoint,
+                    "error": error.to_string(),
+                });
+            }
+        }
+    }
+
+    UnloadAttempt {
+        ok: false,
+        endpoint: None,
+        payload: last_error,
+    }
+}
+
+async fn probe_sidecar(client: &reqwest::Client, sidecar_url: &str) -> SidecarProbe {
+    for endpoint in ["/api/v1/status", "/api/v1/health", "/health"] {
+        let url = format!("{sidecar_url}{endpoint}");
+        match client.get(&url).send().await {
+            Ok(response) if response.status().is_success() => {
+                let payload = response
+                    .json()
+                    .await
+                    .unwrap_or_else(|_| json!({ "status": "ok" }));
+                return SidecarProbe {
+                    state: SidecarProbeState::Healthy,
+                    payload,
+                };
+            }
+            Ok(response) => {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                return SidecarProbe {
+                    state: SidecarProbeState::Error,
+                    payload: json!({
+                        "endpoint": endpoint,
+                        "status": status.as_u16(),
+                        "body": body,
+                    }),
+                };
+            }
+            Err(error) => {
+                let _ = error;
+                continue;
+            }
+        }
+    }
+
+    SidecarProbe {
+        state: SidecarProbeState::Unreachable,
+        payload: json!({ "status": "unreachable" }),
+    }
 }
 
 async fn send_event(

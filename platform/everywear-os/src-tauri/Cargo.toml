@@ -51,6 +51,8 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 applet-ipc = { path = "../../../crates/applet-ipc", features = ["hmac"] }
 model-manager = { path = "../../../crates/model-manager" }
 everywear-paths = { path = "../../../crates/everywear-paths" }
+ew-vault = { path = "../../../crates/vault" }
+mait = { path = "../../../crates/mait" }
 
 # --- Utilities ---
 anyhow = "1"
@@ -63,10 +65,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 base64 = "0.22"
 open = "5"
 futures-util = "0.3"
+which = "7"
+image = "0.25"
 
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
+discourse-native = []
 
 [profile.release]
 lto = true

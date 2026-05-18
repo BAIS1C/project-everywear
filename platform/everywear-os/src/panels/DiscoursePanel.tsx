@@ -1,108 +1,51 @@
-import { useEffect, useState } from 'react';
-import { discourseUser, discourseOAuthUrl, discourseLatest, discourseDisconnect, type DiscourseUser, type DiscoursePost } from '../lib/transport';
+import { useRef } from 'react';
+
+/**
+ * DiscoursePanel: embeds the Strands Nation community forum as a web applet.
+ *
+ * The forum lives at community.strandsnation.xyz (Discourse instance).
+ * No IPC transport needed; it renders as a full website in an iframe,
+ * same pattern as the Game Codex (game.strandsnation.xyz).
+ *
+ * Source project: C:\Users\MAG MSI\Project Strands\Discourse Forum
+ */
+
+const COMMUNITY_URL = 'https://community.strandsnation.xyz';
 
 export function DiscoursePanel() {
-  const [user, setUser] = useState<DiscourseUser | null>(null);
-  const [posts, setPosts] = useState<DiscoursePost[]>([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    discourseUser().then((u) => {
-      setUser(u);
-      if (u) discourseLatest(10).then(setPosts);
-    });
-  }, []);
-
-  const handleConnect = async () => {
-    const url = await discourseOAuthUrl();
-    // Open in system browser for OAuth flow
-    window.open(url, '_blank');
+  const handleReload = () => {
+    if (iframeRef.current) {
+      iframeRef.current.src = iframeRef.current.src;
+    }
   };
 
-  const handleDisconnect = async () => {
-    await discourseDisconnect();
-    setUser(null);
-    setPosts([]);
+  const handleOpenExternal = () => {
+    window.open(COMMUNITY_URL, '_blank');
   };
 
   return (
-    <div style={{ maxWidth: 600 }}>
-      <h2 style={{ fontFamily: 'var(--ew-font-display)', fontSize: 22, marginBottom: 16 }}>
-        Community
-      </h2>
-
-      <div className="ew-section">
-        <div className="ew-section__title">Discourse Forum</div>
-        {user ? (
-          <>
-            <div className="ew-discourse__status">
-              <div className="ew-discourse__connected">
-                Connected as @{user.username}
-              </div>
-              {user.unread_notifications > 0 && (
-                <span style={{
-                  background: 'var(--ew-danger)',
-                  color: 'white',
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 10,
-                  fontWeight: 600,
-                }}>
-                  {user.unread_notifications}
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
-              <button
-                className="ew-btn ew-btn--ghost"
-                onClick={() => window.open('https://forum.strandsnation.xyz', '_blank')}
-              >
-                Open Forum
-              </button>
-              <button className="ew-btn ew-btn--danger" onClick={handleDisconnect}>
-                Disconnect
-              </button>
-            </div>
-          </>
-        ) : (
-          <div>
-            <p style={{ fontSize: 14, color: 'var(--ew-text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
-              Connect to the Strands Nation community forum. Access discussions,
-              announcements, and support from within Everywear OS.
-            </p>
-            <button className="ew-btn" onClick={handleConnect}>
-              Connect Discourse
-            </button>
-          </div>
-        )}
-      </div>
-
-      {user && (
-        <div className="ew-section">
-          <div className="ew-section__title">Latest Posts</div>
-          {posts.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--ew-text-faint)' }}>No recent posts</p>
-          ) : (
-            posts.map((post) => (
-              <div
-                key={post.id}
-                style={{
-                  padding: '12px 0',
-                  borderBottom: '1px solid var(--ew-border)',
-                  cursor: 'pointer',
-                }}
-                onClick={() => window.open(post.topic_url, '_blank')}
-              >
-                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
-                  {post.topic_title}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ew-text-muted)' }}>
-                  {post.author} &middot; {post.category}
-                </div>
-              </div>
-            ))
-          )}
+    <div className="dc-panel">
+      <div className="dc-webview-toolbar">
+        <span className="dc-webview-toolbar__title">Strands Nation Community</span>
+        <span className="dc-webview-toolbar__url">{COMMUNITY_URL}</span>
+        <div className="dc-webview-toolbar__actions">
+          <button className="dc-webview-toolbar__btn" onClick={handleReload} title="Reload">
+            &#8635;
+          </button>
+          <button className="dc-webview-toolbar__btn" onClick={handleOpenExternal} title="Open in browser">
+            &#8599;
+          </button>
         </div>
-      )}
+      </div>
+      <iframe
+        ref={iframeRef}
+        src={COMMUNITY_URL}
+        className="dc-webview-iframe"
+        title="Strands Nation Community"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      />
     </div>
   );
 }

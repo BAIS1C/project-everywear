@@ -3,6 +3,10 @@ import { listen } from '@tauri-apps/api/event';
 import { open } from '@tauri-apps/plugin-dialog';
 import { ResolutionPicker, RESOLUTION_PRESETS, type Resolution } from '../components/ResolutionPicker';
 import * as api from '../lib/transport';
+import { LockedFeatureCard, getLogger } from '@everywear/shared';
+import { vaultRegisterImage } from '@everywear/transport';
+
+const log = getLogger('1magen');
 
 function joinPath(dir: string, filename: string) {
   if (dir.endsWith('\\') || dir.endsWith('/')) return `${dir}${filename}`;
@@ -32,6 +36,11 @@ export function ImagenCore() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<api.GenerationResult | null>(null);
   const [savedPath, setSavedPath] = useState<string | null>(null);
+  const [vaultSaveState, setVaultSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [vaultSaveError, setVaultSaveError] = useState<string | null>(null);
+  const [autoSaveToVault, setAutoSaveToVault] = useState<boolean>(() => {
+    try { return localStorage.getItem('1magen:auto_save_vault') === '1'; } catch { return false; }
+  });
 
   const refreshStatus = useCallback(async () => {
     const next = await api.getStatus();
@@ -114,8 +123,10 @@ export function ImagenCore() {
       return model;
     }
 
+    log.info('model', 'Loading model', { model_key: model.key });
     await api.loadModel(model.key);
     await refreshStatus();
+    log.info('model', 'Model loaded', { model_key: model.key });
     return model;
   }, [provisionRecommendedStack, recommended, refreshRecommendation, refreshStatus, stackReady]);
 
@@ -153,6 +164,15 @@ export function ImagenCore() {
     setError(null);
     setSavedPath(null);
 
+    const mode = sourceImagePath ? 'image-to-image' : 'text-to-image';
+    const traceId = log.beginTrace('generation', 'Starting image generation', { mode });
+    log.info('generation', 'Generate request', {
+      mode,
+      prompt: prompt.slice(0, 100),
+      width: resolution.width,
+      height: resolution.height,
+    });
+
     try {
       await ensureModelLoaded();
       const parsedSeed = Number(seedText);
@@ -173,13 +193,45 @@ export function ImagenCore() {
           });
 
       setResult(next);
+      setVaultSaveState('idle');
+      setVaultSaveError(null);
 
       const filename = `1magen-${Date.now()}-${next.seed}.png`;
       const fullPath = joinPath(outputDir, filename);
       await api.saveImage(next.image_base64, fullPath);
       setSavedPath(fullPath);
+
+      log.endTrace('generation', 'Image generated successfully', {
+        output_path: fullPath,
+        width: resolution.width,
+        height: resolution.height,
+        duration_secs: next.elapsed_secs,
+        seed: next.seed,
+      });
+
+      // Auto-save to vault if enabled
+      if (autoSaveToVault) {
+        try {
+          await vaultRegisterImage({
+            title: `Image ${new Date().toISOString().slice(0, 10)} ${prompt.trim().slice(0, 40)}`,
+            filePath: fullPath,
+            width: resolution.width,
+            height: resolution.height,
+            prompt: prompt.trim(),
+            tags: ['1magen', 'image'],
+          });
+          setVaultSaveState('saved');
+          log.info('vault', 'Image auto-saved to vault', { path: fullPath });
+        } catch (err) {
+          setVaultSaveState('error');
+          setVaultSaveError(err instanceof Error ? err.message : 'Vault save failed');
+          log.error('vault', 'Vault auto-save failed', { error: err instanceof Error ? err.message : String(err) });
+        }
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setError(errMsg);
+      log.error('generation', 'Image generation failed', { error: errMsg, trace_id: traceId });
     } finally {
       setGenerating(false);
     }
@@ -262,30 +314,24 @@ export function ImagenCore() {
 
           <div className="imagen-field">
             <label className="imagen-field__label">Style Patch (LoRA)</label>
-            <div className="imagen-dropzone imagen-dropzone--disabled">
-              <div className="imagen-dropzone__thumb">LoRA</div>
-              <div className="imagen-dropzone__body">
-                <div className="imagen-dropzone__title">Drag a style patch here</div>
-                <div className="imagen-dropzone__copy">
-                  Apparent drag-and-drop card for LoRA-flavoured generation modifiers.
-                </div>
-              </div>
-              <span className="imagen-badge imagen-badge--ghost">Coming Soon</span>
-            </div>
+            <LockedFeatureCard
+              title="LoRA Style Patches"
+              description="Drag-and-drop style patches for LoRA-flavoured generation modifiers. Train and apply custom aesthetic presets."
+              icon="🎨"
+              tier="pro"
+              progress="in-development"
+            />
           </div>
 
           <div className="imagen-field">
             <label className="imagen-field__label">Task Shard (Workflow)</label>
-            <div className="imagen-dropzone imagen-dropzone--disabled">
-              <div className="imagen-dropzone__thumb">Flow</div>
-              <div className="imagen-dropzone__body">
-                <div className="imagen-dropzone__title">Drop a task shard here</div>
-                <div className="imagen-dropzone__copy">
-                  Workflow thumbnails will later inject structured generation instructions into the run.
-                </div>
-              </div>
-              <span className="imagen-badge imagen-badge--ghost">Coming Soon</span>
-            </div>
+            <LockedFeatureCard
+              title="Task Shard Workflows"
+              description="Drop a task shard to inject structured generation instructions. Workflow thumbnails drive multi-step generation pipelines."
+              icon="🔧"
+              tier="pro"
+              progress="planned"
+            />
           </div>
 
           <div className="imagen-field">
@@ -331,6 +377,17 @@ export function ImagenCore() {
           )}
           {downloadLabel && <div className="imagen-field__hint">{downloadLabel}</div>}
           {savedPath && <div className="imagen-field__hint">Saved to {savedPath}</div>}
+          <label className="imagen-field__hint" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={autoSaveToVault}
+              onChange={(e) => {
+                setAutoSaveToVault(e.target.checked);
+                try { localStorage.setItem('1magen:auto_save_vault', e.target.checked ? '1' : '0'); } catch {}
+              }}
+            />
+            Auto-save to vault
+          </label>
           {error && <div className="imagen-error">{error}</div>}
         </section>
 
@@ -347,6 +404,50 @@ export function ImagenCore() {
                 <span>{result.elapsed_secs.toFixed(1)}s</span>
                 <span>seed:{result.seed}</span>
               </div>
+              {/* Save to Vault */}
+              {savedPath && (
+                <div className="imagen-output__vault-actions">
+                  {vaultSaveState === 'saved' ? (
+                    <span className="imagen-vault-saved" style={{ color: 'var(--ew-status-green)' }}>
+                      Saved to Vault
+                    </span>
+                  ) : vaultSaveState === 'saving' ? (
+                    <span style={{ color: 'var(--ew-text-muted)', fontSize: '11px' }}>
+                      Saving to vault...
+                    </span>
+                  ) : (
+                    <button
+                      className="imagen-secondary-btn"
+                      onClick={async () => {
+                        setVaultSaveState('saving');
+                        setVaultSaveError(null);
+                        try {
+                          await vaultRegisterImage({
+                            title: `Image ${new Date().toISOString().slice(0, 10)} ${prompt.trim().slice(0, 40)}`,
+                            filePath: savedPath,
+                            width: resolution.width,
+                            height: resolution.height,
+                            prompt: prompt.trim(),
+                            tags: ['1magen', 'image'],
+                          });
+                          setVaultSaveState('saved');
+                          setTimeout(() => setVaultSaveState('idle'), 3000);
+                        } catch (err) {
+                          setVaultSaveState('error');
+                          setVaultSaveError(err instanceof Error ? err.message : 'Vault save failed');
+                        }
+                      }}
+                    >
+                      Save to Vault
+                    </button>
+                  )}
+                  {vaultSaveState === 'error' && vaultSaveError && (
+                    <span style={{ color: 'var(--ew-status-red)', fontSize: '10px' }}>
+                      {vaultSaveError}
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <div className="imagen-output__empty">

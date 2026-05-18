@@ -10,8 +10,14 @@ publish.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 applet-ipc = { workspace = true }
+async-trait = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
+llama-cpp-2 = { workspace = true }
+model-manager = { workspace = true }
+encoding_rs = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true }

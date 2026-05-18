@@ -38,11 +38,12 @@ tauri-plugin-process = "2"
 
 # Inference FFI
 diffusion-rs = { version = "0.1", features = ["cuda"] }
-# llama-cpp-2 = "0.1"  # uncomment when Kasai applet joins
+llama-cpp-2 = { version = "0.1", features = ["cuda"] }
 
 # Async
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
+async-trait = "0.1"
 
 # HTTP
 reqwest = { version = "0.12", features = ["stream", "json", "multipart"] }
@@ -71,6 +72,7 @@ tower-http = { version = "0.6", features = ["cors", "fs"] }
 
 # Audio analysis
 aubio-rs = "0.2"
+cpal = "0.15"
 symphonia = { version = "0.5", features = ["all"] }
 
 # Caching

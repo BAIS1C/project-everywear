@@ -61,5 +61,8 @@ npm-debug.log*
 /MIGRATION_ARCHITECTURE.md
 /WIKI.md
 
+# LTX workflow JSON (proprietary, local only)
+/LTX*.json
+
 # Reference materials (local only)
 /*.html

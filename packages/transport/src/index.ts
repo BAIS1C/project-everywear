@@ -13,3 +13,38 @@
 
 export { createTransport } from './transport';
 export type { Transport, TransportConfig } from './types';
+
+// Vault — Tauri invoke wrappers for the Everywear Vault
+export {
+  vaultSearch,
+  vaultGetItem,
+  vaultGetStats,
+  vaultSetFavorite,
+  vaultSetTags,
+  vaultDeleteItem,
+  vaultRegisterImage,
+  vaultRegisterAudio,
+  vaultRegisterVideo,
+  vaultFileUrl,
+  vaultThumbnailUrl,
+} from './vault';
+export type {
+  VaultItem,
+  VaultSearchResponse,
+  VaultStats,
+  RegisterImageParams,
+  RegisterAudioParams,
+  RegisterVideoParams,
+} from './vault';
+
+// Logging types — session logging, bug reports, system info
+export type {
+  LogLevel,
+  LogCategory,
+  LogEntry,
+  SessionLog,
+  SessionSummary,
+  BugReportPayload,
+  SystemInfo,
+} from './logging';
+export { LOG_CATEGORY_META } from './logging';

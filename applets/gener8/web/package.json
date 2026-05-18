@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@everywear/ewds": "workspace:*",
+    "@everywear/ewds": "*",
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
     "@tauri-apps/api": "^2.0.0",
     "lucide-react": "^0.383.0",
     "react": "^18.3.0",

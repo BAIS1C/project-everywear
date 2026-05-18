@@ -72,6 +72,11 @@
   --ew-primary-l: 0.72;
   --ew-primary-c: 0.12;
 
+  /* LED / traffic-light status colors (window controls, indicators) */
+  --ew-status-green: #28C840;
+  --ew-status-amber: #FFBD2E;
+  --ew-status-red: #FF5F57;
+
   /* Corner cuts — TR+BL directional cut (NE-SW grain).
      Cut by default on all backing boxes/tombstones per Sean 2026-04-18.
      TL and BR stay square. Opt-out by setting clip-path: none per-component. */

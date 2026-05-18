@@ -7,5 +7,11 @@
 //!
 //! Trait shards are JSON-serializable, versionable, and composable.
 
-pub mod shard;
 pub mod agent;
+pub mod shard;
+
+pub use agent::AgentIdentity;
+pub use shard::{
+    deserialize_strands_avatar_v1, AestheticShard, MaitManifest, MaitStore, ManifestSource,
+    STRANDS_AVATAR_V1,
+};

@@ -14,6 +14,7 @@ import { Routes, Route } from 'react-router-dom';
 import { useTheme } from '@everywear/ewds';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { DawTransportBar } from './components/DawTransportBar';
 
 // Lazy-load heavy views
 const CreateView = lazy(() => import('./views/CreateView'));
@@ -32,16 +33,19 @@ export function App() {
         onToggle={() => setSidebarCollapsed((c) => !c)}
       />
 
-      {/* Main content area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        <Suspense fallback={<LoadingSpinner />}>
-          <Routes>
-            <Route path="/" element={<CreateView />} />
-            <Route path="/library" element={<LibraryView />} />
-            <Route path="/settings" element={<SettingsView />} />
-          </Routes>
-        </Suspense>
-      </main>
+      {/* Main content area + transport */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<CreateView />} />
+              <Route path="/library" element={<LibraryView />} />
+              <Route path="/settings" element={<SettingsView />} />
+            </Routes>
+          </Suspense>
+        </main>
+        <DawTransportBar />
+      </div>
     </div>
   );
 }

@@ -12,6 +12,9 @@
     "applets/s3studio",
     "applets/3nvizen",
     "applets/kasai",
+    "applets/character-studio",
+    "applets/gener8/web",
+    "applets/vid/web",
     "applets/mymories",
     "applets/strands-game"
   ],

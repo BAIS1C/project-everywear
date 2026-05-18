@@ -83,7 +83,8 @@ pub async fn boot(mgr: Arc<Mutex<AceServerManager>>) -> Result<()> {
 /// Search order for the ace-server binary:
 ///   1. ~/.everywear/bin/ace-server/ace-server.exe  (platform standard)
 ///   2. Alongside the applet binary (dev layout)
-///   3. PATH lookup (debug builds only)
+///   3. Local-first discovery from ACE_SERVER_PATH/common installs/PATH
+///   4. ~/.everywear/bin/ace-server/ace-server-stub.js silence fallback
 fn locate_binary() -> Result<PathBuf> {
     let bin_name = if cfg!(target_os = "windows") {
         "ace-server.exe"
@@ -95,6 +96,17 @@ fn locate_binary() -> Result<PathBuf> {
     let platform = everywear_paths::bin_dir().join("ace-server").join(bin_name);
     if platform.exists() {
         return Ok(platform);
+    }
+
+    let stub = everywear_paths::bin_dir()
+        .join("ace-server")
+        .join("ace-server-stub.js");
+    if stub.exists() {
+        tracing::warn!(
+            path = %stub.display(),
+            "ace-server binary missing; using silence stub"
+        );
+        return Ok(stub);
     }
 
     // 2. Alongside the applet binary (dev)
@@ -128,10 +140,45 @@ fn locate_binary() -> Result<PathBuf> {
         }
     }
 
+    for candidate in discover_local_ace_candidates(bin_name) {
+        if candidate.exists() {
+            if let Some(parent) = platform.parent() {
+                std::fs::create_dir_all(parent).ok();
+            }
+            let _ = create_file_symlink(&candidate, &platform)
+                .or_else(|_| std::fs::copy(&candidate, &platform).map(|_| ()));
+            return Ok(candidate);
+        }
+    }
+
     Err(anyhow!(
         "ace-server binary not found. Expected at {}",
         platform.display()
     ))
+}
+
+fn discover_local_ace_candidates(bin_name: &str) -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    if let Ok(path) = std::env::var("ACE_SERVER_PATH") {
+        candidates.push(PathBuf::from(path));
+    }
+    candidates.push(
+        PathBuf::from(r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release")
+            .join(bin_name),
+    );
+    candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(bin_name));
+    candidates.push(PathBuf::from(r"C:\ACE-Step").join(bin_name));
+    candidates
+}
+
+#[cfg(windows)]
+fn create_file_symlink(source: &Path, target: &Path) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_file(source, target)
+}
+
+#[cfg(not(windows))]
+fn create_file_symlink(source: &Path, target: &Path) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, target)
 }
 
 fn resolve_models_dir() -> PathBuf {
@@ -163,6 +210,20 @@ fn find_model_file(models_dir: &Path, pattern: &str) -> Option<PathBuf> {
 }
 
 fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
+    let is_stub = bin
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == "ace-server-stub.js");
+
+    if is_stub {
+        let node = find_node()?;
+        let mut cmd = Command::new(node);
+        cmd.args([bin.to_string_lossy().as_ref(), "--port", &port.to_string()])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        return spawn_drained(cmd);
+    }
+
     if find_model_file(models_dir, "xl-base").is_none()
         && find_model_file(models_dir, "xl-turbo").is_none()
     {
@@ -206,6 +267,10 @@ fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
     }
 
+    spawn_drained(cmd)
+}
+
+fn spawn_drained(mut cmd: Command) -> Result<Child> {
     let mut child = cmd.spawn()?;
 
     // Drain stdout/stderr to prevent pipe buffer deadlock
@@ -233,6 +298,15 @@ fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
     }
 
     Ok(child)
+}
+
+fn find_node() -> Result<PathBuf> {
+    let bin = if cfg!(target_os = "windows") {
+        "node.exe"
+    } else {
+        "node"
+    };
+    which::which(bin).map_err(|_| anyhow!("node runtime not found for ACE silence stub"))
 }
 
 async fn wait_for_ready(url: &str) -> Result<()> {

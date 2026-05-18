@@ -106,6 +106,8 @@ pub struct AppState {
     pub ace: Arc<Mutex<ace_server::AceServerManager>>,
     /// Video encoder manager.
     pub encoder: Arc<Mutex<video_encoder::VideoEncoderManager>>,
+    /// Whisper forced-alignment sidecar manager.
+    pub whisper_align: Arc<Mutex<whisper_align::WhisperAlignManager>>,
     /// Current licence tier (HMAC-verified from shell).
     pub tier: Arc<Mutex<LicenceTier>>,
     /// HTTP client for proxying to ace-server and health probes.
@@ -226,6 +228,7 @@ async fn main() {
     let state = Arc::new(AppState {
         ace: Arc::new(Mutex::new(ace_server::AceServerManager::new())),
         encoder: Arc::new(Mutex::new(video_encoder::VideoEncoderManager::new())),
+        whisper_align: Arc::new(Mutex::new(whisper_align::WhisperAlignManager::new())),
         tier: tier_handle,
         http: reqwest::Client::new(),
         ipc_secret: ipc_secret.clone(),
@@ -269,6 +272,17 @@ async fn main() {
         tokio::spawn(async move {
             if let Err(e) = video_encoder::boot(encoder_mgr, None).await {
                 warn!(error = %e, "Video encoder sidecar did not boot");
+            }
+        });
+    }
+
+    {
+        let whisper_mgr = state.whisper_align.clone();
+        tokio::spawn(async move {
+            // TODO(sidecar-packaging): bundle uv itself into resources/ before release.
+            // build.rs packages sidecar/whisper-align into resources/sidecar/whisper-align.
+            if let Err(e) = whisper_align::boot(whisper_mgr).await {
+                warn!(error = %e, "Whisper align sidecar did not boot; lyric alignment will be unavailable");
             }
         });
     }
@@ -409,6 +423,10 @@ async fn main() {
     {
         let mut enc = state.encoder.lock().await;
         enc.stop();
+    }
+    {
+        let mut whisper = state.whisper_align.lock().await;
+        whisper.stop();
     }
 
     // Send WithdrawCapabilities before disconnecting

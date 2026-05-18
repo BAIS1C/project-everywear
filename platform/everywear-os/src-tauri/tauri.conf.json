@@ -10,8 +10,10 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "Everywear OS",
         "width": 1400,
         "height": 900,
@@ -19,11 +21,28 @@
         "minHeight": 700,
         "center": true,
         "decorations": false,
-        "transparent": false
+        "transparent": false,
+        "visible": true
+      },
+      {
+        "label": "studio",
+        "title": "Everywear Studio",
+        "url": "about:blank",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 720,
+        "resizable": true,
+        "decorations": false,
+        "transparent": false,
+        "center": true,
+        "visible": false,
+        "shadow": true,
+        "acceptFirstMouse": true
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co"
+      "csp": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co; frame-src http://127.0.0.1:*"
     }
   },
   "plugins": {

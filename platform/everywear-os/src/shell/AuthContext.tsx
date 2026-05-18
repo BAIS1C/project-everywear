@@ -20,7 +20,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { createClient, type Session, type User } from '@supabase/supabase-js';
+import { createClient, type Session } from '@supabase/supabase-js';
 import { pushAuthState, clearAuth, type LicenceTier, type AuthReport } from '../lib/transport';
 
 // ── Supabase client (singleton) ──────────────────────────────────
@@ -41,8 +41,6 @@ export interface EverywearUser {
   isPaid: boolean;
   isPro: boolean;
 }
-
-type AuthMode = 'login' | 'signup' | 'otp-verify';
 
 interface AuthContextValue {
   user: EverywearUser | null;

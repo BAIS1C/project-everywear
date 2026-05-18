@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EveryWear Marketing Capture Harness</title>
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --sunken: #05060a;
+      --surface: rgba(20, 22, 30, .92);
+      --raised: rgba(31, 35, 48, .94);
+      --overlay: rgba(39, 45, 60, .97);
+      --border: rgba(255,255,255,.09);
+      --border-strong: rgba(255,255,255,.18);
+      --text: #e7edf5;
+      --muted: #a6b1c2;
+      --faint: #667085;
+      --primary: #00c2ff;
+      --primary-soft: rgba(0,194,255,.12);
+      --warm: #f9b960;
+      --success: #28c840;
+      --warning: #ffbd2e;
+      --danger: #ff5f57;
+      --premium: #8b5cf6;
+      --shadow: 0 28px 90px rgba(0,0,0,.44);
+      --glow: 0 0 32px rgba(0,194,255,.24);
+      --font-display: "Orbitron", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "Consolas", monospace;
+      --radius: 12px;
+    }
+    body[data-variant="ewd-clean"] {
+      --bg: #eef3f7;
+      --sunken: #dfe8ef;
+      --surface: rgba(255,255,255,.86);
+      --raised: rgba(255,255,255,.94);
+      --overlay: #ffffff;
+      --border: rgba(28,45,64,.12);
+      --border-strong: rgba(28,45,64,.24);
+      --text: #121923;
+      --muted: #516173;
+      --faint: #7a8896;
+      --primary: #0077b8;
+      --primary-soft: rgba(0,119,184,.10);
+      --warm: #b87516;
+      --success: #168a4f;
+      --warning: #b87516;
+      --danger: #c24141;
+      --premium: #6d5bd0;
+      --shadow: 0 24px 70px rgba(23,40,62,.18);
+      --glow: 0 0 0 rgba(0,0,0,0);
+      --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+      --radius: 10px;
+    }
+    body[data-variant="ewd-signal"] {
+      --bg: #07090d;
+      --sunken: #030509;
+      --surface: rgba(14,18,28,.9);
+      --raised: rgba(24,31,48,.95);
+      --overlay: rgba(31,39,58,.98);
+      --border: rgba(0,194,255,.18);
+      --border-strong: rgba(0,194,255,.34);
+      --text: #edf8ff;
+      --muted: #a9c4d8;
+      --faint: #67869a;
+      --primary: #00d5ff;
+      --primary-soft: rgba(0,213,255,.16);
+      --warm: #ffd166;
+      --success: #2ee879;
+      --warning: #ffd166;
+      --danger: #ff5570;
+      --premium: #bf7bff;
+      --shadow: 0 32px 110px rgba(0,0,0,.55);
+      --glow: 0 0 44px rgba(0,213,255,.34);
+      --radius: 14px;
+    }
+    body[data-variant="ewd-darkops"] {
+      --bg: #0f0d0b;
+      --sunken: #080706;
+      --surface: #191612;
+      --raised: #211d18;
+      --overlay: #261f18;
+      --border: rgba(226,184,104,.22);
+      --border-strong: rgba(226,184,104,.42);
+      --text: #eee3d1;
+      --muted: #a99b85;
+      --faint: #756b5c;
+      --primary: #ff8a00;
+      --primary-soft: rgba(255,138,0,.15);
+      --warm: #d4571f;
+      --success: #7fb069;
+      --warning: #ffb000;
+      --danger: #d4571f;
+      --premium: #b7a27a;
+      --shadow: 0 18px 0 rgba(0,0,0,.45);
+      --glow: none;
+      --font-display: "IBM Plex Mono", "Consolas", monospace;
+      --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --radius: 0;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      background:
+        radial-gradient(980px 540px at 78% 12%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 62%),
+        radial-gradient(900px 600px at 8% 90%, color-mix(in srgb, var(--premium) 11%, transparent), transparent 64%),
+        linear-gradient(135deg, color-mix(in srgb, var(--bg) 82%, #000), var(--bg));
+      color: var(--text);
+      font-family: var(--font-body);
+      letter-spacing: 0;
+    }
+    body[data-cutout="true"] { background: transparent; }
+    .stage {
+      width: 3840px;
+      height: 2160px;
+      transform-origin: top left;
+      position: relative;
+      padding: 132px 168px;
+    }
+    .watermark {
+      position: absolute;
+      right: 170px;
+      bottom: 80px;
+      color: var(--faint);
+      font: 700 22px var(--font-mono);
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      opacity: .42;
+    }
+    .frame {
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      box-shadow: var(--shadow), var(--glow);
+      overflow: hidden;
+      position: relative;
+    }
+    body[data-variant="ewd-darkops"] .frame { border-width: 2px; }
+    .titlebar {
+      height: 62px;
+      background: color-mix(in srgb, var(--sunken) 86%, transparent);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      font: 800 20px var(--font-display);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .window-controls { display: flex; gap: 11px; align-items: center; }
+    .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--faint); }
+    body[data-variant="ewd-darkops"] .dot { border-radius: 0; }
+    .dot.red { background: var(--danger); }
+    .dot.yellow { background: var(--warning); }
+    .dot.green { background: var(--success); }
+    .shell { display: grid; grid-template-columns: 360px 1fr; height: calc(100% - 62px); }
+    .sidebar {
+      background: color-mix(in srgb, var(--sunken) 86%, transparent);
+      border-right: 1px solid var(--border);
+      padding: 30px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .profile-card { padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+    .avatar {
+      width: 72px; height: 72px; display: grid; place-items: center;
+      background: var(--primary-soft); border: 1px solid var(--border-strong);
+      border-radius: var(--radius); color: var(--primary); font: 900 24px var(--font-display);
+    }
+    .profile-name { margin-top: 14px; font: 800 24px var(--font-display); }
+    .profile-mail { margin-top: 4px; color: var(--muted); font: 600 17px var(--font-mono); }
+    .tier { display: inline-block; margin-top: 12px; padding: 6px 12px; border: 1px solid var(--border-strong); color: var(--primary); background: var(--primary-soft); border-radius: 999px; font: 800 15px var(--font-mono); text-transform: uppercase; }
+    body[data-variant="ewd-darkops"] .tier { border-radius: 0; }
+    .nav { display: grid; gap: 8px; }
+    .nav-title { margin: 10px 8px 0; font: 800 13px var(--font-mono); color: var(--faint); text-transform: uppercase; letter-spacing: 4px; }
+    .nav-item {
+      min-height: 52px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+      border-radius: var(--radius); color: var(--muted); font: 700 19px var(--font-body);
+    }
+    .nav-item.active { background: var(--primary-soft); color: var(--text); border: 1px solid var(--border-strong); }
+    .nav-icon { width: 28px; color: var(--primary); text-align: center; font: 900 16px var(--font-mono); }
+    .side-footer { margin-top: auto; border-top: 1px solid var(--border); padding-top: 18px; color: var(--muted); font: 600 16px var(--font-mono); line-height: 1.6; }
+    .main { padding: 44px 54px; overflow: hidden; position: relative; }
+    h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 1px; }
+    h1 { font-size: 56px; line-height: 1; }
+    h2 { font-size: 38px; }
+    h3 { font-size: 26px; }
+    p { margin: 0; }
+    .subtitle { margin-top: 14px; color: var(--muted); font-size: 24px; line-height: 1.35; max-width: 1080px; }
+    .grid { display: grid; gap: 24px; }
+    .cards { grid-template-columns: repeat(4, minmax(0,1fr)); margin-top: 42px; }
+    .card {
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: 0 16px 42px rgba(0,0,0,.12);
+      position: relative;
+      overflow: hidden;
+    }
+    .card.feature::after {
+      content: "";
+      position: absolute; inset: 0 0 auto 0; height: 4px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+    }
+    .card.locked { opacity: .62; }
+    .glyph {
+      width: 76px; height: 76px; display: grid; place-items: center;
+      border: 1px solid var(--border-strong); border-radius: var(--radius);
+      background: var(--primary-soft); color: var(--primary);
+      font: 900 25px var(--font-display);
+    }
+    .card-title { margin-top: 20px; font: 900 28px var(--font-display); }
+    .card-copy { margin-top: 12px; color: var(--muted); font-size: 20px; line-height: 1.35; min-height: 82px; }
+    .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+    .tag { padding: 5px 9px; border: 1px solid var(--border); color: var(--muted); font: 800 13px var(--font-mono); text-transform: uppercase; border-radius: 999px; }
+    body[data-variant="ewd-darkops"] .tag { border-radius: 0; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid var(--border-strong); background: var(--primary-soft); color: var(--primary); border-radius: 999px; font: 900 14px var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+    body[data-variant="ewd-darkops"] .pill { border-radius: 0; }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px;
+    }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .three { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .label { color: var(--faint); font: 800 15px var(--font-mono); text-transform: uppercase; letter-spacing: 2px; }
+    .value { color: var(--text); font: 700 22px var(--font-body); }
+    .input, .textarea, .select {
+      width: 100%; background: color-mix(in srgb, var(--sunken) 70%, transparent);
+      color: var(--text); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px 20px; font: 600 22px var(--font-body); outline: none;
+    }
+    .textarea { min-height: 170px; resize: none; line-height: 1.36; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+      min-height: 58px; padding: 0 26px; border: 1px solid var(--border-strong);
+      border-radius: var(--radius); background: var(--raised); color: var(--text);
+      font: 900 16px var(--font-mono); text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn.primary { background: var(--primary); color: color-mix(in srgb, var(--bg) 90%, #000); border: 0; }
+    .btn.ghost { background: transparent; color: var(--muted); }
+    .progress { height: 14px; border: 1px solid var(--border); background: var(--sunken); border-radius: 999px; overflow: hidden; }
+    body[data-variant="ewd-darkops"] .progress { border-radius: 0; }
+    .bar { height: 100%; width: var(--w, 50%); background: linear-gradient(90deg, var(--primary), var(--warm)); box-shadow: var(--glow); }
+    .metric { font: 900 48px var(--font-display); color: var(--primary); }
+    .mini { color: var(--muted); font: 700 17px var(--font-mono); }
+    .table { display: grid; gap: 10px; }
+    .table-row { display: grid; grid-template-columns: 1.4fr .8fr .7fr .6fr .6fr; gap: 18px; align-items: center; min-height: 72px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--raised) 70%, transparent); }
+    .thumb { width: 52px; height: 52px; border-radius: 8px; background: linear-gradient(135deg, var(--primary-soft), color-mix(in srgb, var(--premium) 22%, transparent)); border: 1px solid var(--border); }
+    body[data-variant="ewd-darkops"] .thumb { border-radius: 0; }
+    .modal-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(8px); }
+    .modal { width: 780px; background: var(--overlay); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; }
+    .login-wrap { height: 100%; display: grid; place-items: center; }
+    .login-card { width: 720px; padding: 54px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow), var(--glow); }
+    .login-title { font: 900 54px var(--font-display); }
+    .login-sub { margin-top: 12px; color: var(--muted); font-size: 25px; }
+    .field { display: grid; gap: 10px; margin-top: 24px; }
+    .field label { color: var(--muted); font: 800 15px var(--font-mono); text-transform: uppercase; letter-spacing: 2px; }
+    .auth-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+    .spinner { width: 82px; height: 82px; border: 7px solid var(--border); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 26px; }
+    body[data-variant="ewd-darkops"] .spinner { border-radius: 0; }
+    .app-viewport { height: 100%; display: grid; grid-template-rows: 56px 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--sunken); }
+    .app-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0 22px; background: var(--surface); border-bottom: 1px solid var(--border); font: 900 17px var(--font-mono); text-transform: uppercase; letter-spacing: 2px; }
+    .pane-grid { height: 100%; display: grid; grid-template-columns: 360px 1fr 380px; }
+    .pane { padding: 24px; border-right: 1px solid var(--border); overflow: hidden; }
+    .pane:last-child { border-right: 0; }
+    .chat { display: grid; grid-template-rows: 1fr 188px; height: 100%; }
+    .chat-scroll { padding: 24px; display: grid; align-content: end; gap: 20px; }
+    .msg { display: grid; grid-template-columns: 58px 1fr; gap: 16px; align-items: start; }
+    .msg-avatar { width: 58px; height: 58px; display: grid; place-items: center; background: var(--primary-soft); border: 1px solid var(--border); color: var(--primary); border-radius: var(--radius); font: 900 15px var(--font-mono); }
+    .msg-body { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; font-size: 22px; line-height: 1.38; }
+    .composer { padding: 20px 24px; border-top: 1px solid var(--border); background: var(--surface); }
+    .wave { height: 132px; display: grid; grid-template-columns: repeat(56,1fr); gap: 5px; align-items: center; }
+    .wave span { display: block; height: calc(18px + var(--h) * 1px); background: linear-gradient(180deg, var(--primary), var(--warm)); border-radius: 999px; opacity: .86; }
+    body[data-variant="ewd-darkops"] .wave span { border-radius: 0; }
+    .timeline { display: grid; grid-template-columns: repeat(9,1fr); gap: 10px; height: 110px; }
+    .clip { border: 1px solid var(--border); border-radius: var(--radius); background: var(--primary-soft); }
+    .preview {
+      border: 1px solid var(--border); border-radius: var(--radius); background:
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 22%, transparent), transparent 36%),
+        linear-gradient(315deg, color-mix(in srgb, var(--premium) 22%, transparent), transparent 40%),
+        var(--sunken);
+      min-height: 620px; display: grid; place-items: center; text-align: center; padding: 38px;
+    }
+    .hero-image {
+      width: 100%; aspect-ratio: 16/9; border: 1px solid var(--border); border-radius: var(--radius);
+      background:
+        radial-gradient(circle at 30% 26%, color-mix(in srgb, var(--primary) 40%, transparent), transparent 22%),
+        radial-gradient(circle at 70% 62%, color-mix(in srgb, var(--warm) 32%, transparent), transparent 20%),
+        linear-gradient(135deg, #111827, #05060a);
+    }
+    .status-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; background: var(--success); box-shadow: 0 0 18px currentColor; color: var(--success); }
+    body[data-variant="ewd-darkops"] .status-dot { border-radius: 0; }
+    .status-dot.off { background: var(--danger); color: var(--danger); }
+    .status-dot.warn { background: var(--warning); color: var(--warning); }
+    .empty-center { height: 100%; display: grid; place-items: center; text-align: center; color: var(--muted); }
+    .empty-mark { width: 116px; height: 116px; display: grid; place-items: center; border: 1px solid var(--border-strong); background: var(--primary-soft); color: var(--primary); border-radius: var(--radius); margin: 0 auto 22px; font: 900 42px var(--font-display); }
+    .skeleton { background: linear-gradient(90deg, color-mix(in srgb, var(--raised) 70%, transparent), color-mix(in srgb, var(--primary) 10%, transparent), color-mix(in srgb, var(--raised) 70%, transparent)); border-radius: var(--radius); min-height: 28px; }
+  </style>
+</head>
+<body data-variant="ewd-clean">
+  <div id="root"></div>
+  <script>
+    const variants = {
+      "ewd-clean": "EWD Clean",
+      "ewd-signal": "EWD Signal",
+      "ewd-darkops": "EWD Dark Ops"
+    };
+
+    const applets = [
+      ["1M", "1magen", "Local image generation, editing, inpainting, and vault registration.", ["image", "diffusion", "vault"]],
+      ["G8", "Gener8", "ACE-Step music creation with DAW transport and project library.", ["music", "stems", "director"]],
+      ["3N", "3nvizen", "Text-to-video, image-to-video, camera motion, and retake workflows.", ["video", "ltx", "local"]],
+      ["KS", "Kasai", "Local agent with planning, tool calls, skills, and memory recall.", ["agent", "tools", "memory"]],
+      ["MY", "Mymories", "Personal vault with full text and vector search for local knowledge.", ["memory", "search", "private"]],
+      ["VD", "Vid Studio", "Audio reactive visuals, lyric timing, and export presets.", ["video", "lyrics", "export"]],
+      ["CS", "Character Studio", "VRM character staging, rigs, expressions, and scene references.", ["characters", "vrm", "creative"]],
+      ["SN", "Strands Game", "Game world launcher and modular ecosystem surface.", ["game", "world", "launcher"]]
+    ];
+
+    const vaultItems = [
+      ["Neon rain portrait - Kasai study", "image", "1magen", "24.8 MB", "May 18, 2026"],
+      ["Sovereign synthwave trailer cue", "audio", "gener8", "82.4 MB", "May 18, 2026"],
+      ["Lombok market establishing shot", "video", "3nvizen", "418 MB", "May 17, 2026"],
+      ["Voice stem - English guide vocal", "stem", "gener8", "38.6 MB", "May 17, 2026"],
+      ["Runtime orchestration diagram", "image", "kasai", "9.2 MB", "May 16, 2026"]
+    ];
+
+    const logs = [
+      ["20:41:22.184", "info", "shell", "Platform status hydrated", "{ gpu: RTX 5090, tier: creator_studio }"],
+      ["20:41:23.018", "info", "model", "Qwen3.6 primary slot loaded", "{ slot: Primary, vram: 20.5GB }"],
+      ["20:41:25.447", "warn", "sidecar", "3nvizen health check offline", "{ url: 127.0.0.1:8787 }"],
+      ["20:41:31.930", "info", "vault", "Registered generated audio asset", "{ applet: gener8 }"],
+      ["20:41:35.104", "error", "generation", "Video encoder fallback selected", "{ reason: nvenc busy }"]
+    ];
+
+    const captureScenes = [
+      ["auth-loading", "Auth loading", "platform/everywear-os/src/shell/AuthGate.tsx"],
+      ["auth-login", "Everywear ID login", "platform/everywear-os/src/shell/AuthGate.tsx"],
+      ["auth-signup", "Everywear ID signup", "platform/everywear-os/src/shell/AuthGate.tsx"],
+      ["auth-otp", "OTP verification", "platform/everywear-os/src/shell/AuthGate.tsx"],
+      ["shell-launcher", "Shell launcher desktop", "platform/everywear-os/src/panels/LauncherGrid.tsx"],
+      ["shell-folder-open", "Launcher folder expanded", "platform/everywear-os/src/panels/LauncherGrid.tsx"],
+      ["shell-active-applet", "Separate applet running banner", "platform/everywear-os/src/shell/ShellLayout.tsx"],
+      ["profile-view", "Profile identity", "platform/everywear-os/src/panels/ProfilePanel.tsx"],
+      ["profile-edit", "Profile edit state", "platform/everywear-os/src/panels/ProfilePanel.tsx"],
+      ["wallet-view", "Wallet panel", "platform/everywear-os/src/panels/WalletPanel.tsx"],
+      ["hardware-view", "Hardware and model assessment", "platform/everywear-os/src/panels/GpuPanel.tsx"],
+      ["settings-view", "Settings appearance", "platform/everywear-os/src/panels/SettingsPanel.tsx"],
+      ["logs-view", "Session logs", "platform/everywear-os/src/components/LogViewerPanel.tsx"],
+      ["bug-report-modal", "Bug report modal", "platform/everywear-os/src/components/BugReportModal.tsx", true],
+      ["vault-list", "Vault list", "applets/gener8/web/src/views/LibraryView.tsx"],
+      ["vault-detail", "Vault detail panel", "applets/gener8/web/src/components/VaultDetailPanel.tsx"],
+      ["vault-empty", "Vault empty/search state", "applets/gener8/web/src/views/LibraryView.tsx"],
+      ["vault-loading", "Vault loading state", "applets/gener8/web/src/views/LibraryView.tsx"],
+      ["applet-loading", "Applet loading skeleton", "platform/everywear-os/src/components/AppletLoadingSkeleton.tsx"],
+      ["applet-error", "Applet error boundary", "platform/everywear-os/src/components/AppletViewRouter.tsx"],
+      ["kasai-empty", "Kasai ready state", "applets/kasai/src/shell/KasaiCore.tsx"],
+      ["kasai-chat-tools", "Kasai chat and tool calls", "applets/kasai/src/shell/KasaiCore.tsx"],
+      ["kasai-skill", "Kasai skill detail", "applets/kasai/src/shell/KasaiCore.tsx"],
+      ["runtime-orchestration", "Runtime orchestration", "crates/mait/src; platform/everywear-os/src-tauri/src/vram_scheduler.rs"],
+      ["imagen-empty", "1magen prompt workbench", "applets/1magen/src/shell/ImagenCore.tsx"],
+      ["imagen-generating", "1magen provisioning/generating", "applets/1magen/src/shell/ImagenCore.tsx"],
+      ["imagen-result", "1magen result with vault save", "applets/1magen/src/shell/ImagenCore.tsx"],
+      ["threevizen-idle", "3nvizen idle/offline", "applets/3nvizen/src/ThreevizenCore.tsx"],
+      ["threevizen-generating", "3nvizen generation progress", "applets/3nvizen/src/ThreevizenCore.tsx"],
+      ["threevizen-result", "3nvizen completed preview", "applets/3nvizen/src/components/VideoPreview.tsx"],
+      ["gener8-create", "Gener8 create view", "applets/gener8/web/src/views/CreateView.tsx"],
+      ["gener8-progress", "Gener8 generation progress", "applets/gener8/web/src/views/CreateView.tsx"],
+      ["gener8-library", "Gener8 library", "applets/gener8/web/src/views/LibraryView.tsx"],
+      ["gener8-settings", "Gener8 settings", "applets/gener8/web/src/views/SettingsView.tsx"],
+      ["vid-studio", "Vid Studio runtime", "applets/vid/web/src/views/VidView.tsx"],
+      ["vid-export-modal", "Vid Studio export modal", "applets/vid/web/src/components/VideoGeneratorModal.tsx", true],
+      ["character-studio", "Character Studio placeholder", "applets/character-studio/src/CharacterStudioPlaceholder.tsx"],
+      ["installer-models", "Install/model workflow", "crates/model-manager/src; platform/everywear-os/src-tauri/src/setup.rs"],
+      ["file-browser", "File browser and project picker", "applets/1magen/src; applets/gener8/web/src"],
+      ["update-flow", "Update workflow", "platform/everywear-os/src-tauri/src/setup.rs"]
+    ];
+
+    window.CAPTURE_SCENES = captureScenes.map(([id, title, source, cutout]) => ({ id, title, source, cutout: !!cutout }));
+    window.CAPTURE_VARIANTS = variants;
+
+    function q(name, fallback) {
+      return new URLSearchParams(location.search).get(name) || fallback;
+    }
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function tagList(tags) { return `<div class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>`; }
+    function appCard(a, extra = "") {
+      return `<div class="card feature ${extra}"><div class="glyph">${a[0]}</div><div class="card-title">${a[1]}</div><div class="card-copy">${a[2]}</div>${tagList(a[3])}</div>`;
+    }
+    function titlebar(name = "Everywear OS") {
+      return `<div class="titlebar"><span>${name}</span><div class="window-controls"><span class="dot yellow"></span><span class="dot green"></span><span class="dot red"></span></div></div>`;
+    }
+    function sidebar(active = "Applets") {
+      const nav = ["Applets", "Profile", "Wallet", "Community", "Hardware", "Settings", "Vault", "Logs"];
+      const appnav = [["K","Kasai","on"],["3N","3nvizen","off"],["CS","Character Studio","on"]];
+      return `<aside class="sidebar">
+        <div class="profile-card"><div class="avatar">SU</div><div class="profile-name">Sean Uddin</div><div class="profile-mail">somo@metafintek.xyz</div><span class="tier">Creator Studio</span></div>
+        <nav class="nav">${nav.map(n => `<div class="nav-item ${active===n ? "active" : ""}"><span class="nav-icon">${n.slice(0,2).toUpperCase()}</span>${n}</div>`).join("")}</nav>
+        <div class="nav-title">Applets</div>
+        <nav class="nav">${appnav.map(a => `<div class="nav-item ${active===a[1] ? "active" : ""}"><span class="nav-icon">${a[0]}</span>${a[1]}<span style="margin-left:auto" class="status-dot ${a[2]==="off" ? "off" : ""}"></span></div>`).join("")}</nav>
+        <div class="side-footer"><span class="status-dot"></span> RTX 5090 - 26,420 MB free<br>1magen: Ultra Local Stack</div>
+      </aside>`;
+    }
+    function shell(active, content) { return `<div class="frame">${titlebar()}<div class="shell">${sidebar(active)}<main class="main">${content}</main></div></div>`; }
+    function appFrame(name, content) { return `<div class="app-viewport"><div class="app-toolbar"><span>${name}</span><button class="btn ghost" style="min-height:38px;padding:0 14px">Close</button></div>${content}</div>`; }
+    function tableRows(items = vaultItems) {
+      return `<div class="table">${items.map((i, idx) => `<div class="table-row"><div class="row" style="justify-content:flex-start"><div class="thumb"></div><div><div class="value">${esc(i[0])}</div><div class="mini">${esc(i[1])} - ${esc(i[2])}</div></div></div><div class="mini">${i[3]}</div><div class="mini">${i[4]}</div><div>${idx === 0 ? '<span class="pill">Favorite</span>' : '<span class="tag">Vault</span>'}</div><button class="btn ghost" style="min-height:40px">Open</button></div>`).join("")}</div>`;
+    }
+    function wave() {
+      return `<div class="wave">${Array.from({length:56},(_,i)=>`<span style="--h:${18 + Math.round(Math.abs(Math.sin(i*.55))*82)}"></span>`).join("")}</div>`;
+    }
+    function launcher(openFolder = false) {
+      const folder = `<div class="section" style="margin-top:34px"><div class="row"><div><h2>S3 Studio</h2><p class="subtitle" style="font-size:20px">Music, creator tools, and launchable local engines.</p></div><span class="pill">${openFolder ? "Expanded" : "Folder - 3 items"}</span></div>${openFolder ? `<div class="grid cards" style="grid-template-columns:repeat(3,1fr)">${applets.slice(1,4).map(a => appCard(a)).join("")}</div>` : ""}</div>`;
+      return shell("Applets", `<h1>Desktop</h1><p class="subtitle">8 applets available. Local apps launch through a shared GPU, model cache, vault, and signed IPC channel.</p><div class="grid cards">${applets.slice(0,4).map((a,i)=>appCard(a,i===3?"locked":"")).join("")}</div>${folder}`);
+    }
+    function kasai(state) {
+      const skills = [["MR","MyMory Recall","Vault-first retrieval before answering"],["CR","Code Review","Architecture-aware review skill"],["FO","File Organizer","Sort project files by convention"],["TD","Task Decomposer","Shard work across local agents"]];
+      const left = `<div class="pane"><div class="label">Skills 4</div><div class="grid" style="margin-top:16px">${skills.map((s,i)=>`<div class="section" style="padding:16px;background:${i===0&&state==='skill'?'var(--primary-soft)':'var(--surface)'}"><div class="row"><b>${s[0]}</b><span class="status-dot ${i===2?'warn':''}"></span></div><div class="value" style="font-size:19px;margin-top:8px">${s[1]}</div><div class="mini">${s[2]}</div></div>`).join("")}</div><div class="section" style="margin-top:22px"><div class="label">HOME-NODE</div><div class="value">RTX 5090 - 32GB</div><div class="mini">Primary: Qwen3.6 35B Q4<br>Encoder: Qwen3.5 9B Q8</div></div></div>`;
+      let center = `<div class="pane chat"><div class="chat-scroll"><div class="empty-center"><div><div class="empty-mark">K</div><h2>Kasai is ready</h2><p class="subtitle" style="font-size:21px">Local AI, no cloud, no limits. Type anything to begin.</p></div></div></div><div class="composer"><textarea class="textarea" style="min-height:92px" placeholder="Ask Kasai anything, or run a skill..."></textarea></div></div>`;
+      if (state === "chat") {
+        center = `<div class="pane chat"><div class="chat-scroll"><div class="msg"><div class="msg-avatar">YOU</div><div class="msg-body">Audit my launch stack and split the next implementation pass into task shards.</div></div><div class="msg"><div class="msg-avatar">K</div><div class="msg-body">I found three workstreams: model provisioning, vault metadata, and UI capture verification. I can run them locally and preserve your existing architecture.</div></div><div class="section"><div class="label">Tool calls</div><div class="row" style="margin-top:12px"><span>vault.search</span><span class="pill">done 184ms</span></div><div class="row" style="margin-top:12px"><span>repo.scan_routes</span><span class="pill">done 312ms</span></div><div class="row" style="margin-top:12px"><span>task.shard.plan</span><span class="pill">running</span></div></div></div><div class="composer"><textarea class="textarea" style="min-height:92px">Prepare the Code Review skill for Everywear OS shell changes.</textarea></div></div>`;
+      }
+      const right = state === "skill" ? `<div class="pane"><div class="label">Skill</div><h2 style="margin-top:10px">MyMory Recall</h2><p class="subtitle" style="font-size:20px">Searches the MyMory vault for prior decisions, context, and entity references before responding.</p><button class="btn primary" style="margin-top:24px">Prepare Run</button><div class="section" style="margin-top:28px"><div class="label">Status</div><div class="value">Loaded in context</div><div class="mini">Context cost: 2.4k tokens</div></div><div class="section" style="margin-top:22px"><div class="label">Slots</div><div class="mini">Primary online<br>Embedder online<br>Audit channel ready</div></div></div>` : `<div class="pane"><div class="empty-center"><div><div class="empty-mark">K</div><p class="value">Select a skill</p><p class="mini">Or start chatting in the center pane</p></div></div></div>`;
+      return shell("Kasai", appFrame("Kasai", `<div class="pane-grid">${left}${center}${right}</div>`));
+    }
+    function imagen(state) {
+      const left = `<section class="section"><div class="field"><label>Prompt</label><textarea class="textarea">A cinematic editorial portrait of Kasai, local-first AI consigliere, sharp gaze, black technical jacket with amber and cyan interface glows, rain-sheened city bokeh.</textarea></div><div class="split" style="margin-top:20px"><div class="field"><label>Resolution</label><div class="row"><span class="pill">1024 x 1024</span><span class="pill">16:9</span></div></div><div class="field"><label>Seed</label><input class="input" value="42"></div></div><div class="field"><label>Output Folder</label><input class="input" value="Pictures\\Everywear\\1magen"></div><div class="section" style="margin-top:20px"><div class="label">Style Patch (LoRA)</div><div class="mini">Pro feature in development - custom style patch slots</div></div><div class="row" style="margin-top:22px"><button class="btn primary">${state === "generating" ? "Generating..." : "Generate Image"}</button><span class="pill">${state === "generating" ? "Provisioning stack" : "Local stack ready"}</span></div>${state==="generating"?'<div style="margin-top:18px" class="progress"><div class="bar" style="--w:62%"></div></div><p class="mini" style="margin-top:10px">z-image-turbo-q4 - 62%</p>':""}</section>`;
+      let right = `<section class="preview"><div><div class="empty-mark">1M</div><h2>Output preview</h2><p class="subtitle" style="font-size:22px">Generated images appear here and can be saved automatically to the vault.</p></div></section>`;
+      if (state === "result") right = `<section class="section"><div class="hero-image"></div><div class="row" style="margin-top:20px"><span class="pill">1024 x 1024</span><span class="pill">6.8s</span><span class="pill">seed:42</span></div><div class="section" style="margin-top:22px"><div class="row"><div><div class="value">Saved to Vault</div><div class="mini">Kasai portrait study - prompt and seed metadata attached</div></div><button class="btn">Open Vault</button></div></div></section>`;
+      return shell("Applets", appFrame("1magen", `<div class="split" style="height:100%;padding:28px">${left}${right}</div>`));
+    }
+    function threevizen(state) {
+      const sidebar = `<aside class="pane"><div class="label">Generation Mode</div><div class="three" style="grid-template-columns:1fr;gap:12px;margin-top:14px"><span class="pill">Text to Video</span><span class="tag">Image to Video</span><span class="tag">Audio to Video</span></div><div class="field"><label>Prompt</label><textarea class="textarea">Wide cinematic shot of a sovereign AI studio at night, local GPUs glowing behind glass, camera slowly dolly-in, rain reflections.</textarea></div><div class="split"><div class="field"><label>Duration</label><input class="input" value="8s"></div><div class="field"><label>Steps</label><input class="input" value="30"></div></div><div class="field"><label>Camera Motion</label><input class="input" value="slow dolly-in, parallax light sweep"></div><button class="btn primary" style="margin-top:20px">${state==="generating"?"Cancel":"Generate Video"}</button></aside>`;
+      let preview = `<main class="pane" style="border-right:0"><div class="preview"><div><div class="empty-mark">3N</div><h2>LTX sidecar offline</h2><p class="subtitle" style="font-size:22px">Checking connection every 5 seconds. Parameters remain editable.</p></div></div></main>`;
+      if (state==="generating") preview = `<main class="pane" style="border-right:0"><div class="preview"><div style="width:70%"><h2>Generating frame sequence</h2><p class="subtitle" style="font-size:22px">diffusion step 18 / 30 - ETA 02:14 - RTX 5090 23.8 / 32GB</p><div class="progress" style="margin-top:26px"><div class="bar" style="--w:64%"></div></div></div></div></main>`;
+      if (state==="result") preview = `<main class="pane" style="border-right:0"><div class="section"><div class="hero-image" style="aspect-ratio:16/9"></div><div class="row" style="margin-top:20px"><span class="pill">completed</span><span class="pill">1920 x 1080</span><span class="pill">8s</span><button class="btn">Open Output</button></div><div class="timeline" style="margin-top:26px">${Array.from({length:9},()=>'<div class="clip"></div>').join("")}</div></div></main>`;
+      return shell("3nvizen", appFrame("3nvizen", `<div style="height:100%;display:grid;grid-template-columns:520px 1fr">${sidebar}${preview}</div>`));
+    }
+    function gener8(state) {
+      const side = `<aside class="pane" style="width:300px"><div class="glyph">G8</div><div class="nav" style="margin-top:24px"><div class="nav-item active"><span class="nav-icon">CR</span>Create</div><div class="nav-item"><span class="nav-icon">LB</span>Library</div><div class="nav-item"><span class="nav-icon">ST</span>Settings</div></div></aside>`;
+      let content = `<main class="pane" style="border-right:0"><h1>Create</h1><p class="subtitle">Describe the music you want to generate.</p><div class="field"><label>Prompt</label><textarea class="textarea">Driving cyber-soul track for a Steam page trailer, analog bassline, Indonesian percussion accents, luminous synth lead, confident but human.</textarea></div><div class="three"><div class="field"><label>Duration</label><input class="input" value="45"></div><div class="field"><label>BPM</label><input class="input" value="124"></div><div class="field"><label>Model</label><input class="input" value="ACE-Step v1.5"></div></div><div class="section" style="margin-top:24px"><div class="label">Advanced</div><div class="three" style="margin-top:14px"><span class="pill">64 steps</span><span class="pill">Guidance 7.5</span><span class="pill">Seed random</span></div></div><button class="btn primary" style="margin-top:24px">${state==="progress"?"Generating...":"Generate"}</button>${state==="progress"?'<div class="progress" style="margin-top:24px"><div class="bar" style="--w:71%"></div></div><p class="mini" style="margin-top:10px">Running ACE-Step diffusion - stem preview queued</p>':""}</main>`;
+      if (state==="library") content = `<main class="pane" style="border-right:0"><div class="row"><div><h1>Everywear Vault</h1><p class="subtitle">Unified media library for generated audio, images, videos, stems, and project assets.</p></div><span class="pill">142 items</span></div><div style="margin-top:28px">${tableRows()}</div></main>`;
+      if (state==="settings") content = `<main class="pane" style="border-right:0"><h1>Settings</h1><div class="split" style="margin-top:28px"><div class="section"><h2>Engine</h2><p class="subtitle" style="font-size:20px">ACE-Step sidecar: localhost:3001</p><div class="row" style="margin-top:18px"><span>GPU Encoder</span><span class="pill">Available</span></div><div class="row" style="margin-top:18px"><span>Auto-save to vault</span><span class="pill">Enabled</span></div></div><div class="section"><h2>Library</h2><p class="subtitle" style="font-size:20px">Project cache, stem exports, and rendered masters.</p><div class="progress" style="margin-top:24px"><div class="bar" style="--w:47%"></div></div><p class="mini" style="margin-top:10px">122.4GB used in local media cache</p></div></div></main>`;
+      return shell("Applets", appFrame("Gener8", `<div style="height:100%;display:grid;grid-template-columns:300px 1fr">${side}${content}</div><div style="height:76px;border-top:1px solid var(--border);padding:14px 28px">${wave()}</div>`));
+    }
+    function vid(state) {
+      const content = `<div style="height:100%;display:grid;grid-template-columns:1fr 430px"><main class="pane"><div class="preview" style="min-height:760px"><div><h2>Audio Reactive Visualizer</h2><p class="subtitle" style="font-size:22px">Lyric timing, Pexels backgrounds, presets, and GPU export pipeline.</p>${wave()}</div></div><div class="timeline" style="margin-top:24px">${Array.from({length:9},(_,i)=>`<div class="clip" style="background:${i%3===0?'var(--primary-soft)':'var(--surface)'}"></div>`).join("")}</div></main><aside class="pane" style="border-right:0"><h2>Preset Stack</h2><div class="grid" style="margin-top:20px">${["Neon Tunnel","Particle Field","Lyric Stage","Waveform Grid"].map((n,i)=>`<div class="section" style="padding:18px"><div class="row"><span>${n}</span><span class="pill">${i===1?"Active":"Preset"}</span></div></div>`).join("")}</div><button class="btn primary" style="margin-top:24px">Export 4K</button></aside></div>`;
+      let html = shell("Applets", appFrame("Vid Studio", content));
+      if (state==="modal") html = html.replace("</main></div></div>", `</main><div class="modal-overlay"><div class="modal"><h2>Export Video</h2><p class="subtitle" style="font-size:20px">Render a marketing-ready MP4 using shared video encoder.</p><div class="field"><label>Preset</label><input class="input" value="Steam trailer - 4K 60fps"></div><div class="progress" style="margin-top:24px"><div class="bar" style="--w:38%"></div></div><p class="mini" style="margin-top:10px">Loading FFmpeg WASM and probing NVENC availability</p><div class="row" style="margin-top:24px"><button class="btn ghost">Cancel</button><button class="btn primary">Start Export</button></div></div></div></div></div>`);
+      return html;
+    }
+    function surface(id) {
+      switch (id) {
+        case "auth-loading": return `<div class="frame">${titlebar()}<div class="login-wrap"><div><div class="spinner"></div><h1>Loading Everywear OS...</h1><p class="subtitle">Hydrating local auth, licence tier, and shell session.</p></div></div></div>`;
+        case "auth-login": return `<div class="frame">${titlebar()}<div class="login-wrap"><div class="login-card"><div class="login-title">Everywear ID</div><div class="login-sub">Sign in to your Everywear account</div><div class="field"><label>Email</label><input class="input" value="somo@metafintek.xyz"></div><div class="field"><label>Password (leave empty for magic link)</label><input class="input" value=""></div><div class="auth-actions"><button class="btn ghost">Create Everywear ID</button><button class="btn primary">Send Magic Link</button></div></div></div></div>`;
+        case "auth-signup": return `<div class="frame">${titlebar()}<div class="login-wrap"><div class="login-card"><div class="login-title">Everywear ID</div><div class="login-sub">Create your sovereign local AI account</div><div class="field"><label>Email</label><input class="input" value="creator@studio.local"></div><div class="field"><label>Password</label><input class="input" value="************"></div><div class="auth-actions"><button class="btn ghost">Already have an account</button><button class="btn primary">Create Account</button></div></div></div></div>`;
+        case "auth-otp": return `<div class="frame">${titlebar()}<div class="login-wrap"><div class="login-card"><div class="login-title">Check your email</div><div class="login-sub">Enter the verification code from Everywear ID.</div><div class="field"><label>Verification code</label><input class="input" value="184620" style="font-size:42px;letter-spacing:18px;font-family:var(--font-mono)"></div><div class="auth-actions"><button class="btn ghost">Back to sign in</button><button class="btn primary">Verify Code</button></div></div></div></div>`;
+        case "shell-launcher": return launcher(false);
+        case "shell-folder-open": return launcher(true);
+        case "shell-active-applet": return shell("Applets", `<div class="section"><div class="row"><div><h1>1magen is running</h1><p class="subtitle">The applet backend is active on port 5174. Everywear keeps the model loaded while you switch tasks.</p></div><span class="pill">Running</span></div><button class="btn" style="margin-top:28px">Back to Launcher</button></div>`);
+        case "profile-view": return shell("Profile", `<div class="section"><div class="row" style="justify-content:flex-start"><div class="avatar" style="width:132px;height:132px;font-size:42px">SU</div><div><h1>Sean Uddin</h1><p class="subtitle">@somo_kasane - creator_studio</p></div></div></div><div class="split" style="margin-top:28px"><div class="section"><h2>Identity</h2>${["Display Name|Sean Uddin","Alias|somo_kasane","Email|somo@metafintek.xyz","Bio|Building local-first AI studios from Lombok."].map(x=>{let [a,b]=x.split("|");return `<div class="row" style="margin-top:18px"><span class="label">${a}</span><span class="value">${b}</span></div>`}).join("")}</div><div class="section"><h2>Connected Accounts</h2><div class="row" style="margin-top:22px"><span>Discourse Forum</span><span class="pill">@somo</span></div><div class="row" style="margin-top:22px"><span>Strands Chain Wallet</span><span class="pill">0x8a42...19fd</span></div></div></div>`);
+        case "profile-edit": return shell("Profile", `<h1>Edit Profile</h1><div class="split" style="margin-top:28px"><div class="section"><div class="field"><label>Display Name</label><input class="input" value="Sean Uddin"></div><div class="field"><label>Alias</label><input class="input" value="somo_kasane"></div><div class="field"><label>Email</label><input class="input" value="somo@metafintek.xyz"></div><div class="field"><label>Bio</label><textarea class="textarea">Building local-first AI studios from Lombok.</textarea></div><button class="btn primary">Save Profile</button><button class="btn ghost" style="margin-left:12px">Cancel</button></div><div class="section"><h2>Account Context</h2><p class="subtitle" style="font-size:21px">Profile changes sync locally and travel to applets through signed shell IPC.</p></div></div>`);
+        case "wallet-view": return shell("Wallet", `<h1>Strands Wallet</h1><p class="subtitle">Local wallet identity for creator entitlements and ecosystem payments.</p><div class="three" style="margin-top:36px"><div class="section"><div class="label">STRANDS</div><div class="metric">12,840</div></div><div class="section"><div class="label">Founders Passes</div><div class="metric">3</div></div><div class="section"><div class="label">Network</div><div class="metric" style="font-size:38px">Strands Testnet</div></div></div>${tableRows([["0x8a42...19fd","Send","STRANDS","420.0","Confirmed"],["0x3b11...caf9","Mint","PASS","1","Confirmed"],["0x2a90...21ee","Receive","STRANDS","1840.0","Pending"]])}`);
+        case "hardware-view": return shell("Hardware", `<h1>Hardware</h1><p class="subtitle">CUDA backend, VRAM budget, and applet model fit assessment.</p><div class="three" style="margin-top:32px"><div class="section"><div class="label">Backend</div><div class="metric">CUDA 12.8</div><p class="mini">cuBLAS available - Flash Attention supported</p></div><div class="section"><div class="label">VRAM Free</div><div class="metric">26.4GB</div><div class="progress"><div class="bar" style="--w:19%"></div></div></div><div class="section"><div class="label">Tier</div><div class="metric">Ultra</div><p class="mini">24GB+ local generation profile</p></div></div><div class="section" style="margin-top:28px"><div class="row"><div><h2>1magen Base Model Assessment</h2><p class="subtitle" style="font-size:21px">Recommended: z-image-turbo-q4. Local target VRAM 12,288MB of 32,768MB detected.</p></div><span class="pill">Ready</span></div></div>`);
+        case "settings-view": return shell("Settings", `<h1>Settings</h1><div class="split" style="margin-top:30px"><div class="section"><h2>Appearance</h2><div class="three" style="margin-top:24px"><div class="card"><div class="card-title">Classic</div><p class="mini">Clean modern aesthetic</p></div><div class="card feature"><div class="card-title">Refined</div><p class="mini">Bevelled angular geometry</p></div><div class="card"><div class="card-title">Terminal</div><p class="mini">Monospace warm amber</p></div></div><button class="btn" style="margin-top:24px">Switch to Light</button></div><div class="section"><h2>About</h2><p class="subtitle" style="font-size:21px">Everywear OS v0.1.0<br>PT Metafintek AI Studios<br>Lombok, Indonesia<br>everywear.id</p></div></div>`);
+        case "logs-view": return shell("Logs", `<div class="row"><h1>Session Logs</h1><div><button class="btn">Export</button><button class="btn ghost" style="margin-left:12px">Clear</button></div></div><div class="section" style="margin-top:24px"><div class="row"><span class="pill">All Sources</span><span class="pill">All Levels</span><input class="input" value="generation" style="width:520px"></div></div><div class="section" style="margin-top:22px">${logs.map(l=>`<div class="table-row" style="grid-template-columns:.6fr .4fr .5fr 1.8fr 1fr"><span class="mini">${l[0]}</span><span class="mini" style="color:${l[1]==='error'?'var(--danger)':l[1]==='warn'?'var(--warning)':'var(--text)'}">${l[1]}</span><span class="mini">${l[2]}</span><span class="value" style="font-size:20px">${l[3]}</span><span class="mini">${l[4]}</span></div>`).join("")}</div>`);
+        case "bug-report-modal": return shell("Logs", `<h1>Diagnostics</h1><p class="subtitle">Structured report capture with selectable log categories.</p><div class="modal-overlay"><div class="modal"><h2>Report a Problem</h2><div class="field"><label>What went wrong?</label><textarea class="textarea">Video encoder fell back during 3nvizen export while Gener8 was holding the shared encoder sidecar.</textarea></div><div class="split"><div>${["System","Applet","Generation","Model","Sidecar","Vault","IPC"].map((n,i)=>`<div class="row" style="margin-top:12px"><span>${n}</span><span class="tag">${[9,14,28,6,4,12,3][i]} entries</span></div>`).join("")}</div><div><div class="field"><label>Send to</label><span class="pill">Everywear Team</span><span class="pill" style="margin-left:8px">Local Kasai</span></div><p class="mini">Estimated size: 48KB<br>Session: ew-20260518-2041</p></div></div><div class="row" style="margin-top:24px"><button class="btn">Copy to Clipboard</button><button class="btn primary">Send Report</button></div></div></div>`);
+        case "vault-list": return shell("Vault", `<div class="row"><div><h1>Everywear Vault</h1><p class="subtitle">Generated content across Everywear applets, indexed locally.</p></div><span class="pill">142 items - 418GB</span></div><div class="row" style="margin-top:26px"><div>${["All","Images","Audio","Videos","Stems","Favorites"].map((t,i)=>`<span class="${i===0?'pill':'tag'}">${t}</span>`).join(" ")}</div><input class="input" value="Kasai" style="width:440px"></div><div style="margin-top:24px">${tableRows()}</div>`);
+        case "vault-detail": return shell("Vault", `<button class="btn ghost">Back</button><div class="split" style="margin-top:24px"><div class="section"><div class="hero-image"></div></div><div class="section"><h1>Neon rain portrait - Kasai study</h1><p class="subtitle">Created by 1magen. Prompt, seed, dimensions, and vault tags stay local.</p><div class="row" style="margin-top:24px"><span class="label">Media</span><span class="pill">image</span></div><div class="row" style="margin-top:18px"><span class="label">File</span><span class="value">24.8 MB</span></div><div class="row" style="margin-top:18px"><span class="label">Prompt</span><span class="value" style="font-size:20px">Cinematic editorial portrait of Kasai...</span></div>${tagList(["1magen","portrait","marketing","favorite"])}</div></div>`);
+        case "vault-empty": return shell("Vault", `<div class="empty-center"><div><div class="empty-mark">VA</div><h1>No results</h1><p class="subtitle">No items match "cloud render". Try a different search or save generated work from any applet.</p></div></div>`);
+        case "vault-loading": return shell("Vault", `<h1>Everywear Vault</h1><div class="grid" style="margin-top:38px">${Array.from({length:7},()=>`<div class="section"><div class="row"><div class="skeleton" style="width:70px;height:70px"></div><div style="flex:1"><div class="skeleton" style="width:42%"></div><div class="skeleton" style="width:28%;margin-top:14px"></div></div><div class="skeleton" style="width:150px"></div></div></div>`).join("")}</div>`);
+        case "applet-loading": return shell("Applets", appFrame("Kasai", `<div class="empty-center"><div style="width:70%"><div class="skeleton" style="height:64px;width:38%;margin:0 auto 36px"></div><div class="three">${Array.from({length:3},()=>'<div class="section"><div class="skeleton" style="height:240px"></div><div class="skeleton" style="margin-top:20px"></div></div>').join("")}</div><p class="subtitle">Loading applet component and provisioning its runtime bridge...</p></div></div>`));
+        case "applet-error": return shell("Applets", appFrame("3nvizen", `<div class="empty-center"><div><div class="empty-mark">!</div><h1>3nvizen failed to load</h1><p class="subtitle">Sidecar manifest missing required launch URL. Retry after provisioning.</p><button class="btn primary" style="margin-top:24px">Retry</button></div></div>`));
+        case "kasai-empty": return kasai("empty");
+        case "kasai-chat-tools": return kasai("chat");
+        case "kasai-skill": return kasai("skill");
+        case "runtime-orchestration": return shell("Hardware", `<h1>Runtime Orchestration</h1><p class="subtitle">Shared VRAM arbitration, task shards, and multi-tool coordination across applets.</p><div class="three" style="margin-top:32px"><div class="section"><div class="label">Active Applets</div><div class="metric">4</div><p class="mini">1magen, Kasai, Gener8, Vid</p></div><div class="section"><div class="label">VRAM Ceiling</div><div class="metric">90%</div><div class="progress"><div class="bar" style="--w:74%"></div></div></div><div class="section"><div class="label">Task Shards</div><div class="metric">12</div><p class="mini">3 running - 9 queued</p></div></div><div class="split" style="margin-top:28px"><div class="section"><h2>Model Slots</h2>${["Primary LLM - Qwen3.6 35B","Image Diffusion - Z-Image Turbo","Audio - ACE-Step v1.5","Video - LTX 2.3 adapter"].map((n,i)=>`<div class="row" style="margin-top:18px"><span>${n}</span><span class="pill">${i<2?"resident":"warm"}</span></div>`).join("")}</div><div class="section"><h2>Agent Plan</h2>${["Recall prior launch constraints","Generate image hero variants","Export trailer visualizer","Index outputs in vault"].map((n,i)=>`<div class="row" style="margin-top:18px"><span>${n}</span><span class="tag">${i<2?"done":"running"}</span></div>`).join("")}</div></div>`);
+        case "imagen-empty": return imagen("empty");
+        case "imagen-generating": return imagen("generating");
+        case "imagen-result": return imagen("result");
+        case "threevizen-idle": return threevizen("idle");
+        case "threevizen-generating": return threevizen("generating");
+        case "threevizen-result": return threevizen("result");
+        case "gener8-create": return gener8("create");
+        case "gener8-progress": return gener8("progress");
+        case "gener8-library": return gener8("library");
+        case "gener8-settings": return gener8("settings");
+        case "vid-studio": return vid("base");
+        case "vid-export-modal": return vid("modal");
+        case "character-studio": return shell("Character Studio", appFrame("Character Studio", `<div class="split" style="height:100%;padding:32px"><div class="preview"><div><div class="empty-mark">CS</div><h1>Character Studio</h1><p class="subtitle">VRM character staging, expression sheets, voice references, and shot continuity.</p></div></div><div class="section"><h2>Rig Controls</h2>${["Expression: focused smile","Pose: presentation stance","Camera: 85mm portrait","Lighting: soft cyan key"].map(n=>`<div class="row" style="margin-top:18px"><span>${n}</span><span class="pill">ready</span></div>`).join("")}</div></div>`));
+        case "installer-models": return shell("Settings", `<h1>Install Local Stack</h1><p class="subtitle">One-click model provisioning with SHA256 verification, cache discovery, and licence-aware options.</p><div class="split" style="margin-top:32px"><div class="section"><h2>Recommended Downloads</h2>${["z-image-turbo-q4 - 8.6GB","Qwen3.6 35B-A3B Q4 - 20.5GB","ACE-Step v1.5 - 5.8GB","LTX 2.3 distilled - 43GB"].map((n,i)=>`<div class="row" style="margin-top:18px"><span>${n}</span><span class="${i===0?'pill':'tag'}">${i===0?'downloading 68%':'queued'}</span></div>`).join("")}<div class="progress" style="margin-top:24px"><div class="bar" style="--w:68%"></div></div></div><div class="section"><h2>Discovery</h2><p class="subtitle" style="font-size:21px">Scanned LM Studio, Ollama, HuggingFace Hub, GPT4All, and Everywear model cache before downloading.</p><button class="btn primary" style="margin-top:22px">Continue Setup</button></div></div>`);
+        case "file-browser": return shell("Vault", `<h1>Project Files</h1><p class="subtitle">Local file browser for source images, reference audio, project folders, and vault-backed outputs.</p><div class="split" style="margin-top:30px"><div class="section"><h2>C:\\Users\\MAG MSI\\Projects\\Trailer Pack</h2>${["reference_track.wav","kasai_portrait_source.png","shotlist_lombok_market.md","export_steam_4k.mp4","voiceover_en_lrc.lrc"].map((n,i)=>`<div class="table-row" style="grid-template-columns:.2fr 1.6fr .5fr .5fr"><span class="thumb"></span><span class="value" style="font-size:22px">${n}</span><span class="tag">${["audio","image","doc","video","lyrics"][i]}</span><button class="btn ghost" style="min-height:38px">Select</button></div>`).join("")}</div><div class="section"><h2>Selection</h2><p class="subtitle" style="font-size:21px">reference_track.wav<br>Used as style reference for Gener8 and beat source for Vid Studio.</p><button class="btn primary" style="margin-top:22px">Attach to Workflow</button></div></div>`);
+        case "update-flow": return shell("Settings", `<h1>Update Available</h1><p class="subtitle">Everywear can stage shell updates, verify applet compatibility, and preserve local caches.</p><div class="section" style="margin-top:32px"><div class="row"><div><h2>Everywear OS 0.1.1</h2><p class="subtitle" style="font-size:21px">Runtime bridge reliability, vault thumbnails, and 3nvizen health recovery.</p></div><span class="pill">Ready to install</span></div><div class="progress" style="margin-top:24px"><div class="bar" style="--w:100%"></div></div><div class="three" style="margin-top:24px"><div class="section"><div class="label">Verified</div><div class="metric">12</div><p class="mini">package checks</p></div><div class="section"><div class="label">Cache impact</div><div class="metric">0GB</div><p class="mini">models preserved</p></div><div class="section"><div class="label">Restart</div><div class="metric">1</div><p class="mini">required</p></div></div><button class="btn primary" style="margin-top:24px">Install Update</button></div>`);
+        default: return launcher(false);
+      }
+    }
+
+    function render() {
+      const variant = q("variant", "ewd-clean");
+      const scene = q("scene", "shell-launcher");
+      const cutout = q("cutout", "false") === "true";
+      document.body.dataset.variant = variant;
+      document.body.dataset.cutout = String(cutout);
+      const root = document.getElementById("root");
+      root.innerHTML = `<div class="stage">${surface(scene)}<div class="watermark">${variants[variant] || variant} / ${scene}</div></div>`;
+      const scale = Math.min(innerWidth / 3840, innerHeight / 2160);
+      document.querySelector(".stage").style.transform = `scale(${scale})`;
+    }
+    addEventListener("resize", render);
+    render();
+  </script>
+</body>
+</html>

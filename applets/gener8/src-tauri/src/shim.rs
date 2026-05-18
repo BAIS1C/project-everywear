@@ -244,10 +244,37 @@ pub async fn boot(
         // DAW Engine
         .route("/api/daw/init", post(daw_init))
         .route("/api/daw/destroy", post(daw_destroy))
+        // CLAUDE_INTERFACE: Get DAW transport status (shim endpoint, NOT Tauri invoke)
+        // Endpoint: GET http://localhost:3001/api/daw/status
+        // Returns: { state: "playing"|"paused"|"stopped", position_seconds, total_seconds, loop_enabled, sample_rate }
+        // Poll every 250ms during playback for smooth position display
+        .route("/api/daw/status", get(daw_status))
+        // CLAUDE_INTERFACE: Gener8 is headless; frontend playback wiring uses shim :3001, not Tauri invoke.
+        // Command: POST "http://127.0.0.1:3001/api/daw/play"
+        // Args: { project_id?: string, start_position_seconds?: number }
+        // Returns: { position_ms, bar, beat, tick, mode }
+        // Error: HTTP 400 "DAW not initialised" | HTTP 500 audio device error
         .route("/api/daw/play", post(daw_play))
+        // CLAUDE_INTERFACE: Gener8 is headless; frontend playback wiring uses shim :3001, not Tauri invoke.
+        // Command: POST "http://127.0.0.1:3001/api/daw/pause"
+        // Args: {}
+        // Returns: { position_ms, bar, beat, tick, mode }
+        // Error: HTTP 400 "DAW not initialised"
         .route("/api/daw/pause", post(daw_pause))
+        // CLAUDE_INTERFACE: Gener8 is headless; frontend playback wiring uses shim :3001, not Tauri invoke.
+        // Command: POST "http://127.0.0.1:3001/api/daw/stop"
+        // Args: {}
+        // Returns: { status: "ok" }
+        // Error: HTTP 400 "DAW not initialised"
         .route("/api/daw/stop", post(daw_stop))
+        // CLAUDE_INTERFACE: Seek to position (shim endpoint)
+        // Endpoint: POST http://localhost:3001/api/daw/seek
+        // Args: { position_seconds: number }
         .route("/api/daw/seek", post(daw_seek))
+        // CLAUDE_INTERFACE: Toggle DAW loop (shim endpoint)
+        // Endpoint: POST http://localhost:3001/api/daw/loop
+        // Args: { enabled: boolean }
+        .route("/api/daw/loop", post(daw_set_loop))
         .route("/api/daw/set-loop", post(daw_set_loop))
         .route("/api/daw/set-tempo", post(daw_set_tempo))
         .route("/api/daw/set-metronome", post(daw_set_metronome))
@@ -590,6 +617,7 @@ async fn generate_history() -> Json<Value> {
 
 async fn upload_audio(
     State(st): State<Arc<ShimState>>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
     let settings = settings::load_settings().await;
@@ -600,8 +628,30 @@ async fn upload_audio(
             Json(json!({ "error": e.to_string() })),
         )
     })?;
-    let filename = format!("ref_{}.mp3", chrono::Utc::now().timestamp_millis());
-    let path = refs_dir.join(&filename);
+    let fallback_stem = format!("ref_{}", chrono::Utc::now().timestamp_millis());
+    let requested_name = headers
+        .get("x-file-name")
+        .or_else(|| headers.get("x-filename"))
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string);
+    let ext = requested_name
+        .as_deref()
+        .and_then(|name| std::path::Path::new(name).extension().and_then(|e| e.to_str()))
+        .map(|s| s.to_ascii_lowercase())
+        .unwrap_or_else(|| "mp3".into());
+    let stem = requested_name
+        .as_deref()
+        .and_then(|name| std::path::Path::new(name).file_stem().and_then(|s| s.to_str()))
+        .map(sanitize_upload_stem)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(fallback_stem);
+    let mut filename = format!("{}.{}", stem, ext);
+    let mut path = refs_dir.join(&filename);
+    if path.exists() {
+        let suffix = chrono::Utc::now().timestamp_millis();
+        filename = format!("{}_{}.{}", stem, suffix, ext);
+        path = refs_dir.join(&filename);
+    }
     tokio::fs::write(&path, &body).await.map_err(|e| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -612,8 +662,30 @@ async fn upload_audio(
     Ok(Json(json!({
         "key":  key,
         "path": path.display().to_string(),
+        "filename": filename,
+        "original_filename": requested_name,
         "size": body.len(),
     })))
+}
+
+fn sanitize_upload_stem(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut last_was_sep = false;
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == ' ' {
+            out.push(ch);
+            last_was_sep = false;
+        } else if !last_was_sep {
+            out.push('_');
+            last_was_sep = true;
+        }
+        if out.len() >= 96 {
+            break;
+        }
+    }
+    out.trim_matches(|c: char| c == '_' || c == '-' || c == ' ')
+        .trim()
+        .to_string()
 }
 
 async fn format_lyrics(
@@ -998,14 +1070,39 @@ async fn daw_destroy(State(st): State<Arc<ShimState>>) -> Json<Value> {
     Json(json!({ "status": "ok" }))
 }
 
-async fn daw_play(State(st): State<Arc<ShimState>>) -> Result<Json<Value>, (StatusCode, String)> {
+#[derive(Deserialize, Default)]
+struct PlayRequest {
+    #[serde(default)]
+    project_id: Option<String>,
+    #[serde(default)]
+    start_position_seconds: Option<f64>,
+}
+
+async fn daw_play(
+    State(st): State<Arc<ShimState>>,
+    body: Option<Json<PlayRequest>>,
+) -> Result<Json<Value>, (StatusCode, String)> {
     let mut guard = st.daw_engine.lock().await;
     let engine = guard
         .as_mut()
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
-    engine.transport_mut().play();
+    let request = body.map(|Json(body)| body).unwrap_or_default();
+    if let Some(start_position_seconds) = request.start_position_seconds {
+        engine
+            .transport_mut()
+            .seek(seconds_to_ms(start_position_seconds));
+    }
+    engine
+        .start_playback()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     let pos = crate::daw_engine::transport::PositionEvent::from(engine.transport());
-    Ok(Json(serde_json::to_value(pos).unwrap_or(json!({}))))
+    let mut value = serde_json::to_value(pos).unwrap_or(json!({}));
+    if let Some(project_id) = request.project_id {
+        if let Some(object) = value.as_object_mut() {
+            object.insert("project_id".into(), json!(project_id));
+        }
+    }
+    Ok(Json(value))
 }
 
 async fn daw_pause(State(st): State<Arc<ShimState>>) -> Result<Json<Value>, (StatusCode, String)> {
@@ -1013,7 +1110,7 @@ async fn daw_pause(State(st): State<Arc<ShimState>>) -> Result<Json<Value>, (Sta
     let engine = guard
         .as_mut()
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
-    engine.transport_mut().pause();
+    engine.pause_playback();
     let pos = crate::daw_engine::transport::PositionEvent::from(engine.transport());
     Ok(Json(serde_json::to_value(pos).unwrap_or(json!({}))))
 }
@@ -1029,7 +1126,10 @@ async fn daw_stop(State(st): State<Arc<ShimState>>) -> Result<Json<Value>, (Stat
 
 #[derive(Deserialize)]
 struct SeekRequest {
-    position_ms: u64,
+    #[serde(default)]
+    position_ms: Option<u64>,
+    #[serde(default)]
+    position_seconds: Option<f64>,
 }
 
 async fn daw_seek(
@@ -1040,14 +1140,32 @@ async fn daw_seek(
     let engine = guard
         .as_mut()
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
-    engine.transport_mut().seek(body.position_ms);
-    Ok(Json(json!({ "status": "ok" })))
+    let position_ms = body
+        .position_ms
+        .or_else(|| body.position_seconds.map(seconds_to_ms))
+        .ok_or((StatusCode::BAD_REQUEST, "position_seconds is required".into()))?;
+    let was_playing = matches!(
+        engine.transport().mode(),
+        crate::daw_engine::transport::PlaybackMode::Playing
+    );
+    engine.transport_mut().seek(position_ms);
+    if was_playing {
+        engine
+            .start_playback()
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
+    Ok(Json(json!({
+        "position_seconds": position_ms as f64 / 1000.0,
+        "position_frames": seconds_to_frames(position_ms as f64 / 1000.0, engine.project().sample_rate),
+    })))
 }
 
 #[derive(Deserialize)]
 struct LoopRequest {
-    start_ms: u64,
-    end_ms: u64,
+    #[serde(default)]
+    start_ms: Option<u64>,
+    #[serde(default)]
+    end_ms: Option<u64>,
     enabled: bool,
 }
 
@@ -1059,10 +1177,24 @@ async fn daw_set_loop(
     let engine = guard
         .as_mut()
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
+    let total_ms = project_total_ms(engine);
+    let start_ms = body.start_ms.unwrap_or(engine.transport().loop_range.start_ms);
+    let end_ms = body
+        .end_ms
+        .unwrap_or_else(|| engine.transport().loop_range.end_ms.max(total_ms));
+    let was_playing = matches!(
+        engine.transport().mode(),
+        crate::daw_engine::transport::PlaybackMode::Playing
+    );
     engine
         .transport_mut()
-        .set_loop(body.start_ms, body.end_ms, body.enabled);
-    Ok(Json(json!({ "status": "ok" })))
+        .set_loop(start_ms, end_ms, body.enabled);
+    if was_playing {
+        engine
+            .start_playback()
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    }
+    Ok(Json(json!({ "loop_enabled": body.enabled })))
 }
 
 #[derive(Deserialize)]
@@ -1109,6 +1241,62 @@ async fn daw_get_position(
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
     let pos = crate::daw_engine::transport::PositionEvent::from(engine.transport());
     Ok(Json(serde_json::to_value(pos).unwrap_or(json!({}))))
+}
+
+async fn daw_status(State(st): State<Arc<ShimState>>) -> Result<Json<Value>, (StatusCode, String)> {
+    let guard = st.daw_engine.lock().await;
+    let engine = guard
+        .as_ref()
+        .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
+    Ok(Json(daw_status_value(engine)))
+}
+
+fn daw_status_value(engine: &DawEngine) -> Value {
+    let position_seconds = engine.transport().position_ms() as f64 / 1000.0;
+    let total_seconds = project_total_ms(engine) as f64 / 1000.0;
+    let sample_rate = engine.project().sample_rate;
+    let state = match engine.transport().mode() {
+        crate::daw_engine::transport::PlaybackMode::Playing => "playing",
+        crate::daw_engine::transport::PlaybackMode::Paused => "paused",
+        crate::daw_engine::transport::PlaybackMode::Stopped => "stopped",
+    };
+    json!({
+        "state": state,
+        "position_seconds": position_seconds,
+        "position_frames": seconds_to_frames(position_seconds, sample_rate),
+        "total_seconds": total_seconds,
+        "total_frames": seconds_to_frames(total_seconds, sample_rate),
+        "loop_enabled": engine.transport().loop_range.enabled,
+        "sample_rate": sample_rate,
+        "project_id": "current",
+    })
+}
+
+fn project_total_ms(engine: &DawEngine) -> u64 {
+    engine
+        .project()
+        .tracks
+        .iter()
+        .flat_map(|track| track.regions.iter())
+        .map(|region| region.end_position_ms())
+        .max()
+        .unwrap_or_default()
+}
+
+fn seconds_to_ms(seconds: f64) -> u64 {
+    if seconds.is_finite() && seconds > 0.0 {
+        (seconds * 1000.0).round() as u64
+    } else {
+        0
+    }
+}
+
+fn seconds_to_frames(seconds: f64, sample_rate: u32) -> u64 {
+    if seconds.is_finite() && seconds > 0.0 {
+        (seconds * sample_rate as f64).round() as u64
+    } else {
+        0
+    }
 }
 
 async fn daw_get_project(

@@ -9,8 +9,10 @@
 //! 3. User confirmation: show what will be purged (ALL tiers)
 //! 4. Purge cycle: unload + NVML verify
 //! 5a. Provision: download missing models
-//! 5b. Provision: ensure sidecar binaries in ~/.everywear/bin/
+//! 5b. Provision: upgrade pack models (licence-gated)
+//! 5c. Provision: ensure sidecar binaries in ~/.everywear/bin/
 //! 6. Handoff: launch binary or URL with model paths
+//! 7. WebviewWindow: spawn applet UI inside Everywear OS (lib.rs)
 
 use crate::budget::{
     build_purge_request, select_model_group, PurgePolicy, PurgeRequest, PurgeResult, PurgeScope,
@@ -241,8 +243,12 @@ pub fn manifest_info_from_groups(manifest: &AppletManifest) -> Vec<model_manager
             };
 
             let model_type = match req.role {
-                ModelRole::Encoder => model_manager::ModelType::Encoder,
-                ModelRole::Vae => model_manager::ModelType::Vae,
+                ModelRole::Encoder | ModelRole::TextEncoder | ModelRole::Projection => {
+                    model_manager::ModelType::Encoder
+                }
+                ModelRole::Vae | ModelRole::VideoVae | ModelRole::AudioVae => {
+                    model_manager::ModelType::Vae
+                }
                 _ => match manifest.engine.engine_type.as_str() {
                     "llm" => model_manager::ModelType::Llm,
                     "audio" => model_manager::ModelType::Audio,
@@ -302,8 +308,12 @@ pub fn provision_upgrade_packs(
         // Single-file pack
         if let Some(ref file) = pack.file {
             let model_type = match file.role {
-                ModelRole::Encoder => model_manager::ModelType::Encoder,
-                ModelRole::Vae => model_manager::ModelType::Vae,
+                ModelRole::Encoder | ModelRole::TextEncoder | ModelRole::Projection => {
+                    model_manager::ModelType::Encoder
+                }
+                ModelRole::Vae | ModelRole::VideoVae | ModelRole::AudioVae => {
+                    model_manager::ModelType::Vae
+                }
                 _ => match engine_type {
                     "llm" => model_manager::ModelType::Llm,
                     "audio" => model_manager::ModelType::Audio,
@@ -332,8 +342,12 @@ pub fn provision_upgrade_packs(
         if !pack.quants.is_empty() {
             if let Some(selected) = AppletManifest::select_pack_quant(pack, vram_mb) {
                 let model_type = match selected.role {
-                    ModelRole::Encoder => model_manager::ModelType::Encoder,
-                    ModelRole::Vae => model_manager::ModelType::Vae,
+                    ModelRole::Encoder | ModelRole::TextEncoder | ModelRole::Projection => {
+                        model_manager::ModelType::Encoder
+                    }
+                    ModelRole::Vae | ModelRole::VideoVae | ModelRole::AudioVae => {
+                        model_manager::ModelType::Vae
+                    }
                     _ => match engine_type {
                         "llm" => model_manager::ModelType::Llm,
                         "audio" => model_manager::ModelType::Audio,
@@ -454,6 +468,34 @@ pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
         return Ok(());
     }
 
+    // 1b. Local-first sidecar discovery for ACE server. Users may already
+    // have an ace-server binary from another music tool or a local build.
+    if bundle_name == "ace-server" {
+        if let Some(local_binary) = discover_ace_server_binary(&sidecar.executable) {
+            provision_binary_link_or_copy(&local_binary, &exe_target).with_context(|| {
+                format!(
+                    "failed to provision discovered ACE server {} -> {}",
+                    local_binary.display(),
+                    exe_target.display()
+                )
+            })?;
+            info!(
+                source = %local_binary.display(),
+                target = %exe_target.display(),
+                "Provisioned ACE server from local discovery"
+            );
+            return Ok(());
+        }
+
+        let stub_path = target_dir.join("ace-server-stub.js");
+        write_ace_silence_stub(&stub_path)?;
+        warn!(
+            path = %stub_path.display(),
+            "ACE server binary not found locally; installed silence stub"
+        );
+        return Ok(());
+    }
+
     // 2. Copy from local source_dir (dev/build machine)
     if let Some(ref source) = sidecar.source_dir {
         let source_dir = expand_path(source);
@@ -488,7 +530,11 @@ pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
                 let dst = target_dir.join(companion);
                 if src.exists() {
                     std::fs::copy(&src, &dst).with_context(|| {
-                        format!("failed to copy companion {} -> {}", src.display(), dst.display())
+                        format!(
+                            "failed to copy companion {} -> {}",
+                            src.display(),
+                            dst.display()
+                        )
                     })?;
                     info!(file = companion, "  Copied companion");
                 } else {
@@ -528,6 +574,72 @@ pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
         sidecar.executable,
         exe_target.display()
     )
+}
+
+fn discover_ace_server_binary(executable: &str) -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("ACE_SERVER_PATH") {
+        let path = PathBuf::from(path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    let mut candidates = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("engines").join("ace-server").join(executable));
+    }
+    candidates.push(PathBuf::from(
+        r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release",
+    ).join(executable));
+    candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(executable));
+    candidates.push(PathBuf::from(r"C:\ACE-Step").join(executable));
+
+    for candidate in candidates {
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
+
+    which::which(executable)
+        .or_else(|_| which::which(executable.trim_end_matches(".exe")))
+        .ok()
+}
+
+fn provision_binary_link_or_copy(source: &PathBuf, target: &PathBuf) -> Result<()> {
+    if let Some(parent) = target.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    create_file_symlink(source, target)
+        .or_else(|_| std::fs::copy(source, target).map(|_| ()))
+        .map_err(Into::into)
+}
+
+#[cfg(windows)]
+fn create_file_symlink(source: &PathBuf, target: &PathBuf) -> std::io::Result<()> {
+    std::os::windows::fs::symlink_file(source, target)
+}
+
+#[cfg(not(windows))]
+fn create_file_symlink(source: &PathBuf, target: &PathBuf) -> std::io::Result<()> {
+    std::os::unix::fs::symlink(source, target)
+}
+
+fn write_ace_silence_stub(stub_path: &PathBuf) -> Result<()> {
+    let script = r#"const http = require("http");
+const portArg = process.argv.findIndex((arg) => arg === "--port");
+const port = portArg >= 0 ? Number(process.argv[portArg + 1]) : 8080;
+function json(res, value) {
+  const body = JSON.stringify(value);
+  res.writeHead(200, {"content-type": "application/json", "content-length": Buffer.byteLength(body)});
+  res.end(body);
+}
+http.createServer((req, res) => {
+  if (req.url === "/props") return json(res, { ok: true, stub: true, mode: "silence" });
+  if (req.url === "/generate") return json(res, { ok: true, audio_base64: "", sample_rate: 44100, duration: 0, stub: true });
+  json(res, { ok: true, stub: true });
+}).listen(port, "127.0.0.1", () => console.log(`ace silence stub listening on ${port}`));
+"#;
+    std::fs::write(stub_path, script).with_context(|| format!("write {}", stub_path.display()))
 }
 
 /// Expand `~` and environment variables in a path string.
@@ -570,8 +682,10 @@ pub fn resolve_model_paths(
 
         match req.role {
             ModelRole::Primary => paths.primary = Some(path),
-            ModelRole::Encoder => paths.encoder = Some(path),
-            ModelRole::Vae => paths.vae = Some(path),
+            ModelRole::Encoder | ModelRole::TextEncoder | ModelRole::Projection => {
+                paths.encoder = Some(path)
+            }
+            ModelRole::Vae | ModelRole::VideoVae | ModelRole::AudioVae => paths.vae = Some(path),
             ModelRole::Lora => paths.lora.push(path),
         }
     }
@@ -608,7 +722,8 @@ pub fn record_allocations(
 /// The monorepo root is derived by walking up from the shell binary's
 /// location until we find a directory containing `applets/`.
 fn resolve_binary_path(applet_id: &str, binary_name: &str) -> PathBuf {
-    if let Ok(resolved) = crate::applet_resolver::resolve_applet_binary_named(applet_id, binary_name)
+    if let Ok(resolved) =
+        crate::applet_resolver::resolve_applet_binary_named(applet_id, binary_name)
     {
         return resolved;
     }

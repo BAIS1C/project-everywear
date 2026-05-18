@@ -50,6 +50,43 @@ pub fn migration_dir() -> PathBuf {
     root().join(".migration")
 }
 
+/// Default vault location: `~/Documents/Everywear Vault/`.
+pub fn vault_root() -> PathBuf {
+    dirs::document_dir()
+        .expect("No Documents directory found")
+        .join("Everywear Vault")
+}
+
+/// Generated image storage: `~/Documents/Everywear Vault/Images/`.
+pub fn vault_images() -> PathBuf {
+    vault_root().join("Images")
+}
+
+/// Generated audio storage: `~/Documents/Everywear Vault/Audio/`.
+pub fn vault_audio() -> PathBuf {
+    vault_root().join("Audio")
+}
+
+/// Generated audio stem storage: `~/Documents/Everywear Vault/Audio/Stems/`.
+pub fn vault_audio_stems() -> PathBuf {
+    vault_audio().join("Stems")
+}
+
+/// Generated video storage: `~/Documents/Everywear Vault/Videos/`.
+pub fn vault_video() -> PathBuf {
+    vault_root().join("Videos")
+}
+
+/// Thumbnail cache: `~/Documents/Everywear Vault/.thumbnails/`.
+pub fn vault_thumbnails() -> PathBuf {
+    vault_root().join(".thumbnails")
+}
+
+/// Tantivy indexes: `~/Documents/Everywear Vault/.index/`.
+pub fn vault_index_dir() -> PathBuf {
+    vault_root().join(".index")
+}
+
 /// Ensure all required directories exist. Call once at shell startup.
 pub fn ensure_dirs() -> std::io::Result<()> {
     let dirs = [
@@ -59,6 +96,23 @@ pub fn ensure_dirs() -> std::io::Result<()> {
         bin_dir(),
         config_dir(),
         logs_dir(),
+    ];
+    for dir in &dirs {
+        std::fs::create_dir_all(dir)?;
+    }
+    Ok(())
+}
+
+/// Ensure the physical vault directory tree exists.
+pub fn ensure_vault_dirs() -> std::io::Result<()> {
+    let dirs = [
+        vault_root(),
+        vault_images(),
+        vault_audio(),
+        vault_audio_stems(),
+        vault_video(),
+        vault_thumbnails(),
+        vault_index_dir(),
     ];
     for dir in &dirs {
         std::fs::create_dir_all(dir)?;
@@ -102,5 +156,22 @@ mod tests {
         let s = staging_dir();
         assert!(s.starts_with(root()));
         assert!(s.ends_with("staging"));
+    }
+
+    #[test]
+    fn vault_root_under_documents() {
+        let r = vault_root();
+        assert!(r.ends_with("Everywear Vault"));
+        assert!(dirs::document_dir().is_some_and(|documents| r.starts_with(documents)));
+    }
+
+    #[test]
+    fn vault_subdirs_under_root() {
+        assert!(vault_images().starts_with(vault_root()));
+        assert!(vault_audio().starts_with(vault_root()));
+        assert!(vault_audio_stems().starts_with(vault_audio()));
+        assert!(vault_video().starts_with(vault_root()));
+        assert!(vault_thumbnails().starts_with(vault_root()));
+        assert!(vault_index_dir().starts_with(vault_root()));
     }
 }

@@ -10,3 +10,15 @@
 
 export type { ModelInfo, ModelType, GpuInfo, ProgressEvent } from './types';
 export { DEFAULTS } from './constants';
+export { LockedFeatureCard } from './components/LockedFeatureCard';
+export type { LockedFeatureCardProps, FeatureProgress, FeatureTier } from './components/LockedFeatureCard';
+
+// Logging
+export {
+  EverywearLogger,
+  getLogger,
+  initLogger,
+  getAllBufferedEntries,
+  getErrorCount,
+  getLastError,
+} from './lib/logger';

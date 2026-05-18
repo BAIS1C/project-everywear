@@ -260,20 +260,15 @@ pub fn scan_manifest(manifest: &mut [ModelInfo], models_dir: &PathBuf) {
             continue;
         }
 
-        for dir in &search_dirs {
-            if let Some(candidate) = scan_for_filename(dir, &model.filename, 0) {
-                info!(
-                    model = %model.key,
-                    path = %candidate.display(),
-                    "Found existing model"
-                );
-                model.path = Some(candidate);
-                model.downloaded = true;
-                break;
-            }
-        }
-
-        if !model.downloaded {
+        if let Some(candidate) = find_best_local_match(model, &search_dirs) {
+            info!(
+                model = %model.key,
+                path = %candidate.display(),
+                "Found existing model"
+            );
+            model.path = Some(candidate);
+            model.downloaded = true;
+        } else {
             debug!(model = %model.key, filename = %model.filename, "Model not found locally");
         }
     }
@@ -284,7 +279,10 @@ pub fn find_model(filename: &str, models_dir: &PathBuf) -> Option<PathBuf> {
     let search_dirs = discovery_paths(models_dir);
     for dir in &search_dirs {
         if let Some(candidate) = scan_for_filename(dir, filename, 0) {
-            return Some(candidate);
+            let size = std::fs::metadata(&candidate).map(|m| m.len()).unwrap_or(0);
+            if size >= MIN_MODEL_BYTES {
+                return Some(candidate);
+            }
         }
     }
     None

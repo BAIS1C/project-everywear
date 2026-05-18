@@ -15,15 +15,21 @@ import './styles/app.css';
 
 import { ThemeProvider } from '@everywear/ewds';
 import { AuthProvider } from './context/AuthContext';
+import { SongStoreProvider } from './context/SongStoreContext';
+import { VaultProvider } from './context/VaultProvider';
 import { App } from './App';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <SongStoreProvider>
+          <VaultProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </VaultProvider>
+        </SongStoreProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>,

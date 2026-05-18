@@ -1,31 +1,33 @@
-# 3nvizen LTX Runtime Sidecar
+# 3nvizen LTX Runtime Adapter
 
-This folder is the scaffold for the managed local video sidecar used by `3nvizen`.
+This directory contains the FastAPI sidecar that Claude's 3nvizen frontend talks to at `http://127.0.0.1:8787`.
 
-## Goal
+## Runtime Shape
 
-Bundle a self-contained local runtime for official LTX safetensor inference when:
+- `server.py` exposes the frontend endpoints: `/api/generate`, `/api/generation/progress`, `/api/gpu-info`, `/models/status`, `/models/download`, `/models/load`, `/api/serve-output`, `/api/serve`, and `/api/extract-last-frame`.
+- `config.py` owns model/output/cache directories and resolves the LTX Desktop backend path.
+- `services.json` maps service names to the local LTX Desktop backend under `G:\LTX\LTX Desktop\resources\backend\services`.
+- `adapter/` holds translation and progress logic. It does not vendor LTX Desktop code.
+- `utils/` holds GPU detection and media helpers.
 
-- the GGUF path is missing required audio-conditioned features
-- lip-sync patches depend on the official audio/video stack
-- we need a reproducible install for Everywear users
+## LTX Desktop Integration
 
-## Packaging Direction
+The adapter adds `G:\LTX\LTX Desktop\resources\backend` to `sys.path` at startup when present. The concrete pipeline call is deliberately behind a small `CODEX_NEEDED` marker in `adapter/generate.py` until the exact target Python environment is frozen. This lets the sidecar boot, report GPU/model state, accept jobs, and fail generation cleanly on machines that do not yet have the full LTX stack installed.
 
-- Environment manager: `uv`
-- Runtime shape: local FastAPI service
-- Distribution target: Tauri external sidecar binary or managed local script runner
-- Model storage owner: Everywear shell
+Override paths with:
 
-## Important Constraint
+```powershell
+$env:THREENVIZEN_LTX_BACKEND_PATH="G:\LTX\LTX Desktop\resources\backend"
+$env:THREENVIZEN_MODEL_DIR="$HOME\.everywear\models\3nvizen"
+$env:THREENVIZEN_OUTPUT_DIR="$HOME\.everywear\data\3nvizen\output"
+```
 
-This scaffold intentionally does not pretend the dependency pinning is final.
-The exact official LTX package pinning needs a short spike against a real target machine before we freeze the environment.
+## Model Downloads
 
-## Near-Term Deliverables
+`POST /models/download` uses a safe mock progress loop by default so a UI click does not accidentally pull a 40GB file. Set `THREENVIZEN_ENABLE_HF_DOWNLOADS=1` to use `huggingface_hub.hf_hub_download`.
 
-1. Pin official LTX runtime dependency strategy.
-2. Add model verification and download hooks from Everywear shell.
-3. Implement `/health`, `/api/v1/models/ensure`, `/api/v1/segments/generate`, and `/api/v1/patches/lipdub`.
-4. Add deterministic frame extraction and FFmpeg helpers.
+## Run
 
+```powershell
+uv run server.py
+```

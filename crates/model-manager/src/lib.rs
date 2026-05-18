@@ -10,16 +10,30 @@
 
 pub mod discovery;
 pub mod download;
+pub mod local_discovery;
 pub mod manifest;
+pub mod requirements;
+pub mod resolution;
 pub mod verify;
+pub mod vram;
 
 // Re-export core types.
 pub use download::DownloadProgress;
+pub use local_discovery::{
+    Compatibility, DiscoveredModel, GgufMetadata, LocalModelScanner, ModelFormat, ModelSourceTool,
+    SafetensorsMetadata, ScanTarget,
+};
 pub use manifest::{
     plan_for_vram, AppletManifest, LicenceTier, ModelGroup, ModelInfo, ModelManifest,
-    ModelRequirement, ModelRole, ModelType, SidecarBundle, UpgradePack, UpgradePackFile,
-    UpgradePackQuant,
+    ModelRequirement as ManifestModelRequirement, ModelRole, ModelType, SidecarBundle,
+    UpgradePack, UpgradePackFile, UpgradePackQuant,
 };
+pub use requirements::ModelRequirement;
+pub use resolution::{
+    AdoptedModel, HfSource, ModelResolver, ModelSource, ResolutionResult, ResolutionStatus,
+    SuggestedAction,
+};
+pub use vram::{LlamaFlags, VramTier};
 
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};

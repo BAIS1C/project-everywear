@@ -5,17 +5,17 @@ build-backend = "hatchling.build"
 [project]
 name = "three-nvizen-ltx-runtime"
 version = "0.1.0"
-description = "Managed local sidecar for 3nvizen segment generation and lip-sync patch workflows"
+description = "FastAPI adapter for 3nvizen LTX Desktop generation workflows"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.116,<0.117",
   "uvicorn[standard]>=0.35,<0.36",
   "pydantic>=2.11,<2.12",
+  "huggingface-hub>=0.31,<0.32",
 ]
 
 [tool.uv]
-package = true
+package = false
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ltx_runtime"]
-
+packages = ["src/ltx_runtime", "adapter", "utils"]

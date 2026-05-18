@@ -171,45 +171,10 @@ impl ComputeBackend {
 }
 
 // ---------------------------------------------------------------------------
-// VRAM Tier (from Kasai-Local model_manager.rs)
+// VRAM Tier: re-exported from model-manager (shared crate)
 // ---------------------------------------------------------------------------
 
-/// VRAM tier determines model selection and flag configuration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum VramTier {
-    /// 24+ GB: RTX 3090, 4090, 5090, A6000, etc.
-    Ultra,
-    /// 16-23 GB: RTX 4060 Ti 16GB, RTX 4080, RTX 5060, RTX 5070, etc.
-    Standard,
-    /// 12-15 GB: RTX 3060 12GB, RTX 4070, etc.
-    Constrained,
-    /// 8-11 GB: RTX 3060 8GB, RTX 3070, RTX 2080, GTX 1080, etc.
-    Minimal,
-    /// <8 GB: GTX 1060 6GB, integrated graphics, CPU-only.
-    CpuFallback,
-}
-
-impl VramTier {
-    pub fn from_vram_mb(mb: u32) -> Self {
-        match mb {
-            0..=7999 => Self::CpuFallback,
-            8000..=11999 => Self::Minimal,
-            12000..=15999 => Self::Constrained,
-            16000..=23999 => Self::Standard,
-            _ => Self::Ultra,
-        }
-    }
-
-    pub fn label(&self) -> &'static str {
-        match self {
-            Self::Ultra => "Ultra (24GB+)",
-            Self::Standard => "Standard (16GB)",
-            Self::Constrained => "Constrained (12GB)",
-            Self::Minimal => "Minimal (8GB)",
-            Self::CpuFallback => "CPU Fallback (<8GB)",
-        }
-    }
-}
+pub use model_manager::VramTier;
 
 // ---------------------------------------------------------------------------
 // CUDA Compatibility Matrix

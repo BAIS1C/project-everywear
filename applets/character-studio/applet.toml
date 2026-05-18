@@ -1,0 +1,9 @@
+[applet]
+id = "character-studio"
+name = "Avatar Studio"
+version = "0.1.0"
+description = "3D avatar creation and customization for Strands Blanks"
+engine_type = "none"
+min_vram_mb = 0
+tags = ["avatar", "3d", "character", "nft"]
+frontend_port = 3007

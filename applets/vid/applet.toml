@@ -1,0 +1,28 @@
+# Vid Studio Applet Manifest
+# Read by the Everywear OS shell to gate, provision, and launch this applet.
+# Engine: none (frontend-only). Uses the shell-owned video-encoder sidecar
+# (Node.js on port 9877) for NVENC encoding via request_video_encoder IPC.
+#
+# Vid Studio is a frontend-only applet: audio-reactive visualiser, AI video
+# generation (future), and storyboard planning. No VRAM reservation needed
+# since NVENC uses the dedicated encoder chip, not CUDA cores.
+
+[applet]
+id = "vid"
+name = "Vid Studio"
+version = "0.1.0"
+description = "Audio-reactive visualiser and music video creation"
+icon = "vid"
+transport = "none"
+
+[engine]
+type = "none"
+backend = "none"
+server_binary = ""
+
+# No model groups: Vid is frontend-only.
+# NVENC encoding is handled by the shell's video_encoder sidecar.
+
+[requirements]
+# No CUDA or VRAM needed for the visualiser.
+# AI Video generation (future) will add model_groups when Wan 2.2 is integrated.

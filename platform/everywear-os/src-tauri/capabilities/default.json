@@ -1,12 +1,29 @@
 {
   "identifier": "default",
   "description": "Default capabilities for the Everywear OS main window",
-  "windows": ["main"],
+  "windows": ["main", "studio"],
   "permissions": [
     "core:default",
     "shell:allow-open",
     "dialog:default",
     "fs:default",
+    "fs:allow-read",
+    "fs:allow-write",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$HOME/Documents/Everywear Vault/**" },
+        { "path": "$HOME/Documents/Everywear Vault/.thumbnails/**" },
+        { "path": "$HOME/.everywear/**" },
+        { "path": "$APPDATA/**" },
+        { "path": "$APPCONFIG/**" },
+        { "path": "$APPLOCALDATA/**" },
+        { "path": "$DATA/everywear/**" },
+        { "path": "$LOCALDATA/everywear/**" },
+        { "path": "$DOCUMENT/Everywear Vault/**" },
+        { "path": "$DOCUMENT/Everywear Vault/.thumbnails/**" }
+      ]
+    },
     "process:default"
   ]
 }

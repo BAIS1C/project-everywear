@@ -1,4 +1,9 @@
+mod audit;
+mod inference;
+mod runtime;
 mod runtime_ipc;
+mod slot_manager;
+mod types;
 
 #[tokio::main]
 async fn main() {
