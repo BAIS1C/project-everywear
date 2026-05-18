@@ -16,7 +16,11 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@applets/*": ["../../applets/*"]
+      "@applets/*": ["../../applets/*"],
+      "@everywear/ewds/css/*": ["../../packages/ewds/src/css/*"],
+      "@everywear/ewds": ["../../packages/ewds/src/index.ts"],
+      "@everywear/shared": ["../../packages/shared/src/index.ts"],
+      "@everywear/transport": ["../../packages/transport/src/index.ts"]
     }
   },
   "include": ["src", "../../applets/*/src/**/*"],

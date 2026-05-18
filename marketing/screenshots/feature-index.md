@@ -1,6 +1,6 @@
 ﻿# EveryWear Marketing Screenshot Feature Index
 
-Generated: 2026-05-18T22:42:16
+Generated: 2026-05-18T23:06:40
 
 Total UI surfaces: 40
 Total rendered screenshots: 120

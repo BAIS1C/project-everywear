@@ -13,6 +13,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@applets': path.resolve(__dirname, '../../applets'),
+      // EWDS: CSS subpath must come before the catch-all so /css/* resolves to the directory
+      '@everywear/ewds/css': path.resolve(__dirname, '../../packages/ewds/src/css'),
+      '@everywear/ewds': path.resolve(__dirname, '../../packages/ewds/src/index.ts'),
+      '@everywear/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
+      '@everywear/transport': path.resolve(__dirname, '../../packages/transport/src/index.ts'),
     },
   },
   build: {

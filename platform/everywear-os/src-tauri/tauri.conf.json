@@ -20,6 +20,8 @@
         "minWidth": 1024,
         "minHeight": 700,
         "center": true,
+        "resizable": true,
+        "maximizable": true,
         "decorations": false,
         "transparent": false,
         "visible": true
@@ -42,7 +44,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co; frame-src http://127.0.0.1:*"
+      "csp": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://*.supabase.co https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co; frame-src http://127.0.0.1:*"
     }
   },
   "plugins": {

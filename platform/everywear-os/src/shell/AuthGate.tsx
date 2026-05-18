@@ -4,12 +4,12 @@
  * Everywear ID is required to use the shell. This gate wraps ShellLayout
  * and only renders children when useAuth().isAuthenticated is true.
  *
- * Supports: email OTP (magic link), email + password, signup.
+ * Supports: email + password login, signup, and signup email-code verification.
  */
 import { useState, type FormEvent } from 'react';
 import { useAuth } from './AuthContext';
 
-type AuthMode = 'login' | 'signup' | 'otp-sent' | 'otp-verify';
+type AuthMode = 'login' | 'signup' | 'otp-verify';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,7 +31,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function LoginScreen() {
-  const { signInWithOtp, signInWithPassword, signUp, verifyOtp, error } = useAuth();
+  const { signInWithPassword, signUp, verifyOtp, error } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,19 +48,18 @@ function LoginScreen() {
 
     try {
       if (mode === 'login') {
-        if (password) {
-          await signInWithPassword(email, password);
-        } else {
-          await signInWithOtp(email);
-          setMode('otp-sent');
+        if (!password) {
+          setLocalError('Password is required.');
+          return;
         }
+        await signInWithPassword(email, password);
       } else if (mode === 'signup') {
         if (!password) {
           setLocalError('Password is required for signup.');
           return;
         }
         await signUp(email, password);
-        setMode('otp-sent');
+        setMode('otp-verify');
       } else if (mode === 'otp-verify') {
         await verifyOtp(email, otpCode);
       }
@@ -79,7 +78,6 @@ function LoginScreen() {
           <p className="ew-auth-card__subtitle">
             {mode === 'login' && 'Sign in to your Everywear account'}
             {mode === 'signup' && 'Create your Everywear ID'}
-            {mode === 'otp-sent' && 'Check your email for a verification code'}
             {mode === 'otp-verify' && 'Enter the code from your email'}
           </p>
         </div>
@@ -102,20 +100,21 @@ function LoginScreen() {
 
               <label className="ew-auth-field">
                 <span className="ew-auth-field__label">
-                  Password {mode === 'login' && '(leave empty for magic link)'}
+                  Password
                 </span>
                 <input
                   type="password"
                   className="ew-auth-field__input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'login' ? 'Optional' : 'Required'}
+                  placeholder="Required"
+                  required
                 />
               </label>
             </>
           )}
 
-          {(mode === 'otp-sent' || mode === 'otp-verify') && (
+          {mode === 'otp-verify' && (
             <label className="ew-auth-field">
               <span className="ew-auth-field__label">Verification code</span>
               <input
@@ -141,9 +140,7 @@ function LoginScreen() {
             {submitting
               ? 'Please wait...'
               : mode === 'login'
-                ? password
-                  ? 'Sign In'
-                  : 'Send Magic Link'
+                ? 'Sign In'
                 : mode === 'signup'
                   ? 'Create Account'
                   : 'Verify Code'}
@@ -165,14 +162,6 @@ function LoginScreen() {
               onClick={() => { setMode('login'); setLocalError(null); }}
             >
               Already have an account? Sign in
-            </button>
-          )}
-          {mode === 'otp-sent' && (
-            <button
-              className="ew-auth-card__link"
-              onClick={() => setMode('otp-verify')}
-            >
-              I have a code, let me enter it
             </button>
           )}
           {mode === 'otp-verify' && (

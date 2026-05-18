@@ -2,7 +2,7 @@
  * AuthContext — Supabase auth + licence tier for Everywear OS shell.
  *
  * The shell owns the user session. Auth flow:
- *   1. User signs in via email OTP or password (Supabase Auth)
+ *   1. User signs in via email + password (Supabase Auth)
  *   2. On session, frontend calls `active_tier()` RPC for canonical tier
  *   3. Frontend invokes `push_auth_state` Tauri command with JWT + tier
  *   4. Shell Rust side stores user_session + licence_tier in AppState
@@ -26,10 +26,16 @@ import { pushAuthState, clearAuth, type LicenceTier, type AuthReport } from '../
 // ── Supabase client (singleton) ──────────────────────────────────
 
 const SUPABASE_URL = 'https://ykqdsihnzroglepoxwcj.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcWRzaWhuenJvZ2xlcG94d2NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgzNjc1MDUsImV4cCI6MjA1Mzk0MzUwNX0.fJAsKs-VZFEaDqEJrJiPIvfyIT1s7KXI2FW8CLXGJ6A';
+const SUPABASE_ANON_KEY = 'sb_publishable_uDAHS1s4gvl8hr9b1G-_yA_I7TY1RTE';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    storageKey: 'ew_supabase_auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -47,8 +53,6 @@ interface AuthContextValue {
   tier: LicenceTier;
   isAuthenticated: boolean;
   isLoading: boolean;
-  /** Sign in with email OTP (sends magic link). */
-  signInWithOtp: (email: string) => Promise<void>;
   /** Sign in with email + password. */
   signInWithPassword: (email: string, password: string) => Promise<void>;
   /** Sign up with email + password. */
@@ -70,7 +74,6 @@ const AuthCtx = createContext<AuthContextValue>({
   tier: 'demo',
   isAuthenticated: false,
   isLoading: true,
-  signInWithOtp: async () => {},
   signInWithPassword: async () => {},
   signUp: async () => {},
   verifyOtp: async () => {},
@@ -93,12 +96,26 @@ export function useAuth() {
  * for the given user_id and returns 'demo'|'gener8'|'gener8_pro'|'creator_studio'.
  */
 async function fetchActiveTier(userId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('active_tier', { p_user: userId });
-  if (error) {
-    console.warn('active_tier() RPC failed, defaulting to demo:', error.message);
+  try {
+    const result = await Promise.race([
+      supabase.rpc('active_tier', { p_user: userId }),
+      new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({
+          data: null,
+          error: { message: 'active_tier() timed out after 5s' },
+        }), 5000),
+      ),
+    ]);
+    const { data, error } = result;
+    if (error) {
+      console.warn('active_tier() RPC failed, defaulting to demo:', error.message);
+      return 'demo';
+    }
+    return (data as string) || 'demo';
+  } catch (e) {
+    console.warn('active_tier() RPC failed, defaulting to demo:', e);
     return 'demo';
   }
-  return (data as string) || 'demo';
 }
 
 /**
@@ -109,11 +126,17 @@ async function fetchActiveTier(userId: string): Promise<string> {
 async function syncToShell(session: Session | null, tier: string): Promise<AuthReport | null> {
   if (!session) return null;
   try {
-    return await pushAuthState({
-      access_token: session.access_token,
-      tier,
-      exp: session.expires_at,
-    });
+    return await Promise.race([
+      pushAuthState({
+        access_token: session.access_token,
+        tier,
+        exp: session.expires_at,
+      }),
+      new Promise<null>((resolve) => setTimeout(() => {
+        console.warn('push_auth_state timed out after 3s; continuing with Supabase session.');
+        resolve(null);
+      }, 3000)),
+    ]);
   } catch (e) {
     console.warn('push_auth_state failed:', e);
     return null;
@@ -135,15 +158,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const tierStr = await fetchActiveTier(session.user.id);
-    const report = await syncToShell(session, tierStr);
-
     const supaUser = session.user;
     const handle =
       (supaUser.user_metadata?.handle as string) ||
       (supaUser.user_metadata?.username as string) ||
       supaUser.email?.split('@')[0] ||
       'user';
+
+    // Login gate must depend on the Supabase session, not on slower
+    // entitlement/shell-sync side effects. Set a valid user immediately,
+    // then refine tier/payment fields once the async checks return.
+    setUser({
+      id: supaUser.id,
+      email: supaUser.email || '',
+      handle,
+      tier: 'demo',
+      isPaid: false,
+      isPro: false,
+    });
+
+    const tierStr = await fetchActiveTier(session.user.id);
+    const report = await syncToShell(session, tierStr);
 
     setUser({
       id: supaUser.id,
@@ -159,11 +194,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Hard safety net: no matter what happens in the async chain,
+    // the spinner WILL clear after 6 seconds. This is independent of
+    // the try/catch/finally below — belt and suspenders.
+    const safetyTimer = setTimeout(() => {
       if (mounted) {
-        await hydrateSession(session);
+        console.warn('Auth init safety timeout fired (6s). Forcing isLoading=false.');
         setIsLoading(false);
+      }
+    }, 6000);
+
+    const init = async () => {
+      try {
+        // getSession() reads from localStorage; if a stale session is cached
+        // it tries to refresh the token (network call). Race it so we don't
+        // hang forever if the refresh is blocked.
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null } }>((resolve) =>
+            setTimeout(() => {
+              console.warn('getSession() took >4s, assuming no valid session.');
+              resolve({ data: { session: null } });
+            }, 4000)
+          ),
+        ]);
+        if (mounted) {
+          await hydrateSession(result.data.session);
+        }
+      } catch (err) {
+        console.error('Auth init failed:', err);
+      } finally {
+        clearTimeout(safetyTimer);
+        if (mounted) setIsLoading(false);
       }
     };
     init();
@@ -184,35 +246,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Auth methods ────────────────────────────────────────────────
 
-  const signInWithOtp = async (email: string) => {
-    setError(null);
-    const { error: err } = await supabase.auth.signInWithOtp({ email });
-    if (err) setError(err.message);
-  };
-
   const signInWithPassword = async (email: string, password: string) => {
     setError(null);
-    const { error: err } = await supabase.auth.signInWithPassword({
+    const { data, error: err } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (err) setError(err.message);
+    if (err) {
+      setError(err.message);
+      throw err;
+    }
+    if (!data.session) {
+      const message = 'Sign in succeeded but Supabase did not return a session.';
+      setError(message);
+      throw new Error(message);
+    }
+    await hydrateSession(data.session);
   };
 
   const signUp = async (email: string, password: string) => {
     setError(null);
-    const { error: err } = await supabase.auth.signUp({ email, password });
-    if (err) setError(err.message);
+    const { data, error: err } = await supabase.auth.signUp({ email, password });
+    if (err) {
+      setError(err.message);
+      throw err;
+    }
+    if (data.session) {
+      await hydrateSession(data.session);
+    }
   };
 
   const verifyOtp = async (email: string, token: string) => {
     setError(null);
-    const { error: err } = await supabase.auth.verifyOtp({
+    let { data, error: err } = await supabase.auth.verifyOtp({
       email,
       token,
       type: 'email',
     });
-    if (err) setError(err.message);
+    if (err) {
+      const retry = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'signup',
+      });
+      data = retry.data;
+      err = retry.error;
+    }
+    if (err) {
+      setError(err.message);
+      throw err;
+    }
+    if (!data.session) {
+      const message = 'Verification succeeded but Supabase did not return a session.';
+      setError(message);
+      throw new Error(message);
+    }
+    await hydrateSession(data.session);
   };
 
   const signOut = async () => {
@@ -257,7 +346,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tier: user?.tier ?? 'demo',
         isAuthenticated: !!user,
         isLoading,
-        signInWithOtp,
         signInWithPassword,
         signUp,
         verifyOtp,

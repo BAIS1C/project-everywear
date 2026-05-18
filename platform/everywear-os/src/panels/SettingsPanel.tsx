@@ -1,13 +1,14 @@
-import { useTheme, type Skin } from '../shell/ThemeContext';
+import { useTheme, type Theme } from '../shell/ThemeContext';
 
-const SKINS: { id: Skin; name: string; desc: string }[] = [
-  { id: 'classic', name: 'Classic', desc: 'Clean modern aesthetic' },
-  { id: 'refined', name: 'Refined', desc: 'Bevelled, angular geometry' },
-  { id: 'terminal', name: 'Terminal', desc: 'Monospace, warm amber' },
+const THEMES: { id: Theme; name: string; desc: string }[] = [
+  { id: 'light', name: 'Light', desc: 'Off-cream daytime desktop' },
+  { id: 'classic', name: 'Classic', desc: 'Default cyan dark desktop' },
+  { id: 'refined', name: 'Refined', desc: 'Calmer steel-blue geometry' },
+  { id: 'terminal', name: 'Terminal', desc: 'Monospace industrial console' },
 ];
 
 export function SettingsPanel() {
-  const { skin, setSkin, mode, toggleMode } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="ew-settings">
@@ -19,13 +20,13 @@ export function SettingsPanel() {
         <div className="ew-section__title">Appearance</div>
 
         <div style={{ marginBottom: 20 }}>
-          <label className="ew-field__label">Skin</label>
+          <label className="ew-field__label">Theme</label>
           <div className="ew-settings__skin-grid">
-            {SKINS.map((s) => (
+            {THEMES.map((s) => (
               <div
                 key={s.id}
-                className={`ew-settings__skin-option ${skin === s.id ? 'ew-settings__skin-option--active' : ''}`}
-                onClick={() => setSkin(s.id)}
+                className={`ew-settings__skin-option ${theme === s.id ? 'ew-settings__skin-option--active' : ''}`}
+                onClick={() => setTheme(s.id)}
               >
                 <div className="ew-settings__skin-name">{s.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--ew-text-faint)', marginTop: 4 }}>
@@ -34,13 +35,6 @@ export function SettingsPanel() {
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="ew-field">
-          <label className="ew-field__label">Mode</label>
-          <button className="ew-btn ew-btn--ghost" onClick={toggleMode}>
-            {mode === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-          </button>
         </div>
       </div>
 

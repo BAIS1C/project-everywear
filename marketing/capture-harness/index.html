@@ -30,30 +30,7 @@
       --font-mono: "JetBrains Mono", "Consolas", monospace;
       --radius: 12px;
     }
-    body[data-variant="ewd-clean"] {
-      --bg: #eef3f7;
-      --sunken: #dfe8ef;
-      --surface: rgba(255,255,255,.86);
-      --raised: rgba(255,255,255,.94);
-      --overlay: #ffffff;
-      --border: rgba(28,45,64,.12);
-      --border-strong: rgba(28,45,64,.24);
-      --text: #121923;
-      --muted: #516173;
-      --faint: #7a8896;
-      --primary: #0077b8;
-      --primary-soft: rgba(0,119,184,.10);
-      --warm: #b87516;
-      --success: #168a4f;
-      --warning: #b87516;
-      --danger: #c24141;
-      --premium: #6d5bd0;
-      --shadow: 0 24px 70px rgba(23,40,62,.18);
-      --glow: 0 0 0 rgba(0,0,0,0);
-      --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
-      --radius: 10px;
-    }
-    body[data-variant="ewd-signal"] {
+    body[data-variant="classic"] {
       --bg: #07090d;
       --sunken: #030509;
       --surface: rgba(14,18,28,.9);
@@ -75,7 +52,32 @@
       --glow: 0 0 44px rgba(0,213,255,.34);
       --radius: 14px;
     }
-    body[data-variant="ewd-darkops"] {
+    body[data-variant="refined"] {
+      --bg: #061016;
+      --sunken: #02070a;
+      --surface: rgba(8,18,25,.88);
+      --raised: rgba(14,31,43,.94);
+      --overlay: rgba(18,42,55,.97);
+      --border: rgba(0,194,255,.18);
+      --border-strong: rgba(0,194,255,.34);
+      --text: #e4f6ff;
+      --muted: #8fb4c8;
+      --faint: #557083;
+      --primary: #00bce7;
+      --primary-soft: rgba(0,188,231,.14);
+      --warm: #d99b3f;
+      --success: #31d47b;
+      --warning: #f2b84b;
+      --danger: #e45858;
+      --premium: #6f7cff;
+      --shadow: 0 28px 90px rgba(0,0,0,.46);
+      --glow: 0 0 34px rgba(0,188,231,.2);
+      --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+      --radius: 0;
+      --clip-window: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 28px 100%, 0 calc(100% - 28px));
+      --clip-card: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+    }
+    body[data-variant="terminal"] {
       --bg: #0f0d0b;
       --sunken: #080706;
       --surface: #191612;
@@ -138,7 +140,15 @@
       overflow: hidden;
       position: relative;
     }
-    body[data-variant="ewd-darkops"] .frame { border-width: 2px; }
+    body[data-variant="terminal"] .frame { border-width: 2px; }
+    body[data-variant="refined"] .frame,
+    body[data-variant="refined"] .section,
+    body[data-variant="refined"] .card,
+    body[data-variant="refined"] .app-viewport,
+    body[data-variant="refined"] .modal,
+    body[data-variant="refined"] .login-card {
+      clip-path: var(--clip-window);
+    }
     .titlebar {
       height: 62px;
       background: color-mix(in srgb, var(--sunken) 86%, transparent);
@@ -153,7 +163,7 @@
     }
     .window-controls { display: flex; gap: 11px; align-items: center; }
     .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--faint); }
-    body[data-variant="ewd-darkops"] .dot { border-radius: 0; }
+    body[data-variant="terminal"] .dot { border-radius: 0; }
     .dot.red { background: var(--danger); }
     .dot.yellow { background: var(--warning); }
     .dot.green { background: var(--success); }
@@ -175,7 +185,7 @@
     .profile-name { margin-top: 14px; font: 800 24px var(--font-display); }
     .profile-mail { margin-top: 4px; color: var(--muted); font: 600 17px var(--font-mono); }
     .tier { display: inline-block; margin-top: 12px; padding: 6px 12px; border: 1px solid var(--border-strong); color: var(--primary); background: var(--primary-soft); border-radius: 999px; font: 800 15px var(--font-mono); text-transform: uppercase; }
-    body[data-variant="ewd-darkops"] .tier { border-radius: 0; }
+    body[data-variant="terminal"] .tier { border-radius: 0; }
     .nav { display: grid; gap: 8px; }
     .nav-title { margin: 10px 8px 0; font: 800 13px var(--font-mono); color: var(--faint); text-transform: uppercase; letter-spacing: 4px; }
     .nav-item {
@@ -219,9 +229,9 @@
     .card-copy { margin-top: 12px; color: var(--muted); font-size: 20px; line-height: 1.35; min-height: 82px; }
     .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
     .tag { padding: 5px 9px; border: 1px solid var(--border); color: var(--muted); font: 800 13px var(--font-mono); text-transform: uppercase; border-radius: 999px; }
-    body[data-variant="ewd-darkops"] .tag { border-radius: 0; }
+    body[data-variant="terminal"] .tag { border-radius: 0; }
     .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid var(--border-strong); background: var(--primary-soft); color: var(--primary); border-radius: 999px; font: 900 14px var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
-    body[data-variant="ewd-darkops"] .pill { border-radius: 0; }
+    body[data-variant="terminal"] .pill { border-radius: 0; }
     .section {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -248,14 +258,14 @@
     .btn.primary { background: var(--primary); color: color-mix(in srgb, var(--bg) 90%, #000); border: 0; }
     .btn.ghost { background: transparent; color: var(--muted); }
     .progress { height: 14px; border: 1px solid var(--border); background: var(--sunken); border-radius: 999px; overflow: hidden; }
-    body[data-variant="ewd-darkops"] .progress { border-radius: 0; }
+    body[data-variant="terminal"] .progress { border-radius: 0; }
     .bar { height: 100%; width: var(--w, 50%); background: linear-gradient(90deg, var(--primary), var(--warm)); box-shadow: var(--glow); }
     .metric { font: 900 48px var(--font-display); color: var(--primary); }
     .mini { color: var(--muted); font: 700 17px var(--font-mono); }
     .table { display: grid; gap: 10px; }
     .table-row { display: grid; grid-template-columns: 1.4fr .8fr .7fr .6fr .6fr; gap: 18px; align-items: center; min-height: 72px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--raised) 70%, transparent); }
     .thumb { width: 52px; height: 52px; border-radius: 8px; background: linear-gradient(135deg, var(--primary-soft), color-mix(in srgb, var(--premium) 22%, transparent)); border: 1px solid var(--border); }
-    body[data-variant="ewd-darkops"] .thumb { border-radius: 0; }
+    body[data-variant="terminal"] .thumb { border-radius: 0; }
     .modal-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 70%, transparent); backdrop-filter: blur(8px); }
     .modal { width: 780px; background: var(--overlay); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: var(--shadow); padding: 32px; }
     .login-wrap { height: 100%; display: grid; place-items: center; }
@@ -266,7 +276,7 @@
     .field label { color: var(--muted); font: 800 15px var(--font-mono); text-transform: uppercase; letter-spacing: 2px; }
     .auth-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
     .spinner { width: 82px; height: 82px; border: 7px solid var(--border); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 26px; }
-    body[data-variant="ewd-darkops"] .spinner { border-radius: 0; }
+    body[data-variant="terminal"] .spinner { border-radius: 0; }
     .app-viewport { height: 100%; display: grid; grid-template-rows: 56px 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--sunken); }
     .app-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0 22px; background: var(--surface); border-bottom: 1px solid var(--border); font: 900 17px var(--font-mono); text-transform: uppercase; letter-spacing: 2px; }
     .pane-grid { height: 100%; display: grid; grid-template-columns: 360px 1fr 380px; }
@@ -280,7 +290,7 @@
     .composer { padding: 20px 24px; border-top: 1px solid var(--border); background: var(--surface); }
     .wave { height: 132px; display: grid; grid-template-columns: repeat(56,1fr); gap: 5px; align-items: center; }
     .wave span { display: block; height: calc(18px + var(--h) * 1px); background: linear-gradient(180deg, var(--primary), var(--warm)); border-radius: 999px; opacity: .86; }
-    body[data-variant="ewd-darkops"] .wave span { border-radius: 0; }
+    body[data-variant="terminal"] .wave span { border-radius: 0; }
     .timeline { display: grid; grid-template-columns: repeat(9,1fr); gap: 10px; height: 110px; }
     .clip { border: 1px solid var(--border); border-radius: var(--radius); background: var(--primary-soft); }
     .preview {
@@ -298,21 +308,175 @@
         linear-gradient(135deg, #111827, #05060a);
     }
     .status-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; background: var(--success); box-shadow: 0 0 18px currentColor; color: var(--success); }
-    body[data-variant="ewd-darkops"] .status-dot { border-radius: 0; }
+    body[data-variant="terminal"] .status-dot { border-radius: 0; }
     .status-dot.off { background: var(--danger); color: var(--danger); }
     .status-dot.warn { background: var(--warning); color: var(--warning); }
     .empty-center { height: 100%; display: grid; place-items: center; text-align: center; color: var(--muted); }
     .empty-mark { width: 116px; height: 116px; display: grid; place-items: center; border: 1px solid var(--border-strong); background: var(--primary-soft); color: var(--primary); border-radius: var(--radius); margin: 0 auto 22px; font: 900 42px var(--font-display); }
     .skeleton { background: linear-gradient(90deg, color-mix(in srgb, var(--raised) 70%, transparent), color-mix(in srgb, var(--primary) 10%, transparent), color-mix(in srgb, var(--raised) 70%, transparent)); border-radius: var(--radius); min-height: 28px; }
+    .ew-desktop {
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background:
+        linear-gradient(color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px),
+        radial-gradient(820px 520px at 70% 42%, color-mix(in srgb, var(--premium) 8%, transparent), transparent 72%),
+        radial-gradient(900px 620px at 18% 82%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 66%),
+        color-mix(in srgb, var(--sunken) 92%, #000);
+      background-size: 40px 40px, 40px 40px, auto, auto, auto;
+      box-shadow: var(--shadow), var(--glow);
+    }
+    body[data-variant="terminal"] .ew-desktop {
+      background:
+        linear-gradient(color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px),
+        color-mix(in srgb, var(--sunken) 94%, #000);
+      background-size: 30px 30px, 30px 30px, auto;
+      border-radius: 0;
+    }
+    body[data-variant="refined"] .ew-desktop { border-radius: 0; clip-path: var(--clip-window); }
+    .os-topbar {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 70px;
+      display: grid;
+      grid-template-columns: 220px 1fr 220px;
+      align-items: center;
+      border-bottom: 1px solid var(--border-strong);
+      background: color-mix(in srgb, var(--sunken) 82%, transparent);
+      padding: 0 18px;
+      z-index: 10;
+    }
+    .os-lights { display: flex; align-items: center; gap: 16px; }
+    .os-brand {
+      text-align: center;
+      color: color-mix(in srgb, var(--text) 82%, transparent);
+      font: 900 21px var(--font-display);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .os-mark { color: var(--primary); font: 900 28px var(--font-display); }
+    .desktop-icons {
+      position: absolute;
+      top: 128px;
+      left: 48px;
+      width: 270px;
+      display: grid;
+      grid-template-columns: 106px 106px;
+      column-gap: 42px;
+      row-gap: 34px;
+      z-index: 6;
+    }
+    .desk-icon {
+      width: 106px;
+      min-height: 136px;
+      text-align: center;
+      color: color-mix(in srgb, var(--text) 88%, transparent);
+      font: 800 18px var(--font-body);
+      text-shadow: 0 2px 8px rgba(0,0,0,.7);
+      position: relative;
+    }
+    .icon-tile {
+      width: 82px;
+      height: 82px;
+      margin: 0 auto 10px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--primary) 30%, transparent), transparent 56%),
+        color-mix(in srgb, var(--raised) 72%, transparent);
+      box-shadow: 0 10px 28px rgba(0,0,0,.32);
+      color: var(--text);
+      font: 900 25px var(--font-display);
+    }
+    body[data-variant="terminal"] .icon-tile { border-radius: 0; }
+    body[data-variant="refined"] .icon-tile { border-radius: 0; clip-path: var(--clip-card); }
+    .desk-icon.off { opacity: .22; }
+    .desk-icon .online {
+      position: absolute;
+      top: -4px;
+      right: 14px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #43e17d;
+      box-shadow: 0 0 18px rgba(67,225,125,.7);
+    }
+    body[data-variant="terminal"] .desk-icon .online { border-radius: 0; }
+    .os-bottom {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 66px;
+      display: grid;
+      grid-template-columns: 160px 1fr auto auto;
+      align-items: center;
+      gap: 28px;
+      border-top: 1px solid var(--border-strong);
+      background: color-mix(in srgb, var(--sunken) 86%, transparent);
+      padding: 0 28px;
+      z-index: 10;
+      font: 800 16px var(--font-mono);
+      color: var(--muted);
+    }
+    .skin-tabs { display: flex; border: 1px solid var(--border-strong); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+    .skin-tabs span { padding: 14px 23px; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; }
+    .skin-tabs .active { background: var(--primary); color: color-mix(in srgb, var(--bg) 92%, #000); }
+    .desktop-status {
+      position: absolute;
+      left: 620px;
+      top: 118px;
+      z-index: 3;
+      color: var(--muted);
+      font: 800 16px var(--font-mono);
+      line-height: 1.8;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .desktop-status b { color: var(--primary); }
+    .desktop-clock {
+      position: absolute;
+      left: 50%;
+      top: 47%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      color: color-mix(in srgb, var(--primary) 42%, transparent);
+      font: 900 126px var(--font-display);
+      letter-spacing: 4px;
+      text-align: center;
+    }
+    .desktop-clock span {
+      display: block;
+      margin-top: 18px;
+      color: var(--muted);
+      font: 800 19px var(--font-mono);
+      letter-spacing: 8px;
+    }
+    .os-window {
+      position: absolute;
+      left: 428px;
+      top: 132px;
+      right: 64px;
+      bottom: 98px;
+      z-index: 8;
+    }
+    .os-window .frame { border-radius: var(--radius); }
+    .os-window .main { height: calc(100% - 62px); overflow: hidden; }
+    .desktop-only .os-window { display: none; }
   </style>
 </head>
 <body data-variant="ewd-clean">
   <div id="root"></div>
   <script>
     const variants = {
-      "ewd-clean": "EWD Clean",
-      "ewd-signal": "EWD Signal",
-      "ewd-darkops": "EWD Dark Ops"
+      "classic": "Classic",
+      "refined": "Refined",
+      "terminal": "Terminal"
     };
 
     const applets = [
@@ -324,6 +488,24 @@
       ["VD", "Vid Studio", "Audio reactive visuals, lyric timing, and export presets.", ["video", "lyrics", "export"]],
       ["CS", "Character Studio", "VRM character staging, rigs, expressions, and scene references.", ["characters", "vrm", "creative"]],
       ["SN", "Strands Game", "Game world launcher and modular ecosystem surface.", ["game", "world", "launcher"]]
+    ];
+    const desktopApps = [
+      ["S3", "S3 Gener8", "on"],
+      ["SOON", "S3 Forum", "on"],
+      ["S3", "S3 DAW", "on"],
+      ["GAME", "S3 Game", "off"],
+      ["S3", "S3 Vid", "on"],
+      ["CODEX", "S3 Codex", "off"],
+      ["LIB", "S3 Library", "on"],
+      ["MSG", "S3 Messages", "off"],
+      ["AI", "S3 AI Director", "on"],
+      ["S3", "S3 StyleForge", "on"],
+      ["TP", "Trading Post", "on"],
+      ["1M", "S3 1magen", "on"],
+      ["K", "Kasai", "on"],
+      ["3N", "3nvizen", "on"],
+      ["MY", "Mymories", "off"],
+      ["CS", "Character Studio", "on"]
     ];
 
     const vaultItems = [
@@ -399,6 +581,17 @@
     function titlebar(name = "Everywear OS") {
       return `<div class="titlebar"><span>${name}</span><div class="window-controls"><span class="dot yellow"></span><span class="dot green"></span><span class="dot red"></span></div></div>`;
     }
+    function desktopIcons(active = "") {
+      return `<div class="desktop-icons">${desktopApps.map(a => `<div class="desk-icon ${a[2] === "off" ? "off" : ""}"><span class="online"></span><div class="icon-tile">${a[0]}</div><div>${a[1]}</div></div>`).join("")}</div>`;
+    }
+    function osChrome(activeVariant) {
+      const variant = q("variant", "classic");
+      return `<div class="os-topbar"><div class="os-lights"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="os-mark">Ǝ</span></div><div class="os-brand">S3 Studio</div><div></div></div>
+        ${desktopIcons(activeVariant)}
+        <div class="desktop-status"><b>EVERYWEAR / 1.1</b><br>NODE - HOME.STRANDS.LOCAL<br>UPTIME - 14D 06:22<br>PEERS - 0 ONLINE<br>FRIENDS - <b>0 PRESENT</b></div>
+        <div class="desktop-clock">22:57<span>LOCAL - HOME NODE - BUILD 1.1.0</span></div>
+        <div class="os-bottom"><span class="os-mark">⬡</span><span></span><div class="skin-tabs"><span class="${variant === "classic" ? "active" : ""}">Classic</span><span class="${variant === "refined" ? "active" : ""}">Refined</span><span class="${variant === "terminal" ? "active" : ""}">Terminal</span></div><span>ⓢ seanie@ever... &nbsp; | &nbsp; 10:57 PM</span></div>`;
+    }
     function sidebar(active = "Applets") {
       const nav = ["Applets", "Profile", "Wallet", "Community", "Hardware", "Settings", "Vault", "Logs"];
       const appnav = [["K","Kasai","on"],["3N","3nvizen","off"],["CS","Character Studio","on"]];
@@ -410,7 +603,11 @@
         <div class="side-footer"><span class="status-dot"></span> RTX 5090 - 26,420 MB free<br>1magen: Ultra Local Stack</div>
       </aside>`;
     }
-    function shell(active, content) { return `<div class="frame">${titlebar()}<div class="shell">${sidebar(active)}<main class="main">${content}</main></div></div>`; }
+    function desktopShell(active, content, options = {}) {
+      const hasWindow = content && content.trim().length > 0;
+      return `<div class="ew-desktop ${hasWindow ? "" : "desktop-only"}">${osChrome(active)}${hasWindow ? `<div class="os-window"><div class="frame">${titlebar(active || "Everywear OS")}<main class="main">${content}</main></div></div>` : ""}</div>`;
+    }
+    function shell(active, content) { return desktopShell(active, content); }
     function appFrame(name, content) { return `<div class="app-viewport"><div class="app-toolbar"><span>${name}</span><button class="btn ghost" style="min-height:38px;padding:0 14px">Close</button></div>${content}</div>`; }
     function tableRows(items = vaultItems) {
       return `<div class="table">${items.map((i, idx) => `<div class="table-row"><div class="row" style="justify-content:flex-start"><div class="thumb"></div><div><div class="value">${esc(i[0])}</div><div class="mini">${esc(i[1])} - ${esc(i[2])}</div></div></div><div class="mini">${i[3]}</div><div class="mini">${i[4]}</div><div>${idx === 0 ? '<span class="pill">Favorite</span>' : '<span class="tag">Vault</span>'}</div><button class="btn ghost" style="min-height:40px">Open</button></div>`).join("")}</div>`;
@@ -420,7 +617,8 @@
     }
     function launcher(openFolder = false) {
       const folder = `<div class="section" style="margin-top:34px"><div class="row"><div><h2>S3 Studio</h2><p class="subtitle" style="font-size:20px">Music, creator tools, and launchable local engines.</p></div><span class="pill">${openFolder ? "Expanded" : "Folder - 3 items"}</span></div>${openFolder ? `<div class="grid cards" style="grid-template-columns:repeat(3,1fr)">${applets.slice(1,4).map(a => appCard(a)).join("")}</div>` : ""}</div>`;
-      return shell("Applets", `<h1>Desktop</h1><p class="subtitle">8 applets available. Local apps launch through a shared GPU, model cache, vault, and signed IPC channel.</p><div class="grid cards">${applets.slice(0,4).map((a,i)=>appCard(a,i===3?"locked":"")).join("")}</div>${folder}`);
+      if (!openFolder) return desktopShell("Desktop", "");
+      return shell("S3 Studio", `<h1>S3 Studio</h1><p class="subtitle">Folder view for music, creator tools, and launchable local engines. Applets still live as desktop objects.</p>${folder}`);
     }
     function kasai(state) {
       const skills = [["MR","MyMory Recall","Vault-first retrieval before answering"],["CR","Code Review","Architecture-aware review skill"],["FO","File Organizer","Sort project files by convention"],["TD","Task Decomposer","Shard work across local agents"]];
@@ -505,7 +703,7 @@
     }
 
     function render() {
-      const variant = q("variant", "ewd-clean");
+      const variant = q("variant", "classic");
       const scene = q("scene", "shell-launcher");
       const cutout = q("cutout", "false") === "true";
       document.body.dataset.variant = variant;

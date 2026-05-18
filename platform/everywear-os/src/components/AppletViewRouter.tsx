@@ -13,6 +13,7 @@
 
 import React, { Suspense, Component } from 'react';
 import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { AppletLoadingSkeleton } from './AppletLoadingSkeleton';
 
 // ── Lazy applet registry ──────────────────────────────────────────
@@ -23,12 +24,26 @@ import { AppletLoadingSkeleton } from './AppletLoadingSkeleton';
 const APPLET_COMPONENTS: Record<string, {
   component: React.LazyExoticComponent<React.ComponentType<{ skin?: string; mode?: string }>>;
   displayName: string;
+  needsRouter?: boolean;
 }> = {
   kasai: {
     component: React.lazy(() =>
       import('@applets/kasai/src/shell/KasaiCore').then(m => ({ default: m.KasaiCore }))
     ),
     displayName: 'Kasai',
+  },
+  '1magen': {
+    component: React.lazy(() =>
+      import('@applets/1magen/src/shell/ImagenCore').then(m => ({ default: m.ImagenCore }))
+    ),
+    displayName: '1magen',
+  },
+  gener8: {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/App').then(m => ({ default: m.App }))
+    ),
+    displayName: 'Gener8',
+    needsRouter: true,
   },
   '3nvizen': {
     component: React.lazy(() => import('@applets/3nvizen/src/index')),
@@ -131,6 +146,12 @@ export function AppletViewRouter({ appletId, skin, mode, onClose }: AppletViewRo
 
   const LazyComponent = entry.component;
 
+  const appletContent = (
+    <Suspense fallback={<AppletLoadingSkeleton appletName={entry.displayName} />}>
+      <LazyComponent skin={skin} mode={mode} />
+    </Suspense>
+  );
+
   return (
     <div className="avr-container">
       <div className="avr-toolbar">
@@ -149,9 +170,11 @@ export function AppletViewRouter({ appletId, skin, mode, onClose }: AppletViewRo
           displayName={entry.displayName}
           onRetry={() => { /* re-render triggers lazy re-attempt */ }}
         >
-          <Suspense fallback={<AppletLoadingSkeleton appletName={entry.displayName} />}>
-            <LazyComponent skin={skin} mode={mode} />
-          </Suspense>
+          {entry.needsRouter ? (
+            <MemoryRouter>{appletContent}</MemoryRouter>
+          ) : (
+            appletContent
+          )}
         </AppletErrorBoundary>
       </div>
     </div>

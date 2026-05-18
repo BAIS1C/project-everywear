@@ -8,9 +8,9 @@ $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $Harness = Join-Path $PSScriptRoot "index.html"
 $OutRoot = Join-Path $Root "marketing\screenshots"
 $Variants = @(
-  @{ id = "ewd-clean"; name = "EWD Clean"; dir = "ewd-clean" },
-  @{ id = "ewd-signal"; name = "EWD Signal"; dir = "ewd-signal" },
-  @{ id = "ewd-darkops"; name = "EWD Dark Ops"; dir = "ewd-darkops" }
+  @{ id = "classic"; name = "Classic"; dir = "classic" },
+  @{ id = "refined"; name = "Refined"; dir = "refined" },
+  @{ id = "terminal"; name = "Terminal"; dir = "terminal" }
 )
 $Scenes = @(
   @{ id="auth-loading"; title="Auth loading"; source="platform/everywear-os/src/shell/AuthGate.tsx"; category="Onboarding" },
@@ -223,8 +223,11 @@ foreach ($category in ($Scenes | Group-Object category | Sort-Object Name)) {
   $featureLines.Add("")
 }
 $featureLines.Add("## Audit Notes")
+$featureLines.Add("- Canonical visual/product baseline is S3 Studio / demo.strandsnation.xyz: desktop OS metaphor, applet icons, sparse local-node status, top chrome, and bottom theme/status bar.")
+$featureLines.Add("- EWDS is treated as the skin/token layer for Classic, Refined, and Terminal, not as permission to change the product into a sidebar dashboard.")
 $featureLines.Add("- Captures include deterministic synthetic data for backend-only states such as sidecar health, model downloads, bug reports, and generation progress.")
 $featureLines.Add("- mymories, s3studio, and strands-game do not currently expose standalone local UI code in this repository; they are represented through shell/vault/ecosystem surfaces.")
+$featureLines.Add("- Wallet is present in the repository but should be considered product-suspect until explicitly approved for the canonical desktop shell.")
 $featureLines.Add("- 3nvizen depends on the LTX sidecar at 127.0.0.1:8787; offline and running states are captured through the deterministic marketing harness.")
 $featureLines.Add("- Shell auth requires live Supabase/Tauri state; onboarding screens are rendered as audited deterministic states.")
 $featureLines | Set-Content -Path (Join-Path $OutRoot "feature-index.md") -Encoding UTF8
@@ -286,18 +289,22 @@ $report = [pscustomobject]@{
   missing_or_incomplete = @(
     "mymories has Rust/vault scaffolding but no local frontend surface in this repository.",
     "s3studio and strands-game are represented as web/ecosystem applets, not local screens.",
-    "Several Tauri-only states require backend events; deterministic synthetic data was used for capture."
+    "Several Tauri-only states require backend events; deterministic synthetic data was used for capture.",
+    "The canonical desktop baseline comes from S3 Studio/demo.strandsnation.xyz and should supersede older vault/sidebar shell assumptions."
   )
   broken_or_risky = @(
     "3nvizen local sidecar health is expected to be offline unless the LTX adapter is running.",
     "Shell auth depends on Supabase session hydration and cannot show authenticated shell without local/live session or mocks.",
-    "Vid and Gener8 export/generation flows depend on sidecars and browser media APIs."
+    "Vid and Gener8 export/generation flows depend on sidecars and browser media APIs.",
+    "Wallet exists in the repo but is product-suspect unless the Strands economy surface is explicitly approved for the canonical shell."
   )
   suggested_ux_improvements = @(
-    "Add a first-party demo/capture mode that hydrates shell panels with deterministic data.",
+    "Rebase the Everywear shell on the S3 Studio desktop OS pattern: applet icons, app windows, sparse status text, and bottom theme/status controls.",
+    "Add a first-party demo/capture mode that hydrates desktop applet states with deterministic data.",
     "Expose explicit empty, loading, error, and progress story states for each applet.",
     "Give installer/model provisioning a shell-level visual route so it can be marketed and tested directly.",
-    "Add route-level deep links for applet sub-states such as vault detail, bug report, and generator progress."
+    "Add route-level deep links for applet sub-states such as vault detail, bug report, and generator progress.",
+    "Hide or quarantine repo-present surfaces that are not in the canonical product map."
   )
 }
 $report | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $OutRoot "capture-report.json") -Encoding UTF8
