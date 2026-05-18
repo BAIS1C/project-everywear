@@ -189,52 +189,45 @@ function DesktopClock() {
 function DesktopCanvas({ theme, gpu }: { theme: string; gpu: SystemGpuState | null }) {
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
-  if (isLight || isTerminal) {
+  if (isLight || isTerminal || theme === 'classic' || theme === 'refined') {
     return (
-      <div className={`ew-canvas ${isLight ? 'ew-canvas--light' : 'ew-canvas--terminal'}`}>
-        <DesktopClock />
-        <div className="ew-canvas__subtitle">LOCAL &middot; HOME NODE &middot; BUILD 1.0.0</div>
-        <div className="ew-canvas__status-row">
-          <div className="ew-canvas__status-card">
-            <div className="ew-canvas__status-label">NODE</div>
-            <div className="ew-canvas__status-value">home.strands.local</div>
-            <div className="ew-canvas__status-detail">status: awake</div>
-          </div>
-          <div className="ew-canvas__status-card">
-            <div className="ew-canvas__status-label">INFERENCE</div>
-            <div className="ew-canvas__status-value">{gpu?.backend?.type === 'Cuda' ? 'ready' : 'idle'}</div>
-            <div className="ew-canvas__status-detail">{gpu?.primary_gpu?.replace('NVIDIA ', '').replace('GeForce ', '') || 'detecting...'}</div>
-          </div>
-          <div className="ew-canvas__status-card">
-            <div className="ew-canvas__status-label">NETWORK</div>
-            <div className="ew-canvas__status-value">peers: 0 online</div>
-            <div className="ew-canvas__status-detail">friends: 0 present</div>
+      <div
+        className={`ew-canvas ${
+          isLight
+            ? 'ew-canvas--light'
+            : isTerminal
+              ? 'ew-canvas--terminal'
+              : theme === 'refined'
+                ? 'ew-canvas--refined-home'
+                : 'ew-canvas--classic-home'
+        }`}
+      >
+        <div className="ew-canvas__center-hud">
+          <DesktopClock />
+          <div className="ew-canvas__subtitle">LOCAL &middot; HOME NODE &middot; BUILD 1.0.0</div>
+          <div className="ew-canvas__status-row">
+            <div className="ew-canvas__status-card">
+              <div className="ew-canvas__status-label">NODE</div>
+              <div className="ew-canvas__status-value">home.strands.local</div>
+              <div className="ew-canvas__status-detail">status: awake</div>
+            </div>
+            <div className="ew-canvas__status-card">
+              <div className="ew-canvas__status-label">INFERENCE</div>
+              <div className="ew-canvas__status-value">{gpu?.backend?.type === 'Cuda' ? 'ready' : 'idle'}</div>
+              <div className="ew-canvas__status-detail">{gpu?.primary_gpu?.replace('NVIDIA ', '').replace('GeForce ', '') || 'detecting...'}</div>
+            </div>
+            <div className="ew-canvas__status-card">
+              <div className="ew-canvas__status-label">NETWORK</div>
+              <div className="ew-canvas__status-value">peers: 0 online</div>
+              <div className="ew-canvas__status-detail">friends: 0 present</div>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (theme === 'refined') {
-    return (
-      <div className="ew-canvas ew-canvas--refined">
-        <div className="ew-canvas__node-info">
-          <div>EVERYWEAR / 1.0</div>
-          <div>NODE &middot; HOME.STRANDS.LOCAL</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Classic
-  return (
-    <div className="ew-canvas ew-canvas--classic">
-      <div className="ew-canvas__node-info">
-        <div>EVERYWEAR / 1.0</div>
-        <div>NODE &middot; HOME.STRANDS.LOCAL</div>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 // ── Main ShellLayout ──

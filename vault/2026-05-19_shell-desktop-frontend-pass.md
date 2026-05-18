@@ -52,3 +52,10 @@ Completed chunk: browser preview + S3 source-truth correction.
 - Added a localhost-only `?preview=1` auth bypass for browser/Vite visual QA. It is disabled in Tauri and does not replace the real Everywear ID gate.
 - Polished the Settings panel layout after browser QA: content now gets window padding and the four theme choices render in an even four-column row on desktop.
 - Cargo was not run.
+
+Completed chunk: morning visual correction from localhost 5173 screenshots.
+
+- Light theme applet icons now keep the dark S3-style particle tile instead of turning into pale low-contrast tiles on the off-white desktop.
+- Classic and Refined now use the same centered clock/status HUD composition as Terminal, toned by their active theme tokens.
+- The HUD is responsively offset away from the left applet columns so node/status text does not sit underneath desktop icons.
+- Cargo was not run.

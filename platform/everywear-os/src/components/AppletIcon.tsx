@@ -131,7 +131,6 @@ function ParticleIcon({ appletId }: { appletId: string }) {
       // collapse all icons to the active skin primary so the desktop
       // reads as one coherent surface.
       const skin = (typeof document !== 'undefined' && document.body.dataset.skin) || 'classic';
-      const mode = (typeof document !== 'undefined' && document.body.dataset.mode) || 'dark';
       const colors =
         skin === 'classic'
           ? (APPLET_COLORS[appletId] || fallbackColor)
@@ -143,11 +142,11 @@ function ParticleIcon({ appletId }: { appletId: string }) {
       ctx!.roundRect(0, 0, SIZE, SIZE, radius);
       ctx!.clip();
 
-      // Match the active surface so light mode does not get dark-only tiles.
+      // Keep applet tiles dark even on Light. This matches the S3 Studio
+      // desktop reference: the pale wallpaper stays calm while app icons
+      // remain inspectable, branded, and high-contrast.
       ctx!.fillStyle =
-        mode === 'light'
-          ? '#F8F5EF'
-          : skin === 'terminal'
+        skin === 'terminal'
             ? '#0A0907'
             : '#0a0a12';
       ctx!.fillRect(0, 0, SIZE, SIZE);
@@ -213,7 +212,7 @@ function ParticleIcon({ appletId }: { appletId: string }) {
 
       // Crisp text on top
       ctx!.shadowBlur = 0;
-      ctx!.fillStyle = mode === 'light' ? 'rgba(10,11,13,0.86)' : 'rgba(255,255,255,0.9)';
+      ctx!.fillStyle = 'rgba(255,255,255,0.9)';
       ctx!.fillText(monogram, SIZE / 2, SIZE / 2);
       ctx!.restore();
 
