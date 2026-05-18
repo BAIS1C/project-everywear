@@ -169,7 +169,7 @@ body[data-mode="light"] .ew-desktop::after {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 7px;
   width: 88px;
   height: 96px;
   padding: var(--ew-space-2);
@@ -254,18 +254,25 @@ body[data-mode="light"] .ew-desktop::after {
 }
 
 .ew-desktop-icon__label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: var(--ew-fw-body-strong);
   color: var(--ew-text-muted);
   text-align: center;
-  max-width: 80px;
+  max-width: 92px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.12;
 }
 body[data-mode="light"] .ew-desktop-icon__label {
   color: rgba(29, 41, 60, 0.86);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+body[data-skin="classic"][data-mode="dark"] .ew-desktop-icon__label,
+body[data-skin="refined"][data-mode="dark"] .ew-desktop-icon__label,
+body[data-skin="terminal"][data-mode="dark"] .ew-desktop-icon__label {
+  color: color-mix(in oklab, var(--ew-text) 72%, var(--ew-primary));
+  text-shadow: 0 0 8px color-mix(in oklab, var(--ew-primary) 28%, transparent);
 }
 
 .ew-icon-svg {
@@ -285,7 +292,7 @@ body[data-mode="light"] .ew-desktop-icon__label {
 .ew-icon-svg--plain rect {
   fill: rgba(255, 255, 255, 0.92);
   stroke: rgba(30, 43, 66, 0.82);
-  stroke-width: 1.3;
+  stroke-width: 1.4;
 }
 .ew-icon-svg--plain path {
   fill: none;
@@ -293,32 +300,57 @@ body[data-mode="light"] .ew-desktop-icon__label {
   stroke-width: 1.2;
   stroke-linecap: square;
 }
+.ew-icon-svg--plain .ew-icon-svg__plain-glyph {
+  fill: color-mix(in oklab, var(--ew-applet-color) 12%, transparent);
+  stroke: rgba(30, 43, 66, 0.68);
+}
+.ew-icon-svg--plain .ew-icon-svg__plain-corner {
+  stroke: var(--ew-applet-color);
+  stroke-width: 1.35;
+}
 .ew-icon-svg--plain circle {
   fill: var(--ew-applet-color);
 }
 .ew-icon-svg--plain text {
   fill: rgba(20, 31, 50, 0.96);
+  font-size: 12px;
 }
 .ew-icon-svg--holograph {
-  filter: drop-shadow(0 0 10px color-mix(in oklab, var(--ew-primary) 30%, transparent));
+  filter:
+    drop-shadow(0 0 8px rgba(25, 200, 255, 0.42))
+    drop-shadow(0 10px 12px rgba(0, 0, 0, 0.36));
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-shell {
-  fill: rgba(5, 12, 20, 0.82);
-  stroke: color-mix(in oklab, var(--ew-primary) 54%, transparent);
+  fill: rgba(8, 24, 40, 0.58);
+  stroke: rgba(114, 208, 255, 0.72);
   stroke-width: 1.2;
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-plane {
-  opacity: 0.22;
+  opacity: 0.28;
+}
+.ew-icon-svg--holograph .ew-icon-svg__holo-shadow {
+  fill: rgba(25, 200, 255, 0.16);
+}
+.ew-icon-svg--holograph .ew-icon-svg__holo-plinth {
+  fill: rgba(6, 18, 32, 0.94);
+  stroke: rgba(114, 208, 255, 0.78);
+  stroke-width: 1;
+}
+.ew-icon-svg--holograph .ew-icon-svg__holo-beam {
+  fill: rgba(25, 200, 255, 0.08);
+  stroke: rgba(185, 236, 255, 0.18);
+  stroke-width: 0.7;
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-line {
   fill: none;
-  stroke: color-mix(in oklab, var(--ew-primary) 58%, transparent);
+  stroke: rgba(185, 236, 255, 0.62);
   stroke-width: 0.65;
   stroke-linecap: square;
 }
 .ew-icon-svg--holograph text {
-  fill: color-mix(in oklab, var(--ew-primary) 84%, white);
-  filter: drop-shadow(0 0 5px var(--ew-primary));
+  fill: #dff8ff;
+  font-size: 12px;
+  filter: drop-shadow(0 0 6px rgba(25, 200, 255, 0.95));
 }
 .ew-icon-svg--terminal rect {
   fill: rgba(9, 7, 4, 0.96);
@@ -336,7 +368,7 @@ body[data-mode="light"] .ew-desktop-icon__label {
 }
 .ew-icon-svg--terminal text {
   fill: var(--ew-primary);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .ew-desktop-icon--system .ew-desktop-icon__badge {

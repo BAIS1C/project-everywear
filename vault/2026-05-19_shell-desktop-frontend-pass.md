@@ -68,3 +68,11 @@ Completed chunk: S3 folder + per-theme icon sets.
 - Applet icons now vary by theme: Classic keeps the animated particle tile, Light uses plain high-contrast SVG icons, Refined uses holographic SVG tiles, and Terminal uses amber console-style SVG tiles.
 - Verification: `npm run build` in `platform/everywear-os` passed. The in-app browser rejected localhost navigation under its URL policy, so browser visual QA was not completed in this chunk.
 - Cargo was not run.
+
+Completed chunk: icon readability + Refined holo direction.
+
+- Rechecked the S3 Studio source-of-truth icon implementation at `C:\Users\MAG MSI\Project Ace\S3 STUDIO\s3studio-web\src\shell\AppIcon.tsx` and `IconGrid.tsx`.
+- Raised desktop icon label size toward the S3 baseline and improved dark-theme label contrast/glow so app names read from the desktop.
+- Light icons remain plain SVG, but the glyphs are bolder, simpler, and less cramped inside the 56px S3 footprint.
+- Refined icons now move toward the blue hologram-on-plinth concept: brighter cyan-blue hologram body, beam, plinth/base, and larger readable monograms.
+- Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.

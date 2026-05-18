@@ -94,16 +94,16 @@ function PlainSvgIcon({ appletId }: { appletId: string }) {
       aria-hidden="true"
       style={{ '--ew-applet-color': colors.primary } as React.CSSProperties}
     >
-      <rect x="6" y="6" width="44" height="44" rx="9" />
-      <path d="M15 36V20h26v16M15 28h26M23 20v16M33 20v16" />
-      <circle cx="42" cy="14" r="3" />
-      <text x="28" y="33">{monogram}</text>
+      <rect x="5.5" y="5.5" width="45" height="45" rx="11" />
+      <path className="ew-icon-svg__plain-corner" d="M15 20v-5h7M41 20v-5h-7M15 36v5h7M41 36v5h-7" />
+      <path className="ew-icon-svg__plain-glyph" d="M18 38V18h20v20H18Z" />
+      <circle cx="43" cy="13" r="3.4" />
+      <text x="28" y="30.5">{monogram}</text>
     </svg>
   );
 }
 
 function HolographIcon({ appletId }: { appletId: string }) {
-  const colors = iconColors(appletId);
   const monogram = MONOGRAM[appletId] || appletId.slice(0, 2).toUpperCase();
   const gradientId = `ew-holo-${appletId.replace(/[^a-z0-9]/gi, '')}`;
 
@@ -113,19 +113,25 @@ function HolographIcon({ appletId }: { appletId: string }) {
       viewBox="0 0 56 56"
       role="img"
       aria-hidden="true"
-      style={{ '--ew-applet-color': colors.primary, '--ew-applet-color-2': colors.secondary } as React.CSSProperties}
+      style={{
+        '--ew-applet-color': '#19C8FF',
+        '--ew-applet-color-2': '#7DBBFF',
+      } as React.CSSProperties}
     >
       <defs>
-        <linearGradient id={gradientId} x1="9" y1="8" x2="49" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient id={gradientId} x1="12" y1="6" x2="43" y2="39" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="var(--ew-applet-color)" stopOpacity="0.95" />
-          <stop offset="0.46" stopColor="#FFFFFF" stopOpacity="0.6" />
+          <stop offset="0.5" stopColor="#D9F6FF" stopOpacity="0.74" />
           <stop offset="1" stopColor="var(--ew-applet-color-2)" stopOpacity="0.85" />
         </linearGradient>
       </defs>
-      <path className="ew-icon-svg__holo-shell" d="M11 8h27l7 7v30H18l-7-7V8Z" />
-      <path className="ew-icon-svg__holo-plane" d="M15 15h25v26H15V15Z" fill={`url(#${gradientId})`} />
-      <path className="ew-icon-svg__holo-line" d="M17 22h21M17 28h21M17 34h21M24 17v22M32 17v22" />
-      <text x="28" y="33">{monogram}</text>
+      <ellipse className="ew-icon-svg__holo-shadow" cx="28" cy="45" rx="16" ry="4" />
+      <path className="ew-icon-svg__holo-plinth" d="M14 39h28l4 5-5 5H15l-5-5 4-5Z" />
+      <path className="ew-icon-svg__holo-beam" d="M20 39 26 13h4l6 26Z" />
+      <path className="ew-icon-svg__holo-shell" d="M15 8h25l5 5v24l-6 4H16l-5-5V13l4-5Z" />
+      <path className="ew-icon-svg__holo-plane" d="M18 13h20l4 4v17l-4 3H18l-4-4V17l4-4Z" fill={`url(#${gradientId})`} />
+      <path className="ew-icon-svg__holo-line" d="M18 18h20M16 25h24M18 32h20M23 14v23M33 14v23" />
+      <text x="28" y="27.5">{monogram}</text>
     </svg>
   );
 }
