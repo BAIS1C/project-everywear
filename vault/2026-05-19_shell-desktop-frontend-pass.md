@@ -84,3 +84,10 @@ Completed chunk: projected holograph icon correction.
 - The S3 Studio folder, Settings, and Vault now use the shared themed icon renderer, so they visually belong with the applet icons across Classic, Refined, Terminal, and Light.
 - Center monograms were enlarged and stroked for legibility on dark themes.
 - Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.
+
+Completed chunk: projection/sparkle + Classic monogram scale.
+
+- Classic particle icon monograms were enlarged substantially to read closer to the S3 Studio `S³` desktop icon scale.
+- Refined holograph icons now project higher from the plinth, with brighter cyan beams/glow.
+- Refined and Terminal sparkle strokes now animate subtly so the projected icons feel alive instead of static.
+- Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.
