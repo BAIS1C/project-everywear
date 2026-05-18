@@ -37,6 +37,16 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+const hasTauriRuntime = () =>
+  typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+const isLocalPreviewBypass = () => {
+  if (hasTauriRuntime()) return false;
+  if (typeof window === 'undefined') return false;
+  const localHost = ['127.0.0.1', 'localhost', '::1'].includes(window.location.hostname);
+  return localHost && new URLSearchParams(window.location.search).get('preview') === '1';
+};
+
 // ── Types ────────────────────────────────────────────────────────
 
 export interface EverywearUser {
@@ -193,6 +203,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initial session check + auth state listener
   useEffect(() => {
     let mounted = true;
+
+    if (isLocalPreviewBypass()) {
+      setUser({
+        id: 'browser-preview',
+        email: 'preview@everywear.local',
+        handle: 'preview',
+        tier: 'creator_studio',
+        isPaid: true,
+        isPro: true,
+      });
+      setIsLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
 
     // Hard safety net: no matter what happens in the async chain,
     // the spinner WILL clear after 6 seconds. This is independent of

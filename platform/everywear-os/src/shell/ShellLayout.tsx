@@ -39,8 +39,6 @@ interface SystemIcon {
 }
 
 const SYSTEM_ICONS: SystemIcon[] = [
-  { id: 'profile',  label: 'Profile',  monogram: 'ID', color: 'var(--ew-primary)' },
-  { id: 'gpu',      label: 'Hardware', monogram: 'GPU', color: 'var(--ew-success)' },
   { id: 'settings', label: 'Settings', monogram: '⚙', color: 'var(--ew-text-muted)' },
   { id: 'vault',    label: 'Vault',    monogram: '▦', color: 'var(--ew-text-muted)' },
 ];
@@ -188,10 +186,12 @@ function DesktopClock() {
 
 // ── Desktop canvas (center, skin-dependent) ──
 
-function DesktopCanvas({ skin, gpu }: { skin: string; gpu: SystemGpuState | null }) {
-  if (skin === 'terminal') {
+function DesktopCanvas({ theme, gpu }: { theme: string; gpu: SystemGpuState | null }) {
+  const isLight = theme === 'light';
+  const isTerminal = theme === 'terminal';
+  if (isLight || isTerminal) {
     return (
-      <div className="ew-canvas ew-canvas--terminal">
+      <div className={`ew-canvas ${isLight ? 'ew-canvas--light' : 'ew-canvas--terminal'}`}>
         <DesktopClock />
         <div className="ew-canvas__subtitle">LOCAL &middot; HOME NODE &middot; BUILD 1.0.0</div>
         <div className="ew-canvas__status-row">
@@ -215,7 +215,7 @@ function DesktopCanvas({ skin, gpu }: { skin: string; gpu: SystemGpuState | null
     );
   }
 
-  if (skin === 'refined') {
+  if (theme === 'refined') {
     return (
       <div className="ew-canvas ew-canvas--refined">
         <div className="ew-canvas__node-info">
@@ -229,7 +229,10 @@ function DesktopCanvas({ skin, gpu }: { skin: string; gpu: SystemGpuState | null
   // Classic
   return (
     <div className="ew-canvas ew-canvas--classic">
-      <div className="ew-canvas__brand">EVERYWEAR</div>
+      <div className="ew-canvas__node-info">
+        <div>EVERYWEAR / 1.0</div>
+        <div>NODE &middot; HOME.STRANDS.LOCAL</div>
+      </div>
     </div>
   );
 }
@@ -257,6 +260,7 @@ export function ShellLayout() {
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { user: authUser, tier } = useAuth();
   const { skin, mode, theme, setTheme } = useTheme();
+  const effectiveSkin = theme === 'light' ? 'classic' : skin;
 
   // Bug report + error badge
   const [bugReportOpen, setBugReportOpen] = useState(false);
@@ -432,6 +436,10 @@ export function ShellLayout() {
       log.warn('ui', `Applet ${applet.id} is locked; needs purchase/subscription`);
       return;
     }
+    if (applet.status === 'NotBuilt') {
+      log.warn('ui', `Applet ${applet.id} is listed but not built yet`);
+      return;
+    }
 
     if (isRegisteredApplet(applet.id) && !applet.launch_binary) {
       openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
@@ -486,8 +494,9 @@ export function ShellLayout() {
   const displayName = authUser?.handle || profile?.display_name || 'User';
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
-  // Only show launchable applets (Active or Locked; NotBuilt are hidden)
-  const launchableApplets = registryApplets.filter((a) => a.status !== 'NotBuilt');
+  // Show the registry as the desktop source of truth. NotBuilt applets render
+  // dimmed and do not launch, matching S3's "soon" icon behaviour.
+  const visibleApplets = registryApplets;
 
   // GPU status for footer
   const gpuLabel = gpu?.backend?.type === 'Cuda'
@@ -509,7 +518,7 @@ export function ShellLayout() {
       return (
         <AppletViewRouter
           appletId={applet.id}
-          skin={skin}
+          skin={effectiveSkin}
           mode={mode}
           onClose={() => closeShellWindow(win.id)}
         />
@@ -546,11 +555,11 @@ export function ShellLayout() {
       {/* ── Desktop OS surface ── */}
       <div className="ew-desktop">
         {/* Center canvas / wallpaper layer */}
-        <DesktopCanvas skin={skin} gpu={gpu} />
+        <DesktopCanvas theme={theme} gpu={gpu} />
 
         {/* Icon grid: registry applets + system icons */}
         <div className="ew-icon-grid">
-          {launchableApplets.map((applet) => (
+          {visibleApplets.map((applet) => (
             <AppletIcon
               key={applet.id}
               applet={applet}

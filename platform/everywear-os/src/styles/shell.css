@@ -91,6 +91,60 @@ html, body, #root {
   height: calc(100vh - var(--ew-wf-titlebar-height, 38px) - 44px); /* minus titlebar minus taskbar */
   overflow: hidden;
   position: relative;
+  background: var(--ew-bg);
+}
+.ew-desktop::before,
+.ew-desktop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ew-desktop::before {
+  z-index: 0;
+  opacity: 0.9;
+  transition: opacity var(--ew-t-med) var(--ew-ease);
+}
+.ew-desktop::after {
+  z-index: 1;
+  opacity: 0.35;
+}
+body[data-skin="classic"][data-mode="dark"] .ew-desktop::before {
+  background:
+    radial-gradient(circle at 16% 78%, color-mix(in oklab, var(--ew-primary) 18%, transparent) 0, transparent 28%),
+    radial-gradient(circle at 80% 18%, rgba(240, 0, 184, 0.12) 0, transparent 24%),
+    linear-gradient(90deg, rgba(0, 194, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(0, 194, 255, 0.025) 1px, transparent 1px);
+  background-size: auto, auto, 72px 72px, 72px 72px;
+}
+body[data-skin="classic"][data-mode="dark"] .ew-desktop::after {
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, transparent 0 18%, rgba(0,194,255,0.035) 18% 18.08%, transparent 18.08% 100%);
+}
+body[data-skin="refined"] .ew-desktop::before {
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--ew-primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(0deg, color-mix(in oklab, var(--ew-primary) 8%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 82% 20%, color-mix(in oklab, var(--ew-primary) 10%, transparent) 0, transparent 26%);
+  background-size: 96px 96px, 96px 96px, auto;
+}
+body[data-skin="terminal"] .ew-desktop::before {
+  background:
+    linear-gradient(90deg, rgba(255,136,0,0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,136,0,0.04) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+body[data-mode="light"] .ew-desktop::before {
+  background:
+    radial-gradient(circle at 18% 82%, rgba(0, 194, 255, 0.08) 0, transparent 30%),
+    radial-gradient(circle at 82% 22%, rgba(245, 158, 11, 0.08) 0, transparent 24%),
+    linear-gradient(90deg, rgba(8, 21, 34, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(8, 21, 34, 0.035) 1px, transparent 1px);
+  background-size: auto, auto, 84px 84px, 84px 84px;
+}
+body[data-mode="light"] .ew-desktop::after {
+  background: none;
 }
 
 /* ── Icon grid (left column) ─────────────────────── */
@@ -128,6 +182,13 @@ html, body, #root {
   background: color-mix(in oklab, var(--ew-text) 6%, transparent);
 }
 .ew-desktop-icon:active { transform: scale(0.96); }
+.ew-desktop-icon[data-status="NotBuilt"] {
+  opacity: 0.58;
+  cursor: default;
+}
+.ew-desktop-icon[data-status="NotBuilt"]:hover {
+  background: transparent;
+}
 .ew-desktop-icon--soon { opacity: 0.4; cursor: not-allowed; }
 .ew-desktop-icon--soon:hover { transform: none; }
 .ew-desktop-icon--locked { opacity: 0.5; }
@@ -212,6 +273,8 @@ html, body, #root {
   gap: var(--ew-space-5);
   padding: var(--ew-space-8);
   position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -319,10 +382,24 @@ html, body, #root {
   overflow: hidden;
   background: var(--ew-bg);
 }
+.ew-window__body > .ew-settings,
+.ew-window__body > .ew-profile-panel,
+.ew-window__body > .ew-gpu-panel {
+  height: 100%;
+  max-width: none;
+  overflow: auto;
+  padding: var(--ew-space-6);
+}
 
 /* Terminal canvas */
-.ew-canvas--terminal {
+.ew-canvas--terminal,
+.ew-canvas--light {
   gap: var(--ew-space-6);
+}
+.ew-canvas--light .ew-canvas__status-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(7, 18, 34, 0.08);
+  box-shadow: 0 14px 44px rgba(7, 18, 34, 0.06);
 }
 .ew-canvas__subtitle {
   font-family: var(--ew-font-mono);
@@ -371,6 +448,7 @@ html, body, #root {
   justify-content: flex-start;
   align-items: flex-start;
   padding-top: var(--ew-space-9);
+  padding-left: max(140px, var(--ew-space-9));
 }
 .ew-canvas__node-info {
   font-family: var(--ew-font-mono);
@@ -383,7 +461,10 @@ html, body, #root {
 
 /* Classic canvas */
 .ew-canvas--classic {
-  /* clean dark, brand center */
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding-top: var(--ew-space-9);
+  padding-left: max(140px, var(--ew-space-9));
 }
 .ew-canvas__brand {
   font-family: var(--ew-font-display);
@@ -406,6 +487,9 @@ html, body, #root {
   letter-spacing: 4px;
   color: var(--ew-primary);
   line-height: 1;
+}
+body[data-mode="light"] .ew-desktop-clock__time {
+  text-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -763,6 +847,13 @@ html, body, #root {
   }
 }
 
+@media (max-height: 900px) {
+  .ew-canvas--classic,
+  .ew-canvas--refined {
+    padding-left: min(420px, 52vw);
+  }
+}
+
 /* ── Tauri applet running banner ─────────────────── */
 .ew-tauri-banner {
   position: fixed;
@@ -990,7 +1081,7 @@ html, body, #root {
 .ew-settings { max-width: 600px; }
 .ew-settings__skin-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: var(--ew-space-3);
   margin-bottom: var(--ew-space-5);
 }
@@ -1011,6 +1102,11 @@ html, body, #root {
   font-weight: var(--ew-fw-display);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+@media (max-width: 860px) {
+  .ew-settings__skin-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
 }
 
 /* ── Auth Gate (login screen) ────────────────────── */

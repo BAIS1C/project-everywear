@@ -168,6 +168,171 @@ export interface PlatformStatus {
   applets: { active: number };
 }
 
+const hasTauriRuntime = () =>
+  typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+const nowIso = () => new Date().toISOString();
+
+function browserProfileFallback(): UserProfile {
+  return {
+    id: 'browser-preview',
+    display_name: 'Sean Uddin',
+    alias: 'seanie',
+    email: null,
+    avatar_path: null,
+    bio: 'Everywear browser preview session',
+    created_at: nowIso(),
+    updated_at: nowIso(),
+    discourse_username: null,
+    discourse_session_valid: false,
+    wallet_address: null,
+    wallet_connected: false,
+  };
+}
+
+function browserGpuFallback(): SystemGpuState {
+  return {
+    gpus: [],
+    nvml_available: false,
+    total_vram_mb: 0,
+    total_free_mb: 0,
+    primary_gpu: null,
+    backend: { type: 'Cpu', has_blas: false, ram_mb: 0 },
+    vram_tier: 'CpuFallback',
+  };
+}
+
+const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
+  {
+    id: '1magen',
+    name: '1magen',
+    description: 'AI image generation and editing powered by Z-Image',
+    version: '0.1.0',
+    icon: '1magen',
+    status: 'Active',
+    engine_type: 'diffusion',
+    min_vram_mb: 7400,
+    tags: ['image', 'generation', 'editing'],
+    launch_url: null,
+    launch_binary: 'onemagen',
+    frontend_port: 3002,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 'gener8',
+    name: 'Gener8',
+    description: 'AI music generation, stem mixing, and production powered by ACE-Step',
+    version: '0.1.0',
+    icon: 'gener8',
+    status: 'Active',
+    engine_type: 'audio',
+    min_vram_mb: 6144,
+    tags: ['music', 'audio', 'generation', 'daw'],
+    launch_url: null,
+    launch_binary: 'gener8',
+    frontend_port: 3001,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 'vid',
+    name: 'Vid Studio',
+    description: 'Audio-reactive visualiser and music video creation',
+    version: '0.1.0',
+    icon: 'vid',
+    status: 'Active',
+    engine_type: 'none',
+    min_vram_mb: 0,
+    tags: ['video', 'visualiser', 'music'],
+    launch_url: null,
+    launch_binary: null,
+    frontend_port: 3006,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 's3studio',
+    name: 'S3 Studio',
+    description: 'Strands Sound Studio: cloud music generation',
+    version: '0.1.0',
+    icon: 's3studio',
+    status: 'Active',
+    engine_type: 'audio',
+    min_vram_mb: 0,
+    tags: ['music', 'audio', 'generation', 'web'],
+    launch_url: 'https://s3studio.xyz',
+    launch_binary: null,
+    frontend_port: null,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 'strands-game',
+    name: 'Strands Nation',
+    description: 'The game: Three.js desktop OS world',
+    version: '0.1.0',
+    icon: 'strands-game',
+    status: 'Active',
+    engine_type: 'none',
+    min_vram_mb: 0,
+    tags: ['game', 'social', 'world'],
+    launch_url: 'https://game.strandsnation.xyz',
+    launch_binary: null,
+    frontend_port: null,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 'kasai',
+    name: 'Kasai',
+    description: 'Local AI agent with planning, orchestration, and full system access',
+    version: '0.1.0',
+    icon: 'kasai',
+    status: 'Active',
+    engine_type: 'llm',
+    min_vram_mb: 4096,
+    tags: ['agent', 'llm', 'assistant', 'planning'],
+    launch_url: null,
+    launch_binary: 'everywear-kasai',
+    frontend_port: 3003,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: '3nvizen',
+    name: '3nvizen',
+    description: 'AI video generation with Wan 2.2 and LTX',
+    version: '0.1.0',
+    icon: '3nvizen',
+    status: 'NotBuilt',
+    engine_type: 'diffusion',
+    min_vram_mb: 12288,
+    tags: ['video', 'generation'],
+    launch_url: null,
+    launch_binary: 'everywear-3nvizen',
+    frontend_port: 3004,
+    frontend_route: null,
+    shares_backend: null,
+  },
+  {
+    id: 'character-studio',
+    name: 'Avatar Studio',
+    description: '3D avatar creation and customization for Strands Blanks',
+    version: '0.1.0',
+    icon: 'character-studio',
+    status: 'Active',
+    engine_type: 'none',
+    min_vram_mb: 0,
+    tags: ['avatar', '3d', 'character', 'nft'],
+    launch_url: null,
+    launch_binary: null,
+    frontend_port: 3007,
+    frontend_route: null,
+    shares_backend: null,
+  },
+];
+
 // ─── Auth (Supabase session + licence tier) ────────────────────────────────
 
 export type LicenceTier = 'demo' | 'gener8' | 'gener8_pro' | 'creator_studio';
@@ -198,18 +363,23 @@ export interface AuthContext {
 
 // ─── GPU ────────────────────────────────────────────────────────────────────
 
-export const getGpuStatus = () => invoke<SystemGpuState>('get_gpu_status');
+export const getGpuStatus = async () =>
+  hasTauriRuntime() ? invoke<SystemGpuState>('get_gpu_status') : browserGpuFallback();
 export const pollVram = (gpuIndex: number) =>
   invoke<{ used_mb: number; free_mb: number }>('poll_vram', { gpuIndex });
 export const getComputeBackend = () => invoke<ComputeBackend>('get_compute_backend');
 export const getVramTier = () => invoke<VramTier>('get_vram_tier');
-export const listModelAssessments = () => invoke<ModelAssessment[]>('list_model_assessments');
+export const listModelAssessments = async () =>
+  hasTauriRuntime() ? invoke<ModelAssessment[]>('list_model_assessments') : [];
 
 // ─── Profile ────────────────────────────────────────────────────────────────
 
-export const getProfile = () => invoke<UserProfile>('get_profile');
-export const updateProfile = (update: ProfileUpdate) =>
-  invoke<UserProfile>('update_profile', { update });
+export const getProfile = async () =>
+  hasTauriRuntime() ? invoke<UserProfile>('get_profile') : browserProfileFallback();
+export const updateProfile = async (update: ProfileUpdate) =>
+  hasTauriRuntime()
+    ? invoke<UserProfile>('update_profile', { update })
+    : { ...browserProfileFallback(), ...update, updated_at: nowIso() };
 export const setPreference = (key: string, value: string) =>
   invoke<void>('set_preference', { key, value });
 export const getPreference = (key: string) =>
@@ -227,11 +397,18 @@ export const walletDisconnect = () => invoke<void>('wallet_disconnect');
 
 // ─── Registry ───────────────────────────────────────────────────────────────
 
-export const listApplets = () => invoke<AppletEntry[]>('list_applets');
-export const getApplet = (id: string) => invoke<AppletEntry | null>('get_applet', { id });
-export const launchApplet = (id: string) => invoke<void>('launch_applet', { id });
+export const listApplets = async () =>
+  hasTauriRuntime() ? invoke<AppletEntry[]>('list_applets') : BROWSER_APPLET_REGISTRY;
+export const getApplet = async (id: string) =>
+  hasTauriRuntime()
+    ? invoke<AppletEntry | null>('get_applet', { id })
+    : BROWSER_APPLET_REGISTRY.find((applet) => applet.id === id) ?? null;
+export const launchApplet = async (id: string) => {
+  if (!hasTauriRuntime()) return;
+  return invoke<void>('launch_applet', { id });
+};
 export const closeAppletWebview = (appletId: string) =>
-  invoke<void>('close_applet_webview', { appletId });
+  hasTauriRuntime() ? invoke<void>('close_applet_webview', { appletId }) : Promise.resolve();
 
 // ─── Video Encoder Sidecar ──────────────────────────────────────────────────
 

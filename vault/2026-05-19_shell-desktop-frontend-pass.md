@@ -40,3 +40,15 @@ Completed chunk: desktop OS shell behavior.
 - Vault contains `Media` and `Logs` sections; logs are no longer treated as an independent shell panel.
 - Verification: `npm run build` in `platform/everywear-os` passed. Vite emitted the existing dynamic/static import chunk warning only.
 - Cargo was not run.
+
+Completed chunk: browser preview + S3 source-truth correction.
+
+- Added browser-mode transport fallbacks for applet registry, profile, GPU status, and model assessments so `npm run dev` can preview the desktop without Tauri IPC or cargo.
+- Fixed the observed preview state where only Profile/Hardware/Settings/Vault appeared: the dev shell now renders the applet registry shape from the `registry.rs` contract.
+- Kept NotBuilt applets visible as dimmed/non-launching desktop icons, matching the S3 source-of-truth expectation that future applets still sit on the OS surface.
+- Reduced desktop-only system icons to Settings and Vault to better match the S3 desktop reference; Profile/Hardware remain reachable through shell chrome/taskbar/system flows.
+- Reworked the idle desktop canvas so `light`, `classic`, `refined`, and `terminal` each render intentionally instead of Light inheriting stale skin state.
+- Replaced the large empty Classic brand mark with quieter node metadata over wallpaper texture; Light and Terminal use clock/status HUD surfaces.
+- Added a localhost-only `?preview=1` auth bypass for browser/Vite visual QA. It is disabled in Tauri and does not replace the real Everywear ID gate.
+- Polished the Settings panel layout after browser QA: content now gets window padding and the four theme choices render in an even four-column row on desktop.
+- Cargo was not run.
