@@ -25,7 +25,7 @@ import { GpuPanel } from '../panels/GpuPanel';
 import { SettingsPanel } from '../panels/SettingsPanel';
 import { HeadlessAppletView } from '../panels/HeadlessAppletView';
 import { AppletViewRouter, isRegisteredApplet } from '../components/AppletViewRouter';
-import AppletIcon from '../components/AppletIcon';
+import AppletIcon, { ThemedIconGlyph } from '../components/AppletIcon';
 import { VaultProvider } from '@applets/gener8/web/src/context/VaultProvider';
 
 const VaultLibraryView = lazy(() => import('@applets/gener8/web/src/views/LibraryView'));
@@ -34,13 +34,12 @@ const VaultLibraryView = lazy(() => import('@applets/gener8/web/src/views/Librar
 interface SystemIcon {
   id: Exclude<PanelView, null>;
   label: string;
-  monogram: string;
-  color: string;
+  glyphId: string;
 }
 
 const SYSTEM_ICONS: SystemIcon[] = [
-  { id: 'settings', label: 'Settings', monogram: '⚙', color: 'var(--ew-primary)' },
-  { id: 'vault',    label: 'Vault',    monogram: '▦', color: 'var(--ew-primary)' },
+  { id: 'settings', label: 'Settings', glyphId: 'settings' },
+  { id: 'vault',    label: 'Vault',    glyphId: 'vault' },
 ];
 
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
@@ -258,9 +257,8 @@ function S3StudioFolder({
         aria-expanded={isOpen}
         aria-label="S3 Studio folder"
       >
-        <div className="ew-folder-icon__badge">
-          <span className="ew-folder-icon__tab" />
-          <span className="ew-folder-icon__mark">S3</span>
+        <div className="ew-desktop-icon__glyph-wrap">
+          <ThemedIconGlyph appletId="s3studio" />
           <span className="ew-folder-icon__count">{applets.length}</span>
         </div>
         <span className="ew-desktop-icon__label">S3 Studio</span>
@@ -642,8 +640,8 @@ export function ShellLayout() {
               className="ew-desktop-icon ew-desktop-icon--system"
               onClick={() => handleSystemClick(icon.id)}
             >
-              <div className="ew-desktop-icon__badge" style={{ borderColor: icon.color, color: icon.color }}>
-                <span>{icon.monogram}</span>
+              <div className="ew-desktop-icon__glyph-wrap">
+                <ThemedIconGlyph appletId={icon.glyphId} />
               </div>
               <span className="ew-desktop-icon__label">{icon.label}</span>
             </div>

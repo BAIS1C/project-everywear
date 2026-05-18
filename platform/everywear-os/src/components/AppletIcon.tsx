@@ -29,6 +29,8 @@ const APPLET_COLORS: Record<string, { primary: string; secondary: string; rgb: [
   'character-studio': { primary: '#A855F7', secondary: '#7C3AED', rgb: [168, 85, 247] },
   '3nvizen':          { primary: '#FF6B2E', secondary: '#D45520', rgb: [255, 107, 46] },
   'mymories':         { primary: '#D48A20', secondary: '#B07018', rgb: [212, 138, 32] },
+  'settings':         { primary: '#00C2FF', secondary: '#5C9BC4', rgb: [0, 194, 255] },
+  'vault':            { primary: '#2DD4BF', secondary: '#0F766E', rgb: [45, 212, 191] },
 };
 
 /* ------------------------------------------------------------------ */
@@ -45,6 +47,8 @@ const MONOGRAM: Record<string, string> = {
   'character-studio': 'CS',
   '3nvizen':          '3N',
   'mymories':         'MY',
+  'settings':         'ST',
+  'vault':            'VA',
 };
 
 type IconVariant = 'plain' | 'classic' | 'holograph' | 'terminal';
@@ -103,8 +107,51 @@ function PlainSvgIcon({ appletId }: { appletId: string }) {
   );
 }
 
-function HolographIcon({ appletId }: { appletId: string }) {
+function ProjectedGlyphShape({ appletId, stem }: { appletId: string; stem: 'holo' | 'terminal' }) {
   const monogram = MONOGRAM[appletId] || appletId.slice(0, 2).toUpperCase();
+  const shapeClass = `ew-icon-svg__${stem}-shape`;
+  const textClass = `ew-icon-svg__${stem}-text`;
+
+  if (appletId === 's3studio') {
+    return (
+      <>
+        <path className={shapeClass} d="M13 18h12l4 4h15v18H13V18Z" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M17 26h23M17 33h23" />
+        <text className={textClass} x="28" y="32">S3</text>
+      </>
+    );
+  }
+
+  if (appletId === 'settings') {
+    return (
+      <>
+        <circle className={shapeClass} cx="28" cy="27" r="10" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M28 12v6M28 36v6M13 27h6M37 27h6M17.5 16.5l4.2 4.2M34.3 33.3l4.2 4.2M38.5 16.5l-4.2 4.2M21.7 33.3l-4.2 4.2" />
+        <circle className={`ew-icon-svg__${stem}-core`} cx="28" cy="27" r="3.5" />
+      </>
+    );
+  }
+
+  if (appletId === 'vault') {
+    return (
+      <>
+        <rect className={shapeClass} x="15" y="13" width="26" height="27" rx="3" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M20 20h16M20 27h16M20 34h16M23 17v20M33 17v20" />
+        <text className={textClass} x="28" y="28.5">VA</text>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <path className={shapeClass} d="M15 11h25l5 5v22l-6 4H16l-5-5V15l4-4Z" />
+      <path className={`ew-icon-svg__${stem}-detail`} d="M18 18h20M17 27h22M18 36h20" />
+      <text className={textClass} x="28" y="28.5">{monogram}</text>
+    </>
+  );
+}
+
+function HolographIcon({ appletId }: { appletId: string }) {
   const gradientId = `ew-holo-${appletId.replace(/[^a-z0-9]/gi, '')}`;
 
   return (
@@ -125,31 +172,32 @@ function HolographIcon({ appletId }: { appletId: string }) {
           <stop offset="1" stopColor="var(--ew-applet-color-2)" stopOpacity="0.85" />
         </linearGradient>
       </defs>
-      <ellipse className="ew-icon-svg__holo-shadow" cx="28" cy="45" rx="16" ry="4" />
-      <path className="ew-icon-svg__holo-plinth" d="M14 39h28l4 5-5 5H15l-5-5 4-5Z" />
-      <path className="ew-icon-svg__holo-beam" d="M20 39 26 13h4l6 26Z" />
-      <path className="ew-icon-svg__holo-shell" d="M15 8h25l5 5v24l-6 4H16l-5-5V13l4-5Z" />
-      <path className="ew-icon-svg__holo-plane" d="M18 13h20l4 4v17l-4 3H18l-4-4V17l4-4Z" fill={`url(#${gradientId})`} />
-      <path className="ew-icon-svg__holo-line" d="M18 18h20M16 25h24M18 32h20M23 14v23M33 14v23" />
-      <text x="28" y="27.5">{monogram}</text>
+      <ellipse className="ew-icon-svg__holo-shadow" cx="28" cy="47" rx="17" ry="4" />
+      <ellipse className="ew-icon-svg__holo-plinth" cx="28" cy="43" rx="17" ry="5" />
+      <ellipse className="ew-icon-svg__holo-ring" cx="28" cy="41" rx="12" ry="3" />
+      <path className="ew-icon-svg__holo-beam" d="M16 42 25 10h6l9 32Z" fill={`url(#${gradientId})`} />
+      <ProjectedGlyphShape appletId={appletId} stem="holo" />
+      <path className="ew-icon-svg__holo-sparkles" d="M11 15h4M13 13v4M43 12h4M45 10v4M40 35h4M42 33v4" />
     </svg>
   );
 }
 
 function TerminalSvgIcon({ appletId }: { appletId: string }) {
-  const monogram = MONOGRAM[appletId] || appletId.slice(0, 2).toUpperCase();
-
   return (
     <svg className="ew-icon-svg ew-icon-svg--terminal" viewBox="0 0 56 56" role="img" aria-hidden="true">
-      <rect x="7" y="7" width="42" height="42" rx="1" />
-      <path d="M13 15h30M13 41h30M15 13v30M41 13v30" />
-      <path className="ew-icon-svg__terminal-scan" d="M13 22h30M13 29h30M13 36h30" />
-      <text x="28" y="33">{monogram}</text>
+      <ellipse className="ew-icon-svg__terminal-shadow" cx="28" cy="47" rx="17" ry="4" />
+      <ellipse className="ew-icon-svg__terminal-plinth" cx="28" cy="43" rx="17" ry="5" />
+      <ellipse className="ew-icon-svg__terminal-ring" cx="28" cy="41" rx="12" ry="3" />
+      <path className="ew-icon-svg__terminal-beam" d="M16 42 25 10h6l9 32Z" />
+      <ProjectedGlyphShape appletId={appletId} stem="terminal" />
+      <path className="ew-icon-svg__terminal-sparkles" d="M11 15h4M13 13v4M43 12h4M45 10v4M40 35h4M42 33v4" />
     </svg>
   );
 }
 
-function ThemedAppletGlyph({ appletId, variant }: { appletId: string; variant: IconVariant }) {
+export function ThemedIconGlyph({ appletId }: { appletId: string }) {
+  const variant = useIconVariant();
+
   if (variant === 'plain') return <PlainSvgIcon appletId={appletId} />;
   if (variant === 'holograph') return <HolographIcon appletId={appletId} />;
   if (variant === 'terminal') return <TerminalSvgIcon appletId={appletId} />;
@@ -309,19 +357,19 @@ function ParticleIcon({ appletId }: { appletId: string }) {
 
       // Monogram text
       ctx!.save();
-      ctx!.font = '700 32px var(--ew-font-display), "Inter", "SF Pro", -apple-system, sans-serif';
+      ctx!.font = '800 40px var(--ew-font-display), "Inter", "SF Pro", -apple-system, sans-serif';
       ctx!.textAlign = 'center';
       ctx!.textBaseline = 'middle';
 
       // Text glow
       ctx!.shadowColor = colors.primary;
-      ctx!.shadowBlur = 12;
-      ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.8)`;
+      ctx!.shadowBlur = 16;
+      ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.96)`;
       ctx!.fillText(monogram, SIZE / 2, SIZE / 2);
 
       // Crisp text on top
       ctx!.shadowBlur = 0;
-      ctx!.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx!.fillStyle = 'rgba(255,255,255,0.98)';
       ctx!.fillText(monogram, SIZE / 2, SIZE / 2);
       ctx!.restore();
 
@@ -355,7 +403,6 @@ function ParticleIcon({ appletId }: { appletId: string }) {
 export default function AppletIcon({ applet, health, isLaunching, onClick }: AppletIconProps) {
   const isLocked = applet.status === 'Locked';
   const isNotBuilt = applet.status === 'NotBuilt';
-  const iconVariant = useIconVariant();
 
   return (
     <div
@@ -376,7 +423,7 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
             animation: isLaunching ? 'ew-icon-pulse 1.2s ease-in-out infinite' : undefined,
           }}
         >
-          <ThemedAppletGlyph appletId={applet.id} variant={iconVariant} />
+          <ThemedIconGlyph appletId={applet.id} />
 
           {/* Online pulse indicator */}
           {applet.status === 'Active' && health === 'online' && (

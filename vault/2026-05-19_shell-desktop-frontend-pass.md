@@ -76,3 +76,11 @@ Completed chunk: icon readability + Refined holo direction.
 - Light icons remain plain SVG, but the glyphs are bolder, simpler, and less cramped inside the 56px S3 footprint.
 - Refined icons now move toward the blue hologram-on-plinth concept: brighter cyan-blue hologram body, beam, plinth/base, and larger readable monograms.
 - Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.
+
+Completed chunk: projected holograph icon correction.
+
+- Refined icons now more closely follow the provided holographic icon pack reference: dark oval plinth, cyan ring, upward projection beam, line-glyph silhouette, and sparkle marks.
+- Terminal icons use the same projected-plinth construction in amber, matching the S3 Studio terminal family direction instead of flat framed boxes.
+- The S3 Studio folder, Settings, and Vault now use the shared themed icon renderer, so they visually belong with the applet icons across Classic, Refined, Terminal, and Light.
+- Center monograms were enlarged and stroked for legibility on dark themes.
+- Verification: `npm run build` in `platform/everywear-os` passed. Cargo was not run.

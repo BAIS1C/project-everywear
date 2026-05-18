@@ -280,10 +280,15 @@ body[data-skin="terminal"][data-mode="dark"] .ew-desktop-icon__label {
   height: 56px;
   display: block;
 }
+.ew-desktop-icon__glyph-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
 .ew-icon-svg text {
   font-family: var(--ew-font-display);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 900;
   letter-spacing: 0;
   text-anchor: middle;
   dominant-baseline: middle;
@@ -317,58 +322,103 @@ body[data-skin="terminal"][data-mode="dark"] .ew-desktop-icon__label {
 }
 .ew-icon-svg--holograph {
   filter:
-    drop-shadow(0 0 8px rgba(25, 200, 255, 0.42))
-    drop-shadow(0 10px 12px rgba(0, 0, 0, 0.36));
-}
-.ew-icon-svg--holograph .ew-icon-svg__holo-shell {
-  fill: rgba(8, 24, 40, 0.58);
-  stroke: rgba(114, 208, 255, 0.72);
-  stroke-width: 1.2;
-}
-.ew-icon-svg--holograph .ew-icon-svg__holo-plane {
-  opacity: 0.28;
+    drop-shadow(0 0 7px rgba(25, 210, 255, 0.9))
+    drop-shadow(0 0 18px rgba(25, 210, 255, 0.5))
+    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-shadow {
-  fill: rgba(25, 200, 255, 0.16);
+  fill: rgba(0, 0, 0, 0.7);
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-plinth {
-  fill: rgba(6, 18, 32, 0.94);
-  stroke: rgba(114, 208, 255, 0.78);
+  fill: rgba(18, 24, 30, 0.96);
+  stroke: rgba(165, 238, 255, 0.7);
   stroke-width: 1;
+}
+.ew-icon-svg--holograph .ew-icon-svg__holo-ring {
+  fill: rgba(25, 210, 255, 0.18);
+  stroke: rgba(109, 231, 255, 0.9);
+  stroke-width: 1.2;
 }
 .ew-icon-svg--holograph .ew-icon-svg__holo-beam {
-  fill: rgba(25, 200, 255, 0.08);
-  stroke: rgba(185, 236, 255, 0.18);
-  stroke-width: 0.7;
+  opacity: 0.28;
+  stroke: rgba(188, 246, 255, 0.36);
+  stroke-width: 0.8;
 }
-.ew-icon-svg--holograph .ew-icon-svg__holo-line {
+.ew-icon-svg--holograph .ew-icon-svg__holo-shape {
+  fill: rgba(25, 210, 255, 0.06);
+  stroke: rgba(192, 250, 255, 0.96);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.ew-icon-svg--holograph .ew-icon-svg__holo-detail,
+.ew-icon-svg--holograph .ew-icon-svg__holo-sparkles {
   fill: none;
-  stroke: rgba(185, 236, 255, 0.62);
-  stroke-width: 0.65;
+  stroke: rgba(192, 250, 255, 0.78);
+  stroke-width: 1;
   stroke-linecap: square;
 }
-.ew-icon-svg--holograph text {
-  fill: #dff8ff;
-  font-size: 12px;
-  filter: drop-shadow(0 0 6px rgba(25, 200, 255, 0.95));
+.ew-icon-svg--holograph .ew-icon-svg__holo-core {
+  fill: rgba(192, 250, 255, 0.14);
+  stroke: rgba(192, 250, 255, 0.95);
+  stroke-width: 1.2;
 }
-.ew-icon-svg--terminal rect {
-  fill: rgba(9, 7, 4, 0.96);
-  stroke: var(--ew-primary);
+.ew-icon-svg--holograph .ew-icon-svg__holo-text {
+  fill: #ecfdff;
+  font-size: 16px;
+  paint-order: stroke fill;
+  stroke: rgba(0, 18, 28, 0.78);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 9px rgba(25, 210, 255, 1));
+}
+.ew-icon-svg--terminal {
+  filter:
+    drop-shadow(0 0 7px rgba(255, 136, 0, 0.85))
+    drop-shadow(0 0 16px rgba(255, 136, 0, 0.36))
+    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.46));
+}
+.ew-icon-svg--terminal .ew-icon-svg__terminal-shadow {
+  fill: rgba(0, 0, 0, 0.72);
+}
+.ew-icon-svg--terminal .ew-icon-svg__terminal-plinth {
+  fill: rgba(22, 14, 4, 0.96);
+  stroke: rgba(255, 183, 75, 0.72);
   stroke-width: 1;
 }
-.ew-icon-svg--terminal path {
+.ew-icon-svg--terminal .ew-icon-svg__terminal-ring {
+  fill: rgba(255, 136, 0, 0.18);
+  stroke: rgba(255, 183, 75, 0.9);
+  stroke-width: 1.2;
+}
+.ew-icon-svg--terminal .ew-icon-svg__terminal-beam {
+  fill: rgba(255, 136, 0, 0.1);
+  stroke: rgba(255, 183, 75, 0.3);
+  stroke-width: 0.8;
+}
+.ew-icon-svg--terminal .ew-icon-svg__terminal-shape {
+  fill: rgba(255, 136, 0, 0.04);
+  stroke: rgba(255, 185, 79, 0.96);
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+}
+.ew-icon-svg--terminal .ew-icon-svg__terminal-detail,
+.ew-icon-svg--terminal .ew-icon-svg__terminal-sparkles {
   fill: none;
-  stroke: color-mix(in oklab, var(--ew-primary) 48%, transparent);
-  stroke-width: 0.9;
+  stroke: rgba(255, 185, 79, 0.72);
+  stroke-width: 1;
+  stroke-linecap: square;
 }
-.ew-icon-svg--terminal .ew-icon-svg__terminal-scan {
-  stroke: color-mix(in oklab, var(--ew-primary) 18%, transparent);
-  stroke-width: 0.55;
+.ew-icon-svg--terminal .ew-icon-svg__terminal-core {
+  fill: rgba(255, 136, 0, 0.12);
+  stroke: rgba(255, 185, 79, 0.96);
+  stroke-width: 1.2;
 }
-.ew-icon-svg--terminal text {
-  fill: var(--ew-primary);
-  font-size: 12px;
+.ew-icon-svg--terminal .ew-icon-svg__terminal-text {
+  fill: #ffd08a;
+  font-size: 16px;
+  paint-order: stroke fill;
+  stroke: rgba(22, 8, 0, 0.86);
+  stroke-width: 2.2px;
+  filter: drop-shadow(0 0 9px rgba(255, 136, 0, 0.95));
 }
 
 .ew-desktop-icon--system .ew-desktop-icon__badge {
