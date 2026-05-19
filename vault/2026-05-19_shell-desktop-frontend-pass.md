@@ -115,3 +115,13 @@ Completed chunk: center desktop inference HUD.
 - Model labels resolve from `recommended_primary_model`, then `recommended_group`, then the applet engine type as a preview/runtime fallback.
 - Browser preview fallback now clears launch state and opens/marks applets ready even when Tauri launch events are unavailable.
 - Verification: `npm run build --workspace @everywear/ewds` passed, `npm run build` in `platform/everywear-os` passed, and browser preview on `http://127.0.0.1:5173/?preview=1` showed `idle / backend: CPU`, then `model loaded / llm model` after opening Kasai. Cargo was not run.
+
+Completed chunk: EWDS desktop context export.
+
+- Added `packages/ewds/DESKTOP-CONTEXT.md` as the current EWDS desktop canon: desktop model, four themes, locked icon set, S3 Studio folder behavior, live inference HUD, and applet engine hookup guidance.
+- Mirrored the same current desktop/icon guidance into the Strands design folders:
+  - `C:\Users\MAG MSI\Project Strands\claude design\everywear\EWDS-DESKTOP-CONTEXT.md`
+  - `C:\Users\MAG MSI\Project Strands\claude design\character-studio-ewds\EWDS-DESKTOP-CONTEXT.md`
+  - `C:\Users\MAG MSI\Project Strands\claude design\s3-studio-redesign\EVERYWEAR-DESKTOP-CONTEXT.md`
+- Purpose: future EWDS/S3/Character Studio design passes should use the live 2026-05-19 desktop OS behavior and holo/plinth icon canon, not the older dock-only prototype assumptions.
+- Cargo was not run.
