@@ -1673,8 +1673,21 @@ Rules:
 - Refined uses cyan holographic projection from an oval plinth: dark base, glow ring, beam below the glyph, line silhouette, and subtle sparkle motion.
 - Terminal uses the same projected-plinth construction in amber.
 - Light uses a plain high-contrast SVG tile.
-- Projection beams must sit behind and below the projected glyph. They should never obscure the monogram or silhouette face.
+- Projection anatomy is plinth -> upward beam -> glyph. The glyph sits on the beam; the beam should never obscure the monogram or silhouette face.
+- The Refined/Terminal holo-plinth set is locked as EWDS desktop icon canon as of 2026-05-19.
 - S3 Studio folders, Settings, Vault, and future system/folder icons must use the same themed icon renderer as applets.
+
+### Desktop Live Inference HUD
+
+Canonical shell source: `platform/everywear-os/src/shell/ShellLayout.tsx`.
+
+Rules:
+- The center desktop HUD is a live system readout, not placeholder copy.
+- The Inference card must show loaded/target model context whenever the shell has it.
+- During applet launches, the card changes from idle/standby to opening the applet.
+- When a model-backed applet switch requires cleanup, the card uses the purging models state before handoff.
+- After a model-backed applet is ready, the card reports model loaded with the best available model label: assessment primary model, assessment group, or engine-type fallback.
+- Browser preview may use the engine-type fallback because Tauri model assessment and engine lifecycle events are not available there.
 
 ### Fonts
 

@@ -115,9 +115,9 @@ function ProjectedGlyphShape({ appletId, stem }: { appletId: string; stem: 'holo
   if (appletId === 's3studio') {
     return (
       <>
-        <path className={shapeClass} d="M13 18h12l4 4h15v18H13V18Z" />
-        <path className={`ew-icon-svg__${stem}-detail`} d="M17 26h23M17 33h23" />
-        <text className={textClass} x="28" y="32">S3</text>
+        <path className={shapeClass} d="M12 8h12l5 4h16v23H12V8Z" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M16 19h25M16 28h25" />
+        <text className={textClass} x="28" y="25">S3</text>
       </>
     );
   }
@@ -125,9 +125,9 @@ function ProjectedGlyphShape({ appletId, stem }: { appletId: string; stem: 'holo
   if (appletId === 'settings') {
     return (
       <>
-        <circle className={shapeClass} cx="28" cy="27" r="10" />
-        <path className={`ew-icon-svg__${stem}-detail`} d="M28 12v6M28 36v6M13 27h6M37 27h6M17.5 16.5l4.2 4.2M34.3 33.3l4.2 4.2M38.5 16.5l-4.2 4.2M21.7 33.3l-4.2 4.2" />
-        <circle className={`ew-icon-svg__${stem}-core`} cx="28" cy="27" r="3.5" />
+        <circle className={shapeClass} cx="28" cy="22" r="11" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M28 5v7M28 32v6M11 22h7M38 22h7M16.5 10.5l4.8 4.8M34.7 28.7l4.8 4.8M39.5 10.5l-4.8 4.8M21.3 28.7l-4.8 4.8" />
+        <circle className={`ew-icon-svg__${stem}-core`} cx="28" cy="22" r="4" />
       </>
     );
   }
@@ -135,18 +135,18 @@ function ProjectedGlyphShape({ appletId, stem }: { appletId: string; stem: 'holo
   if (appletId === 'vault') {
     return (
       <>
-        <rect className={shapeClass} x="15" y="13" width="26" height="27" rx="3" />
-        <path className={`ew-icon-svg__${stem}-detail`} d="M20 20h16M20 27h16M20 34h16M23 17v20M33 17v20" />
-        <text className={textClass} x="28" y="28.5">VA</text>
+        <rect className={shapeClass} x="14" y="6" width="28" height="30" rx="3" />
+        <path className={`ew-icon-svg__${stem}-detail`} d="M19 15h18M19 23h18M19 31h18M23 10v23M33 10v23" />
+        <text className={textClass} x="28" y="24">VA</text>
       </>
     );
   }
 
   return (
     <>
-      <path className={shapeClass} d="M15 11h25l5 5v22l-6 4H16l-5-5V15l4-4Z" />
-      <path className={`ew-icon-svg__${stem}-detail`} d="M18 18h20M17 27h22M18 36h20" />
-      <text className={textClass} x="28" y="28.5">{monogram}</text>
+      <path className={shapeClass} d="M14 5h27l5 5v24l-7 4H16l-6-5V10l4-5Z" />
+      <path className={`ew-icon-svg__${stem}-detail`} d="M17 15h22M16 25h24M17 34h22" />
+      <text className={textClass} x="28" y="25.5">{monogram}</text>
     </>
   );
 }
@@ -175,7 +175,7 @@ function HolographIcon({ appletId }: { appletId: string }) {
       <ellipse className="ew-icon-svg__holo-shadow" cx="28" cy="47" rx="17" ry="4" />
       <ellipse className="ew-icon-svg__holo-plinth" cx="28" cy="43" rx="17" ry="5" />
       <ellipse className="ew-icon-svg__holo-ring" cx="28" cy="41" rx="12" ry="3" />
-      <path className="ew-icon-svg__holo-beam" d="M15 43 22 22h12l7 21Z" fill={`url(#${gradientId})`} />
+      <path className="ew-icon-svg__holo-beam" d="M13 43 22 35h12l9 8Z" fill={`url(#${gradientId})`} />
       <ProjectedGlyphShape appletId={appletId} stem="holo" />
       <path className="ew-icon-svg__holo-sparkles ew-icon-svg__sparkle-a" d="M9 15h5M11.5 12.5v5M43 10h5M45.5 7.5v5M39 34h5M41.5 31.5v5" />
       <path className="ew-icon-svg__holo-sparkles ew-icon-svg__sparkle-b" d="M16 8h3M17.5 6.5v3M47 25h4M49 23v4M12 35h3M13.5 33.5v3" />
@@ -189,7 +189,7 @@ function TerminalSvgIcon({ appletId }: { appletId: string }) {
       <ellipse className="ew-icon-svg__terminal-shadow" cx="28" cy="47" rx="17" ry="4" />
       <ellipse className="ew-icon-svg__terminal-plinth" cx="28" cy="43" rx="17" ry="5" />
       <ellipse className="ew-icon-svg__terminal-ring" cx="28" cy="41" rx="12" ry="3" />
-      <path className="ew-icon-svg__terminal-beam" d="M15 43 22 22h12l7 21Z" />
+      <path className="ew-icon-svg__terminal-beam" d="M13 43 22 35h12l9 8Z" />
       <ProjectedGlyphShape appletId={appletId} stem="terminal" />
       <path className="ew-icon-svg__terminal-sparkles ew-icon-svg__sparkle-a" d="M9 15h5M11.5 12.5v5M43 10h5M45.5 7.5v5M39 34h5M41.5 31.5v5" />
       <path className="ew-icon-svg__terminal-sparkles ew-icon-svg__sparkle-b" d="M16 8h3M17.5 6.5v3M47 25h4M49 23v4M12 35h3M13.5 33.5v3" />

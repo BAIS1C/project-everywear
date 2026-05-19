@@ -590,6 +590,7 @@ body[data-mode="light"] .ew-canvas__center-hud {
   border-radius: var(--ew-radius-lg);
   clip-path: var(--ew-clip-card);
   min-width: 180px;
+  max-width: 220px;
 }
 .ew-canvas__status-label {
   font-family: var(--ew-font-mono);
@@ -605,11 +606,14 @@ body[data-mode="light"] .ew-canvas__center-hud {
   font-size: 13px;
   color: var(--ew-text);
   margin-bottom: var(--ew-space-1);
+  overflow-wrap: anywhere;
 }
 .ew-canvas__status-detail {
   font-family: var(--ew-font-mono);
   font-size: 11px;
   color: var(--ew-text-muted);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .ew-canvas__node-info {

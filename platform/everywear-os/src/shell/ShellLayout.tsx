@@ -44,9 +44,12 @@ const SYSTEM_ICONS: SystemIcon[] = [
 
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
+type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
 const THEME_OPTIONS = ['light', 'classic', 'refined', 'terminal'] as const;
 const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', '3nvizen']);
 const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', '3nvizen'];
+const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
+const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 function VaultPanel() {
   const [section, setSection] = useState<VaultSection>('media');
@@ -187,9 +190,110 @@ function DesktopClock() {
 
 // ── Desktop canvas (center, skin-dependent) ──
 
-function DesktopCanvas({ theme, gpu }: { theme: string; gpu: SystemGpuState | null }) {
+function shortGpuName(name: string | null | undefined) {
+  return name?.replace('NVIDIA ', '').replace('GeForce ', '') || null;
+}
+
+function isModelBackedApplet(applet: AppletEntry | null | undefined) {
+  return !!applet && MODEL_BACKED_ENGINE_TYPES.has(applet.engine_type);
+}
+
+function modelLabelFor(applet: AppletEntry | null | undefined, assessments: ModelAssessment[]) {
+  if (!applet) return null;
+  const assessment = assessments.find((item) => item.applet_id === applet.id);
+  return assessment?.recommended_primary_model
+    || assessment?.recommended_group
+    || (isModelBackedApplet(applet) ? `${applet.engine_type} model` : null);
+}
+
+function backendLabelForDesktop(gpu: SystemGpuState | null) {
+  if (!gpu) return 'backend: detecting...';
+  if (gpu.backend.type === 'Cuda') return `backend: CUDA / ${shortGpuName(gpu.primary_gpu) || gpu.backend.device_name}`;
+  if (gpu.backend.type === 'Vulkan') return `backend: Vulkan / ${shortGpuName(gpu.primary_gpu) || gpu.backend.device_name}`;
+  return gpu.backend.has_blas ? 'backend: CPU + OpenBLAS' : 'backend: CPU';
+}
+
+function buildInferenceReadout({
+  gpu,
+  assessments,
+  launchingApplet,
+  activeApplet,
+  phase,
+}: {
+  gpu: SystemGpuState | null;
+  assessments: ModelAssessment[];
+  launchingApplet: AppletEntry | null;
+  activeApplet: AppletEntry | null;
+  phase: InferencePhase;
+}) {
+  if (phase === 'purging' && launchingApplet) {
+    return {
+      value: 'purging models',
+      detail: `freeing VRAM for ${launchingApplet.name}`,
+    };
+  }
+
+  if ((phase === 'opening' || launchingApplet) && launchingApplet) {
+    const targetModel = modelLabelFor(launchingApplet, assessments);
+    return {
+      value: `opening ${launchingApplet.name}`,
+      detail: targetModel ? `target: ${targetModel}` : 'starting applet engine',
+    };
+  }
+
+  if (phase === 'error') {
+    return {
+      value: 'launch error',
+      detail: 'engine handoff failed',
+    };
+  }
+
+  if (activeApplet && isModelBackedApplet(activeApplet)) {
+    return {
+      value: 'model loaded',
+      detail: modelLabelFor(activeApplet, assessments) || `${activeApplet.name} engine warm`,
+    };
+  }
+
+  const preferredModel = assessments.find((item) => item.recommended_primary_model);
+  if (preferredModel?.recommended_primary_model) {
+    return {
+      value: 'standby',
+      detail: `ready target: ${preferredModel.recommended_primary_model}`,
+    };
+  }
+
+  return {
+    value: gpu?.backend?.type === 'Cuda' || gpu?.backend?.type === 'Vulkan' ? 'standby' : 'idle',
+    detail: backendLabelForDesktop(gpu),
+  };
+}
+
+function DesktopCanvas({
+  theme,
+  gpu,
+  assessments,
+  launchingApplet,
+  activeApplet,
+  inferencePhase,
+}: {
+  theme: string;
+  gpu: SystemGpuState | null;
+  assessments: ModelAssessment[];
+  launchingApplet: AppletEntry | null;
+  activeApplet: AppletEntry | null;
+  inferencePhase: InferencePhase;
+}) {
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
+  const inferenceReadout = buildInferenceReadout({
+    gpu,
+    assessments,
+    launchingApplet,
+    activeApplet,
+    phase: inferencePhase,
+  });
+
   if (isLight || isTerminal || theme === 'classic' || theme === 'refined') {
     return (
       <div
@@ -214,8 +318,8 @@ function DesktopCanvas({ theme, gpu }: { theme: string; gpu: SystemGpuState | nu
             </div>
             <div className="ew-canvas__status-card">
               <div className="ew-canvas__status-label">INFERENCE</div>
-              <div className="ew-canvas__status-value">{gpu?.backend?.type === 'Cuda' ? 'ready' : 'idle'}</div>
-              <div className="ew-canvas__status-detail">{gpu?.primary_gpu?.replace('NVIDIA ', '').replace('GeForce ', '') || 'detecting...'}</div>
+              <div className="ew-canvas__status-value">{inferenceReadout.value}</div>
+              <div className="ew-canvas__status-detail">{inferenceReadout.detail}</div>
             </div>
             <div className="ew-canvas__status-card">
               <div className="ew-canvas__status-label">NETWORK</div>
@@ -298,6 +402,9 @@ export function ShellLayout() {
   const [tauriApplet, setTauriApplet] = useState<{ applet_id: string; name: string; url: string } | null>(null);
   // Launching state: tracks which applet is currently going through the launch pipeline
   const [launchingId, setLaunchingId] = useState<string | null>(null);
+  const [activeInferenceAppletId, setActiveInferenceAppletId] = useState<string | null>(null);
+  const [inferencePhase, setInferencePhase] = useState<InferencePhase>('idle');
+  const inferenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [gpu, setGpu] = useState<SystemGpuState | null>(null);
@@ -320,6 +427,51 @@ export function ShellLayout() {
       win.id === id ? { ...win, zIndex, isMinimized: false } : win
     ));
   }, []);
+
+  const clearInferenceTimer = useCallback(() => {
+    if (inferenceTimerRef.current) {
+      clearTimeout(inferenceTimerRef.current);
+      inferenceTimerRef.current = null;
+    }
+  }, []);
+
+  const markAppletOpening = useCallback((applet: AppletEntry) => {
+    clearInferenceTimer();
+    setLaunchingId(applet.id);
+
+    const shouldPurge = isModelBackedApplet(applet)
+      && !!activeInferenceAppletId
+      && activeInferenceAppletId !== applet.id;
+    setInferencePhase(shouldPurge ? 'purging' : 'opening');
+
+    if (shouldPurge) {
+      inferenceTimerRef.current = setTimeout(() => {
+        setInferencePhase('opening');
+        inferenceTimerRef.current = null;
+      }, 1400);
+    }
+  }, [activeInferenceAppletId, clearInferenceTimer]);
+
+  const markAppletReady = useCallback((applet: AppletEntry) => {
+    clearInferenceTimer();
+    setLaunchingId(null);
+    if (isModelBackedApplet(applet)) {
+      setActiveInferenceAppletId(applet.id);
+      setInferencePhase('ready');
+    } else {
+      setInferencePhase('idle');
+    }
+  }, [clearInferenceTimer]);
+
+  const markLaunchError = useCallback(() => {
+    clearInferenceTimer();
+    setLaunchingId(null);
+    setInferencePhase('error');
+    inferenceTimerRef.current = setTimeout(() => {
+      setInferencePhase(activeInferenceAppletId ? 'ready' : 'idle');
+      inferenceTimerRef.current = null;
+    }, 3000);
+  }, [activeInferenceAppletId, clearInferenceTimer]);
 
   const openShellWindow = useCallback((content: ShellWindowContent) => {
     const key = windowContentKey(content);
@@ -358,6 +510,10 @@ export function ShellLayout() {
         if (renderMode === 'embedded' || applet.launch_binary) {
           closeAppletWebview(applet.id).catch(() => {});
         }
+        setActiveInferenceAppletId((current) => current === applet.id ? null : current);
+        if (activeInferenceAppletId === applet.id) {
+          setInferencePhase('idle');
+        }
       }
       const remaining = prev.filter(win => win.id !== id);
       setActiveWindowId(current =>
@@ -367,7 +523,7 @@ export function ShellLayout() {
       );
       return remaining;
     });
-  }, []);
+  }, [activeInferenceAppletId]);
 
   const minimizeShellWindow = useCallback((id: string) => {
     setWindows(prev => prev.map(win => win.id === id ? { ...win, isMinimized: true } : win));
@@ -388,6 +544,8 @@ export function ShellLayout() {
     const interval = setInterval(tick, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => () => clearInferenceTimer(), [clearInferenceTimer]);
 
   // ── Load registry on mount ──
   useEffect(() => {
@@ -437,11 +595,11 @@ export function ShellLayout() {
     const unlistenOpen = listen<{ applet_id: string; name: string; url: string }>('applet-webview-opened', (event) => {
       const { applet_id, name, url } = event.payload;
       log.info('ui', `Applet webview opened: ${applet_id} at ${url}`);
-      setLaunchingId(null);
 
       // If the applet has a frontend_port, show it inline via HeadlessAppletView.
       // If it opened a studio window (url != headless), show the banner.
       const entry = registryApplets.find((a) => a.id === applet_id);
+      if (entry) markAppletReady(entry);
       if (entry && isRegisteredApplet(entry.id)) {
         openShellWindow({ kind: 'applet', applet: entry, renderMode: 'inline' });
       } else if (entry?.frontend_port) {
@@ -458,6 +616,10 @@ export function ShellLayout() {
       setWindows(prev => prev.filter(win =>
         win.content.kind !== 'applet' || win.content.applet.id !== event.payload.applet_id
       ));
+      setActiveInferenceAppletId((current) => current === event.payload.applet_id ? null : current);
+      if (activeInferenceAppletId === event.payload.applet_id) {
+        setInferencePhase('idle');
+      }
       if (tauriApplet?.applet_id === event.payload.applet_id) {
         setTauriApplet(null);
       }
@@ -467,7 +629,7 @@ export function ShellLayout() {
       unlistenOpen.then(fn => fn());
       unlistenClose.then(fn => fn());
     };
-  }, [registryApplets, openShellWindow, tauriApplet]);
+  }, [activeInferenceAppletId, markAppletReady, registryApplets, openShellWindow, tauriApplet]);
 
   const handleCloseTauriApplet = async () => {
     if (tauriApplet) {
@@ -488,8 +650,11 @@ export function ShellLayout() {
       return;
     }
 
+    markAppletOpening(applet);
+
     if (isRegisteredApplet(applet.id) && !applet.launch_binary) {
       openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
+      markAppletReady(applet);
       return;
     }
 
@@ -503,19 +668,29 @@ export function ShellLayout() {
       } catch {
         window.open(applet.launch_url, '_blank');
       }
+      markAppletReady(applet);
       return;
     }
 
     // For all other applets: go through the runtime bridge
-    setLaunchingId(applet.id);
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
     try {
       await launchApplet(applet.id);
+      if (!hasShellRuntime()) {
+        if (applet.frontend_port) {
+          if (isRegisteredApplet(applet.id)) {
+            openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
+          } else {
+            openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
+          }
+        }
+        markAppletReady(applet);
+      }
       // The runtime bridge will emit 'applet-webview-opened' when ready.
       // Our event listener above handles the rest.
     } catch (err) {
       console.error(`Failed to launch ${applet.id}:`, err);
-      setLaunchingId(null);
+      markLaunchError();
       // If launch fails but the applet has a frontend_port, fall through
       // to headless view (dev mode: sidecar may not be needed)
       if (applet.frontend_port) {
@@ -525,6 +700,7 @@ export function ShellLayout() {
         } else {
           openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
         }
+        markAppletReady(applet);
       }
     }
   };
@@ -553,6 +729,12 @@ export function ShellLayout() {
     () => registryApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio'),
     [registryApplets]
   );
+  const launchingApplet = launchingId
+    ? registryApplets.find((applet) => applet.id === launchingId) ?? null
+    : null;
+  const activeInferenceApplet = activeInferenceAppletId
+    ? registryApplets.find((applet) => applet.id === activeInferenceAppletId) ?? null
+    : null;
 
   // GPU status for footer
   const gpuLabel = gpu?.backend?.type === 'Cuda'
@@ -611,7 +793,14 @@ export function ShellLayout() {
       {/* ── Desktop OS surface ── */}
       <div className="ew-desktop">
         {/* Center canvas / wallpaper layer */}
-        <DesktopCanvas theme={theme} gpu={gpu} />
+        <DesktopCanvas
+          theme={theme}
+          gpu={gpu}
+          assessments={assessments}
+          launchingApplet={launchingApplet}
+          activeApplet={activeInferenceApplet}
+          inferencePhase={inferencePhase}
+        />
 
         {/* Icon grid: registry applets + system icons */}
         <div className="ew-icon-grid">

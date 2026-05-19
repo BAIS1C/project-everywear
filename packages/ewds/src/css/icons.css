@@ -106,8 +106,8 @@ body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3
 
    Rendering contract:
      - App identity must remain readable at 56px.
-     - The projection beam sits behind/below the glyph; it must not cross
-       the monogram or silhouette face.
+     - The plinth projects the beam upward; the glyph sits on the beam.
+       The beam must not cross the monogram or silhouette face.
      - System icons and folders use the same themed renderer as applets.
      - Sparkles are subtle motion, not decorative noise.
    ═══════════════════════════════════════════════════════════════════ */

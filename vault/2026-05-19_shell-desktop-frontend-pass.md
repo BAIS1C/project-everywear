@@ -99,3 +99,19 @@ Completed chunk: icon canonization.
 - Projection layering was corrected: beams now rise from the plinth below the glyph and do not overlap/obscure the projected icon face.
 - `WIKI.md` now has `Desktop Icon Canon` under the EWDS section, including Classic, Refined, Terminal, Light, system/folder icon, and projection-layering rules.
 - Verification: `npm run build --workspace @everywear/ewds` and `npm run build` in `platform/everywear-os` passed. Cargo was not run.
+
+Completed chunk: projection anatomy correction.
+
+- Corrected the projected icon anatomy to plinth -> upward beam -> glyph. The beam now terminates at the glyph base; the glyph sits on it instead of being crossed by it.
+- Tall glyph silhouettes were lifted above the beam zone so the icon face and monogram stay unobscured.
+- EWDS and Wiki canon now explicitly state the plinth/beam/glyph relationship.
+- Canon status: this holo/plinth icon set is locked as the EWDS desktop icon family for Refined and Terminal, with Classic and Light retaining their approved companion treatments.
+- Verification: `npm run build --workspace @everywear/ewds` and `npm run build` in `platform/everywear-os` passed. Cargo was not run.
+
+Completed chunk: center desktop inference HUD.
+
+- Replaced the placeholder Inference card copy with a live desktop readout driven by registry applets, model assessments, GPU/backend state, applet launch state, and active model applet state.
+- The center HUD now reports idle/standby backend state, opening applet state, purging models during model-backed applet switches, launch errors, and model loaded after a model-backed applet is ready.
+- Model labels resolve from `recommended_primary_model`, then `recommended_group`, then the applet engine type as a preview/runtime fallback.
+- Browser preview fallback now clears launch state and opens/marks applets ready even when Tauri launch events are unavailable.
+- Verification: `npm run build --workspace @everywear/ewds` passed, `npm run build` in `platform/everywear-os` passed, and browser preview on `http://127.0.0.1:5173/?preview=1` showed `idle / backend: CPU`, then `model loaded / llm model` after opening Kasai. Cargo was not run.
