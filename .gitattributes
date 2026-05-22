@@ -1,0 +1,17 @@
+# Keep source and docs stable across Windows and POSIX tooling.
+* text=auto eol=lf
+
+# Binary assets and archives.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.zip binary
+*.skill binary
+*.pyc binary
+
+# Windows command scripts, if added later, should remain CRLF-friendly.
+*.bat text eol=crlf
+*.cmd text eol=crlf

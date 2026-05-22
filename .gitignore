@@ -10,6 +10,11 @@ out/
 .next/
 *.tsbuildinfo
 
+# Generated Python artefacts
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Tauri
 src-tauri/target/
 src-tauri/WixTools/
@@ -66,3 +71,6 @@ npm-debug.log*
 
 # Reference materials (local only)
 /*.html
+
+# Cowork temp archives
+/zi??????
