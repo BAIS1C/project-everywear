@@ -15,11 +15,11 @@
 //! 7. WebviewWindow: spawn applet UI inside Everywear OS (lib.rs)
 
 use crate::budget::{
-    build_purge_request, select_model_group, PurgePolicy, PurgeRequest, PurgeResult, PurgeScope,
+    select_model_group, PurgePolicy, PurgeRequest, PurgeResult, PurgeScope,
     RequirementsCheck, VramAllocation, VramBudget,
 };
 use crate::gpu;
-use applet_ipc::ShellChannel;
+use applet_ipc::{ModelPath, ShellChannel};
 use model_manager::{AppletManifest, ModelManager, ModelRole};
 
 use anyhow::{Context, Result};
@@ -691,6 +691,45 @@ pub fn resolve_model_paths(
     }
 
     Ok(paths)
+}
+
+/// Resolve model paths in the explicit IPC handoff shape used by
+/// CommandKind::StartInference.
+pub fn resolve_ipc_model_paths(
+    group: &model_manager::ModelGroup,
+    model_mgr: &ModelManager,
+) -> Result<Vec<ModelPath>> {
+    let mut paths = Vec::new();
+
+    for req in &group.models {
+        if !req.required {
+            continue;
+        }
+        let path = model_mgr
+            .model_path(&req.key)
+            .with_context(|| format!("model {} not found on disk after provisioning", req.key))?;
+
+        paths.push(ModelPath {
+            role: model_role_for_ipc(&req.role).to_string(),
+            path,
+            vram_mb: req.vram_mb.try_into().unwrap_or(u32::MAX),
+        });
+    }
+
+    Ok(paths)
+}
+
+fn model_role_for_ipc(role: &ModelRole) -> &'static str {
+    match role {
+        ModelRole::Primary => "primary",
+        ModelRole::Encoder => "encoder",
+        ModelRole::Vae => "vae",
+        ModelRole::Lora => "lora",
+        ModelRole::Projection => "projection",
+        ModelRole::VideoVae => "video_vae",
+        ModelRole::AudioVae => "audio_vae",
+        ModelRole::TextEncoder => "text_encoder",
+    }
 }
 
 /// Record VRAM allocations for a model group being loaded.

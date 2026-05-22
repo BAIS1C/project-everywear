@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@everywear/ewds": "*",
+    "@everywear/video-modal": "*",
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
     "@tauri-apps/api": "^2.0.0",

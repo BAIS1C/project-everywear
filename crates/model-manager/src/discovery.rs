@@ -26,6 +26,20 @@ pub fn discovery_paths(models_dir: &PathBuf) -> Vec<PathBuf> {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."));
 
+    // Legacy 1magen cache used before the shared ~/.everywear/models tree.
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        push_unique(
+            &mut paths,
+            PathBuf::from(appdata).join("1magen").join("models"),
+        );
+    }
+    if let Ok(local_appdata) = std::env::var("LOCALAPPDATA") {
+        push_unique(
+            &mut paths,
+            PathBuf::from(local_appdata).join("1magen").join("models"),
+        );
+    }
+
     // LM Studio (Linux/macOS)
     push_unique(
         &mut paths,

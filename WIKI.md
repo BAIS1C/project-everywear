@@ -60,13 +60,23 @@ the current architecture as:
 The next project phase should be build stabilization, not more surface area.
 Priority order:
 
-1. Fix Vid's malformed JSX in `VideoGeneratorModal.tsx`.
-2. Fix shared VideoGeneratorModal type errors and strict unused imports in
-   Gener8.
-3. Fix Kasai frontend wiring (`ToolCallCard` import and message discriminants).
-4. Re-run Rust checks one crate at a time after clearing stale Cargo processes.
-5. Only then continue multi-applet process-table, Kasai tools, and 3nvizen LTX
+1. Apply the 2026-05-22 modularisation gate from
+   `ARCHITECTURE_MODULES_2026-05-21.md`: split or hoist migration-touch
+   oversized files before further S3 applet migration.
+2. Hoist the shared Gener8/Vid/S3 video surface into `packages/video-modal/`
+   before applying more upstream S3 `VideoGeneratorModal` changes.
+3. Split shell `lib.rs` into `state.rs`, `crash.rs`, and `commands/*` before
+   adding more shell migration commands.
+4. Split Gener8 `shim.rs` by route group before adding more S3 shim endpoints.
+5. Fix Kasai frontend wiring (`ToolCallCard` import and message discriminants).
+6. Re-run Rust checks one crate at a time after clearing stale Cargo processes.
+7. Only then continue multi-applet process-table, Kasai tools, and 3nvizen LTX
    sidecar implementation.
+
+S3 Studio web informs the behaviour of S3-derived applets, not Everywear OS as a
+platform shell. The Everywear desktop may borrow S3 visual language, but shell
+routing, lifecycle, auth, entitlement, hardware, and applet boundaries remain
+Everywear-owned.
 
 ### Verification State
 

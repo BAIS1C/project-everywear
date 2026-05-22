@@ -17,7 +17,7 @@ import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
 import { getLogger, getErrorCount } from '@everywear/shared';
 import { LogViewerPanel } from '../components/LogViewerPanel';
-import { BugReportModal } from '../components/BugReportModal';
+import { BugReportModal, type BugReportSeed } from '../components/BugReportModal';
 
 const log = getLogger('shell');
 import { ProfilePanel } from '../panels/ProfilePanel';
@@ -106,6 +106,16 @@ interface ShellWindowState {
   isMaximized: boolean;
 }
 
+interface PendingRustCrashReport {
+  id: string;
+  timestamp: string;
+  process: string;
+  thread: string;
+  message: string;
+  location: string | null;
+  backtrace: string | null;
+}
+
 function windowContentKey(content: ShellWindowContent): string {
   return content.kind === 'panel' ? `panel:${content.panel}` : `applet:${content.applet.id}`;
 }
@@ -121,6 +131,7 @@ function ShellWindowFrame({
   win,
   isActive,
   onFocus,
+  onBugReport,
   onClose,
   onMinimize,
   onMaximize,
@@ -129,6 +140,7 @@ function ShellWindowFrame({
   win: ShellWindowState;
   isActive: boolean;
   onFocus: () => void;
+  onBugReport: () => void;
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
@@ -150,6 +162,16 @@ function ShellWindowFrame({
         </div>
         <span className="ew-window__title">{win.title}</span>
         {win.sublabel && <span className="ew-window__subtitle">{win.sublabel}</span>}
+        <div className="ew-window__actions">
+          <button
+            className="ew-window__report"
+            onClick={(e) => { e.stopPropagation(); onBugReport(); }}
+            title="Report a problem"
+            aria-label={`Report a problem with ${win.title}`}
+          >
+            !
+          </button>
+        </div>
       </div>
       <div className="ew-window__body">{children}</div>
     </div>
@@ -418,7 +440,18 @@ export function ShellLayout() {
 
   // Bug report + error badge
   const [bugReportOpen, setBugReportOpen] = useState(false);
+  const [bugReportSeed, setBugReportSeed] = useState<BugReportSeed | null>(null);
   const [errorBadgeCount, setErrorBadgeCount] = useState(0);
+
+  const openBugReport = useCallback((seed?: BugReportSeed | null) => {
+    setBugReportSeed(seed ?? null);
+    setBugReportOpen(true);
+  }, []);
+
+  const closeBugReport = useCallback(() => {
+    setBugReportOpen(false);
+    setBugReportSeed(null);
+  }, []);
 
   const focusWindow = useCallback((id: string) => {
     const zIndex = ++nextZIndexRef.current;
@@ -545,6 +578,44 @@ export function ShellLayout() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!hasShellRuntime()) return;
+
+    const checkPendingCrashReport = async () => {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const report = await invoke<PendingRustCrashReport | null>('take_pending_crash_report');
+        if (!report || cancelled) return;
+        log.error('system', 'Recovered Rust crash report from previous launch', {
+          report_id: report.id,
+          message: report.message,
+          location: report.location,
+        });
+        openBugReport({
+          source: report.process,
+          crashKind: 'rust',
+          occurredAt: report.timestamp,
+          errorMessage: report.message,
+          stack: report.backtrace || undefined,
+          description: `Everywear closed unexpectedly on the previous run.\n\nWhat were you doing right before it happened?`,
+          extra: {
+            report_id: report.id,
+            thread: report.thread,
+            location: report.location,
+          },
+        });
+      } catch (err) {
+        console.warn('Failed to check pending crash report:', err);
+      }
+    };
+
+    checkPendingCrashReport();
+    return () => {
+      cancelled = true;
+    };
+  }, [openBugReport]);
+
   useEffect(() => () => clearInferenceTimer(), [clearInferenceTimer]);
 
   // ── Load registry on mount ──
@@ -592,6 +663,8 @@ export function ShellLayout() {
 
   // ── Tauri applet webview lifecycle events ──
   useEffect(() => {
+    if (!hasShellRuntime()) return;
+
     const unlistenOpen = listen<{ applet_id: string; name: string; url: string }>('applet-webview-opened', (event) => {
       const { applet_id, name, url } = event.payload;
       log.info('ui', `Applet webview opened: ${applet_id} at ${url}`);
@@ -759,6 +832,7 @@ export function ShellLayout() {
           skin={effectiveSkin}
           mode={mode}
           onClose={() => closeShellWindow(win.id)}
+          onCrashReport={openBugReport}
         />
       );
     }
@@ -845,6 +919,15 @@ export function ShellLayout() {
               win={win}
               isActive={win.id === activeWindowId}
               onFocus={() => focusWindow(win.id)}
+              onBugReport={() => openBugReport({
+                source: win.title,
+                crashKind: 'manual',
+                description: `Problem with ${win.title}\n\nWhat went wrong?`,
+                extra: {
+                  window_id: win.id,
+                  content: win.content.kind === 'panel' ? win.content.panel : win.content.applet.id,
+                },
+              })}
               onClose={() => closeShellWindow(win.id)}
               onMinimize={() => minimizeShellWindow(win.id)}
               onMaximize={() => maximizeShellWindow(win.id)}
@@ -903,7 +986,7 @@ export function ShellLayout() {
           {/* Bug report / notification bell */}
           <button
             className="ew-taskbar__bell"
-            onClick={() => setBugReportOpen(true)}
+            onClick={() => openBugReport()}
             title="Report a problem"
           >
             &#128276;
@@ -931,7 +1014,7 @@ export function ShellLayout() {
         </div>
       )}
 
-      <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
+      <BugReportModal open={bugReportOpen} onClose={closeBugReport} seed={bugReportSeed} />
     </>
   );
 }

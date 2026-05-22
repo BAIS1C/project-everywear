@@ -105,12 +105,20 @@ def load_model(model_id: str) -> dict[str, Any]:
             "error": f"Model is not downloaded: {model_id}",
         }
     progress_tracker.loading_model = model_id
-    progress_tracker.loaded_model = model_id
-    progress_tracker.loading_model = None
+
+    from adapter.generate import load_pipeline
+    result = load_pipeline(model_id)
+
+    if result.get("status") == "error":
+        progress_tracker.loading_model = None
+        return {"status": "error", "current_model": progress_tracker.loaded_model, "error": result.get("error", "Unknown error")}
+
+    # load_pipeline sets progress_tracker.loaded_model and clears loading_model
     return {"status": "loaded", "current_model": model_id}
 
 
 def unload_models() -> dict[str, Any]:
-    progress_tracker.loaded_model = None
-    progress_tracker.loading_model = None
-    return {"status": "unloaded", "loaded": False, "models_loaded": False}
+    from adapter.generate import unload_pipeline
+    result = unload_pipeline()
+    # unload_pipeline clears progress_tracker.loaded_model and loading_model
+    return {"status": "unloaded", "loaded": False, "models_loaded": False, "previous_model": result.get("previous_model")}

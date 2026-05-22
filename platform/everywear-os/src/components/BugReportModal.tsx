@@ -1,9 +1,9 @@
 /**
  * BugReportModal — Structured bug report with session log attachment.
  *
- * Opens from a persistent title bar button. Collects user description,
- * lets user toggle log categories, and sends to the Everywear team
- * endpoint or to local Kasai for AI-powered diagnostics.
+ * Opens from shell chrome and crash prompts. Collects user description,
+ * lets user toggle log categories, and opens an email draft with logs
+ * appended where mail clients allow it.
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -16,9 +16,21 @@ import { getAllBufferedEntries, getLastError } from '@everywear/shared';
 type SendTarget = 'team' | 'kasai';
 type SendState = 'idle' | 'sending' | 'sent' | 'error';
 
+export interface BugReportSeed {
+  source?: string;
+  description?: string;
+  crashKind?: 'frontend' | 'rust' | 'manual';
+  occurredAt?: string;
+  errorMessage?: string;
+  stack?: string;
+  componentStack?: string;
+  extra?: Record<string, unknown>;
+}
+
 interface BugReportModalProps {
   open: boolean;
   onClose: () => void;
+  seed?: BugReportSeed | null;
 }
 
 // ── Category defaults: checked by default vs opt-in ─────────────────
@@ -26,6 +38,31 @@ interface BugReportModalProps {
 const DEFAULT_CHECKED: LogCategory[] = ['system', 'applet', 'generation', 'model', 'sidecar', 'vault'];
 const OPT_IN_CATEGORIES: LogCategory[] = ['ui', 'disk', 'auth', 'ipc'];
 const ALL_CATEGORIES: LogCategory[] = [...DEFAULT_CHECKED, ...OPT_IN_CATEGORIES];
+const BUG_REPORT_EMAIL = 'bugreport@metafintek.xyz';
+const MAILTO_BODY_LIMIT = 16000;
+
+function truncateForMailto(body: string): string {
+  if (body.length <= MAILTO_BODY_LIMIT) return body;
+  return `${body.slice(0, MAILTO_BODY_LIMIT)}\n\n[Report truncated for email draft. The full report was copied to clipboard.]`;
+}
+
+async function copyReportToClipboard(report: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(report);
+  } catch {
+    // Clipboard permission can be denied; the email draft still carries a useful excerpt.
+  }
+}
+
+async function openMailtoDraft(subject: string, body: string): Promise<void> {
+  const href = `mailto:${BUG_REPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(truncateForMailto(body))}`;
+  try {
+    const { open } = await import('@tauri-apps/plugin-shell');
+    await open(href);
+  } catch {
+    window.location.href = href;
+  }
+}
 
 // ── Styles (all EWDS tokens) ────────────────────────────────────────
 
@@ -177,7 +214,7 @@ const s = {
 
 // ── Component ───────────────────────────────────────────────────────
 
-export function BugReportModal({ open, onClose }: BugReportModalProps) {
+export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
   const [description, setDescription] = useState('');
   const [checkedCategories, setCheckedCategories] = useState<Set<LogCategory>>(
     new Set(DEFAULT_CHECKED),
@@ -187,18 +224,25 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
 
-  // Pre-fill description from last error
+  // Pre-fill description from crash context or the last logged error.
   useEffect(() => {
     if (open) {
       const lastErr = getLastError();
-      if (lastErr) {
+      if (seed?.description) {
+        setDescription(seed.description);
+      } else if (lastErr) {
         setDescription(`Error in ${lastErr.source}: ${lastErr.message}`);
+      } else {
+        setDescription('');
+      }
+      if (seed?.crashKind) {
+        setCheckedCategories(new Set([...DEFAULT_CHECKED, 'ui', 'ipc']));
       }
       setSendState('idle');
       setSendError(null);
       setReportId(null);
     }
-  }, [open]);
+  }, [open, seed]);
 
   // ── Category entry counts ─────────────────────────────────────
 
@@ -265,47 +309,77 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
     };
   }, [description, checkedCategories, selectedEntries]);
 
+  const buildReportText = useCallback((payload: BugReportPayload): string => {
+    const lines = [
+      `Bug Report - ${new Date().toISOString()}`,
+      `Session: ${payload.session_id}`,
+      `Send to: ${BUG_REPORT_EMAIL}`,
+      '',
+      'Description:',
+      payload.user_description || '(No description provided)',
+      '',
+    ];
+
+    if (seed) {
+      lines.push(
+        'Crash context:',
+        `Source: ${seed.source || 'unknown'}`,
+        `Kind: ${seed.crashKind || 'manual'}`,
+        `Occurred: ${seed.occurredAt || 'unknown'}`,
+        `Error: ${seed.errorMessage || 'unknown'}`,
+      );
+      if (seed.stack) lines.push('', 'Stack:', seed.stack);
+      if (seed.componentStack) lines.push('', 'React component stack:', seed.componentStack);
+      if (seed.extra) lines.push('', 'Extra:', JSON.stringify(seed.extra, null, 2));
+      lines.push('');
+    }
+
+    lines.push(
+      `System: ${payload.system_info.os} ${payload.system_info.os_version}`,
+      `GPU: ${payload.system_info.gpu_name} (${payload.system_info.vram_total_gb}GB)`,
+      `CUDA: ${payload.system_info.cuda_version}`,
+      `App: ${payload.system_info.app_version}`,
+      `Categories: ${payload.included_categories.join(', ')}`,
+      '',
+      `Log entries (${payload.entries.length}):`,
+      ...payload.entries.map(e =>
+        `${e.timestamp} ${e.level.toUpperCase().padEnd(5)} [${e.category}/${e.source}] ${e.message}${e.details ? ' ' + JSON.stringify(e.details) : ''}`
+      ),
+    );
+
+    return lines.join('\n');
+  }, [seed]);
+
   const handleSendToTeam = useCallback(async () => {
     setSendState('sending');
     setSendError(null);
     try {
       const payload = await buildPayload();
-      const { invoke } = await import('@tauri-apps/api/core');
-      // CODEX_NEEDED: Backend command "send_bug_report_to_team"
-      // Args: { payload: BugReportPayload }
-      // Returns: { report_id: string, status: "sent"|"queued"|"failed" }
-      // Backend: POST to https://reports.everywear.id/api/reports (or similar)
-      // Include: payload JSON, system info, log entries, attachments
-      // Auth: Use the user's Supabase JWT if available, otherwise anonymous
-      const result = await invoke<{ report_id: string; status: string }>('send_bug_report_to_team', { payload });
-      if (result.status === 'failed') throw new Error('Report submission failed');
-      setReportId(result.report_id);
+      const reportText = buildReportText(payload);
+      const subjectPrefix = seed?.crashKind ? 'Everywear crash report' : 'Everywear bug report';
+      await copyReportToClipboard(reportText);
+      await openMailtoDraft(subjectPrefix, reportText);
+      setReportId(BUG_REPORT_EMAIL);
       setSendState('sent');
     } catch (err) {
       setSendState('error');
-      setSendError(err instanceof Error ? err.message : 'Failed to send report');
+      setSendError(err instanceof Error ? err.message : 'Failed to open email draft');
     }
-  }, [buildPayload]);
+  }, [buildPayload, buildReportText, seed]);
 
   const handleSendToKasai = useCallback(async () => {
     setSendState('sending');
     setSendError(null);
     try {
       const payload = await buildPayload();
-      const { invoke } = await import('@tauri-apps/api/core');
-      // CODEX_NEEDED: Backend command "send_bug_report_to_kasai"
-      // Args: { payload: BugReportPayload }
-      // Returns: { kasai_session_id: string }
-      // Backend: Format logs as a diagnostic prompt, send via kasai_forward_chat
-      // The shell should then switch to the Kasai view and show the diagnostic response
-      const result = await invoke<{ kasai_session_id: string }>('send_bug_report_to_kasai', { payload });
-      setReportId(result.kasai_session_id);
-      setSendState('sent');
+      await copyReportToClipboard(buildReportText(payload));
+      setSendState('error');
+      setSendError('Local Kasai diagnostics is not connected yet. The full report was copied to clipboard.');
     } catch (err) {
       setSendState('error');
       setSendError(err instanceof Error ? err.message : 'Failed to send to Kasai');
     }
-  }, [buildPayload]);
+  }, [buildPayload, buildReportText]);
 
   const handleSend = useCallback(() => {
     if (target === 'team') handleSendToTeam();
@@ -316,27 +390,8 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
 
   const handleCopy = useCallback(async () => {
     const payload = await buildPayload();
-    const lines = [
-      `Bug Report — ${new Date().toISOString()}`,
-      `Session: ${payload.session_id}`,
-      '',
-      `Description:`,
-      payload.user_description,
-      '',
-      `System: ${payload.system_info.os} ${payload.system_info.os_version}`,
-      `GPU: ${payload.system_info.gpu_name} (${payload.system_info.vram_total_gb}GB)`,
-      `CUDA: ${payload.system_info.cuda_version}`,
-      `App: ${payload.system_info.app_version}`,
-      '',
-      `Log entries (${payload.entries.length}):`,
-      ...payload.entries.map(e =>
-        `${e.timestamp} ${e.level.toUpperCase().padEnd(5)} [${e.source}] ${e.message}${e.details ? ' ' + JSON.stringify(e.details) : ''}`
-      ),
-    ];
-    try {
-      await navigator.clipboard.writeText(lines.join('\n'));
-    } catch { /* silent */ }
-  }, [buildPayload]);
+    await copyReportToClipboard(buildReportText(payload));
+  }, [buildPayload, buildReportText]);
 
   // ── Render ────────────────────────────────────────────────────
 
@@ -353,7 +408,7 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
 
         {sendState === 'sent' ? (
           <div style={s.successMsg}>
-            Report sent. {reportId && <>Session ID: <code>{reportId}</code>.</>} Thank you!
+            Email draft opened for {reportId || BUG_REPORT_EMAIL}. The full report was copied to clipboard.
           </div>
         ) : (
           <>
@@ -403,7 +458,7 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
                       checked={target === 'team'}
                       onChange={() => setTarget('team')}
                     />
-                    Everywear Team
+                    Everywear Team via Email
                   </label>
                   <label style={s.radioLabel}>
                     <input

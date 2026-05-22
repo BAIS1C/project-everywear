@@ -10,8 +10,8 @@
 //! Chain RPC, token balances, NFT queries, and transaction broadcast are
 //! placeholder methods that return mock data until Strands Chain testnet launches.
 
-use anyhow::{Context, Result};
-use ed25519_dalek::{SigningKey, VerifyingKey};
+use anyhow::Result;
+use ed25519_dalek::SigningKey;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use tracing::info;

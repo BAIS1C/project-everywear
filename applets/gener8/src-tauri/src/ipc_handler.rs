@@ -17,6 +17,23 @@ use applet_ipc::{envelope::verify_hmac, CommandKind, IpcEnvelope, IpcKind, IpcSo
 
 use crate::{engine_client, AppState, LicenceTier, APPLET_ID};
 
+fn applet_source() -> IpcSource {
+    IpcSource::Applet {
+        applet_id: APPLET_ID.to_string(),
+    }
+}
+
+fn response_envelope(request_id: &str, response: Response) -> IpcEnvelope {
+    let payload = serde_json::to_value(response).unwrap_or_else(|error| {
+        serde_json::json!({
+            "id": request_id,
+            "status": "error",
+            "detail": format!("failed to serialize response: {error}"),
+        })
+    });
+    IpcEnvelope::response(request_id, applet_source(), payload)
+}
+
 /// Run the bidirectional IPC loop until shutdown or connection loss.
 ///
 /// - Reads newline-delimited JSON envelopes from the shell
@@ -127,13 +144,7 @@ async fn handle_envelope(state: &Arc<AppState>, envelope: &IpcEnvelope) {
                     CommandKind::Shutdown => {
                         info!("Received Shutdown command from shell");
                         // Respond OK before shutting down
-                        let resp = IpcEnvelope::response(
-                            &envelope.id,
-                            IpcSource::Applet {
-                                applet_id: APPLET_ID.to_string(),
-                            },
-                            serde_json::json!({ "status": "ok" }),
-                        );
+                        let resp = response_envelope(&envelope.id, Response::ok(&envelope.id));
                         let _ = state.ipc_tx.send(resp);
                         state.shutdown.notify_waiters();
                     }
@@ -142,23 +153,15 @@ async fn handle_envelope(state: &Arc<AppState>, envelope: &IpcEnvelope) {
                         info!("Received UnloadModel command");
                         let mut ace = state.ace.lock().await;
                         ace.stop();
-                        let resp = IpcEnvelope::response(
-                            &envelope.id,
-                            IpcSource::Applet {
-                                applet_id: APPLET_ID.to_string(),
-                            },
-                            serde_json::json!({ "status": "ok" }),
-                        );
+                        let resp = response_envelope(&envelope.id, Response::ok(&envelope.id));
                         let _ = state.ipc_tx.send(resp);
                     }
 
                     CommandKind::Ping => {
-                        let resp = IpcEnvelope::response(
+                        let detail = serde_json::json!({ "applet_id": APPLET_ID }).to_string();
+                        let resp = response_envelope(
                             &envelope.id,
-                            IpcSource::Applet {
-                                applet_id: APPLET_ID.to_string(),
-                            },
-                            serde_json::json!({ "status": "ok", "applet_id": APPLET_ID }),
+                            Response::ok_with(&envelope.id, detail),
                         );
                         let _ = state.ipc_tx.send(resp);
                     }
@@ -187,17 +190,15 @@ async fn handle_envelope(state: &Arc<AppState>, envelope: &IpcEnvelope) {
                     CommandKind::QueryStatus => {
                         let tier = state.tier.lock().await;
                         let ace = state.ace.lock().await;
-                        let resp = IpcEnvelope::response(
+                        let detail = serde_json::json!({
+                            "applet_id": APPLET_ID,
+                            "tier": tier.as_str(),
+                            "ace_running": ace.is_running(),
+                        })
+                        .to_string();
+                        let resp = response_envelope(
                             &envelope.id,
-                            IpcSource::Applet {
-                                applet_id: APPLET_ID.to_string(),
-                            },
-                            serde_json::json!({
-                                "status": "ok",
-                                "applet_id": APPLET_ID,
-                                "tier": tier.as_str(),
-                                "ace_running": ace.is_running(),
-                            }),
+                            Response::ok_with(&envelope.id, detail),
                         );
                         let _ = state.ipc_tx.send(resp);
                     }
@@ -296,12 +297,9 @@ async fn handle_tier_sync(
 
     if !verify_hmac(&state.ipc_secret, verify_data.as_bytes(), signature) {
         warn!("TierSync HMAC verification failed; rejecting tier change");
-        let resp = IpcEnvelope::response(
+        let resp = response_envelope(
             &envelope.id,
-            IpcSource::Applet {
-                applet_id: APPLET_ID.to_string(),
-            },
-            serde_json::json!({ "status": "error", "detail": "HMAC verification failed" }),
+            Response::error(&envelope.id, "HMAC verification failed"),
         );
         let _ = state.ipc_tx.send(resp);
         return;
@@ -312,12 +310,9 @@ async fn handle_tier_sync(
         let now = chrono::Utc::now().timestamp();
         if now > exp_ts {
             warn!("TierSync expired (exp={}, now={}); rejecting", exp_ts, now);
-            let resp = IpcEnvelope::response(
+            let resp = response_envelope(
                 &envelope.id,
-                IpcSource::Applet {
-                    applet_id: APPLET_ID.to_string(),
-                },
-                serde_json::json!({ "status": "error", "detail": "tier claim expired" }),
+                Response::error(&envelope.id, "tier claim expired"),
             );
             let _ = state.ipc_tx.send(resp);
             return;
@@ -339,13 +334,8 @@ async fn handle_tier_sync(
         }
     }
 
-    let resp = IpcEnvelope::response(
-        &envelope.id,
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
-        serde_json::json!({ "status": "ok", "tier": tier_str }),
-    );
+    let detail = serde_json::json!({ "tier": tier_str }).to_string();
+    let resp = response_envelope(&envelope.id, Response::ok_with(&envelope.id, detail));
     let _ = state.ipc_tx.send(resp);
 }
 

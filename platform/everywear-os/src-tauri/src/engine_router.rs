@@ -15,6 +15,9 @@
 //! 6. Shell forwards ExecuteJob to engine applet
 //! 7. Engine executes, writes to output_target
 //! 8. Shell relays JobComplete/JobFailed event to requesting applet
+//!
+//! Router v2 supports multi-applet process routing via HashMap<String, AppletProcess>
+//! keyed by applet_id, enabling multiple warm engines to receive jobs concurrently.
 
 use crate::engine_registry::{EngineAvailability, EngineRegistry};
 use anyhow::{anyhow, Context, Result};
@@ -23,7 +26,7 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use tracing::{info, warn};
+use tracing::info;
 
 // ---------------------------------------------------------------------------
 // Job types (Contract 3)

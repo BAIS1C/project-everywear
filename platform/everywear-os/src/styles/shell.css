@@ -525,6 +525,34 @@ body[data-mode="light"] .ew-folder-tray {
 .ew-window__subtitle {
   color: var(--ew-text-muted);
 }
+.ew-window__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ew-space-1);
+}
+.ew-window__report {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--ew-text) 14%, transparent);
+  background: color-mix(in oklab, var(--ew-text) 6%, transparent);
+  color: var(--ew-text-muted);
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--ew-font-display);
+  font-size: 11px;
+  font-weight: var(--ew-fw-display);
+  line-height: 1;
+  transition: border-color var(--ew-t-fast) var(--ew-ease), color var(--ew-t-fast) var(--ew-ease), background var(--ew-t-fast) var(--ew-ease);
+}
+.ew-window__report:hover {
+  border-color: var(--ew-status-amber);
+  background: color-mix(in oklab, var(--ew-status-amber) 14%, transparent);
+  color: var(--ew-text);
+}
 .ew-window__body {
   flex: 1;
   min-height: 0;
@@ -1635,7 +1663,8 @@ body[data-mode="light"] .ew-desktop-clock__time {
   margin: 0;
 }
 
-.avr-error__retry {
+.avr-error__retry,
+.avr-error__report {
   padding: var(--ew-space-3) var(--ew-space-6);
   font-family: var(--ew-font-display);
   font-weight: var(--ew-fw-display);
@@ -1652,6 +1681,17 @@ body[data-mode="light"] .ew-desktop-clock__time {
 
 .avr-error__retry:hover {
   background: var(--ew-primary-hover);
+}
+
+.avr-error__report {
+  border-color: color-mix(in oklab, var(--ew-text) 18%, transparent);
+  background: color-mix(in oklab, var(--ew-text) 6%, transparent);
+  color: var(--ew-text);
+}
+
+.avr-error__report:hover {
+  border-color: var(--ew-status-amber);
+  color: var(--ew-status-amber);
 }
 
 /* ═══════════════════════════════════════════════════════

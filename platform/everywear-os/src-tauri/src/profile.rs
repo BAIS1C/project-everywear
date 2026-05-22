@@ -4,10 +4,10 @@
 //! linked external accounts (Discourse, Strands Chain wallet).
 //! All data persisted in a local SQLite database.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

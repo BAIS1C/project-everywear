@@ -8,6 +8,8 @@ mod applet_resolver;
 mod assessment;
 mod auth;
 mod budget;
+mod commands;
+mod crash;
 #[cfg(feature = "discourse-native")]
 mod discourse;
 mod engine_registry;
@@ -21,6 +23,7 @@ mod migration;
 mod profile;
 mod registry;
 mod setup;
+mod state;
 mod vault_commands;
 mod video_encoder;
 mod vram_scheduler;
@@ -28,375 +31,12 @@ mod wallet;
 
 use applet_ipc::{CommandKind, IpcEnvelope, ResponseStatus};
 use engine_registry::{EngineAvailability, EngineLifecycle};
-use serde::Serialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use state::AppState;
 use tauri::{Emitter, Manager};
 use tokio::sync::{mpsc, Mutex};
-
-/// Shared application state injected into all IPC commands.
-pub struct AppState {
-    pub gpu: Arc<Mutex<gpu::SystemGpuState>>,
-    pub profile: Arc<Mutex<profile::ProfileManager>>,
-    pub wallet: Arc<Mutex<wallet::WalletManager>>,
-    pub registry: Arc<Mutex<registry::AppletRegistry>>,
-    #[cfg(feature = "discourse-native")]
-    pub discourse: Arc<Mutex<discourse::DiscourseClient>>,
-    // ── Bridge: VRAM lifecycle ──
-    pub budget: Arc<Mutex<budget::VramBudget>>,
-    pub model_mgr: Arc<Mutex<model_manager::ModelManager>>,
-    pub model_resolver: Arc<Mutex<model_manager::ModelResolver>>,
-    pub active_applet: Arc<Mutex<Option<String>>>,
-    /// Running binary applet: child process + IPC channel.
-    /// Held for unload_model, shutdown, and lifecycle management.
-    pub applet_process: Arc<Mutex<Option<launcher::AppletProcess>>>,
-    /// Runtime-discovered engine capabilities advertised by applets.
-    pub engine_registry: Arc<Mutex<engine_registry::EngineRegistry>>,
-    /// Runtime engine/heartbeat lifecycle scheduler.
-    pub vram_scheduler: Arc<Mutex<vram_scheduler::VramScheduler>>,
-    /// Recent shell-side tool calls requested by Kasai.
-    pub kasai_tool_calls: Arc<Mutex<Vec<serde_json::Value>>>,
-    /// Current user licence tier (determines upgrade pack entitlement).
-    /// Defaults to Demo; updated on Supabase auth hydration via
-    /// `active_tier()` RPC. Shell is read-only for tier; Hub is the
-    /// single writer (payment webhook -> subscriptions upsert).
-    pub licence_tier: Arc<Mutex<model_manager::LicenceTier>>,
-    /// Authenticated user session (from Supabase JWT).
-    /// None until the EWDS frontend pushes auth state via `push_auth_state`.
-    /// Shell owns the session; applets receive identity via `get_auth_context`.
-    pub user_session: Arc<Mutex<Option<auth::UserClaim>>>,
-    /// Shared NVENC video-encoder sidecar (ref-counted, shell-owned).
-    pub video_encoder: Arc<Mutex<video_encoder::VideoEncoderService>>,
-    /// Shared vault index used by commands and lifecycle auto-registration.
-    pub vault: vault_commands::VaultState,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct KasaiChatResponse {
-    pub session_id: String,
-    pub reply: Option<String>,
-    pub status: ChatStatus,
-    pub tool_calls_initiated: u64,
-    pub first_tool_call_index: Option<u64>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub enum ChatStatus {
-    Streaming,
-    Complete,
-    ToolExecuting,
-    Error(String),
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct KasaiSlotInfo {
-    pub slot_id: String,
-    pub model_name: Option<String>,
-    pub model_size_gb: Option<f64>,
-    pub vram_used_gb: Option<f64>,
-    pub status: String,
-    pub current_activity: Option<String>,
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct KasaiStatusResponse {
-    pub runtime_status: String,
-    pub slots: Vec<KasaiSlotInfo>,
-    pub swap_mode: String,
-    pub total_vram_gb: f64,
-    pub available_vram_gb: f64,
-    pub active_session_id: Option<String>,
-    pub tool_call_log_size: usize,
-}
-
-// ─── GPU Commands ───────────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn get_gpu_status(state: tauri::State<'_, AppState>) -> Result<gpu::SystemGpuState, String> {
-    let gpu_state = gpu::detect_gpus();
-    let mut stored = state.gpu.lock().await;
-    *stored = gpu_state.clone();
-    Ok(gpu_state)
-}
-
-#[tauri::command]
-async fn poll_vram(
-    state: tauri::State<'_, AppState>,
-    gpu_index: u32,
-) -> Result<serde_json::Value, String> {
-    match gpu::poll_vram(gpu_index) {
-        Some((used, free)) => Ok(serde_json::json!({ "used_mb": used, "free_mb": free })),
-        None => Err("GPU not available".into()),
-    }
-}
-
-#[tauri::command]
-async fn get_compute_backend(
-    state: tauri::State<'_, AppState>,
-) -> Result<gpu::ComputeBackend, String> {
-    let stored = state.gpu.lock().await;
-    Ok(stored.backend.clone())
-}
-
-#[tauri::command]
-async fn get_vram_tier(state: tauri::State<'_, AppState>) -> Result<gpu::VramTier, String> {
-    let stored = state.gpu.lock().await;
-    Ok(stored.vram_tier)
-}
-
-#[tauri::command]
-async fn list_model_assessments(
-    state: tauri::State<'_, AppState>,
-) -> Result<Vec<assessment::ModelAssessment>, String> {
-    let gpu_state = gpu::detect_gpus();
-    let mut stored = state.gpu.lock().await;
-    *stored = gpu_state.clone();
-    Ok(assessment::list_model_assessments(&gpu_state))
-}
-
-// ─── Profile Commands ───────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn get_profile(state: tauri::State<'_, AppState>) -> Result<profile::UserProfile, String> {
-    let mgr = state.profile.lock().await;
-    mgr.get_profile().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn update_profile(
-    state: tauri::State<'_, AppState>,
-    update: profile::ProfileUpdate,
-) -> Result<profile::UserProfile, String> {
-    let mgr = state.profile.lock().await;
-    mgr.update_profile(update).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn set_preference(
-    state: tauri::State<'_, AppState>,
-    key: String,
-    value: String,
-) -> Result<(), String> {
-    let mgr = state.profile.lock().await;
-    mgr.set_pref(&key, &value).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_preference(
-    state: tauri::State<'_, AppState>,
-    key: String,
-) -> Result<Option<String>, String> {
-    let mgr = state.profile.lock().await;
-    Ok(mgr.get_pref(&key))
-}
-
-// ─── Wallet Commands ────────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn wallet_generate(state: tauri::State<'_, AppState>) -> Result<wallet::WalletInfo, String> {
-    let mut w = state.wallet.lock().await;
-    w.generate_keypair().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn wallet_info(
-    state: tauri::State<'_, AppState>,
-) -> Result<Option<wallet::WalletInfo>, String> {
-    let w = state.wallet.lock().await;
-    Ok(w.get_info())
-}
-
-#[tauri::command]
-async fn wallet_transactions(
-    state: tauri::State<'_, AppState>,
-    limit: Option<usize>,
-) -> Result<Vec<wallet::Transaction>, String> {
-    let w = state.wallet.lock().await;
-    Ok(w.get_transactions(limit.unwrap_or(20)))
-}
-
-#[tauri::command]
-async fn wallet_disconnect(state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let mut w = state.wallet.lock().await;
-    w.disconnect();
-    Ok(())
-}
-
-// ─── Discourse Commands ─────────────────────────────────────────────────────
-
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_oauth_url(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let mut client = state.discourse.lock().await;
-    Ok(client.oauth_url())
-}
-
-// CLAUDE_INTERFACE: This command completes Discourse OAuth callback handling.
-// Command: "discourse_complete_oauth"
-// Args: { code: string, state: string }
-// Returns: { username, name?, avatar_url?, trust_level, unread_notifications }
-// Error: "DISCOURSE_API_ERROR"
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_complete_oauth(
-    state: tauri::State<'_, AppState>,
-    code: String,
-    oauth_state: String,
-) -> Result<discourse::DiscourseUser, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client
-        .complete_oauth(&code, &oauth_state)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_user(
-    state: tauri::State<'_, AppState>,
-) -> Result<Option<discourse::DiscourseUser>, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client.get_user().await.map_err(|e| e.to_string())
-}
-
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_latest(
-    state: tauri::State<'_, AppState>,
-    limit: Option<usize>,
-) -> Result<Vec<discourse::DiscoursePost>, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client
-        .latest_posts(limit.unwrap_or(10))
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// CLAUDE_INTERFACE: This command is available for frontend wiring
-// Command: "discourse_get_topics"
-// Args: { category_id?: number, page?: number }
-// Returns: { topics: Array<{id, title, slug, posts_count, created_at}>, total: number }
-// Error: "DISCOURSE_NOT_AUTHENTICATED" | "DISCOURSE_API_ERROR"
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_get_topics(
-    state: tauri::State<'_, AppState>,
-    category_id: Option<u64>,
-    page: Option<u32>,
-) -> Result<discourse::DiscourseTopicList, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client
-        .list_topics(category_id, page)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// CLAUDE_INTERFACE: This command is available for frontend wiring
-// Command: "discourse_read_post"
-// Args: { post_id: number }
-// Returns: { id, topic_id?, topic_slug?, author, raw?, cooked?, created_at }
-// Error: "DISCOURSE_NOT_AUTHENTICATED" | "DISCOURSE_API_ERROR"
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_read_post(
-    state: tauri::State<'_, AppState>,
-    post_id: u64,
-) -> Result<discourse::DiscoursePostDetail, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client.read_post(post_id).await.map_err(|e| e.to_string())
-}
-
-// CLAUDE_INTERFACE: This command is available for frontend wiring
-// Command: "discourse_create_post"
-// Args: { request: { title?: string, raw: string, topic_id?: number, category?: number } }
-// Returns: { id, topic_id?, topic_slug?, author, raw?, cooked?, created_at }
-// Error: "DISCOURSE_NOT_AUTHENTICATED" | "DISCOURSE_API_ERROR"
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_create_post(
-    state: tauri::State<'_, AppState>,
-    request: discourse::CreatePostRequest,
-) -> Result<discourse::DiscoursePostDetail, String> {
-    let user = state.user_session.lock().await.clone();
-    let mut client = state.discourse.lock().await;
-    client.set_everywear_identity(user.as_ref());
-    client.create_post(request).await.map_err(|e| e.to_string())
-}
-
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_refresh_token(state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let mut client = state.discourse.lock().await;
-    client
-        .refresh_access_token()
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[cfg(feature = "discourse-native")]
-#[tauri::command]
-async fn discourse_disconnect(state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let mut client = state.discourse.lock().await;
-    client.disconnect();
-    Ok(())
-}
-
-// ─── Registry Commands ──────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn list_applets(
-    state: tauri::State<'_, AppState>,
-) -> Result<Vec<registry::AppletEntry>, String> {
-    let reg = state.registry.lock().await;
-    Ok(reg.launchable())
-}
-
-#[tauri::command]
-async fn get_applet(
-    state: tauri::State<'_, AppState>,
-    id: String,
-) -> Result<Option<registry::AppletEntry>, String> {
-    let reg = state.registry.lock().await;
-    Ok(reg.get(&id).cloned())
-}
-
-// CLAUDE_INTERFACE: Focus an applet's external window
-// Command: "focus_applet_window"
-// Args: { label: string }
-// Returns: boolean (true if window found and focused, false if not running)
-// Known shell-owned labels: "main", "studio". Standalone applets such as 1magen use "main" inside their own Tauri process, so the shell can only focus them when they are represented by a shell-owned window label.
-// Usage: Shell sidebar clicks for 1magen/Gener8 call this instead of rendering inline
-#[tauri::command]
-async fn focus_applet_window(label: String, app: tauri::AppHandle) -> Result<bool, String> {
-    let Some(window) = app.get_webview_window(&label) else {
-        return Ok(false);
-    };
-    window.show().map_err(|e| e.to_string())?;
-    window.unminimize().map_err(|e| e.to_string())?;
-    window.set_focus().map_err(|e| e.to_string())?;
-    Ok(true)
-}
-
-// CLAUDE_INTERFACE: Check if applet window is open
-// Command: "is_applet_window_open"
-// Args: { label: string }
-// Returns: boolean
-// Usage: Shell sidebar can show green dot for running applets
-#[tauri::command]
-async fn is_applet_window_open(label: String, app: tauri::AppHandle) -> Result<bool, String> {
-    Ok(app.get_webview_window(&label).is_some())
-}
 
 // ─── VRAM Budget Commands (NEW: Bridge) ─────────────────────────────────────
 
@@ -601,8 +241,8 @@ async fn request_applet_switch(
 
             // Send unload_model to the running applet via IPC channel
             {
-                let mut proc_lock = state.applet_process.lock().await;
-                if let Some(ref mut applet_proc) = *proc_lock {
+                let mut proc_lock = state.applet_processes.lock().await;
+                if let Some(ref mut applet_proc) = proc_lock.get_mut(current_id) {
                     let unload_timeout = std::time::Duration::from_secs(30);
                     match applet_proc.ipc.unload_model(unload_timeout).await {
                         Ok(resp) => {
@@ -733,11 +373,16 @@ async fn request_applet_switch(
         },
     );
 
-    // Resolve model paths
-    let model_mgr_lock = state.model_mgr.lock().await;
-    let model_paths = launcher::resolve_model_paths(selected_group, &model_mgr_lock)
-        .map_err(|e| format!("Failed to resolve model paths: {e}"))?;
-    drop(model_mgr_lock);
+    // Resolve model paths for both env-var handoff and the explicit
+    // StartInference IPC handoff.
+    let (model_paths, ipc_model_paths) = {
+        let model_mgr_lock = state.model_mgr.lock().await;
+        let model_paths = launcher::resolve_model_paths(selected_group, &model_mgr_lock)
+            .map_err(|e| format!("Failed to resolve model paths: {e}"))?;
+        let ipc_model_paths = launcher::resolve_ipc_model_paths(selected_group, &model_mgr_lock)
+            .map_err(|e| format!("Failed to resolve IPC model paths: {e}"))?;
+        (model_paths, ipc_model_paths)
+    };
 
     // Record VRAM allocations
     launcher::record_allocations(&mut budget_lock, &applet_id, selected_group);
@@ -770,6 +415,22 @@ async fn request_applet_switch(
             .await;
         }
 
+        let start_response = proc
+            .ipc
+            .send_envelope_command(
+                CommandKind::StartInference {
+                    model_paths: ipc_model_paths.clone(),
+                },
+                std::time::Duration::from_secs(300),
+            )
+            .await
+            .map_err(|e| format!("StartInference failed: {e}"))?;
+        if start_response.status == ResponseStatus::Error {
+            return Err(start_response
+                .detail
+                .unwrap_or_else(|| "StartInference returned an error".to_string()));
+        }
+
         state
             .vram_scheduler
             .lock()
@@ -782,6 +443,8 @@ async fn request_applet_switch(
                 applet_id.clone(),
                 event_rx,
                 state.engine_registry.clone(),
+                state.active_applet.clone(),
+                state.applet_processes.clone(),
                 state.vram_scheduler.clone(),
                 state.kasai_tool_calls.clone(),
                 state.profile.clone(),
@@ -789,8 +452,8 @@ async fn request_applet_switch(
             );
         }
 
-        let mut proc_lock = state.applet_process.lock().await;
-        *proc_lock = Some(proc);
+        let mut proc_lock = state.applet_processes.lock().await;
+        proc_lock.insert(applet_id.clone(), proc);
     }
 
     // ── 7. Show applet UI in the studio window ──
@@ -845,8 +508,30 @@ async fn submit_engine_job(
     state: tauri::State<'_, AppState>,
     job: engine_router::EngineJob,
 ) -> Result<serde_json::Value, String> {
+    route_active_engine_job(
+        job,
+        state.engine_registry.clone(),
+        state.active_applet.clone(),
+        state.applet_processes.clone(),
+        state.profile.clone(),
+        state.vault.clone(),
+        true,
+    )
+    .await
+    .map(|(_, detail)| detail)
+}
+
+async fn route_active_engine_job(
+    job: engine_router::EngineJob,
+    engine_registry: Arc<Mutex<engine_registry::EngineRegistry>>,
+    _active_applet: Arc<Mutex<Option<String>>>,
+    applet_processes: Arc<Mutex<HashMap<String, launcher::AppletProcess>>>,
+    profile: Arc<Mutex<profile::ProfileManager>>,
+    vault: vault_commands::VaultState,
+    auto_register: bool,
+) -> Result<(String, serde_json::Value), String> {
     let engine = {
-        let registry = state.engine_registry.lock().await;
+        let registry = engine_registry.lock().await;
         registry
             .get(&job.engine_id)
             .cloned()
@@ -869,18 +554,11 @@ async fn submit_engine_job(
     engine_router::validate_input_files(&job.input_files, &job.job_id)
         .map_err(|error| error.to_string())?;
 
-    let active = state.active_applet.lock().await.clone();
-    if active.as_deref() != Some(engine.applet_id.as_str()) {
-        return Err(format!(
-            "engine '{}' is owned by applet '{}', but active applet is '{}'",
-            job.engine_id,
-            engine.applet_id,
-            active.unwrap_or_else(|| "none".to_string())
-        ));
-    }
+    // Router v2: look up by engine's owning applet instead of requiring single active applet
+    let target_applet_id = engine.applet_id.clone();
 
     {
-        let mut registry = state.engine_registry.lock().await;
+        let mut registry = engine_registry.lock().await;
         registry.set_lifecycle(&job.engine_id, EngineLifecycle::Generating);
     }
 
@@ -889,10 +567,10 @@ async fn submit_engine_job(
         .map_err(|error| format!("failed to serialize engine job: {error}"))?;
 
     let response = {
-        let mut proc_lock = state.applet_process.lock().await;
+        let mut proc_lock = applet_processes.lock().await;
         let applet_proc = proc_lock
-            .as_mut()
-            .ok_or_else(|| "no active applet IPC process".to_string())?;
+            .get_mut(&target_applet_id)
+            .ok_or_else(|| format!("no IPC process for applet '{target_applet_id}'"))?;
 
         applet_proc
             .ipc
@@ -903,25 +581,23 @@ async fn submit_engine_job(
                 timeout,
             )
             .await
-            .map_err(|error| format!("engine IPC dispatch failed: {error}"))?
+            .map_err(|error| format!("engine IPC dispatch failed: {error}"))
     };
 
     {
-        let mut registry = state.engine_registry.lock().await;
+        let mut registry = engine_registry.lock().await;
         registry.set_lifecycle(&job.engine_id, EngineLifecycle::Idle);
     }
+
+    let response = response?;
 
     match response.status {
         ResponseStatus::Ok => {
             let detail = response_detail_to_json(response.detail);
-            maybe_auto_register_to_vault(
-                state.profile.clone(),
-                state.vault.clone(),
-                &engine.applet_id,
-                &detail,
-            )
-            .await;
-            Ok(detail)
+            if auto_register {
+                maybe_auto_register_to_vault(profile, vault, &engine.applet_id, &detail).await;
+            }
+            Ok((engine.applet_id, detail))
         }
         ResponseStatus::Error => Err(response
             .detail
@@ -929,7 +605,7 @@ async fn submit_engine_job(
     }
 }
 
-fn response_detail_to_json(detail: Option<String>) -> serde_json::Value {
+pub(crate) fn response_detail_to_json(detail: Option<String>) -> serde_json::Value {
     match detail {
         Some(detail) => serde_json::from_str(&detail)
             .unwrap_or_else(|_| serde_json::json!({ "detail": detail })),
@@ -967,366 +643,6 @@ async fn maybe_auto_register_to_vault(
             error,
             "Vault auto-registration skipped"
         ),
-    }
-}
-
-// CLAUDE_INTERFACE: Updated kasai_forward_chat response
-// Command: "kasai_forward_chat"
-// Args: { message: string, session_id?: string }
-// Returns: KasaiChatResponse { session_id, reply?, status, tool_calls_initiated, first_tool_call_index? }
-// Note: status "ToolExecuting" means reply is not final - subscribe to tool-call events for progress
-// Error: "KASAI_NOT_ACTIVE" | "KASAI_IPC_UNAVAILABLE" | "KASAI_API_ERROR"
-#[tauri::command]
-async fn kasai_forward_chat(
-    state: tauri::State<'_, AppState>,
-    message: String,
-    session_id: Option<String>,
-) -> Result<KasaiChatResponse, String> {
-    let active = state.active_applet.lock().await.clone();
-    if active.as_deref() != Some("kasai") {
-        return Err("KASAI_NOT_ACTIVE".into());
-    }
-    let session_id = session_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-    let first_candidate = next_kasai_tool_call_index(&state.kasai_tool_calls).await;
-
-    let job = serde_json::json!({
-        "job_id": uuid::Uuid::new_v4().to_string(),
-        "requesting_applet": "shell",
-        "requesting_module": "kasai_shell_proxy",
-        "engine_id": "kasai.chat",
-        "capability": "chat",
-        "input_payload": {
-            "message": message.clone(),
-            "session_id": session_id.clone(),
-        },
-        "messages": [
-            { "role": "user", "content": message }
-        ],
-        "session_id": session_id.clone(),
-    });
-
-    let response = {
-        let mut proc_lock = state.applet_process.lock().await;
-        let applet_proc = proc_lock
-            .as_mut()
-            .ok_or_else(|| "KASAI_IPC_UNAVAILABLE".to_string())?;
-
-        applet_proc
-            .ipc
-            .send_envelope_command(
-                CommandKind::ExecuteJob { job },
-                std::time::Duration::from_secs(600),
-            )
-            .await
-            .map_err(|error| format!("KASAI_API_ERROR: {error}"))?
-    };
-
-    match response.status {
-        ResponseStatus::Ok => {
-            let detail = response_detail_to_json(response.detail);
-            let reply = detail
-                .get("response")
-                .and_then(|value| value.as_str())
-                .map(str::to_string);
-            let (tool_calls_initiated, first_tool_call_index) =
-                kasai_tool_call_turn_summary(&state.kasai_tool_calls, &session_id, first_candidate)
-                    .await;
-            Ok(KasaiChatResponse {
-                session_id,
-                reply,
-                status: ChatStatus::Complete,
-                tool_calls_initiated,
-                first_tool_call_index,
-            })
-        }
-        ResponseStatus::Error => Err(response.detail.unwrap_or_else(|| "KASAI_API_ERROR".into())),
-    }
-}
-
-// CLAUDE_INTERFACE: Get Kasai runtime status with slot detail
-// Command: "kasai_get_status"
-// Args: {}
-// Returns: KasaiStatusResponse { runtime_status, slots: KasaiSlotInfo[], swap_mode, total_vram_gb, available_vram_gb, active_session_id, tool_call_log_size }
-// KasaiSlotInfo: { slot_id, model_name, model_size_gb, vram_used_gb, status, current_activity, error }
-// slot_id values: "orchestrator" | "agent" | "embedder"
-// status values: "empty" | "loading" | "loaded" | "unloading" | "error"
-// current_activity values: "planning" | "executing_tools" | "auditing" | "idle" | null
-// Poll every 3 seconds in SlotStatusPanel
-#[tauri::command]
-async fn kasai_get_status(state: tauri::State<'_, AppState>) -> Result<KasaiStatusResponse, String> {
-    let active = state.active_applet.lock().await.clone();
-    if active.as_deref() != Some("kasai") {
-        return Ok(empty_kasai_status(&state).await);
-    }
-
-    let response = {
-        let mut proc_lock = state.applet_process.lock().await;
-        let applet_proc = proc_lock
-            .as_mut()
-            .ok_or_else(|| "KASAI_IPC_UNAVAILABLE".to_string())?;
-
-        applet_proc
-            .ipc
-            .send_envelope_command(CommandKind::QueryStatus, std::time::Duration::from_secs(10))
-            .await
-            .map_err(|error| format!("KASAI_API_ERROR: {error}"))?
-    };
-
-    match response.status {
-        ResponseStatus::Ok => {
-            let detail = response_detail_to_json(response.detail);
-            Ok(kasai_status_from_runtime(&state, detail).await)
-        }
-        ResponseStatus::Error => Err(response.detail.unwrap_or_else(|| "KASAI_API_ERROR".into())),
-    }
-}
-
-async fn empty_kasai_status(state: &tauri::State<'_, AppState>) -> KasaiStatusResponse {
-    let gpu = state.gpu.lock().await;
-    let calls = state.kasai_tool_calls.lock().await;
-    KasaiStatusResponse {
-        runtime_status: "stopped".into(),
-        slots: default_kasai_slots(),
-        swap_mode: kasai_swap_mode(gpu.total_vram_mb),
-        total_vram_gb: mb_to_gb(gpu.total_vram_mb),
-        available_vram_gb: mb_to_gb(gpu.total_free_mb),
-        active_session_id: None,
-        tool_call_log_size: calls.len(),
-    }
-}
-
-async fn kasai_status_from_runtime(
-    state: &tauri::State<'_, AppState>,
-    detail: serde_json::Value,
-) -> KasaiStatusResponse {
-    let gpu = state.gpu.lock().await;
-    let calls = state.kasai_tool_calls.lock().await;
-    let runtime_status = detail
-        .get("status")
-        .and_then(|value| value.as_str())
-        .map(runtime_status_label)
-        .unwrap_or_else(|| "running".into());
-    let slot_values = detail
-        .get("slots")
-        .and_then(|value| value.as_array())
-        .cloned()
-        .unwrap_or_default();
-    let mut slots = default_kasai_slots();
-    for slot in slot_values {
-        if let Some(info) = kasai_slot_from_value(&slot) {
-            if let Some(existing) = slots
-                .iter_mut()
-                .find(|candidate| candidate.slot_id == info.slot_id)
-            {
-                *existing = info;
-            } else {
-                slots.push(info);
-            }
-        }
-    }
-
-    KasaiStatusResponse {
-        runtime_status,
-        slots,
-        swap_mode: kasai_swap_mode(gpu.total_vram_mb),
-        total_vram_gb: mb_to_gb(gpu.total_vram_mb),
-        available_vram_gb: mb_to_gb(gpu.total_free_mb),
-        active_session_id: calls
-            .last()
-            .and_then(|call| call.get("session_id"))
-            .and_then(|value| value.as_str())
-            .filter(|value| !value.is_empty())
-            .map(str::to_string),
-        tool_call_log_size: calls.len(),
-    }
-}
-
-fn default_kasai_slots() -> Vec<KasaiSlotInfo> {
-    ["orchestrator", "agent", "embedder"]
-        .into_iter()
-        .map(|slot_id| KasaiSlotInfo {
-            slot_id: slot_id.into(),
-            model_name: None,
-            model_size_gb: None,
-            vram_used_gb: None,
-            status: "empty".into(),
-            current_activity: None,
-            error: None,
-        })
-        .collect()
-}
-
-fn kasai_slot_from_value(value: &serde_json::Value) -> Option<KasaiSlotInfo> {
-    let slot_id = value
-        .get("slot")
-        .and_then(|slot| slot.as_str())
-        .map(str::to_string)?;
-    let path = value.get("path").and_then(|path| path.as_str());
-    let loaded = value
-        .get("loaded")
-        .and_then(|loaded| loaded.as_bool())
-        .unwrap_or(false);
-    let size_bytes = value
-        .get("size_bytes")
-        .and_then(|size| size.as_u64())
-        .unwrap_or_default();
-    let vram_mb = value
-        .get("vram_mb")
-        .and_then(|vram| vram.as_u64())
-        .unwrap_or_default();
-
-    Some(KasaiSlotInfo {
-        slot_id,
-        model_name: path.and_then(|path| {
-            std::path::Path::new(path)
-                .file_name()
-                .and_then(|name| name.to_str())
-                .map(str::to_string)
-        }),
-        model_size_gb: (size_bytes > 0).then_some(bytes_to_gb(size_bytes)),
-        vram_used_gb: (loaded && vram_mb > 0).then_some(mb_to_gb(vram_mb)),
-        status: if loaded { "loaded" } else { "empty" }.into(),
-        current_activity: loaded.then_some("idle".into()),
-        error: None,
-    })
-}
-
-fn runtime_status_label(status: &str) -> String {
-    match status {
-        "models_handed_off" | "warm" | "completed" => "running".into(),
-        "waiting_for_models" => "stopped".into(),
-        "error" => "error".into(),
-        other => other.to_string(),
-    }
-}
-
-fn kasai_swap_mode(total_vram_mb: u64) -> String {
-    if total_vram_mb >= 24_000 {
-        "dual_resident".into()
-    } else {
-        "single_slot".into()
-    }
-}
-
-fn mb_to_gb(value: u64) -> f64 {
-    ((value as f64 / 1024.0) * 100.0).round() / 100.0
-}
-
-fn bytes_to_gb(value: u64) -> f64 {
-    ((value as f64 / 1_073_741_824.0) * 100.0).round() / 100.0
-}
-
-// CLAUDE_INTERFACE: Updated kasai_get_tool_calls response
-// Command: "kasai_get_tool_calls"
-// Args: { since_index?: number }
-// Returns: { calls: ToolCallInfo[], total_count: number }
-// Note: ToolCallInfo now includes tool_args (JSON), result (JSON), duration_ms, audit_result
-// Error: never, unless state lock is poisoned
-#[tauri::command]
-async fn kasai_get_tool_calls(
-    state: tauri::State<'_, AppState>,
-    since_index: Option<u64>,
-) -> Result<serde_json::Value, String> {
-    let calls = state.kasai_tool_calls.lock().await;
-    let since = since_index.unwrap_or(0);
-    let slice = calls
-        .iter()
-        .filter(|call| {
-            call.get("index")
-                .and_then(|value| value.as_u64())
-                .map_or(true, |index| index >= since)
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-    Ok(serde_json::json!({
-        "calls": slice,
-        "total_count": calls.len(),
-    }))
-}
-
-async fn next_kasai_tool_call_index(log: &Arc<Mutex<Vec<serde_json::Value>>>) -> u64 {
-    let calls = log.lock().await;
-    calls
-        .iter()
-        .filter_map(|call| call.get("index").and_then(|value| value.as_u64()))
-        .max()
-        .map(|index| index.saturating_add(1))
-        .unwrap_or(0)
-}
-
-async fn kasai_tool_call_turn_summary(
-    log: &Arc<Mutex<Vec<serde_json::Value>>>,
-    session_id: &str,
-    first_candidate: u64,
-) -> (u64, Option<u64>) {
-    let calls = log.lock().await;
-    let mut count = 0_u64;
-    let mut first: Option<u64> = None;
-    for call in calls.iter() {
-        let matches_session = call
-            .get("session_id")
-            .and_then(|value| value.as_str())
-            .is_some_and(|value| value == session_id);
-        let index = call.get("index").and_then(|value| value.as_u64());
-        if matches_session && index.is_some_and(|index| index >= first_candidate) {
-            count = count.saturating_add(1);
-            first = match (first, index) {
-                (Some(current), Some(index)) => Some(current.min(index)),
-                (None, Some(index)) => Some(index),
-                (existing, None) => existing,
-            };
-        }
-    }
-    (count, first)
-}
-
-// CLAUDE_INTERFACE: Kasai tool call event (Tauri event, NOT invoke)
-// Event: "kasai://tool-call/update"
-// Payload: ToolCallInfo { index, session_id, timestamp, tool_name, tool_args, status, result, error, duration_ms, source_slot, audit_result }
-// Fired: On every tool execution state transition
-// Subscribe: listen("kasai://tool-call/update", handler)
-//
-// CLAUDE_INTERFACE: Kasai tool call complete event (Tauri event)
-// Event: "kasai://tool-call/complete"
-// Payload: ToolCallInfo (same shape, status is always terminal)
-// Fired: When tool reaches Success/Failed/Timeout
-async fn record_kasai_tool_call_update(
-    app: &tauri::AppHandle,
-    log: &Arc<Mutex<Vec<serde_json::Value>>>,
-    tool_call: serde_json::Value,
-    complete: bool,
-) {
-    {
-        let mut calls = log.lock().await;
-        let index = tool_call.get("index").and_then(|value| value.as_u64());
-        if let Some(index) = index {
-            if let Some(existing) = calls.iter_mut().find(|call| {
-                call.get("index")
-                    .and_then(|value| value.as_u64())
-                    .is_some_and(|candidate| candidate == index)
-            }) {
-                *existing = tool_call.clone();
-            } else {
-                calls.push(tool_call.clone());
-            }
-        } else {
-            calls.push(tool_call.clone());
-        }
-
-        calls.sort_by_key(|call| {
-            call.get("index")
-                .and_then(|value| value.as_u64())
-                .unwrap_or(0)
-        });
-        let overflow = calls.len().saturating_sub(200);
-        if overflow > 0 {
-            calls.drain(0..overflow);
-        }
-    }
-
-    let _ = app.emit("kasai://tool-call/update", &tool_call);
-    if complete {
-        let _ = app.emit("kasai://tool-call/complete", &tool_call);
     }
 }
 
@@ -1382,6 +698,8 @@ fn spawn_applet_event_pump(
     applet_id: String,
     mut event_rx: mpsc::Receiver<IpcEnvelope>,
     engine_registry: Arc<Mutex<engine_registry::EngineRegistry>>,
+    active_applet: Arc<Mutex<Option<String>>>,
+    applet_processes: Arc<Mutex<HashMap<String, launcher::AppletProcess>>>,
     vram_scheduler: Arc<Mutex<vram_scheduler::VramScheduler>>,
     kasai_tool_calls: Arc<Mutex<Vec<serde_json::Value>>>,
     profile: Arc<Mutex<profile::ProfileManager>>,
@@ -1407,7 +725,7 @@ fn spawn_applet_event_pump(
             {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
-                        record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, false)
+                        commands::kasai::record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, false)
                             .await;
                     }
                 }
@@ -1421,7 +739,7 @@ fn spawn_applet_event_pump(
             {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
-                        record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, true)
+                        commands::kasai::record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, true)
                             .await;
                     }
                 }
@@ -1463,6 +781,28 @@ fn spawn_applet_event_pump(
                         &capabilities,
                     );
                 }
+                CommandKind::SubmitJob { job } => {
+                    spawn_submitted_job_route(
+                        applet_id.clone(),
+                        job,
+                        engine_registry.clone(),
+                        active_applet.clone(),
+                        applet_processes.clone(),
+                        profile.clone(),
+                        vault.clone(),
+                    );
+                }
+                CommandKind::SubmitPlan { plan } => {
+                    spawn_submitted_plan_route(
+                        applet_id.clone(),
+                        plan,
+                        engine_registry.clone(),
+                        active_applet.clone(),
+                        applet_processes.clone(),
+                        profile.clone(),
+                        vault.clone(),
+                    );
+                }
                 CommandKind::WithdrawCapabilities { engine_id } => {
                     engine_registry.lock().await.unregister(&engine_id);
                 }
@@ -1480,6 +820,15 @@ fn spawn_applet_event_pump(
                         &result,
                     )
                     .await;
+                    let _ = send_shell_event_to_applet(
+                        applet_processes.clone(),
+                        &applet_id,
+                        CommandKind::JobComplete {
+                            job_id: job_id.clone(),
+                            result,
+                        },
+                    )
+                    .await;
                 }
                 CommandKind::JobFailed { job_id, error } => {
                     tracing::warn!(
@@ -1488,6 +837,15 @@ fn spawn_applet_event_pump(
                         error = %error,
                         "Applet job failed"
                     );
+                    let _ = send_shell_event_to_applet(
+                        applet_processes.clone(),
+                        &applet_id,
+                        CommandKind::JobFailed {
+                            job_id: job_id.clone(),
+                            error,
+                        },
+                    )
+                    .await;
                 }
                 CommandKind::JobProgress { job_id, percent } => {
                     tracing::debug!(
@@ -1496,6 +854,15 @@ fn spawn_applet_event_pump(
                         percent,
                         "Applet job progress"
                     );
+                    let _ = send_shell_event_to_applet(
+                        applet_processes.clone(),
+                        &applet_id,
+                        CommandKind::JobProgress {
+                            job_id: job_id.clone(),
+                            percent,
+                        },
+                    )
+                    .await;
                 }
                 other => {
                     tracing::debug!(
@@ -1514,6 +881,184 @@ fn spawn_applet_event_pump(
             .unregister_connection(&applet_id);
         tracing::warn!(applet = %applet_id, "Applet IPC event stream closed");
     });
+}
+
+fn spawn_submitted_job_route(
+    source_applet: String,
+    job_value: serde_json::Value,
+    engine_registry: Arc<Mutex<engine_registry::EngineRegistry>>,
+    active_applet: Arc<Mutex<Option<String>>>,
+    applet_processes: Arc<Mutex<HashMap<String, launcher::AppletProcess>>>,
+    profile: Arc<Mutex<profile::ProfileManager>>,
+    vault: vault_commands::VaultState,
+) {
+    tokio::spawn(async move {
+        let fallback_job_id = job_value
+            .get("job_id")
+            .and_then(|value| value.as_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let job = match parse_submitted_engine_job(job_value, &source_applet) {
+            Ok(job) => job,
+            Err(error) => {
+                let _ = send_shell_event_to_applet(
+                    applet_processes,
+                    &source_applet,
+                    CommandKind::JobFailed {
+                        job_id: fallback_job_id,
+                        error,
+                    },
+                )
+                .await;
+                return;
+            }
+        };
+
+        let job_id = job.job_id.clone();
+        match route_active_engine_job(
+            job,
+            engine_registry,
+            active_applet,
+            applet_processes.clone(),
+            profile,
+            vault,
+            false,
+        )
+        .await
+        {
+            Ok((_engine_applet, ack)) => {
+                tracing::info!(
+                    requester = %source_applet,
+                    job_id = %job_id,
+                    ack = ?ack,
+                    "Applet-submitted job accepted by engine router"
+                );
+            }
+            Err(error) => {
+                let _ = send_shell_event_to_applet(
+                    applet_processes,
+                    &source_applet,
+                    CommandKind::JobFailed { job_id, error },
+                )
+                .await;
+            }
+        }
+    });
+}
+
+fn spawn_submitted_plan_route(
+    source_applet: String,
+    plan_value: serde_json::Value,
+    engine_registry: Arc<Mutex<engine_registry::EngineRegistry>>,
+    active_applet: Arc<Mutex<Option<String>>>,
+    applet_processes: Arc<Mutex<HashMap<String, launcher::AppletProcess>>>,
+    profile: Arc<Mutex<profile::ProfileManager>>,
+    vault: vault_commands::VaultState,
+) {
+    tokio::spawn(async move {
+        let fallback_plan_id = plan_value
+            .get("plan_id")
+            .and_then(|value| value.as_str())
+            .unwrap_or("plan")
+            .to_string();
+        let jobs = match parse_submitted_plan_jobs(plan_value, &source_applet) {
+            Ok(jobs) => jobs,
+            Err(error) => {
+                let _ = send_shell_event_to_applet(
+                    applet_processes,
+                    &source_applet,
+                    CommandKind::JobFailed {
+                        job_id: fallback_plan_id,
+                        error,
+                    },
+                )
+                .await;
+                return;
+            }
+        };
+
+        for job in jobs {
+            let job_id = job.job_id.clone();
+            match route_active_engine_job(
+                job,
+                engine_registry.clone(),
+                active_applet.clone(),
+                applet_processes.clone(),
+                profile.clone(),
+                vault.clone(),
+                false,
+            )
+            .await
+            {
+                Ok((_engine_applet, ack)) => tracing::info!(
+                    requester = %source_applet,
+                    job_id = %job_id,
+                    ack = ?ack,
+                    "Applet-submitted plan job accepted by engine router"
+                ),
+                Err(error) => {
+                    let _ = send_shell_event_to_applet(
+                        applet_processes.clone(),
+                        &source_applet,
+                        CommandKind::JobFailed { job_id, error },
+                    )
+                    .await;
+                }
+            }
+        }
+    });
+}
+
+fn parse_submitted_engine_job(
+    job_value: serde_json::Value,
+    source_applet: &str,
+) -> Result<engine_router::EngineJob, String> {
+    let job: engine_router::EngineJob = serde_json::from_value(job_value)
+        .map_err(|error| format!("SubmitJob payload must be a full EngineJob: {error}"))?;
+    if job.requesting_applet != source_applet {
+        return Err(format!(
+            "SubmitJob requesting_applet '{}' does not match IPC applet '{}'",
+            job.requesting_applet, source_applet
+        ));
+    }
+    Ok(job)
+}
+
+fn parse_submitted_plan_jobs(
+    plan_value: serde_json::Value,
+    source_applet: &str,
+) -> Result<Vec<engine_router::EngineJob>, String> {
+    let raw_jobs = if let Some(jobs) = plan_value.as_array() {
+        jobs.clone()
+    } else {
+        plan_value
+            .get("jobs")
+            .and_then(|value| value.as_array())
+            .cloned()
+            .ok_or_else(|| "SubmitPlan payload must be an array or contain jobs[]".to_string())?
+    };
+
+    raw_jobs
+        .into_iter()
+        .map(|job| parse_submitted_engine_job(job, source_applet))
+        .collect()
+}
+
+async fn send_shell_event_to_applet(
+    applet_processes: Arc<Mutex<HashMap<String, launcher::AppletProcess>>>,
+    applet_id: &str,
+    event: CommandKind,
+) -> Result<(), String> {
+    let mut proc_lock = applet_processes.lock().await;
+    let applet_proc = proc_lock
+        .get_mut(applet_id)
+        .ok_or_else(|| format!("no IPC process for applet '{applet_id}'"))?;
+    applet_proc
+        .ipc
+        .send_envelope_event(event)
+        .await
+        .map_err(|error| format!("failed to send shell event to applet '{applet_id}': {error}"))
 }
 
 fn register_engine_payload(
@@ -1601,119 +1146,6 @@ async fn launch_applet(
     request_applet_switch(app, state, id).await
 }
 
-// ─── Video Encoder Sidecar (shared, ref-counted) ───────────────────────────
-
-/// Acquire the shared video-encoder sidecar. Boots it on first consumer.
-/// Returns the WebSocket port (9877) for RGBA frame streaming.
-#[tauri::command]
-async fn request_video_encoder(state: tauri::State<'_, AppState>) -> Result<u16, String> {
-    let ffmpeg_path = video_encoder::detect_ffmpeg_path();
-    let mut encoder = state.video_encoder.lock().await;
-    encoder
-        .acquire(ffmpeg_path.as_ref())
-        .map_err(|e| e.to_string())
-}
-
-/// Release one consumer from the video-encoder sidecar.
-/// Stops the sidecar process when the last consumer releases.
-#[tauri::command]
-async fn release_video_encoder(state: tauri::State<'_, AppState>) -> Result<(), String> {
-    let mut encoder = state.video_encoder.lock().await;
-    encoder.release();
-    Ok(())
-}
-
-/// Health-check the running video-encoder sidecar.
-#[tauri::command]
-async fn video_encoder_health() -> Result<video_encoder::EncoderHealth, String> {
-    let client = reqwest::Client::new();
-    video_encoder::health_probe(&client)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-// ─── Platform Status ────────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn platform_status(state: tauri::State<'_, AppState>) -> Result<serde_json::Value, String> {
-    let gpu_state = state.gpu.lock().await;
-    let profile_mgr = state.profile.lock().await;
-    let wallet = state.wallet.lock().await;
-    let registry = state.registry.lock().await;
-    #[cfg(feature = "discourse-native")]
-    let discourse = state.discourse.lock().await;
-    #[cfg(feature = "discourse-native")]
-    let discourse_connected = discourse.is_connected();
-    #[cfg(not(feature = "discourse-native"))]
-    let discourse_connected = false;
-    let budget_state = state.budget.lock().await;
-    let active = state.active_applet.lock().await;
-    let tier = state.licence_tier.lock().await;
-    let session = state.user_session.lock().await;
-
-    let profile = profile_mgr.get_profile().map_err(|e| e.to_string())?;
-
-    Ok(serde_json::json!({
-        "version": env!("CARGO_PKG_VERSION"),
-        "gpu": {
-            "available": gpu_state.nvml_available,
-            "primary": gpu_state.primary_gpu,
-            "total_vram_mb": gpu_state.total_vram_mb,
-            "free_vram_mb": gpu_state.total_free_mb,
-            "backend": gpu_state.backend.label(),
-            "vram_tier": gpu_state.vram_tier.label(),
-        },
-        "auth": {
-            "authenticated": session.is_some(),
-            "user_id": session.as_ref().map(|c| &c.sub),
-            "handle": session.as_ref().and_then(|c| c.handle.as_deref()),
-            "email": session.as_ref().and_then(|c| c.email.as_deref()),
-            "tier": tier.as_str(),
-            "is_paid": tier.is_paid(),
-            "is_pro": tier.is_pro(),
-        },
-        "profile": {
-            "display_name": profile.display_name,
-            "alias": profile.alias,
-        },
-        "wallet": {
-            "connected": wallet.is_connected(),
-            "address": wallet.address(),
-        },
-        "discourse": {
-            "connected": discourse_connected,
-        },
-        "applets": {
-            "active": registry.launchable().len(),
-            "current": *active,
-        },
-        "engines": {
-            "registered": state.engine_registry.lock().await.len(),
-        },
-        "vram_budget": {
-            "total_mb": budget_state.total_mb,
-            "free_mb": budget_state.free_mb(),
-            "allocated_mb": budget_state.allocated_mb(),
-            "allocations": budget_state.allocations.len(),
-            "policy": budget::PurgePolicy::from_tier(gpu_state.vram_tier).label(),
-        },
-    }))
-}
-
-// ─── Migration Commands ─────────────────────────────────────────────────────
-
-#[tauri::command]
-async fn get_phase5_migration_plan() -> Result<migration::MigrationPlan, String> {
-    migration::plan().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn run_phase5_migration(
-    dry_run: Option<bool>,
-) -> Result<migration::MigrationSummary, String> {
-    migration::run(dry_run.unwrap_or(true)).map_err(|e| e.to_string())
-}
-
 // ─── App Builder ────────────────────────────────────────────────────────────
 
 fn build_model_resolver(profile_mgr: &profile::ProfileManager) -> model_manager::ModelResolver {
@@ -1776,6 +1208,8 @@ fn load_model_requirements_from_applets() -> Vec<model_manager::ModelRequirement
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    crash::install_panic_crash_report_hook();
+
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -1822,7 +1256,7 @@ pub fn run() {
             model_mgr: Arc::new(Mutex::new(model_mgr)),
             model_resolver: Arc::new(Mutex::new(model_resolver)),
             active_applet: Arc::new(Mutex::new(None)),
-            applet_process: Arc::new(Mutex::new(None)),
+            applet_processes: Arc::new(Mutex::new(HashMap::new())),
             engine_registry: Arc::new(Mutex::new(engine_registry::EngineRegistry::new())),
             vram_scheduler: Arc::new(Mutex::new(vram_scheduler)),
             kasai_tool_calls: Arc::new(Mutex::new(Vec::new())),
@@ -1835,50 +1269,50 @@ pub fn run() {
         .manage::<mait_bridge::MaitStoreState>(Arc::new(Mutex::new(mait_store)))
         .invoke_handler(tauri::generate_handler![
             // GPU
-            get_gpu_status,
-            poll_vram,
-            get_compute_backend,
-            get_vram_tier,
-            list_model_assessments,
+            commands::gpu::get_gpu_status,
+            commands::gpu::poll_vram,
+            commands::gpu::get_compute_backend,
+            commands::gpu::get_vram_tier,
+            commands::gpu::list_model_assessments,
             setup::check_runtime_setup,
             model_commands::resolve_all_models,
             model_commands::adopt_local_model,
             model_commands::add_custom_model_path,
             model_commands::get_custom_model_paths,
             // Profile
-            get_profile,
-            update_profile,
-            set_preference,
-            get_preference,
+            commands::profile::get_profile,
+            commands::profile::update_profile,
+            commands::profile::set_preference,
+            commands::profile::get_preference,
             // Wallet
-            wallet_generate,
-            wallet_info,
-            wallet_transactions,
-            wallet_disconnect,
+            commands::wallet::wallet_generate,
+            commands::wallet::wallet_info,
+            commands::wallet::wallet_transactions,
+            commands::wallet::wallet_disconnect,
             // Discourse
             #[cfg(feature = "discourse-native")]
-            discourse_oauth_url,
+            commands::discourse::discourse_oauth_url,
             #[cfg(feature = "discourse-native")]
-            discourse_complete_oauth,
+            commands::discourse::discourse_complete_oauth,
             #[cfg(feature = "discourse-native")]
-            discourse_user,
+            commands::discourse::discourse_user,
             #[cfg(feature = "discourse-native")]
-            discourse_latest,
+            commands::discourse::discourse_latest,
             #[cfg(feature = "discourse-native")]
-            discourse_get_topics,
+            commands::discourse::discourse_get_topics,
             #[cfg(feature = "discourse-native")]
-            discourse_read_post,
+            commands::discourse::discourse_read_post,
             #[cfg(feature = "discourse-native")]
-            discourse_create_post,
+            commands::discourse::discourse_create_post,
             #[cfg(feature = "discourse-native")]
-            discourse_refresh_token,
+            commands::discourse::discourse_refresh_token,
             #[cfg(feature = "discourse-native")]
-            discourse_disconnect,
+            commands::discourse::discourse_disconnect,
             // Registry
-            list_applets,
-            get_applet,
-            focus_applet_window,
-            is_applet_window_open,
+            commands::registry::list_applets,
+            commands::registry::get_applet,
+            commands::registry::focus_applet_window,
+            commands::registry::is_applet_window_open,
             launch_applet,
             // Bridge: VRAM lifecycle
             get_vram_budget,
@@ -1887,16 +1321,16 @@ pub fn run() {
             request_applet_switch,
             close_applet_webview,
             submit_engine_job,
-            kasai_forward_chat,
-            kasai_get_status,
-            kasai_get_tool_calls,
+            commands::kasai::kasai_forward_chat,
+            commands::kasai::kasai_get_status,
+            commands::kasai::kasai_get_tool_calls,
             // Video encoder sidecar
-            request_video_encoder,
-            release_video_encoder,
-            video_encoder_health,
+            commands::video_encoder::request_video_encoder,
+            commands::video_encoder::release_video_encoder,
+            commands::video_encoder::video_encoder_health,
             // Migration
-            get_phase5_migration_plan,
-            run_phase5_migration,
+            commands::migration::get_phase5_migration_plan,
+            commands::migration::run_phase5_migration,
             // Vault
             vault_commands::vault_search,
             vault_commands::vault_get_item,
@@ -1910,7 +1344,9 @@ pub fn run() {
             // MAIT bridge
             mait_bridge::kasai_load_avatar_manifest,
             // Platform
-            platform_status,
+            commands::platform::platform_status,
+            commands::system::get_system_info,
+            crash::take_pending_crash_report,
             // Auth (Supabase session + licence tier)
             auth::push_auth_state,
             auth::get_auth_context,

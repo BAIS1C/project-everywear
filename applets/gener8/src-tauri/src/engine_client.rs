@@ -17,9 +17,26 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-use applet_ipc::{IpcEnvelope, IpcSource, ModelPath};
+use applet_ipc::{IpcEnvelope, IpcSource, ModelPath, Response};
 
 use crate::{AppState, APPLET_ID};
+
+fn applet_source() -> IpcSource {
+    IpcSource::Applet {
+        applet_id: APPLET_ID.to_string(),
+    }
+}
+
+fn response_envelope(request_id: &str, response: Response) -> IpcEnvelope {
+    let payload = serde_json::to_value(response).unwrap_or_else(|error| {
+        serde_json::json!({
+            "id": request_id,
+            "status": "error",
+            "detail": format!("failed to serialize response: {error}"),
+        })
+    });
+    IpcEnvelope::response(request_id, applet_source(), payload)
+}
 
 // ---------------------------------------------------------------------------
 // Job tracking
@@ -209,13 +226,8 @@ pub async fn handle_execute_job(state: &Arc<AppState>, request_id: &str, job: se
     }
 
     // ACK the command immediately
-    let ack = IpcEnvelope::response(
-        request_id,
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
-        serde_json::json!({ "status": "ok", "job_id": &job_id }),
-    );
+    let detail = serde_json::json!({ "job_id": &job_id }).to_string();
+    let ack = response_envelope(request_id, Response::ok_with(request_id, detail));
     let _ = state.ipc_tx.send(ack);
 
     // Spawn the actual inference work
@@ -226,9 +238,7 @@ pub async fn handle_execute_job(state: &Arc<AppState>, request_id: &str, job: se
             Ok(result) => {
                 // Report success back to shell
                 let complete = IpcEnvelope::event(
-                    IpcSource::Applet {
-                        applet_id: APPLET_ID.to_string(),
-                    },
+                    applet_source(),
                     serde_json::json!({
                         "cmd": "job_complete",
                         "job_id": &jid,
@@ -240,9 +250,7 @@ pub async fn handle_execute_job(state: &Arc<AppState>, request_id: &str, job: se
             Err(e) => {
                 error!(job_id = %jid, error = %e, "Job execution failed");
                 let failed = IpcEnvelope::event(
-                    IpcSource::Applet {
-                        applet_id: APPLET_ID.to_string(),
-                    },
+                    applet_source(),
                     serde_json::json!({
                         "cmd": "job_failed",
                         "job_id": &jid,
@@ -304,9 +312,7 @@ async fn execute_audio_gen(
 
 async fn send_progress(state: &Arc<AppState>, job_id: &str, percent: u8) {
     let progress = IpcEnvelope::event(
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
+        applet_source(),
         serde_json::json!({
             "cmd": "job_progress",
             "job_id": job_id,
@@ -329,16 +335,12 @@ pub async fn handle_cancel_job(state: &Arc<AppState>, request_id: &str, job_id: 
         }
     }
 
-    let resp = IpcEnvelope::response(
-        request_id,
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
-        serde_json::json!({
-            "status": if cancelled { "ok" } else { "error" },
-            "detail": if cancelled { "cancellation requested" } else { "job not found" },
-        }),
-    );
+    let response = if cancelled {
+        Response::ok_with(request_id, "cancellation requested")
+    } else {
+        Response::error(request_id, "job not found")
+    };
+    let resp = response_envelope(request_id, response);
     let _ = state.ipc_tx.send(resp);
 }
 
@@ -350,16 +352,13 @@ pub async fn handle_warmup(state: &Arc<AppState>, request_id: &str, capability: 
     let ace_url = format!("http://127.0.0.1:{}/props", crate::ACE_PORT);
     let warmup_ok = state.http.get(&ace_url).send().await.is_ok();
 
-    let resp = IpcEnvelope::response(
-        request_id,
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
-        serde_json::json!({
-            "status": if warmup_ok { "ok" } else { "error" },
-            "capability": capability,
-        }),
-    );
+    let detail = serde_json::json!({ "capability": capability }).to_string();
+    let response = if warmup_ok {
+        Response::ok_with(request_id, detail)
+    } else {
+        Response::error(request_id, detail)
+    };
+    let resp = response_envelope(request_id, response);
     let _ = state.ipc_tx.send(resp);
 }
 
@@ -384,17 +383,13 @@ pub async fn handle_start_inference(
         "pending"
     };
 
-    let resp = IpcEnvelope::response(
-        request_id,
-        IpcSource::Applet {
-            applet_id: APPLET_ID.to_string(),
-        },
-        serde_json::json!({
-            "status": status,
-            "models_dir": models_dir.to_string_lossy(),
-            "model_count": model_paths.len(),
-        }),
-    );
+    let detail = serde_json::json!({
+        "status": status,
+        "models_dir": models_dir.to_string_lossy(),
+        "model_count": model_paths.len(),
+    })
+    .to_string();
+    let resp = response_envelope(request_id, Response::ok_with(request_id, detail));
     let _ = state.ipc_tx.send(resp);
 }
 

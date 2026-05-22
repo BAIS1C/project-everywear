@@ -4,7 +4,7 @@
 //! child, then accepts a single newline-delimited JSON stream. New applets use
 //! `IpcEnvelope`; legacy raw `Command`/`Response` messages are still supported.
 
-use crate::envelope::{IpcEnvelope, IpcKind};
+use crate::envelope::{IpcEnvelope, IpcKind, IpcSource};
 use crate::protocol::{Command, CommandKind, Response, ENV_CMD_PORT};
 use anyhow::{anyhow, bail, Context, Result};
 use std::sync::Arc;
@@ -181,6 +181,13 @@ impl ShellChannel {
             return serde_json::from_value(response_envelope.payload)
                 .context("failed to parse envelope response payload");
         }
+    }
+
+    /// Send a shell-originated event to the connected applet.
+    pub async fn send_envelope_event(&mut self, command: CommandKind) -> Result<()> {
+        let payload = serde_json::to_value(command).context("failed to serialize event payload")?;
+        let envelope = IpcEnvelope::event(IpcSource::Shell, payload).with_seq(self.next_seq());
+        self.write_envelope(&envelope).await
     }
 
     /// Wait for a signed AdvertiseCapabilities event from the applet.

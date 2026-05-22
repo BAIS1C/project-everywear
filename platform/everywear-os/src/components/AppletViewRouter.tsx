@@ -14,7 +14,11 @@
 import React, { Suspense, Component } from 'react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { getLogger } from '@everywear/shared';
 import { AppletLoadingSkeleton } from './AppletLoadingSkeleton';
+import type { BugReportSeed } from './BugReportModal';
+
+const log = getLogger('shell');
 
 // ── Lazy applet registry ──────────────────────────────────────────
 
@@ -61,26 +65,52 @@ interface ErrorBoundaryProps {
   appletId: string;
   displayName: string;
   onRetry: () => void;
+  onCrashReport?: (seed: BugReportSeed) => void;
   children: ReactNode;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  componentStack: string | null;
 }
 
 class AppletErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, componentStack: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error, componentStack: null };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error(`[AppletViewRouter] ${this.props.appletId} crashed:`, error, errorInfo);
+    log.error('ui', `${this.props.displayName} crashed`, {
+      applet_id: this.props.appletId,
+      message: error.message,
+      stack: error.stack,
+      component_stack: errorInfo.componentStack,
+    });
+    this.setState({ componentStack: errorInfo.componentStack ?? null });
+  }
+
+  private reportCrash = () => {
+    const error = this.state.error;
+    this.props.onCrashReport?.({
+      source: this.props.appletId,
+      crashKind: 'frontend',
+      occurredAt: new Date().toISOString(),
+      errorMessage: error?.message || 'Applet crashed',
+      stack: error?.stack,
+      componentStack: this.state.componentStack || undefined,
+      description: `${this.props.displayName} crashed.\n\nWhat were you doing right before it failed?`,
+      extra: {
+        applet_id: this.props.appletId,
+        display_name: this.props.displayName,
+      },
+    });
   }
 
   render() {
@@ -95,11 +125,17 @@ class AppletErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
           <button
             className="avr-error__retry"
             onClick={() => {
-              this.setState({ hasError: false, error: null });
+              this.setState({ hasError: false, error: null, componentStack: null });
               this.props.onRetry();
             }}
           >
             Retry
+          </button>
+          <button
+            className="avr-error__report"
+            onClick={this.reportCrash}
+          >
+            Report Crash
           </button>
         </div>
       );
@@ -115,6 +151,7 @@ export interface AppletViewRouterProps {
   skin?: string;
   mode?: string;
   onClose: () => void;
+  onCrashReport?: (seed: BugReportSeed) => void;
 }
 
 /**
@@ -126,7 +163,7 @@ export function isRegisteredApplet(appletId: string): boolean {
   return appletId in APPLET_COMPONENTS;
 }
 
-export function AppletViewRouter({ appletId, skin, mode, onClose }: AppletViewRouterProps) {
+export function AppletViewRouter({ appletId, skin, mode, onClose, onCrashReport }: AppletViewRouterProps) {
   const entry = APPLET_COMPONENTS[appletId];
 
   if (!entry) {
@@ -169,6 +206,7 @@ export function AppletViewRouter({ appletId, skin, mode, onClose }: AppletViewRo
           appletId={appletId}
           displayName={entry.displayName}
           onRetry={() => { /* re-render triggers lazy re-attempt */ }}
+          onCrashReport={onCrashReport}
         >
           {entry.needsRouter ? (
             <MemoryRouter>{appletContent}</MemoryRouter>
