@@ -210,6 +210,180 @@ function DesktopClock() {
   );
 }
 
+type WeatherCurrent = {
+  temperature: number;
+  humidity: number;
+  precipitation: number;
+  wind: number;
+  code: number;
+};
+
+type WeatherDay = {
+  date: string;
+  high: number;
+  low: number;
+  precipitationChance: number | null;
+};
+
+type WeatherStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+const WEATHER_CODES: Record<number, { label: string; glyph: string }> = {
+  0: { label: 'Clear', glyph: 'sun' },
+  1: { label: 'Mostly clear', glyph: 'sun' },
+  2: { label: 'Partly cloudy', glyph: 'cloud' },
+  3: { label: 'Cloudy', glyph: 'cloud' },
+  45: { label: 'Fog', glyph: 'mist' },
+  48: { label: 'Rime fog', glyph: 'mist' },
+  51: { label: 'Light drizzle', glyph: 'rain' },
+  53: { label: 'Drizzle', glyph: 'rain' },
+  55: { label: 'Heavy drizzle', glyph: 'rain' },
+  61: { label: 'Light rain', glyph: 'rain' },
+  63: { label: 'Rain', glyph: 'rain' },
+  65: { label: 'Heavy rain', glyph: 'rain' },
+  71: { label: 'Light snow', glyph: 'snow' },
+  73: { label: 'Snow', glyph: 'snow' },
+  75: { label: 'Heavy snow', glyph: 'snow' },
+  80: { label: 'Rain showers', glyph: 'rain' },
+  81: { label: 'Showers', glyph: 'rain' },
+  82: { label: 'Heavy showers', glyph: 'rain' },
+  95: { label: 'Thunderstorm', glyph: 'storm' },
+  96: { label: 'Storm with hail', glyph: 'storm' },
+  99: { label: 'Storm with hail', glyph: 'storm' },
+};
+
+function weatherCodeMeta(code: number) {
+  return WEATHER_CODES[code] ?? { label: 'Local sky', glyph: 'cloud' };
+}
+
+function timezoneLabel() {
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+  const segment = zone.split('/').pop() || zone;
+  return segment.replace(/_/g, ' ');
+}
+
+function formatForecastDay(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  return parsed.toLocaleDateString(undefined, { weekday: 'short' });
+}
+
+function WeatherGlyph({ glyph }: { glyph: string }) {
+  return (
+    <span className={`ew-weather__glyph ew-weather__glyph--${glyph}`} aria-hidden="true">
+      <span />
+    </span>
+  );
+}
+
+function WeatherWidget() {
+  const [status, setStatus] = useState<WeatherStatus>('idle');
+  const [current, setCurrent] = useState<WeatherCurrent | null>(null);
+  const [forecast, setForecast] = useState<WeatherDay[]>([]);
+  const [locationLabel, setLocationLabel] = useState(timezoneLabel);
+  const [message, setMessage] = useState('Location not set');
+
+  const loadWeather = useCallback(() => {
+    if (!navigator.geolocation) {
+      setStatus('error');
+      setMessage('Location unavailable');
+      return;
+    }
+
+    setStatus('loading');
+    setMessage('Locating');
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const params = new URLSearchParams({
+          latitude: latitude.toFixed(4),
+          longitude: longitude.toFixed(4),
+          current: 'temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m',
+          daily: 'temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+          temperature_unit: 'celsius',
+          wind_speed_unit: 'kmh',
+          precipitation_unit: 'mm',
+          forecast_days: '3',
+          timezone: 'auto',
+        });
+
+        try {
+          const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+          if (!response.ok) throw new Error(`Weather request failed: ${response.status}`);
+          const data = await response.json();
+          setCurrent({
+            temperature: Math.round(data.current.temperature_2m),
+            humidity: Math.round(data.current.relative_humidity_2m),
+            precipitation: data.current.precipitation,
+            wind: Math.round(data.current.wind_speed_10m),
+            code: data.current.weather_code,
+          });
+          setForecast((data.daily.time as string[]).map((date, index) => ({
+            date,
+            high: Math.round(data.daily.temperature_2m_max[index]),
+            low: Math.round(data.daily.temperature_2m_min[index]),
+            precipitationChance: data.daily.precipitation_probability_max?.[index] ?? null,
+          })));
+          setLocationLabel(timezoneLabel());
+          setMessage('Live');
+          setStatus('ready');
+        } catch (err) {
+          console.warn('Weather fetch failed:', err);
+          setStatus('error');
+          setMessage('Weather offline');
+        }
+      },
+      () => {
+        setStatus('error');
+        setMessage('Location blocked');
+      },
+      { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 8000 },
+    );
+  }, []);
+
+  const meta = weatherCodeMeta(current?.code ?? 2);
+  const displayTemp = current ? `${current.temperature}C` : '--';
+  const displayCondition = current ? meta.label : 'Awaiting signal';
+
+  return (
+    <section className={`ew-weather ew-weather--${status}`} aria-label="Weather">
+      <div className="ew-weather__main">
+        <WeatherGlyph glyph={meta.glyph} />
+        <div className="ew-weather__readout">
+          <div className="ew-weather__temp">{displayTemp}</div>
+          <div className="ew-weather__condition">{displayCondition}</div>
+        </div>
+      </div>
+      <div className="ew-weather__meta">
+        <span>{locationLabel}</span>
+        <span>{message}</span>
+      </div>
+      <div className="ew-weather__metrics">
+        <span>Wind {current ? `${current.wind} km/h` : '--'}</span>
+        <span>Rain {current ? `${current.precipitation} mm` : '--'}</span>
+        <span>Humidity {current ? `${current.humidity}%` : '--'}</span>
+      </div>
+      {forecast.length > 0 && (
+        <div className="ew-weather__forecast">
+          {forecast.map((day) => (
+            <div key={day.date} className="ew-weather__day">
+              <span>{formatForecastDay(day.date)}</span>
+              <strong>{day.high}/{day.low}</strong>
+              <em>{day.precipitationChance ?? '--'}%</em>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        className="ew-weather__locate"
+        onClick={loadWeather}
+        disabled={status === 'loading'}
+      >
+        {status === 'loading' ? 'Scanning' : status === 'ready' ? 'Refresh' : 'Use location'}
+      </button>
+    </section>
+  );
+}
+
 // ── Desktop canvas (center, skin-dependent) ──
 
 function shortGpuName(name: string | null | undefined) {
@@ -349,6 +523,7 @@ function DesktopCanvas({
               <div className="ew-canvas__status-detail">friends: 0 present</div>
             </div>
           </div>
+          <WeatherWidget />
         </div>
       </div>
     );
@@ -725,14 +900,13 @@ export function ShellLayout() {
 
     markAppletOpening(applet);
 
-    if (isRegisteredApplet(applet.id) && !applet.launch_binary) {
+    if (applet.launch_kind === 'FrontendInline' && isRegisteredApplet(applet.id)) {
       openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
       markAppletReady(applet);
       return;
     }
 
-    // For launch_url applets (web applets), open externally
-    if (applet.launch_url) {
+    if (applet.launch_kind === 'ExternalUrl' && applet.launch_url) {
       log.info('ui', `Opening web applet: ${applet.id} at ${applet.launch_url}`);
       // Use Tauri shell:open to launch in default browser
       try {
@@ -745,7 +919,13 @@ export function ShellLayout() {
       return;
     }
 
-    // For all other applets: go through the runtime bridge
+    if (applet.launch_kind === 'Placeholder') {
+      log.warn('ui', `Applet ${applet.id} is a placeholder with no runtime yet`);
+      markLaunchError();
+      return;
+    }
+
+    // BinaryLocal applets go through the runtime bridge.
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
     try {
       await launchApplet(applet.id);

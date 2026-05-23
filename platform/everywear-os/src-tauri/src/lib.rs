@@ -18,8 +18,8 @@ mod gpu;
 mod launcher;
 mod mait_bridge;
 mod manifest_parser;
-mod model_commands;
 mod migration;
+mod model_commands;
 mod profile;
 mod registry;
 mod setup;
@@ -31,10 +31,10 @@ mod wallet;
 
 use applet_ipc::{CommandKind, IpcEnvelope, ResponseStatus};
 use engine_registry::{EngineAvailability, EngineLifecycle};
+use state::AppState;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use state::AppState;
 use tauri::{Emitter, Manager};
 use tokio::sync::{mpsc, Mutex};
 
@@ -127,18 +127,20 @@ async fn request_applet_switch(
         return Err("Applet is not yet available.".into());
     }
 
-    // Web applets: just open the URL, no VRAM management needed
-    if let Some(url) = &applet.launch_url {
-        tracing::info!(applet = %applet_id, url, "Launching web applet (no VRAM)");
-        open::that(url).map_err(|e| format!("Failed to open URL: {e}"))?;
-        return Ok(());
-    }
-
-    // Frontend-only applets: no backend binary, just navigate the studio
-    // webview. Used by applets like Vid Studio that rely on shell-owned
-    // shared services (video-encoder sidecar) instead of their own backend.
-    if applet.launch_binary.is_none() {
-        if let Some(port) = applet.frontend_port {
+    match applet.launch_kind {
+        registry::AppletLaunchKind::ExternalUrl => {
+            let url = applet
+                .launch_url
+                .as_deref()
+                .ok_or("ExternalUrl applet is missing launch_url")?;
+            tracing::info!(applet = %applet_id, url, "Launching external applet URL");
+            open::that(url).map_err(|e| format!("Failed to open URL: {e}"))?;
+            return Ok(());
+        }
+        registry::AppletLaunchKind::FrontendInline => {
+            let port = applet
+                .frontend_port
+                .ok_or("FrontendInline applet is missing frontend_port")?;
             let route = applet.frontend_route.as_deref().unwrap_or("");
             let frontend_url = format!("http://127.0.0.1:{}{}", port, route);
 
@@ -159,7 +161,7 @@ async fn request_applet_switch(
             tracing::info!(
                 applet = %applet_id,
                 url = %frontend_url,
-                "Frontend-only applet opened in studio window (no backend)"
+                "Frontend-only applet opened in studio window"
             );
             let _ = app.emit(
                 "applet-webview-opened",
@@ -178,7 +180,10 @@ async fn request_applet_switch(
             );
             return Ok(());
         }
-        return Err("Applet has no launch_url, launch_binary, or frontend_port".into());
+        registry::AppletLaunchKind::Placeholder => {
+            return Err("Applet is a placeholder and has no runtime yet.".into());
+        }
+        registry::AppletLaunchKind::BinaryLocal => {}
     }
 
     // Tauri binary applets: full pipeline
@@ -638,11 +643,7 @@ async fn maybe_auto_register_to_vault(
             "Auto-registered applet output to vault"
         ),
         Ok(None) => {}
-        Err(error) => tracing::warn!(
-            applet = applet_id,
-            error,
-            "Vault auto-registration skipped"
-        ),
+        Err(error) => tracing::warn!(applet = applet_id, error, "Vault auto-registration skipped"),
     }
 }
 
@@ -725,8 +726,13 @@ fn spawn_applet_event_pump(
             {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
-                        commands::kasai::record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, false)
-                            .await;
+                        commands::kasai::record_kasai_tool_call_update(
+                            &app,
+                            &kasai_tool_calls,
+                            tool_call,
+                            false,
+                        )
+                        .await;
                     }
                 }
                 continue;
@@ -739,8 +745,13 @@ fn spawn_applet_event_pump(
             {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
-                        commands::kasai::record_kasai_tool_call_update(&app, &kasai_tool_calls, tool_call, true)
-                            .await;
+                        commands::kasai::record_kasai_tool_call_update(
+                            &app,
+                            &kasai_tool_calls,
+                            tool_call,
+                            true,
+                        )
+                        .await;
                     }
                 }
                 continue;
@@ -1197,9 +1208,12 @@ fn load_model_requirements_from_applets() -> Vec<model_manager::ModelRequirement
 
     let mut unique = Vec::new();
     for requirement in requirements {
-        if !unique.iter().any(|existing: &model_manager::ModelRequirement| {
-            existing.everywear_model_id == requirement.everywear_model_id
-        }) {
+        if !unique
+            .iter()
+            .any(|existing: &model_manager::ModelRequirement| {
+                existing.everywear_model_id == requirement.everywear_model_id
+            })
+        {
             unique.push(requirement);
         }
     }

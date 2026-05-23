@@ -1,0 +1,17 @@
+model_groups = []
+
+[applet]
+id = "loom"
+name = "The Loom"
+version = "0.1.0"
+description = "Everywear Knowledge Engine: the Project NOMAD Rust migration"
+icon = "loom"
+transport = "web"
+frontend_port = 3008
+
+[engine]
+type = "none"
+backend = "none"
+server_binary = ""
+
+[requirements]

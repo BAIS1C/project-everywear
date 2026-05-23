@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Music, Library, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Library, Music, PanelLeft, PanelLeftClose, Settings, SlidersHorizontal } from 'lucide-react';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -14,6 +14,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { path: '/',         label: 'Create',   icon: Music },
+  { path: '/daw',      label: 'DAW',      icon: SlidersHorizontal },
   { path: '/library',  label: 'Library',  icon: Library },
   { path: '/settings', label: 'Settings', icon: Settings },
 ] as const;

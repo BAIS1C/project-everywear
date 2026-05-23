@@ -6,6 +6,11 @@
 //! Design principle: NO greyed-out icons until the applet is actually built.
 //! Once built, unlicensed applets show as locked (greyed). Licensed ones
 //! show as active and launchable.
+//!
+//! Applet launch kind is explicit because status and launch fields answer
+//! different questions. `status` is availability/licence state; `launch_kind`
+//! is the shell route: local binary, inline frontend, external URL, or a
+//! placeholder reserved for future work.
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -19,6 +24,7 @@ pub struct AppletEntry {
     pub version: String,
     pub icon: String,
     pub status: AppletStatus,
+    pub launch_kind: AppletLaunchKind,
     pub engine_type: String,
     pub min_vram_mb: u64,
     pub tags: Vec<String>,
@@ -48,6 +54,18 @@ pub enum AppletStatus {
     NotBuilt,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum AppletLaunchKind {
+    /// Shell runs a local applet backend and then hands off via IPC/WebView.
+    BinaryLocal,
+    /// Shell opens an already-registered frontend inside the desktop.
+    FrontendInline,
+    /// Shell opens a remote URL outside the local applet runtime.
+    ExternalUrl,
+    /// Reserved applet slot; should stay NotBuilt until real content exists.
+    Placeholder,
+}
+
 pub struct AppletRegistry {
     applets: Vec<AppletEntry>,
 }
@@ -72,6 +90,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "1magen".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::BinaryLocal,
                 engine_type: "diffusion".into(),
                 min_vram_mb: 7400,
                 tags: vec!["image".into(), "generation".into(), "editing".into()],
@@ -89,6 +108,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "gener8".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::BinaryLocal,
                 engine_type: "audio".into(),
                 min_vram_mb: 6144,
                 tags: vec![
@@ -114,6 +134,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "vid".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
                 engine_type: "none".into(),
                 min_vram_mb: 0, // NVENC uses dedicated encoder chip, not CUDA cores
                 tags: vec!["video".into(), "visualiser".into(), "music".into()],
@@ -130,6 +151,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "s3studio".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::ExternalUrl,
                 engine_type: "audio".into(),
                 min_vram_mb: 0,
                 tags: vec![
@@ -151,6 +173,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "strands-game".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::ExternalUrl,
                 engine_type: "none".into(),
                 min_vram_mb: 0,
                 tags: vec!["game".into(), "social".into(), "world".into()],
@@ -162,12 +185,13 @@ impl AppletRegistry {
             },
             AppletEntry {
                 id: "kasai".into(),
-                name: "Kasai".into(),
-                description: "Local AI agent with planning, orchestration, and full system access"
+                name: "My Mait".into(),
+                description: "Local MAIT agent with planning, orchestration, and full system access"
                     .into(),
                 version: "0.1.0".into(),
                 icon: "kasai".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::BinaryLocal,
                 engine_type: "llm".into(),
                 min_vram_mb: 4096,
                 tags: vec![
@@ -183,12 +207,36 @@ impl AppletRegistry {
                 shares_backend: None,
             },
             AppletEntry {
+                id: "layeru-osint".into(),
+                name: "Layer U OSINT".into(),
+                description: "Compact OSINT worldview with flights, map layers, RSS, video, and source posture"
+                    .into(),
+                version: "0.1.0".into(),
+                icon: "layeru-osint".into(),
+                status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
+                engine_type: "none".into(),
+                min_vram_mb: 0,
+                tags: vec![
+                    "osint".into(),
+                    "worldview".into(),
+                    "feeds".into(),
+                    "map".into(),
+                ],
+                launch_url: None,
+                launch_binary: None,
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: None,
+            },
+            AppletEntry {
                 id: "3nvizen".into(),
                 name: "3nvizen".into(),
                 description: "AI video generation with Wan 2.2 and LTX".into(),
                 version: "0.1.0".into(),
                 icon: "3nvizen".into(),
                 status: AppletStatus::NotBuilt,
+                launch_kind: AppletLaunchKind::BinaryLocal,
                 engine_type: "diffusion".into(),
                 min_vram_mb: 12288,
                 tags: vec!["video".into(), "generation".into()],
@@ -205,6 +253,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "character-studio".into(),
                 status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
                 engine_type: "none".into(),
                 min_vram_mb: 0, // WebGL only, no CUDA
                 tags: vec![
@@ -220,12 +269,35 @@ impl AppletRegistry {
                 shares_backend: None,
             },
             AppletEntry {
+                id: "loom".into(),
+                name: "The Loom".into(),
+                description: "Everywear Knowledge Engine: the Project NOMAD Rust migration".into(),
+                version: "0.1.0".into(),
+                icon: "loom".into(),
+                status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
+                engine_type: "none".into(),
+                min_vram_mb: 0,
+                tags: vec![
+                    "knowledge".into(),
+                    "offline".into(),
+                    "rag".into(),
+                    "migration".into(),
+                ],
+                launch_url: None,
+                launch_binary: None,
+                frontend_port: Some(3008),
+                frontend_route: None,
+                shares_backend: None,
+            },
+            AppletEntry {
                 id: "mymories".into(),
                 name: "Mymories".into(),
                 description: "Personal knowledge and memory management".into(),
                 version: "0.1.0".into(),
                 icon: "mymories".into(),
                 status: AppletStatus::NotBuilt,
+                launch_kind: AppletLaunchKind::Placeholder,
                 engine_type: "llm".into(),
                 min_vram_mb: 4096,
                 tags: vec!["knowledge".into(), "memory".into(), "rag".into()],
@@ -246,8 +318,7 @@ impl AppletRegistry {
             let monorepo_root = Self::find_monorepo_root(&shell_exe);
 
             for applet in &mut self.applets {
-                // Web applets and already-Active applets: no binary check needed
-                if applet.launch_url.is_some() {
+                if applet.launch_kind != AppletLaunchKind::BinaryLocal {
                     continue;
                 }
 

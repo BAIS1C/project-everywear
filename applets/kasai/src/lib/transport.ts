@@ -157,6 +157,12 @@ const MOCK_RESPONSES: Record<string, unknown> = {
       status: 'idle', tag: 'dev', token_cost: 3200,
     },
     {
+      id: 'igcse-teacher', name: 'IGCSE Teacher', path: '/skills/igcse-teacher',
+      icon: 'IG', summary: 'Pedagogy-aware tutor for Cambridge IGCSE learning',
+      description: 'Plans lessons with diagnostic checks, scaffolding, retrieval practice, mastery learning, formative feedback, metacognition, and flexible learning supports.',
+      status: 'idle', tag: 'education', token_cost: 3600,
+    },
+    {
       id: 'file-organizer', name: 'File Organizer', path: '/skills/file-organizer',
       icon: '📁', summary: 'Sort and structure project files by convention',
       description: 'Analyzes project structure and proposes file organization following established patterns.',

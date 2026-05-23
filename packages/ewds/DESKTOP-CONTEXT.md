@@ -1,8 +1,17 @@
 # EWDS Desktop Context
 
-Last updated: 2026-05-19
+Last updated: 2026-05-23
 
 This is the current desktop canon for Everywear OS. It supersedes the older dock/sidebar mockups in the Strands design folder where they conflict.
+
+## 2026-05-23 Superseding Notes
+
+- The desktop icon geometry remains canon, but icon typography is reopened.
+- The Refined/Terminal plinth -> beam -> glyph construction remains approved.
+- The 88px by 96px desktop slot and 56px glyph footprint remain approved.
+- The current base icon font, monogram font, and desktop label casing are not final. The current mixture of all-caps monograms and mixed-case labels may be weakening the desktop read.
+- Future icon work must test EWDS font-family, casing, monogram scale, and label readability together before declaring the icon family locked again.
+- User-facing launcher copy should say **My Mait**. `kasai` is the internal runtime id and Sean's personal/in-game name.
 
 ## Source Of Truth
 
@@ -38,7 +47,7 @@ Desktop icon treatments change by theme, but the app identity, grid footprint, l
 
 ## Icon Canon
 
-The desktop icon family is locked in EWDS.
+The desktop icon geometry is locked in EWDS. Typography is under active review as of 2026-05-23.
 
 - Footprint: 56px desktop glyph inside an 88px by 96px desktop icon slot.
 - App identity must be readable at desktop scale.
@@ -48,6 +57,8 @@ The desktop icon family is locked in EWDS.
 - Terminal uses the same projected-plinth construction in amber.
 - Light uses a plain high-contrast SVG tile.
 - System and folder icons use the same themed renderer as applets.
+- Monograms should be treated as icon glyphs, not product names. If a monogram fights the product label, revise the monogram.
+- Desktop labels should prefer readable product naming over raw internal ids. Example: `kasai` renders as **My Mait** in user-facing surfaces.
 
 Projection anatomy for Refined and Terminal:
 

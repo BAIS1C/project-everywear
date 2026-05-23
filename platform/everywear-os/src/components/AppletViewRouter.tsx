@@ -34,7 +34,13 @@ const APPLET_COMPONENTS: Record<string, {
     component: React.lazy(() =>
       import('@applets/kasai/src/shell/KasaiCore').then(m => ({ default: m.KasaiCore }))
     ),
-    displayName: 'Kasai',
+    displayName: 'My Mait',
+  },
+  'layeru-osint': {
+    component: React.lazy(() =>
+      import('../son/LayerUOsintApplet').then(m => ({ default: m.LayerUOsintApplet }))
+    ),
+    displayName: 'Layer U OSINT',
   },
   '1magen': {
     component: React.lazy(() =>
@@ -56,6 +62,10 @@ const APPLET_COMPONENTS: Record<string, {
   'character-studio': {
     component: React.lazy(() => import('@applets/character-studio/src/index')),
     displayName: 'Character Studio',
+  },
+  loom: {
+    component: React.lazy(() => import('@applets/loom/src/index')),
+    displayName: 'The Loom',
   },
 };
 

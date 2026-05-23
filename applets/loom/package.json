@@ -1,0 +1,24 @@
+{
+  "name": "@everywear/loom",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Loom applet: Everywear Knowledge Engine migration cockpit",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 3008",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 3008"
+  },
+  "dependencies": {
+    "@everywear/ewds": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

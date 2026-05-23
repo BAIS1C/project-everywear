@@ -168,51 +168,50 @@ body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3
 
 .ew-icon-svg--holograph {
   filter:
-    drop-shadow(0 0 9px rgba(25, 220, 255, 0.98))
-    drop-shadow(0 0 24px rgba(25, 220, 255, 0.64))
-    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.45));
+    drop-shadow(0 0 4px rgba(210, 250, 255, 0.45))
+    drop-shadow(0 10px 12px rgba(0, 0, 0, 0.34));
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-shadow {
-  fill: rgba(0, 0, 0, 0.7);
+  fill: rgba(0, 0, 0, 0.45);
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-plinth {
-  fill: rgba(18, 24, 30, 0.96);
-  stroke: rgba(165, 238, 255, 0.7);
+  fill: rgba(220, 248, 255, 0.13);
+  stroke: rgba(230, 252, 255, 0.46);
   stroke-width: 1;
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-ring {
-  fill: rgba(25, 210, 255, 0.18);
-  stroke: rgba(109, 231, 255, 0.9);
+  fill: rgba(225, 250, 255, 0.12);
+  stroke: rgba(212, 250, 255, 0.58);
   stroke-width: 1.2;
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-beam {
-  opacity: 0.5;
-  stroke: rgba(210, 252, 255, 0.52);
+  opacity: 0.28;
+  stroke: rgba(236, 253, 255, 0.36);
   stroke-width: 1;
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-shape {
-  fill: rgba(25, 210, 255, 0.06);
-  stroke: rgba(192, 250, 255, 0.96);
-  stroke-width: 1.6;
+  fill: rgba(236, 253, 255, 0.105);
+  stroke: rgba(236, 253, 255, 0.76);
+  stroke-width: 1.35;
   stroke-linejoin: round;
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-detail,
 .ew-icon-svg--holograph .ew-icon-svg__holo-sparkles {
   fill: none;
-  stroke: rgba(192, 250, 255, 0.78);
+  stroke: rgba(236, 253, 255, 0.5);
   stroke-width: 1;
   stroke-linecap: square;
 }
 
 .ew-icon-svg--holograph .ew-icon-svg__holo-core {
-  fill: rgba(192, 250, 255, 0.14);
-  stroke: rgba(192, 250, 255, 0.95);
+  fill: rgba(236, 253, 255, 0.16);
+  stroke: rgba(236, 253, 255, 0.7);
   stroke-width: 1.2;
 }
 
@@ -220,59 +219,58 @@ body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3
   fill: #ecfdff;
   font-size: 16px;
   paint-order: stroke fill;
-  stroke: rgba(0, 18, 28, 0.78);
-  stroke-width: 2.2px;
-  filter: drop-shadow(0 0 9px rgba(25, 210, 255, 1));
+  stroke: rgba(4, 16, 24, 0.62);
+  stroke-width: 1.8px;
+  filter: drop-shadow(0 0 3px rgba(236, 253, 255, 0.62));
 }
 
 .ew-icon-svg--terminal {
   filter:
-    drop-shadow(0 0 9px rgba(255, 150, 20, 0.95))
-    drop-shadow(0 0 22px rgba(255, 136, 0, 0.5))
-    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.46));
+    drop-shadow(0 0 4px rgba(255, 202, 134, 0.42))
+    drop-shadow(0 10px 12px rgba(0, 0, 0, 0.36));
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-shadow {
-  fill: rgba(0, 0, 0, 0.72);
+  fill: rgba(0, 0, 0, 0.48);
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-plinth {
-  fill: rgba(22, 14, 4, 0.96);
-  stroke: rgba(255, 183, 75, 0.72);
+  fill: rgba(255, 220, 160, 0.12);
+  stroke: rgba(255, 219, 160, 0.48);
   stroke-width: 1;
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-ring {
-  fill: rgba(255, 136, 0, 0.18);
-  stroke: rgba(255, 183, 75, 0.9);
+  fill: rgba(255, 183, 75, 0.12);
+  stroke: rgba(255, 207, 140, 0.58);
   stroke-width: 1.2;
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-beam {
-  fill: rgba(255, 136, 0, 0.1);
-  stroke: rgba(255, 198, 103, 0.48);
+  fill: rgba(255, 183, 75, 0.075);
+  stroke: rgba(255, 218, 151, 0.34);
   stroke-width: 1;
-  opacity: 0.68;
+  opacity: 0.42;
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-shape {
-  fill: rgba(255, 136, 0, 0.04);
-  stroke: rgba(255, 185, 79, 0.96);
-  stroke-width: 1.55;
+  fill: rgba(255, 218, 151, 0.095);
+  stroke: rgba(255, 220, 160, 0.74);
+  stroke-width: 1.35;
   stroke-linejoin: round;
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-detail,
 .ew-icon-svg--terminal .ew-icon-svg__terminal-sparkles {
   fill: none;
-  stroke: rgba(255, 185, 79, 0.72);
+  stroke: rgba(255, 220, 160, 0.48);
   stroke-width: 1;
   stroke-linecap: square;
 }
 
 .ew-icon-svg--terminal .ew-icon-svg__terminal-core {
-  fill: rgba(255, 136, 0, 0.12);
-  stroke: rgba(255, 185, 79, 0.96);
+  fill: rgba(255, 220, 160, 0.14);
+  stroke: rgba(255, 220, 160, 0.72);
   stroke-width: 1.2;
 }
 
@@ -280,9 +278,9 @@ body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3
   fill: #ffd08a;
   font-size: 16px;
   paint-order: stroke fill;
-  stroke: rgba(22, 8, 0, 0.86);
-  stroke-width: 2.2px;
-  filter: drop-shadow(0 0 9px rgba(255, 136, 0, 0.95));
+  stroke: rgba(24, 10, 0, 0.68);
+  stroke-width: 1.8px;
+  filter: drop-shadow(0 0 3px rgba(255, 202, 134, 0.58));
 }
 
 .ew-icon-svg__sparkle-a {
@@ -294,11 +292,11 @@ body[data-skin="terminal"] .ew-glyph--3d, .ew[data-skin="terminal"] .ew-glyph--3
 }
 
 @keyframes ew-holo-sparkle-a {
-  0%, 100% { opacity: 0.38; transform: translateY(0); }
-  45% { opacity: 1; transform: translateY(-1px); }
+  0%, 100% { opacity: 0.2; transform: translateY(0); }
+  45% { opacity: 0.58; transform: translateY(-1px); }
 }
 
 @keyframes ew-holo-sparkle-b {
-  0%, 100% { opacity: 0.2; transform: translateY(0); }
-  55% { opacity: 0.9; transform: translateY(1px); }
+  0%, 100% { opacity: 0.14; transform: translateY(0); }
+  55% { opacity: 0.46; transform: translateY(1px); }
 }

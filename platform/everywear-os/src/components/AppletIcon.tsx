@@ -26,8 +26,10 @@ const APPLET_COLORS: Record<string, { primary: string; secondary: string; rgb: [
   's3studio':         { primary: '#00C2FF', secondary: '#0090CC', rgb: [0, 194, 255] },
   'strands-game':     { primary: '#C4008E', secondary: '#A00074', rgb: [196, 0, 142] },
   'kasai':            { primary: '#FF8800', secondary: '#D97200', rgb: [255, 136, 0] },
+  'layeru-osint':     { primary: '#2DD4BF', secondary: '#0F766E', rgb: [45, 212, 191] },
   'character-studio': { primary: '#A855F7', secondary: '#7C3AED', rgb: [168, 85, 247] },
   '3nvizen':          { primary: '#FF6B2E', secondary: '#D45520', rgb: [255, 107, 46] },
+  'loom':             { primary: '#69D2C6', secondary: '#2E7D75', rgb: [105, 210, 198] },
   'mymories':         { primary: '#D48A20', secondary: '#B07018', rgb: [212, 138, 32] },
   'settings':         { primary: '#00C2FF', secondary: '#5C9BC4', rgb: [0, 194, 255] },
   'vault':            { primary: '#2DD4BF', secondary: '#0F766E', rgb: [45, 212, 191] },
@@ -43,9 +45,11 @@ const MONOGRAM: Record<string, string> = {
   'vid':              'VD',
   's3studio':         'S3',
   'strands-game':     'SN',
-  'kasai':            'KS',
+  'kasai':            'MM',
+  'layeru-osint':     'LU',
   'character-studio': 'CS',
   '3nvizen':          '3N',
+  'loom':             'LM',
   'mymories':         'MY',
   'settings':         'ST',
   'vault':            'VA',
@@ -301,18 +305,30 @@ function ParticleIcon({ appletId }: { appletId: string }) {
       ctx!.roundRect(0, 0, SIZE, SIZE, radius);
       ctx!.clip();
 
-      // Keep applet tiles dark even on Light. This matches the S3 Studio
-      // desktop reference: the pale wallpaper stays calm while app icons
-      // remain inspectable, branded, and high-contrast.
       ctx!.fillStyle =
         skin === 'terminal'
-            ? '#0A0907'
-            : '#0a0a12';
+          ? 'rgba(12, 9, 5, 0.68)'
+          : 'rgba(11, 16, 24, 0.62)';
       ctx!.fillRect(0, 0, SIZE, SIZE);
 
-      // Gradient glow
+      const glass = ctx!.createLinearGradient(0, 0, SIZE, SIZE);
+      glass.addColorStop(0, 'rgba(255,255,255,0.18)');
+      glass.addColorStop(0.42, 'rgba(255,255,255,0.035)');
+      glass.addColorStop(1, 'rgba(255,255,255,0.09)');
+      ctx!.fillStyle = glass;
+      ctx!.fillRect(0, 0, SIZE, SIZE);
+
+      const shine = ctx!.createLinearGradient(0, 0, SIZE * 0.74, SIZE * 0.58);
+      shine.addColorStop(0, 'rgba(255,255,255,0.28)');
+      shine.addColorStop(0.5, 'rgba(255,255,255,0.055)');
+      shine.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx!.fillStyle = shine;
+      ctx!.beginPath();
+      ctx!.roundRect(8, 8, SIZE - 16, SIZE * 0.42, 18);
+      ctx!.fill();
+
       const grad = ctx!.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.6);
-      grad.addColorStop(0, `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.12)`);
+      grad.addColorStop(0, `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.07)`);
       grad.addColorStop(1, 'transparent');
       ctx!.fillStyle = grad;
       ctx!.fillRect(0, 0, SIZE, SIZE);
@@ -326,18 +342,12 @@ function ParticleIcon({ appletId }: { appletId: string }) {
         if (p.y < 0) p.y = SIZE;
         if (p.y > SIZE) p.y = 0;
 
-        const pulseAlpha = p.alpha * (0.6 + 0.4 * Math.sin(time * 2 + p.drift));
-
-        // Glow
-        ctx!.beginPath();
-        ctx!.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-        ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},${pulseAlpha * 0.2})`;
-        ctx!.fill();
+        const pulseAlpha = p.alpha * (0.35 + 0.22 * Math.sin(time * 2 + p.drift));
 
         // Core
         ctx!.beginPath();
         ctx!.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},${pulseAlpha})`;
+        ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},${pulseAlpha * 0.75})`;
         ctx!.fill();
       }
 
@@ -348,7 +358,7 @@ function ParticleIcon({ appletId }: { appletId: string }) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           if (dx * dx + dy * dy < 900) {
-            ctx!.strokeStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.06)`;
+            ctx!.strokeStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.035)`;
             ctx!.beginPath();
             ctx!.moveTo(particles[i].x, particles[i].y);
             ctx!.lineTo(particles[j].x, particles[j].y);
@@ -365,21 +375,27 @@ function ParticleIcon({ appletId }: { appletId: string }) {
 
       // Text glow
       ctx!.shadowColor = colors.primary;
-      ctx!.shadowBlur = 16;
-      ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.96)`;
+      ctx!.shadowBlur = 6;
+      ctx!.fillStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.72)`;
       ctx!.fillText(monogram, SIZE / 2, SIZE / 2);
 
       // Crisp text on top
       ctx!.shadowBlur = 0;
-      ctx!.fillStyle = 'rgba(255,255,255,0.98)';
+      ctx!.fillStyle = 'rgba(255,255,255,0.92)';
       ctx!.fillText(monogram, SIZE / 2, SIZE / 2);
       ctx!.restore();
 
       // Subtle border
-      ctx!.strokeStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.15)`;
+      ctx!.strokeStyle = 'rgba(255,255,255,0.22)';
       ctx!.lineWidth = 1;
       ctx!.beginPath();
       ctx!.roundRect(0.5, 0.5, SIZE - 1, SIZE - 1, radius);
+      ctx!.stroke();
+
+      ctx!.strokeStyle = `rgba(${colors.rgb[0]},${colors.rgb[1]},${colors.rgb[2]},0.14)`;
+      ctx!.lineWidth = 1;
+      ctx!.beginPath();
+      ctx!.roundRect(4.5, 4.5, SIZE - 9, SIZE - 9, radius - 5);
       ctx!.stroke();
 
       animRef.current = requestAnimationFrame(animate);

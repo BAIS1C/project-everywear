@@ -103,6 +103,11 @@ pub struct ModelRequirement {
     /// Expected file size in bytes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<u64>,
+    /// SHA256 hex digest for post-download integrity verification.
+    /// Required for production remote downloads; optional only while a
+    /// manifest is still being drafted and the exact artifact is not pinned.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +239,9 @@ pub struct UpgradePackFile {
     /// Remote filename on HF (may differ from local for renames)
     pub hf_file: String,
     pub size_bytes: u64,
+    /// SHA256 hex digest for post-download integrity verification.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
 }
 
 /// A single quant tier within a VRAM-gated upgrade pack.
@@ -253,6 +261,9 @@ pub struct UpgradePackQuant {
     /// Remote filename on HF
     pub hf_file: String,
     pub size_bytes: u64,
+    /// SHA256 hex digest for post-download integrity verification.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
 }
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@
  * Layout: Sidebar + Main area (CreatePanel / Library / Settings)
  */
 import React, { useState, lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useTheme } from '@everywear/ewds';
 import { Sidebar } from './components/Sidebar';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -18,12 +18,15 @@ import { DawTransportBar } from './components/DawTransportBar';
 
 // Lazy-load heavy views
 const CreateView = lazy(() => import('./views/CreateView'));
+const DawView = lazy(() => import('./views/DawView'));
 const LibraryView = lazy(() => import('./views/LibraryView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 
 export function App() {
   const { skin } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const location = useLocation();
+  const isDawRoute = location.pathname.startsWith('/daw');
 
   return (
     <div className="flex w-full h-full bg-s3 text-s3-text-primary">
@@ -39,12 +42,13 @@ export function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route path="/" element={<CreateView />} />
+              <Route path="/daw" element={<DawView />} />
               <Route path="/library" element={<LibraryView />} />
               <Route path="/settings" element={<SettingsView />} />
             </Routes>
           </Suspense>
         </main>
-        <DawTransportBar />
+        {!isDawRoute && <DawTransportBar />}
       </div>
     </div>
   );

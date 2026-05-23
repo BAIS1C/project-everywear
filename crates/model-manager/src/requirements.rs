@@ -25,6 +25,10 @@ pub struct ModelRequirement {
     pub hf_repo: Option<String>,
     pub hf_file: Option<String>,
     pub size_bytes: Option<u64>,
+    /// Expected SHA256 for pinned remote or adopted local artifacts.
+    /// When present, downloads and "use this path" adoption must verify
+    /// this digest before the model is trusted.
+    pub sha256: Option<String>,
 }
 
 /// Build requirements from applet.toml definitions.
@@ -376,6 +380,7 @@ fn collect_pack_requirements(
             hf_repo: Some(file.hf_repo.clone()),
             hf_file: Some(file.hf_file.clone()),
             size_bytes: Some(file.size_bytes),
+            sha256: file.sha256.clone(),
         };
         push_unique(out, requirement_from_model(applet_id, engine_type, &manifest_req));
     }
@@ -390,6 +395,7 @@ fn collect_pack_requirements(
             hf_repo: Some(quant.hf_repo.clone()),
             hf_file: Some(quant.hf_file.clone()),
             size_bytes: Some(quant.size_bytes),
+            sha256: quant.sha256.clone(),
         };
         push_unique(out, requirement_from_model(applet_id, engine_type, &manifest_req));
     }
@@ -427,6 +433,7 @@ fn requirement_from_model(
         hf_repo: model.hf_repo.clone(),
         hf_file: model.hf_file.clone(),
         size_bytes: model.size_bytes,
+        sha256: model.sha256.clone(),
     }
 }
 
@@ -475,6 +482,9 @@ fn merge_requirement(mut manifest: ModelRequirement, known: ModelRequirement) ->
     }
     if manifest.size_bytes.is_none() {
         manifest.size_bytes = known.size_bytes;
+    }
+    if manifest.sha256.is_none() {
+        manifest.sha256 = known.sha256;
     }
     manifest
 }
@@ -607,6 +617,7 @@ fn gguf_requirement(
         hf_repo: (!hf_repo.is_empty()).then(|| hf_repo.into()),
         hf_file: (!hf_file.is_empty()).then(|| hf_file.into()),
         size_bytes: Some(size_bytes),
+        sha256: None,
     }
 }
 
@@ -632,6 +643,7 @@ fn tensor_requirement(
         hf_repo: None,
         hf_file: None,
         size_bytes: None,
+        sha256: None,
     }
 }
 

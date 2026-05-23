@@ -7,20 +7,22 @@
 # generation (future), and storyboard planning. No VRAM reservation needed
 # since NVENC uses the dedicated encoder chip, not CUDA cores.
 
+model_groups = []
+
 [applet]
 id = "vid"
 name = "Vid Studio"
 version = "0.1.0"
 description = "Audio-reactive visualiser and music video creation"
 icon = "vid"
-transport = "none"
+transport = "web"
 
 [engine]
 type = "none"
 backend = "none"
 server_binary = ""
 
-# No model groups: Vid is frontend-only.
+# Empty model_groups: Vid is frontend-only.
 # NVENC encoding is handled by the shell's video_encoder sidecar.
 
 [requirements]

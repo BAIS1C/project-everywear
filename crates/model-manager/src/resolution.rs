@@ -125,6 +125,13 @@ impl ModelResolver {
         discovered: &[DiscoveredModel],
     ) -> Result<ResolutionResult> {
         if let Some(path) = self.find_in_vault(req) {
+            verify_path_for_requirement(req, &path).with_context(|| {
+                format!(
+                    "verify vault model {} for {}",
+                    path.display(),
+                    req.everywear_model_id
+                )
+            })?;
             return Ok(ResolutionResult {
                 everywear_model_id: req.everywear_model_id.clone(),
                 status: ResolutionStatus::Available,
@@ -251,6 +258,13 @@ impl ModelResolver {
             .unwrap_or(&discovered.filename);
         let vault_path = vault_dir.join(filename);
         if vault_path.exists() {
+            verify_path_for_requirement(req, &vault_path).with_context(|| {
+                format!(
+                    "verify existing vault model {} for {}",
+                    vault_path.display(),
+                    req.everywear_model_id
+                )
+            })?;
             return Ok(AdoptedModel {
                 vault_path,
                 source_path: discovered.source_path.clone(),
@@ -258,6 +272,14 @@ impl ModelResolver {
                 file_size_bytes: discovered.size_bytes,
             });
         }
+
+        verify_path_for_requirement(req, &discovered.source_path).with_context(|| {
+            format!(
+                "verify adoption source {} for {}",
+                discovered.source_path.display(),
+                req.everywear_model_id
+            )
+        })?;
 
         match action {
             SuggestedAction::Symlink => symlink_file(&discovered.source_path, &vault_path)
@@ -320,6 +342,13 @@ impl ModelResolver {
         }
         None
     }
+}
+
+fn verify_path_for_requirement(req: &ModelRequirement, path: &Path) -> Result<()> {
+    if req.sha256.is_some() {
+        crate::verify::verify_model(path, &req.sha256)?;
+    }
+    Ok(())
 }
 
 impl HfSource {
@@ -425,6 +454,7 @@ mod tests {
             hf_repo: Some("repo".into()),
             hf_file: Some("Qwen3-4B-Q4_K_M.gguf".into()),
             size_bytes: Some(2_500_000_000),
+            sha256: None,
         }
     }
 
@@ -531,5 +561,81 @@ mod tests {
         assert!(adopted.vault_path.exists());
         assert!(adopted.vault_path.starts_with(vault));
         assert_eq!(adopted.source_path, source);
+    }
+
+    #[test]
+    fn adopt_model_verifies_pinned_sha256_before_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("Qwen3-4B-Q4_K_M.gguf");
+        std::fs::write(&source, b"trusted-model").unwrap();
+
+        let mut req = req();
+        req.sha256 = Some(crate::verify::sha256_file(&source).unwrap());
+
+        let vault = dir.path().join("vault");
+        let resolver = ModelResolver::new(
+            LocalModelScanner::with_targets(Vec::new(), Vec::new()),
+            vec![req.clone()],
+            vault.clone(),
+        );
+        let result = resolver
+            .resolve_single(&req, &[discovered(source.clone())])
+            .unwrap();
+
+        let adopted = resolver
+            .adopt_model(&result, SuggestedAction::Copy)
+            .unwrap();
+        assert!(adopted.vault_path.exists());
+        assert_eq!(
+            crate::verify::sha256_file(&adopted.vault_path).unwrap(),
+            req.sha256.unwrap()
+        );
+    }
+
+    #[test]
+    fn adopt_model_rejects_wrong_pinned_sha256() {
+        let dir = tempfile::tempdir().unwrap();
+        let source = dir.path().join("Qwen3-4B-Q4_K_M.gguf");
+        std::fs::write(&source, b"tampered-model").unwrap();
+
+        let mut req = req();
+        req.sha256 = Some("0".repeat(64));
+
+        let vault = dir.path().join("vault");
+        let resolver = ModelResolver::new(
+            LocalModelScanner::with_targets(Vec::new(), Vec::new()),
+            vec![req.clone()],
+            vault.clone(),
+        );
+        let result = resolver
+            .resolve_single(&req, &[discovered(source)])
+            .unwrap();
+
+        let err = resolver
+            .adopt_model(&result, SuggestedAction::Copy)
+            .unwrap_err();
+        assert!(err.to_string().contains("verify adoption source"));
+        assert!(!vault.join("kasai").join("Qwen3-4B-Q4_K_M.gguf").exists());
+    }
+
+    #[test]
+    fn resolve_rejects_vault_model_with_wrong_pinned_sha256() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault = dir.path().join("models");
+        let applet_dir = vault.join("kasai");
+        std::fs::create_dir_all(&applet_dir).unwrap();
+        std::fs::write(applet_dir.join("Qwen3-4B-Q4_K_M.gguf"), b"wrong-model").unwrap();
+
+        let mut req = req();
+        req.sha256 = Some("0".repeat(64));
+
+        let resolver = ModelResolver::new(
+            LocalModelScanner::with_targets(Vec::new(), Vec::new()),
+            vec![req],
+            vault,
+        );
+
+        let err = resolver.resolve_all().unwrap_err();
+        assert!(err.to_string().contains("verify vault model"));
     }
 }

@@ -1,4 +1,4 @@
-import { useTheme, type Theme } from '../shell/ThemeContext';
+import { useTheme, type Theme, type WidgetSurface } from '../shell/ThemeContext';
 
 const THEMES: { id: Theme; name: string; desc: string }[] = [
   { id: 'light', name: 'Light', desc: 'Off-cream daytime desktop' },
@@ -7,8 +7,14 @@ const THEMES: { id: Theme; name: string; desc: string }[] = [
   { id: 'terminal', name: 'Terminal', desc: 'Monospace industrial console' },
 ];
 
+const WIDGET_SURFACES: { id: WidgetSurface; name: string; desc: string }[] = [
+  { id: 'cut', name: 'Cut', desc: 'EWDS angled corners' },
+  { id: 'rounded', name: 'Rounded', desc: 'Soft corners and shadow' },
+  { id: 'square', name: 'Square', desc: 'Flat boxed panels' },
+];
+
 export function SettingsPanel() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, widgetSurface, setWidgetSurface } = useTheme();
 
   return (
     <div className="ew-settings">
@@ -33,6 +39,23 @@ export function SettingsPanel() {
                   {s.desc}
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="ew-field__label">Desktop widgets</label>
+          <div className="ew-settings__surface-grid">
+            {WIDGET_SURFACES.map((surface) => (
+              <button
+                key={surface.id}
+                type="button"
+                className={`ew-settings__surface-option ${widgetSurface === surface.id ? 'ew-settings__surface-option--active' : ''}`}
+                onClick={() => setWidgetSurface(surface.id)}
+              >
+                <span className="ew-settings__surface-name">{surface.name}</span>
+                <span className="ew-settings__surface-desc">{surface.desc}</span>
+              </button>
             ))}
           </div>
         </div>

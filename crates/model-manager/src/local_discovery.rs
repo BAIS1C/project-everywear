@@ -1071,6 +1071,7 @@ mod tests {
             hf_repo: None,
             hf_file: None,
             size_bytes: Some(2_500_000_000),
+            sha256: None,
         };
         assert_eq!(scanner.check_compatibility(&discovered, &req), Compatibility::Exact);
 

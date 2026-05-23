@@ -7,7 +7,8 @@ function iconGlyph(id: string): string {
     '1magen': '1M',
     's3studio': 'S3',
     'strands-game': 'SN',
-    'kasai': 'KS',
+    'kasai': 'MM',
+    'layeru-osint': 'LU',
     '3nvizen': '3N',
     'mymories': 'MY',
     'gener8': 'G8',
@@ -171,9 +172,7 @@ export function LauncherGrid({ onEmbedApplet }: { onEmbedApplet?: (applet: Apple
   const handleLaunch = async (applet: AppletEntry) => {
     if (applet.status === 'Locked') return;
 
-    // Frontend-only applets (no backend binary) get embedded inline
-    const isFrontendOnly = applet.frontend_port && !applet.launch_binary;
-    if (isFrontendOnly && onEmbedApplet) {
+    if (applet.launch_kind === 'FrontendInline' && onEmbedApplet) {
       onEmbedApplet(applet);
       return;
     }
