@@ -1,6 +1,6 @@
 # Layer U OSINT Widget Architecture
 
-**Status:** architecture pass, 2026-05-23  
+**Status:** architecture and first implementation pass, updated 2026-05-24  
 **Source repo:** `C:\Users\MAG MSI\Project SON`  
 **Target repo:** `C:\Users\MAG MSI\Project Everywear`  
 **Purpose:** split S.O.N / Project SON capabilities into context-sized Everywear Layer U OSINT panes and windows.
@@ -62,8 +62,22 @@ Required frame behavior:
 - Collapse to header.
 - Expand into Everywear window.
 - Open source details in full S.O.N Globe window.
-- Surface state option uses the existing widget surface setting: `cut`, `soft`, or `glass`.
+- Surface state option uses the existing widget surface setting: `cut`, `rounded`, or `square`.
 - Oblique cut-corner style remains the EWDS default.
+
+## First Implementation Status
+
+As of 2026-05-24, the first Everywear implementation exists:
+
+- `platform/everywear-os/src/son/types.ts`
+- `platform/everywear-os/src/son/sonBridge.ts`
+- `platform/everywear-os/src/son/useLayerUOsint.ts`
+- `platform/everywear-os/src/son/LayerUOsintApplet.tsx`
+- `platform/everywear-os/src/son/styles/layer-u-osint.css`
+
+The shell registry defines `layeru-osint` as a `FrontendInline` platform surface. The applet hosts `http://127.0.0.1:3117/worldview`, reads Project SON health/data through the bridge, and shows compact posture/feed/source panes. Project SON `server.mjs` has CORS enabled for Everywear local reads.
+
+Do not add frontend-only fallback injection for Layer U OSINT simply because the visible app is missing it. If screenshots still show `Kasai` instead of **My Mait** or Fahrenheit weather, the app is stale. Clean fix: rebuild frontend, rebuild native shell with `cargo build -p everywear-os`, and restart.
 
 ## Source Contract
 
@@ -218,3 +232,9 @@ The first refactor should extract the pure render helpers before moving Cesium c
 Project SON should enter Everywear as **Layer U OSINT: a compact applet window plus optional ambient desktop summaries**, not as one monolithic applet and not as a map wallpaper widget. The Cesium worldview, flights, and map layers remain inside the Layer U OSINT window. RSS/news and served video feeds become companion panes.
 
 This preserves the functionality of SON window frames while making the pieces maintainable by local agents and small context windows.
+
+## Visual Contract
+
+- Layer U panes follow the global widget surface setting: Cut, Rounded, or Square.
+- The compact worldview/map remains inside the applet window; do not duplicate it as a desktop widget.
+- Offline state must be explicit and clean: if Project SON is not running on port 3117, show a local offline panel and hide the broken iframe surface.

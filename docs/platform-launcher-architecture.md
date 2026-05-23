@@ -1,6 +1,6 @@
 # Everywear Platform Launcher Architecture
 
-**Status:** working contract, 2026-05-23  
+**Status:** working contract, updated 2026-05-24  
 **Scope:** free Everywear platform shell, before paid applet/tier surfaces.
 
 ## Superseding Naming Canon
@@ -11,6 +11,14 @@ User-facing Everywear surfaces should label the local MAIT/agent applet as **My 
 - Kasai remains acceptable when referring to Sean's personal instance or the in-game identity.
 - Launcher cards, desktop icons, settings, docs aimed at users, and applet titles should say **My Mait**.
 - Technical docs may write `My Mait (kasai runtime)` where the distinction matters.
+
+## 2026-05-24 Implementation Notes
+
+- `layeru-osint` is a real registry applet entry with `launch_kind = FrontendInline`; do not add shell-side fallback injection unless the registry model itself changes.
+- If the live desktop does not show Layer U OSINT and still shows stale labels such as `Kasai` or Fahrenheit weather, treat that as a stale running build/runtime. Rebuild the frontend, run `cargo build -p everywear-os`, and restart the native shell before changing architecture.
+- The base weather widget is metric-first: Celsius, km/h, and mm.
+- Desktop widget surface settings are **Cut**, **Rounded**, and **Square**. They are visual surface settings for widget boxes/panels, not just button styles.
+- Icon polish is now glass-first and lower-glow. EWDS icon geometry remains canon, but glow intensity should stay restrained.
 
 ## Platform Position
 
@@ -120,12 +128,24 @@ The following should remain platform-owned and free:
 - Built-in music player for local/library playback.
 - Full browser surface for the agentic OS runtime.
 
+## Desktop Surface Settings
+
+Desktop widget surfaces are platform-owned appearance settings:
+
+| Setting | Behavior |
+|---|---|
+| Cut | EWDS angled-corner panels using `--ew-clip-card`. |
+| Rounded | 8px rounded widget boxes with shadow; buttons follow the same softened treatment. |
+| Square | Flat rectangular widget boxes with no corner cutting and no extra shadow. |
+
+These settings must apply to status cards, weather, Layer U panes, and future desktop widgets. Legacy stored values map as `soft -> rounded` and `glass -> square`.
+
 Applet pay tiers should unlock applet-specific engines, model packs, quality levels, quotas, and advanced workflows. They should not be required for the platform to explain the machine, show the desktop, manage files, or connect the user to the Everywear community.
 
 ## Next Architecture Work
 
 1. Add a platform settings panel section for app/model/download directories and footprint totals.
 2. Add projected footprint data to model assessment results.
-3. Harden Layer U OSINT as a `FrontendInline` platform surface and decide whether Project SON becomes a managed sidecar.
+3. Decide whether Project SON becomes a managed sidecar for Layer U OSINT, including start/stop and sweep policy.
 4. Decide whether external web products remain `ExternalUrl` entries or become local wrappers with offline/cache behavior.
 5. Add production manifest validation that rejects remote downloadable models without pinned SHA256 once exact artifacts are selected.

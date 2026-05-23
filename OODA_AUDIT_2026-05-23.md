@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-05-24 ADDENDUM
+
+This addendum records the follow-up implementation work after the corrected audit.
+
+- **Layer U OSINT:** Added as a free `FrontendInline` platform surface backed by Project SON. The shell registry contains `layeru-osint`, and the React applet lives under `platform/everywear-os/src/son/`.
+- **Project SON bridge:** Everywear now has `sonBridge.ts`, `useLayerUOsint.ts`, and a compact `LayerUOsintApplet.tsx` that hosts `http://127.0.0.1:3117/worldview` while exposing posture, feeds, source health, refresh, pull live, and reload controls. Project SON `server.mjs` was patched with local CORS headers for `/api/health`, `/api/data`, and `/api/sweep`.
+- **Naming canon:** User-facing Kasai labels are superseded by **My Mait**. `kasai` remains the internal runtime/app id and Sean's personal/in-game name.
+- **Weather:** Desktop weather is metric-first: Celsius, km/h, and mm. Fahrenheit in screenshots is now a stale-runtime indicator.
+- **Widget surface setting:** The shell setting is **Cut / Rounded / Square** and must apply to widget boxes/panels, not only buttons. Legacy stored `soft` maps to `rounded`; legacy `glass` maps to `square`.
+- **Icon polish:** EWDS desktop icons moved toward lower glow and glassier surfaces. Classic canvas icons should read as glass desktop objects. Refined/Terminal projected icons retain their plinth/beam/glyph anatomy with restrained halo.
+- **Stale runtime diagnostic:** If a live desktop misses Layer U OSINT and still shows old cues such as `Kasai` or Fahrenheit weather, do not add fallback applet injection. Rebuild frontend, run `cargo build -p everywear-os`, and restart the native shell.
+
+Verification performed during the follow-up:
+
+- `npm -w everywear-os run build`
+- `npm -w @everywear/ewds run build`
+- `cargo build -p everywear-os`
+
+---
+
 ## EXECUTIVE SUMMARY
 
 The codebase is healthier than the prior draft claimed. The size census is stable, the shell frontend builds, Loom's new frontend builds, and `cargo check -p everywear-os` passes. The highest-risk issue is not "Loom click fails immediately"; current shell UI opens registered frontend-only applets inline before the Tauri launch bridge runs.
@@ -377,4 +397,3 @@ No split now. Recheck after video-modal or shell UI work.
   Real next issue: frontend-only applet manifests are not canonical, so model scans/checks skip/fail them even though inline launch can work.
   Next work: normalize loom/character-studio/vid manifests, add manifest validation, clarify applet kinds in registry, package or delist 3nvizen frontend, retire manifest_parser.rs.
 ```
-

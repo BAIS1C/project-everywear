@@ -1,6 +1,6 @@
 # EWDS Desktop Context
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 This is the current desktop canon for Everywear OS. It supersedes the older dock/sidebar mockups in the Strands design folder where they conflict.
 
@@ -12,6 +12,15 @@ This is the current desktop canon for Everywear OS. It supersedes the older dock
 - The current base icon font, monogram font, and desktop label casing are not final. The current mixture of all-caps monograms and mixed-case labels may be weakening the desktop read.
 - Future icon work must test EWDS font-family, casing, monogram scale, and label readability together before declaring the icon family locked again.
 - User-facing launcher copy should say **My Mait**. `kasai` is the internal runtime id and Sean's personal/in-game name.
+
+## 2026-05-24 Polish Notes
+
+- Icon polish direction is **glassier and less glowy**. Classic canvas icons should read as glass desktop objects, not neon badges. Use softer bloom, lower particle opacity, reduced text halo, and visible glass highlights.
+- Refined and Terminal keep the plinth -> beam -> glyph construction, but projection halo and sparkle intensity should stay restrained.
+- Widget surface variants are **Cut**, **Rounded**, and **Square**. They must affect widget boxes/panels themselves, not only buttons.
+- Legacy widget surface values migrate as `soft -> rounded` and `glass -> square`.
+- Weather widgets are metric-first: Celsius, km/h, and mm.
+- If a live shell screenshot shows old labels such as `Kasai` or Fahrenheit weather, treat it as stale runtime before changing EWDS or registry architecture. Rebuild frontend, rebuild `cargo build -p everywear-os`, then restart.
 
 ## Source Of Truth
 
@@ -59,6 +68,7 @@ The desktop icon geometry is locked in EWDS. Typography is under active review a
 - System and folder icons use the same themed renderer as applets.
 - Monograms should be treated as icon glyphs, not product names. If a monogram fights the product label, revise the monogram.
 - Desktop labels should prefer readable product naming over raw internal ids. Example: `kasai` renders as **My Mait** in user-facing surfaces.
+- Glow must be subordinate to form. Glass, edge definition, and legibility should win over bloom.
 
 Projection anatomy for Refined and Terminal:
 
@@ -89,6 +99,16 @@ The center HUD is a live OS readout.
 - Ready state reports `model loaded` with the best available model label.
 - Model labels resolve in this order: `recommended_primary_model`, `recommended_group`, then applet engine type fallback.
 - Browser preview may fall back to engine type because Tauri model lifecycle events are not available.
+
+## Widget Surface Setting
+
+The desktop widget surface setting is a shell-wide visual treatment:
+
+- Cut: EWDS angled corners with clipped panels.
+- Rounded: 8px rounded panels with soft shadow.
+- Square: flat rectangular panels with no corner clipping and no extra shadow.
+
+This setting applies to the center HUD cards, weather widget, Layer U OSINT panes, and future desktop widgets. Buttons may follow the treatment, but panels are the primary target.
 
 ## Applet Engine Hookup
 
