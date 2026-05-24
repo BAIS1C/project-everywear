@@ -102,9 +102,9 @@ interface AuthContextValue {
   /** Sign in with email + password. */
   signInWithPassword: (email: string, password: string, rememberProfile?: boolean) => Promise<void>;
   /** Sign up with email + password. */
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, handle: string, displayName?: string) => Promise<void>;
   /** Verify OTP code from email. */
-  verifyOtp: (email: string, token: string) => Promise<void>;
+  verifyOtp: (email: string, token: string, handle?: string, displayName?: string) => Promise<void>;
   /** Sign out and reset to Demo. */
   signOut: () => Promise<void>;
   /** Force refresh auth state from Supabase. */
@@ -313,6 +313,22 @@ function rememberedAuthIsValid() {
   return Number.isFinite(expiry) && expiry > Date.now();
 }
 
+function normalizeEverywearHandle(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/@everywear\.id$/i, '')
+    .replace(/^@/, '');
+}
+
+function assertValidEverywearHandle(handle: string): string {
+  const normalized = normalizeEverywearHandle(handle);
+  if (!/^[a-z0-9][a-z0-9_-]{2,31}$/.test(normalized)) {
+    throw new Error('Everywear ID must be 3-32 characters: letters, numbers, _ or -, starting with a letter or number.');
+  }
+  return normalized;
+}
+
 // ── Provider ─────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -501,29 +517,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await hydrateSession(data.session);
   };
 
-  const signUp = async (email: string, password: string) => {
+  const writeSignupProfile = async (
+    session: Session,
+    rawHandle: string,
+    displayName?: string,
+  ) => {
+    const handle = assertValidEverywearHandle(rawHandle);
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .update({
+        handle,
+        display_name: displayName?.trim() || handle,
+      })
+      .eq('id', session.user.id);
+    if (profileErr) {
+      setError(profileErr.message);
+      throw profileErr;
+    }
+  };
+
+  const signUp = async (email: string, password: string, rawHandle: string, displayName?: string) => {
     setError(null);
-    const { data, error: err } = await supabase.auth.signUp({ email, password });
+    const handle = assertValidEverywearHandle(rawHandle);
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data, error: err } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        data: {
+          handle,
+          username: handle,
+          display_name: displayName?.trim() || handle,
+        },
+      },
+    });
     if (err) {
       setError(err.message);
       throw err;
     }
     if (data.session) {
       setRememberedAuth(true);
+      await writeSignupProfile(data.session, handle, displayName);
       await hydrateSession(data.session);
     }
   };
 
-  const verifyOtp = async (email: string, token: string) => {
+  const verifyOtp = async (email: string, token: string, rawHandle?: string, displayName?: string) => {
     setError(null);
+    const normalizedEmail = email.trim().toLowerCase();
     let { data, error: err } = await supabase.auth.verifyOtp({
-      email,
+      email: normalizedEmail,
       token,
       type: 'email',
     });
     if (err) {
       const retry = await supabase.auth.verifyOtp({
-        email,
+        email: normalizedEmail,
         token,
         type: 'signup',
       });
@@ -540,6 +589,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(message);
     }
     setRememberedAuth(true);
+    if (rawHandle) {
+      await writeSignupProfile(data.session, rawHandle, displayName);
+    }
     await hydrateSession(data.session);
   };
 
