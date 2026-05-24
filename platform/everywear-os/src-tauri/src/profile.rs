@@ -147,28 +147,19 @@ impl ProfileManager {
         let conn = Connection::open(&self.db_path)?;
         let now = chrono::Utc::now().to_rfc3339();
 
-        let is_placeholder_name = profile.display_name.trim().is_empty()
-            || profile
-                .display_name
-                .trim()
-                .eq_ignore_ascii_case("Everywear User");
-        let display_name = if is_placeholder_name {
-            claim
-                .display_name
-                .clone()
-                .or_else(|| claim.handle.clone())
-                .or_else(|| {
-                    claim
-                        .email
-                        .as_deref()
-                        .and_then(|email| email.split('@').next())
-                        .map(str::to_string)
-                })
-                .unwrap_or(profile.display_name)
-        } else {
-            profile.display_name
-        };
-        let alias = profile.alias.or_else(|| claim.handle.clone());
+        let display_name = claim
+            .display_name
+            .clone()
+            .or_else(|| claim.handle.clone())
+            .or_else(|| {
+                claim
+                    .email
+                    .as_deref()
+                    .and_then(|email| email.split('@').next())
+                    .map(str::to_string)
+            })
+            .unwrap_or(profile.display_name);
+        let alias = claim.handle.clone().or(profile.alias);
         let email = claim.email.clone().or(profile.email);
 
         conn.execute(

@@ -401,6 +401,9 @@ export interface AuthStateUpdate {
   access_token?: string;
   tier: string;
   exp?: number;
+  handle?: string;
+  display_name?: string;
+  email?: string;
 }
 
 export interface AuthReport {
@@ -466,6 +469,10 @@ export const getApplet = async (id: string) =>
 export const launchApplet = async (id: string) => {
   if (!hasTauriRuntime()) return;
   return invoke<void>('launch_applet', { id });
+};
+export const requestAppletSwitch = async (appletId: string) => {
+  if (!hasTauriRuntime()) return;
+  return invoke<void>('request_applet_switch', { appletId });
 };
 export const closeAppletWebview = (appletId: string) =>
   hasTauriRuntime() ? invoke<void>('close_applet_webview', { appletId }) : Promise.resolve();

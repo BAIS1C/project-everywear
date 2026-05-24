@@ -54,11 +54,44 @@ const isLocalPreviewBypass = () => {
 export interface EverywearUser {
   id: string;
   email: string;
+  /** Raw immutable handle from public.profiles.handle, e.g. "seanie". */
   handle: string;
+  /** Same handle in Everywear ID form, e.g. "seanie@everywear.id". */
+  everywearId: string;
+  /** Alias for S3/Gener8 applet compatibility. */
+  rawUsername: string;
   displayName?: string;
+  role?: string;
   tier: LicenceTier;
   isPaid: boolean;
   isPro: boolean;
+  tiers: Record<string, boolean>;
+  subscription?: SubscriptionSummary | null;
+}
+
+interface ProfileRow {
+  id: string;
+  handle: string | null;
+  display_name: string | null;
+  role?: string | null;
+  bio?: string | null;
+  created_at?: string | null;
+}
+
+export interface SubscriptionSummary {
+  tier: LicenceTier | string;
+  status: string;
+  provider: string;
+  current_period_end: string | null;
+  cancelled_at?: string | null;
+  started_at?: string | null;
+  demo_started_at?: string | null;
+}
+
+interface AccountIdentity {
+  profile: ProfileRow | null;
+  subscription: SubscriptionSummary | null;
+  activeTier: LicenceTier | null;
 }
 
 interface AuthContextValue {
@@ -108,7 +141,44 @@ export function useAuth() {
  * The function is SECURITY DEFINER; it reads public.subscriptions
  * for the given user_id and returns 'demo'|'gener8'|'gener8_pro'|'creator_studio'.
  */
-async function fetchActiveTier(userId: string): Promise<string> {
+const LICENCE_TIERS = new Set<LicenceTier>(['demo', 'gener8', 'gener8_pro', 'creator_studio']);
+
+function normalizeTier(tier: unknown): LicenceTier | null {
+  return typeof tier === 'string' && LICENCE_TIERS.has(tier as LicenceTier)
+    ? tier as LicenceTier
+    : null;
+}
+
+function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
+  const flags: Record<string, boolean> = {
+    gener8_base: false,
+    gener8_pro: false,
+    creator_studio: false,
+    vid_pro: false,
+    daw_pro: false,
+    ai_director: false,
+    creator_pro: false,
+  };
+  if (tier === 'demo' || tier === 'gener8') {
+    flags.gener8_base = true;
+  }
+  if (tier === 'gener8_pro') {
+    flags.gener8_base = true;
+    flags.gener8_pro = true;
+  }
+  if (tier === 'creator_studio') {
+    flags.gener8_base = true;
+    flags.gener8_pro = true;
+    flags.creator_studio = true;
+    flags.vid_pro = true;
+    flags.daw_pro = true;
+    flags.ai_director = true;
+    flags.creator_pro = true;
+  }
+  return flags;
+}
+
+async function fetchActiveTier(userId: string): Promise<LicenceTier | null> {
   try {
     const result = await Promise.race([
       supabase.rpc('active_tier', { p_user: userId }),
@@ -121,39 +191,64 @@ async function fetchActiveTier(userId: string): Promise<string> {
     ]);
     const { data, error } = result;
     if (error) {
-      console.warn('active_tier() RPC failed, defaulting to demo:', error.message);
-      return 'demo';
+      console.warn('active_tier() RPC failed:', error.message);
+      return null;
     }
-    return (data as string) || 'demo';
+    return normalizeTier(data);
   } catch (e) {
-    console.warn('active_tier() RPC failed, defaulting to demo:', e);
-    return 'demo';
+    console.warn('active_tier() RPC failed:', e);
+    return null;
   }
 }
 
-async function fetchProfileIdentity(userId: string): Promise<{ handle?: string; displayName?: string }> {
+async function fetchAccountIdentity(userId: string): Promise<AccountIdentity> {
   try {
-    const result = await Promise.race([
-      supabase
-        .from('profiles')
-        .select('handle, display_name')
-        .eq('id', userId)
-        .maybeSingle(),
-      new Promise<{ data: null; error: { message: string } }>((resolve) =>
-        setTimeout(() => resolve({
-          data: null,
-          error: { message: 'profiles identity lookup timed out after 3s' },
-        }), 3000),
-      ),
+    const [profileResult, tierResult, subscriptionResult] = await Promise.all([
+      Promise.race([
+        supabase
+          .from('profiles')
+          .select('id, handle, display_name, role, bio, created_at')
+          .eq('id', userId)
+          .maybeSingle(),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({
+            data: null,
+            error: { message: 'profiles identity lookup timed out after 3s' },
+          }), 3000),
+        ),
+      ]),
+      fetchActiveTier(userId),
+      Promise.race([
+        supabase
+          .from('subscriptions')
+          .select('tier, status, provider, current_period_end, cancelled_at, started_at, demo_started_at')
+          .eq('user_id', userId)
+          .order('started_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({
+            data: null,
+            error: { message: 'subscriptions lookup timed out after 3s' },
+          }), 3000),
+        ),
+      ]),
     ]);
-    const { data, error } = result;
-    if (error || !data) return {};
+
+    if ('error' in profileResult && profileResult.error) {
+      console.warn('profiles lookup failed:', profileResult.error.message);
+    }
+    if ('error' in subscriptionResult && subscriptionResult.error) {
+      console.warn('subscriptions lookup failed:', subscriptionResult.error.message);
+    }
+
     return {
-      handle: typeof data.handle === 'string' ? data.handle : undefined,
-      displayName: typeof data.display_name === 'string' ? data.display_name : undefined,
+      profile: (profileResult.data as ProfileRow | null) ?? null,
+      subscription: (subscriptionResult.data as SubscriptionSummary | null) ?? null,
+      activeTier: tierResult,
     };
   } catch {
-    return {};
+    return { profile: null, subscription: null, activeTier: null };
   }
 }
 
@@ -162,7 +257,11 @@ async function fetchProfileIdentity(userId: string): Promise<{ handle?: string; 
  * The shell stores this in AppState for upgrade pack gating and
  * applet auth context queries.
  */
-async function syncToShell(session: Session | null, tier: string): Promise<AuthReport | null> {
+async function syncToShell(
+  session: Session | null,
+  tier: string,
+  identity?: { handle?: string; displayName?: string; email?: string },
+): Promise<AuthReport | null> {
   if (!session) return null;
   try {
     return await Promise.race([
@@ -170,6 +269,9 @@ async function syncToShell(session: Session | null, tier: string): Promise<AuthR
         access_token: session.access_token,
         tier,
         exp: session.expires_at,
+        handle: identity?.handle,
+        display_name: identity?.displayName,
+        email: identity?.email,
       }),
       new Promise<null>((resolve) => setTimeout(() => {
         console.warn('push_auth_state timed out after 3s; continuing with Supabase session.');
@@ -237,6 +339,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (supaUser.user_metadata?.username as string) ||
       supaUser.email?.split('@')[0] ||
       'user';
+    const fallbackEverywearId = fallbackHandle.includes('@')
+      ? fallbackHandle
+      : `${fallbackHandle}@everywear.id`;
 
     // Login gate must depend on the Supabase session, not on slower
     // entitlement/shell-sync side effects. Set a valid user immediately,
@@ -245,27 +350,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: supaUser.id,
       email: supaUser.email || '',
       handle: fallbackHandle,
+      everywearId: fallbackEverywearId,
+      rawUsername: fallbackHandle,
       displayName: metadataDisplayName,
       tier: 'demo',
       isPaid: false,
       isPro: false,
+      tiers: expandTierToFlags('demo'),
+      subscription: null,
     });
 
-    const [tierStr, profileIdentity] = await Promise.all([
-      fetchActiveTier(session.user.id),
-      fetchProfileIdentity(session.user.id),
-    ]);
-    const report = await syncToShell(session, tierStr);
-    const handle = profileIdentity.handle || fallbackHandle;
+    const account = await fetchAccountIdentity(session.user.id);
+    const subscriptionTier = normalizeTier(account.subscription?.tier);
+    const tierStr = account.activeTier || subscriptionTier || 'demo';
+    const profileHandle = account.profile?.handle?.trim() || fallbackHandle;
+    const handle = profileHandle.includes('@')
+      ? profileHandle.split('@')[0]
+      : profileHandle;
+    const everywearId = handle ? `${handle}@everywear.id` : fallbackEverywearId;
+    const displayName = account.profile?.display_name?.trim()
+      || metadataDisplayName
+      || handle
+      || supaUser.email?.split('@')[0]
+      || 'Everywear User';
+    const report = await syncToShell(session, tierStr, {
+      handle,
+      displayName,
+      email: supaUser.email || undefined,
+    });
+    const effectiveTier = (report?.tier as LicenceTier) || tierStr;
 
     setUser({
       id: supaUser.id,
       email: supaUser.email || '',
       handle,
-      displayName: profileIdentity.displayName || metadataDisplayName || handle,
-      tier: (report?.tier as LicenceTier) || (tierStr as LicenceTier) || 'demo',
-      isPaid: report?.is_paid ?? false,
-      isPro: report?.is_pro ?? false,
+      everywearId,
+      rawUsername: handle,
+      displayName,
+      role: account.profile?.role || undefined,
+      tier: effectiveTier,
+      isPaid: report?.is_paid ?? (effectiveTier !== 'demo'),
+      isPro: report?.is_pro ?? (effectiveTier === 'gener8_pro' || effectiveTier === 'creator_studio'),
+      tiers: expandTierToFlags(effectiveTier),
+      subscription: account.subscription,
     });
   }, []);
 
@@ -278,9 +405,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: 'browser-preview',
         email: 'preview@everywear.local',
         handle: 'preview',
+        everywearId: 'preview@everywear.id',
+        rawUsername: 'preview',
+        displayName: 'Preview User',
         tier: 'creator_studio',
         isPaid: true,
         isPro: true,
+        tiers: expandTierToFlags('creator_studio'),
+        subscription: {
+          tier: 'creator_studio',
+          status: 'active',
+          provider: 'preview',
+          current_period_end: null,
+        },
       });
       setIsLoading(false);
       return () => {

@@ -185,6 +185,15 @@ pub struct AuthStateUpdate {
     /// JWT expiry (optional, for staleness detection).
     #[serde(default)]
     pub exp: Option<i64>,
+    /// Canonical Everywear handle from public.profiles.handle.
+    #[serde(default)]
+    pub handle: Option<String>,
+    /// Canonical display name from public.profiles.display_name.
+    #[serde(default)]
+    pub display_name: Option<String>,
+    /// Login email from Supabase Auth.
+    #[serde(default)]
+    pub email: Option<String>,
 }
 
 /// Result of an auth state update.
@@ -218,7 +227,7 @@ pub async fn push_auth_state(
     })?;
 
     // Parse JWT for user claims (if provided)
-    let user_claim = if let Some(ref token) = update.access_token {
+    let mut user_claim = if let Some(ref token) = update.access_token {
         match parse_jwt_unverified(token) {
             Ok(claim) => {
                 info!(
@@ -237,6 +246,30 @@ pub async fn push_auth_state(
     } else {
         None
     };
+
+    if let Some(claim) = user_claim.as_mut() {
+        if update
+            .handle
+            .as_deref()
+            .is_some_and(|handle| !handle.trim().is_empty())
+        {
+            claim.handle = update.handle.clone();
+        }
+        if update
+            .display_name
+            .as_deref()
+            .is_some_and(|name| !name.trim().is_empty())
+        {
+            claim.display_name = update.display_name.clone();
+        }
+        if update
+            .email
+            .as_deref()
+            .is_some_and(|email| !email.trim().is_empty())
+        {
+            claim.email = update.email.clone();
+        }
+    }
 
     // Update AppState
     {

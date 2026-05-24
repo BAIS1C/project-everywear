@@ -2,6 +2,19 @@ import { useEffect, useState, useCallback } from 'react';
 import { getProfile, updateProfile, type UserProfile, type ProfileUpdate } from '../lib/transport';
 import { useAuth } from '../shell/AuthContext';
 
+const TIER_LABELS: Record<string, string> = {
+  demo: 'Demo',
+  gener8: 'Gener8',
+  gener8_pro: 'Gener8 Pro',
+  creator_studio: 'Creator Studio',
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
+};
+
 export function ProfilePanel() {
   const { user: authUser, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -42,12 +55,14 @@ export function ProfilePanel() {
   const displayProfile: UserProfile = {
     ...profile,
     id: authUser?.id || profile.id,
-    display_name: profile.display_name === 'Everywear User'
-      ? authUser?.displayName || authUser?.handle || authUser?.email?.split('@')[0] || profile.display_name
-      : profile.display_name,
-    alias: profile.alias || authUser?.handle || null,
+    display_name: authUser?.displayName || profile.display_name,
+    alias: authUser?.rawUsername || authUser?.handle || profile.alias || null,
     email: authUser?.email || profile.email,
   };
+  const everywearId = authUser?.everywearId
+    || (displayProfile.alias ? `${displayProfile.alias}@everywear.id` : null);
+  const tierLabel = TIER_LABELS[authUser?.tier || 'demo'] || authUser?.tier || 'Demo';
+  const subscription = authUser?.subscription;
   const hasConnectedAccounts = !!displayProfile.discourse_session_valid || !!displayProfile.wallet_connected;
   const initials = displayProfile.display_name
     .split(' ')
@@ -74,6 +89,19 @@ export function ProfilePanel() {
 
       <div className="ew-section">
         <div className="ew-section__title">Identity</div>
+        <div className="ew-field">
+          <label className="ew-field__label">Everywear ID</label>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+            <code style={{ fontSize: 14, color: everywearId ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
+              {everywearId || 'Not set'}
+            </code>
+            {everywearId && (
+              <span style={{ fontSize: 11, color: 'var(--ew-text-faint)' }}>
+                immutable
+              </span>
+            )}
+          </div>
+        </div>
         <div className="ew-field">
           <label className="ew-field__label">Display Name</label>
           {editing ? (
@@ -169,6 +197,36 @@ export function ProfilePanel() {
         )}
       </div>
       )}
+
+      <div className="ew-section">
+        <div className="ew-section__title">Subscription</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+          <div className="ew-field" style={{ marginBottom: 0 }}>
+            <label className="ew-field__label">Tier</label>
+            <div style={{ fontSize: 14, color: 'var(--ew-primary)', fontWeight: 700 }}>
+              {tierLabel}
+            </div>
+          </div>
+          <div className="ew-field" style={{ marginBottom: 0 }}>
+            <label className="ew-field__label">Status</label>
+            <div style={{ fontSize: 14 }}>
+              {subscription?.status || (authUser?.tier === 'demo' ? 'demo' : 'active')}
+            </div>
+          </div>
+          <div className="ew-field" style={{ marginBottom: 0 }}>
+            <label className="ew-field__label">Provider</label>
+            <div style={{ fontSize: 14, color: subscription?.provider ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
+              {subscription?.provider || '-'}
+            </div>
+          </div>
+          <div className="ew-field" style={{ marginBottom: 0 }}>
+            <label className="ew-field__label">Next Billing</label>
+            <div style={{ fontSize: 14, color: subscription?.current_period_end ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
+              {formatDate(subscription?.current_period_end)}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="ew-section">
         <div className="ew-section__title">Session</div>

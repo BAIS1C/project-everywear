@@ -205,8 +205,6 @@ async fn request_applet_switch(
     let manifest = model_manager::AppletManifest::load(&manifest_path)
         .map_err(|e| format!("Failed to load manifest: {e}"))?;
 
-    let mut budget_lock = state.budget.lock().await;
-
     // Populate ModelManager with download metadata from applet.toml so that
     // is_downloaded() can find models by key and download() knows where to
     // fetch them from. Must happen before check_requirements reads the manifest.
@@ -224,6 +222,20 @@ async fn request_applet_switch(
         }
     }
 
+    if let Some(current_id) = state.active_applet.lock().await.clone() {
+        if current_id != applet_id {
+            let _ = app.emit(
+                "applet-switch-progress",
+                launcher::SwitchProgressPayload {
+                    stage: launcher::SwitchStage::Purging,
+                    message: format!("Closing {} and unloading its models...", current_id),
+                },
+            );
+            unload_applet_runtime(state.inner(), &current_id, "applet_switch").await?;
+        }
+    }
+
+    let mut budget_lock = state.budget.lock().await;
     let model_mgr_lock = state.model_mgr.lock().await;
     let check = launcher::check_requirements(&manifest, &budget_lock, &policy, &model_mgr_lock);
     if !check.can_launch {
@@ -1124,26 +1136,113 @@ fn register_engine_payload(
     }
 }
 
+async fn unload_applet_runtime(
+    state: &AppState,
+    applet_id: &str,
+    reason: &str,
+) -> Result<(), String> {
+    tracing::info!(applet = %applet_id, reason, "Unloading applet runtime");
+
+    let applet_proc = {
+        let mut proc_lock = state.applet_processes.lock().await;
+        proc_lock.remove(applet_id)
+    };
+
+    if let Some(mut applet_proc) = applet_proc {
+        match applet_proc
+            .ipc
+            .unload_model(std::time::Duration::from_secs(30))
+            .await
+        {
+            Ok(resp) if resp.status == ResponseStatus::Ok => {
+                tracing::info!(applet = %applet_id, "Applet acknowledged unload_model");
+            }
+            Ok(resp) => {
+                tracing::warn!(
+                    applet = %applet_id,
+                    detail = ?resp.detail,
+                    "Applet returned non-ok unload_model response"
+                );
+            }
+            Err(error) => {
+                tracing::warn!(
+                    applet = %applet_id,
+                    error = %error,
+                    "unload_model failed before applet close"
+                );
+            }
+        }
+
+        let _ = applet_proc
+            .ipc
+            .send_envelope_command(CommandKind::Shutdown, std::time::Duration::from_secs(5))
+            .await;
+
+        match applet_proc.child.try_wait() {
+            Ok(Some(status)) => {
+                tracing::info!(applet = %applet_id, ?status, "Applet process exited");
+            }
+            Ok(None) => {
+                tracing::info!(applet = %applet_id, "Terminating applet process after unload");
+                let _ = applet_proc.child.kill();
+                let _ = applet_proc.child.wait();
+            }
+            Err(error) => {
+                tracing::warn!(
+                    applet = %applet_id,
+                    error = %error,
+                    "Failed to inspect applet process after unload"
+                );
+            }
+        }
+    }
+
+    state.budget.lock().await.release_applet(applet_id);
+    state.engine_registry.lock().await.purge_applet(applet_id);
+    {
+        let mut scheduler = state.vram_scheduler.lock().await;
+        scheduler.unregister_connection(applet_id);
+        scheduler.cancel_applet_jobs(applet_id);
+        let should_clear = scheduler
+            .active_engine()
+            .is_some_and(|engine| engine.applet_id == applet_id);
+        if should_clear {
+            scheduler.clear_active_engine();
+        }
+    }
+    {
+        let mut active = state.active_applet.lock().await;
+        if active.as_deref() == Some(applet_id) {
+            *active = None;
+        }
+    }
+
+    Ok(())
+}
+
 /// Hide the studio window and return to the launcher.
-/// The window stays alive (same as S³ Gener8 pattern); just hidden.
-/// Does NOT stop the backend process (purge handles that on next switch).
+/// The window stays alive, but the applet runtime is unloaded so model-backed
+/// applets return VRAM to the shell before the next launch.
 #[tauri::command]
 async fn close_applet_webview(
     app: tauri::AppHandle,
-    _state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, AppState>,
     applet_id: String,
 ) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("studio") {
         win.hide()
             .map_err(|e| format!("Failed to hide studio window: {e}"))?;
         tracing::info!(applet = %applet_id, "Studio window hidden");
-        let _ = app.emit(
-            "applet-webview-closed",
-            serde_json::json!({
-                "applet_id": applet_id,
-            }),
-        );
     }
+
+    unload_applet_runtime(state.inner(), &applet_id, "webview_close").await?;
+
+    let _ = app.emit(
+        "applet-webview-closed",
+        serde_json::json!({
+            "applet_id": applet_id,
+        }),
+    );
     Ok(())
 }
 

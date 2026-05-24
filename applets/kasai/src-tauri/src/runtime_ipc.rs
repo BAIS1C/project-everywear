@@ -324,8 +324,12 @@ async fn handle_command(
             serde_json::to_value(status).map_err(|error| error.to_string())
         }
         CommandKind::Shutdown => {
-            runtime.lock().await.unload().await;
-            std::process::exit(0);
+            let status = runtime.lock().await.unload().await;
+            tokio::spawn(async {
+                sleep(Duration::from_millis(50)).await;
+                std::process::exit(0);
+            });
+            serde_json::to_value(status).map_err(|error| error.to_string())
         }
         CommandKind::StartInference { model_paths } => {
             let status = runtime

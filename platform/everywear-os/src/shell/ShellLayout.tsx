@@ -6,7 +6,7 @@ import {
   getGpuStatus,
   listModelAssessments,
   listApplets,
-  launchApplet,
+  requestAppletSwitch,
   closeAppletWebview,
   type AppletEntry,
   type ModelAssessment,
@@ -95,6 +95,10 @@ type AppletRenderMode = 'inline' | 'embedded';
 type ShellWindowContent =
   | { kind: 'panel'; panel: Exclude<PanelView, null> }
   | { kind: 'applet'; applet: AppletEntry; renderMode: AppletRenderMode };
+type PendingAppletSwitch = {
+  incoming: AppletEntry;
+  closing: AppletEntry[];
+};
 
 interface ShellWindowState {
   id: string;
@@ -665,6 +669,7 @@ export function ShellLayout() {
   const [launchingId, setLaunchingId] = useState<string | null>(null);
   const [activeInferenceAppletId, setActiveInferenceAppletId] = useState<string | null>(null);
   const [inferencePhase, setInferencePhase] = useState<InferencePhase>('idle');
+  const [pendingAppletSwitch, setPendingAppletSwitch] = useState<PendingAppletSwitch | null>(null);
   const inferenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -817,6 +822,46 @@ export function ShellLayout() {
       return remaining;
     });
   }, [activeInferenceAppletId]);
+
+  const openAppletEntries = useCallback((exceptId?: string) => {
+    const byId = new Map<string, AppletEntry>();
+    windows.forEach((win) => {
+      if (win.content.kind === 'applet' && win.content.applet.id !== exceptId) {
+        byId.set(win.content.applet.id, win.content.applet);
+      }
+    });
+    if (tauriApplet?.applet_id && tauriApplet.applet_id !== exceptId) {
+      const entry = registryApplets.find((applet) => applet.id === tauriApplet.applet_id);
+      if (entry) byId.set(entry.id, entry);
+    }
+    if (activeInferenceAppletId && activeInferenceAppletId !== exceptId) {
+      const entry = registryApplets.find((applet) => applet.id === activeInferenceAppletId);
+      if (entry) byId.set(entry.id, entry);
+    }
+    return Array.from(byId.values());
+  }, [activeInferenceAppletId, registryApplets, tauriApplet, windows]);
+
+  const closeOpenApplets = useCallback(async (exceptId?: string) => {
+    const appletsToClose = openAppletEntries(exceptId);
+    if (appletsToClose.length === 0) return;
+
+    setInferencePhase('purging');
+    await Promise.all(
+      appletsToClose.map((applet) =>
+        closeAppletWebview(applet.id).catch((err) => {
+          console.warn(`Failed to close applet ${applet.id}:`, err);
+        }),
+      ),
+    );
+
+    const closingIds = new Set(appletsToClose.map((applet) => applet.id));
+    setWindows((prev) => prev.filter((win) =>
+      win.content.kind !== 'applet' || !closingIds.has(win.content.applet.id)
+    ));
+    setTauriApplet((current) => current && closingIds.has(current.applet_id) ? null : current);
+    setActiveInferenceAppletId((current) => current && closingIds.has(current) ? null : current);
+    setInferencePhase('idle');
+  }, [openAppletEntries]);
 
   const minimizeShellWindow = useCallback((id: string) => {
     setWindows(prev => prev.map(win => win.id === id ? { ...win, isMinimized: true } : win));
@@ -972,7 +1017,7 @@ export function ShellLayout() {
   };
 
   // ── Applet launch handler (goes through the runtime bridge) ──
-  const handleAppletLaunch = async (applet: AppletEntry) => {
+  const handleAppletLaunch = async (applet: AppletEntry, options?: { skipSwitchPrompt?: boolean }) => {
     if (applet.status === 'Locked') {
       // TODO: show upgrade gate
       log.warn('ui', `Applet ${applet.id} is locked; needs purchase/subscription`);
@@ -981,6 +1026,14 @@ export function ShellLayout() {
     if (applet.status === 'NotBuilt') {
       log.warn('ui', `Applet ${applet.id} is listed but not built yet`);
       return;
+    }
+
+    if (!options?.skipSwitchPrompt) {
+      const closing = openAppletEntries(applet.id);
+      if (closing.length > 0) {
+        setPendingAppletSwitch({ incoming: applet, closing });
+        return;
+      }
     }
 
     markAppletOpening(applet);
@@ -1013,7 +1066,7 @@ export function ShellLayout() {
     // BinaryLocal applets go through the runtime bridge.
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
     try {
-      await launchApplet(applet.id);
+      await requestAppletSwitch(applet.id);
       if (!hasShellRuntime()) {
         if (applet.frontend_port) {
           if (isRegisteredApplet(applet.id)) {
@@ -1059,6 +1112,14 @@ export function ShellLayout() {
         markAppletReady(applet);
       }
     }
+  };
+
+  const confirmAppletSwitch = async () => {
+    const pending = pendingAppletSwitch;
+    if (!pending) return;
+    setPendingAppletSwitch(null);
+    await closeOpenApplets(pending.incoming.id);
+    await handleAppletLaunch(pending.incoming, { skipSwitchPrompt: true });
   };
 
   // ── System panel click handler ──
@@ -1314,6 +1375,34 @@ export function ShellLayout() {
       {launchingId && (
         <div className="ew-tauri-banner">
           <span>Launching {registryApplets.find(a => a.id === launchingId)?.name || launchingId}...</span>
+        </div>
+      )}
+
+      {pendingAppletSwitch && (
+        <div className="ew-applet-switch" role="dialog" aria-modal="true" aria-labelledby="ew-applet-switch-title">
+          <div className="ew-applet-switch__panel">
+            <div className="ew-applet-switch__eyebrow">Applet switch</div>
+            <h2 id="ew-applet-switch-title">Close {pendingAppletSwitch.closing.map((applet) => applet.name).join(', ')}?</h2>
+            <p>
+              Everywear will unload its local models before opening {pendingAppletSwitch.incoming.name}.
+            </p>
+            <div className="ew-applet-switch__actions">
+              <button
+                type="button"
+                className="ew-applet-switch__cancel"
+                onClick={() => setPendingAppletSwitch(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ew-applet-switch__confirm"
+                onClick={confirmAppletSwitch}
+              >
+                Close and open
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
