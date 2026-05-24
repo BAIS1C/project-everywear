@@ -23,6 +23,7 @@ use reqwest::Client;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex as StdMutex};
@@ -434,7 +435,7 @@ async fn read_nvidia_vram() -> Option<VramSample> {
 
 async fn vram_status(State(st): State<Arc<ShimState>>) -> Json<Value> {
     let vram = read_nvidia_vram().await;
-    let (gpu, used_mb, total_mb) = match vram.as_ref() {
+    let (gpu, used_mb, diagnostic_total_mb) = match vram.as_ref() {
         Some(v) => (Some(v.gpu.as_str()), Some(v.used_mb), Some(v.total_mb)),
         None => (None, None, None),
     };
@@ -444,7 +445,10 @@ async fn vram_status(State(st): State<Arc<ShimState>>) -> Json<Value> {
             "runtime":       "gguf",
             "gpu":           gpu,
             "vram_used_mb":  used_mb,
-            "vram_total_mb": total_mb,
+            "vram_total_mb": st.vram_mb,
+            "diagnostic_vram_total_mb": diagnostic_total_mb,
+            "source": "everywear-shell",
+            "diagnostic_source": "nvidia-smi-fallback",
             "loaded_models": [],
             "models_loaded": false,
         },
@@ -498,67 +502,810 @@ async fn reload_models(
     Ok(Json(json!({ "message": "models reloaded" })))
 }
 
+#[derive(Deserialize)]
+struct GenerateRequest {
+    #[serde(default)]
+    task: Option<String>,
+    #[serde(default)]
+    style: Option<String>,
+    #[serde(default)]
+    prompt: Option<String>,
+    #[serde(default)]
+    lyrics: Option<String>,
+    #[serde(default = "d_180_i")]
+    duration: i64,
+    #[serde(default = "d_neg1")]
+    seed: i64,
+    #[serde(alias = "inferenceSteps", alias = "inference_steps", default = "d_8")]
+    steps: u32,
+    #[serde(alias = "guidanceScale", alias = "cfg_scale", default = "d_1_0")]
+    guidance_scale: f32,
+    #[serde(default = "d_3_0")]
+    shift: f32,
+    #[serde(alias = "inferMethod", alias = "infer_method", default)]
+    method: Option<String>,
+    #[serde(alias = "use_cot_caption", alias = "useCotCaption", default = "d_true")]
+    use_cot: bool,
+    #[serde(alias = "audioUrl", default)]
+    audio_url: Option<String>,
+    #[serde(alias = "batch", alias = "batchSize", default = "d_1")]
+    batch_size: u32,
+}
+
+fn d_180_i() -> i64 {
+    180
+}
+fn d_neg1() -> i64 {
+    -1
+}
+fn d_8() -> u32 {
+    8
+}
+fn d_1_0() -> f32 {
+    1.0
+}
+fn d_3_0() -> f32 {
+    3.0
+}
+fn d_1() -> u32 {
+    1
+}
+fn d_true() -> bool {
+    true
+}
+
+fn s(v: &Value, k: &str) -> Option<String> {
+    v.get(k).and_then(|x| x.as_str().map(str::to_string))
+}
+
+fn u(v: &Value, k: &str) -> Option<u32> {
+    let x = v.get(k)?;
+    let n: Option<u64> = x
+        .as_u64()
+        .or_else(|| x.as_i64().and_then(|n| (n >= 0).then_some(n as u64)))
+        .or_else(|| x.as_f64().and_then(|n| (n >= 0.0).then_some(n as u64)))
+        .or_else(|| x.as_str().and_then(|s| s.trim().parse::<u64>().ok()));
+    n.map(|n| n as u32)
+}
+
+fn i(v: &Value, k: &str) -> Option<i64> {
+    let x = v.get(k)?;
+    x.as_i64()
+        .or_else(|| x.as_f64().map(|n| n as i64))
+        .or_else(|| x.as_str().and_then(|s| s.trim().parse::<i64>().ok()))
+}
+
+fn f(v: &Value, k: &str) -> Option<f32> {
+    let x = v.get(k)?;
+    x.as_f64()
+        .or_else(|| x.as_i64().map(|n| n as f64))
+        .or_else(|| x.as_str().and_then(|s| s.trim().parse::<f64>().ok()))
+        .map(|n| n as f32)
+}
+
+fn b(v: &Value, k: &str) -> Option<bool> {
+    let x = v.get(k)?;
+    x.as_bool()
+        .or_else(|| {
+            x.as_str()
+                .and_then(|s| match s.trim().to_ascii_lowercase().as_str() {
+                    "true" | "1" | "yes" | "on" => Some(true),
+                    "false" | "0" | "no" | "off" => Some(false),
+                    _ => None,
+                })
+        })
+        .or_else(|| x.as_u64().map(|n| n != 0))
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD.encode(data)
+}
+
+fn base64_decode(encoded: &str) -> Vec<u8> {
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .unwrap_or_default()
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+fn strip_audio_url_to_key(url: &str) -> Option<String> {
+    let u = url.trim();
+    if let Some(idx) = u.find("/audio/") {
+        return Some(u[idx + "/audio/".len()..].split(['?', '#']).next()?.to_string());
+    }
+    u.strip_prefix("audio/")
+        .map(|s| s.split(['?', '#']).next().unwrap_or(s).to_string())
+}
+
+async fn resolve_audio_request_b64(label: &str, audio_path_raw: &str) -> String {
+    if audio_path_raw.is_empty() {
+        return String::new();
+    }
+    let key = strip_audio_url_to_key(audio_path_raw)
+        .unwrap_or_else(|| audio_path_raw.trim_start_matches('/').to_string());
+    let settings = settings::load_settings().await;
+    if let Some(path) = storage::resolve_key(&settings, &key) {
+        match tokio::fs::read(&path).await {
+            Ok(bytes) => {
+                tracing::info!(
+                    "generate: resolved {} audio {} ({} bytes)",
+                    label,
+                    path.display(),
+                    bytes.len()
+                );
+                base64_encode(&bytes)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "generate: {} audio read failed at {}: {}",
+                    label,
+                    path.display(),
+                    e
+                );
+                String::new()
+            }
+        }
+    } else {
+        tracing::warn!("generate: {} audio key '{}' could not be resolved", label, key);
+        String::new()
+    }
+}
+
+async fn current_tier(state: &Arc<ShimState>) -> crate::LicenceTier {
+    if let Some(rec) = &state.reconciler {
+        return rec.current_tier().await;
+    }
+    crate::LicenceTier::Demo
+}
+
+fn tier_is_pro(tier: crate::LicenceTier) -> bool {
+    matches!(
+        tier,
+        crate::LicenceTier::Gener8Pro | crate::LicenceTier::CreatorStudio
+    )
+}
+
+fn tier_is_creator(tier: crate::LicenceTier) -> bool {
+    matches!(tier, crate::LicenceTier::CreatorStudio)
+}
+
+fn upgrade_required_with_actual(
+    required_tier: &str,
+    actual_tier: crate::LicenceTier,
+) -> (StatusCode, Json<Value>) {
+    (
+        StatusCode::PAYMENT_REQUIRED,
+        Json(json!({
+            "error": "upgrade_required",
+            "required_tier": required_tier,
+            "actual_tier": actual_tier.as_str(),
+            "message": format!(
+                "This feature requires {} or higher. Current shell tier is {}.",
+                required_tier,
+                actual_tier.as_str()
+            )
+        })),
+    )
+}
+
+fn probe_audio_duration_seconds(bytes: &[u8], mime: &str) -> Option<f64> {
+    use symphonia::core::formats::FormatOptions;
+    use symphonia::core::io::MediaSourceStream;
+    use symphonia::core::meta::MetadataOptions;
+    use symphonia::core::probe::Hint;
+
+    if bytes.is_empty() {
+        return None;
+    }
+    let mss = MediaSourceStream::new(Box::new(Cursor::new(bytes.to_vec())), Default::default());
+    let mut hint = Hint::new();
+    let ext = match mime {
+        "audio/wav" | "audio/wave" | "audio/x-wav" => "wav",
+        "audio/flac" | "audio/x-flac" => "flac",
+        "audio/ogg" | "application/ogg" => "ogg",
+        "audio/mp4" | "audio/x-m4a" => "m4a",
+        _ => "mp3",
+    };
+    hint.with_extension(ext);
+    let probed = symphonia::default::get_probe()
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
+        .ok()?;
+    let track = probed
+        .format
+        .tracks()
+        .iter()
+        .find(|t| t.codec_params.codec != symphonia::core::codecs::CODEC_TYPE_NULL)?;
+    let sample_rate = track.codec_params.sample_rate? as f64;
+    track.codec_params.n_frames.and_then(|n_frames| {
+        let duration = n_frames as f64 / sample_rate;
+        (duration > 0.0 && duration.is_finite()).then_some(duration)
+    })
+}
+
+fn build_track_filename(title: Option<&str>, id: &str) -> String {
+    let short_id: String = id.chars().take(8).collect();
+    let cleaned = title
+        .map(sanitise_title)
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "Untitled".to_string());
+    if short_id.is_empty() {
+        cleaned
+    } else {
+        format!("{}_{}", cleaned, short_id)
+    }
+}
+
+fn sanitise_title(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut last_underscore = false;
+    for ch in input.chars() {
+        let keep = ch.is_ascii_alphanumeric()
+            || ch == ' '
+            || ch == '-'
+            || ch == '_'
+            || ch == '('
+            || ch == ')'
+            || ch == '.';
+        if keep {
+            out.push(ch);
+            last_underscore = ch == '_';
+        } else if !last_underscore {
+            out.push('_');
+            last_underscore = true;
+        }
+    }
+    out.trim_matches(|c: char| c == '.' || c.is_whitespace())
+        .chars()
+        .take(64)
+        .collect()
+}
+
 // ─── Generate ─────────────────────────────────────────────────────────
 
 async fn generate(
     State(st): State<Arc<ShimState>>,
-    Json(body): Json<Value>,
+    Json(raw): Json<Value>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    // Proxy to ace-server /generate
-    let resp = st
-        .client
-        .post(format!("{}/generate", st.ace_url))
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(json!({ "error": e.to_string() })),
-            )
-        })?;
-    let status = resp.status();
-    let data: Value = resp.json().await.unwrap_or(json!({}));
-    if !status.is_success() {
+    let body: GenerateRequest = serde_json::from_value(raw.clone()).unwrap_or_else(|e| {
+        tracing::warn!(
+            "generate: strict decode failed ({}); coercing from raw JSON: {}",
+            e,
+            raw
+        );
+        GenerateRequest {
+            task: s(&raw, "task").or_else(|| s(&raw, "taskType")),
+            style: s(&raw, "style"),
+            prompt: s(&raw, "prompt"),
+            lyrics: s(&raw, "lyrics"),
+            duration: i(&raw, "duration").unwrap_or(180),
+            seed: i(&raw, "seed").unwrap_or(-1),
+            steps: u(&raw, "steps")
+                .or_else(|| u(&raw, "inferenceSteps"))
+                .unwrap_or(8),
+            guidance_scale: f(&raw, "guidance_scale")
+                .or_else(|| f(&raw, "guidanceScale"))
+                .or_else(|| f(&raw, "cfg_scale"))
+                .unwrap_or(1.0),
+            shift: f(&raw, "shift").unwrap_or(3.0),
+            method: s(&raw, "method").or_else(|| s(&raw, "inferMethod")),
+            use_cot: b(&raw, "use_cot")
+                .or_else(|| b(&raw, "use_cot_caption"))
+                .or_else(|| b(&raw, "useCotCaption"))
+                .unwrap_or(false),
+            audio_url: s(&raw, "audio_url").or_else(|| s(&raw, "audioUrl")),
+            batch_size: u(&raw, "batch_size")
+                .or_else(|| u(&raw, "batch"))
+                .or_else(|| u(&raw, "batchSize"))
+                .unwrap_or(1),
+        }
+    });
+
+    let duration: u32 = if body.duration <= 0 {
+        180
+    } else {
+        body.duration as u32
+    };
+    let task_type = body
+        .task
+        .clone()
+        .or_else(|| s(&raw, "task_type"))
+        .or_else(|| s(&raw, "taskType"))
+        .unwrap_or_else(|| "text2music".into());
+    let effective_task_type = if task_type == "cover" {
+        "cover-nofsq".to_string()
+    } else {
+        task_type.clone()
+    };
+
+    let source_audio_path_raw = s(&raw, "sourceAudioUrl")
+        .or_else(|| s(&raw, "source_audio_url"))
+        .or_else(|| body.audio_url.clone())
+        .unwrap_or_default();
+    let reference_audio_path_raw = s(&raw, "referenceAudioUrl")
+        .or_else(|| s(&raw, "reference_audio_url"))
+        .unwrap_or_default();
+
+    let wants_reference_audio = !reference_audio_path_raw.trim().is_empty();
+    let wants_cover = matches!(effective_task_type.as_str(), "cover" | "cover-nofsq");
+    if wants_reference_audio || wants_cover {
+        let tier = current_tier(&st).await;
+        tracing::info!(
+            "generate: gated path requested (reference_audio={} cover={}) tier={}",
+            wants_reference_audio,
+            wants_cover,
+            tier.as_str()
+        );
+        if !tier_is_pro(tier) {
+            return Err(upgrade_required_with_actual("gener8_pro", tier));
+        }
+    }
+
+    let source_audio_b64 = resolve_audio_request_b64("source", &source_audio_path_raw).await;
+    let mut ref_audio_b64 =
+        resolve_audio_request_b64("reference", &reference_audio_path_raw).await;
+    if ref_audio_b64.is_empty()
+        && effective_task_type == "cover-nofsq"
+        && !source_audio_b64.is_empty()
+    {
+        ref_audio_b64 = source_audio_b64.clone();
+    }
+
+    let audio_path_raw = if source_audio_path_raw.is_empty() {
+        reference_audio_path_raw.clone()
+    } else {
+        source_audio_path_raw.clone()
+    };
+    let audio_codes = s(&raw, "audio_codes")
+        .or_else(|| s(&raw, "audioCodes"))
+        .unwrap_or_default();
+    let needs_source_audio = matches!(
+        effective_task_type.as_str(),
+        "cover" | "cover-nofsq" | "repaint" | "extract" | "lego" | "complete"
+    );
+    if needs_source_audio && source_audio_b64.is_empty() && audio_codes.is_empty() {
+        tracing::warn!(
+            "generate: task_type={} requested source audio but none resolved from '{}'",
+            effective_task_type,
+            audio_path_raw
+        );
         return Err((
-            StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
-            Json(json!({ "error": data })),
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "missing_source_audio",
+                "message": "This generation mode requires source audio, but the source could not be resolved."
+            })),
         ));
     }
-    // Track pending title
-    if let (Some(job_id), Some(title)) = (
-        data.get("id").and_then(|v| v.as_str()),
-        body.get("title").and_then(|v| v.as_str()),
-    ) {
-        st.pending_titles
+
+    let synth_model_raw = s(&raw, "synth_model")
+        .or_else(|| s(&raw, "synthModel"))
+        .or_else(|| s(&raw, "model"))
+        .unwrap_or_default();
+    let synth_model = if synth_model_raw.is_empty() {
+        st.preferred_dit
             .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    } else {
+        synth_model_raw
+    };
+    let lm_model = s(&raw, "lm_model")
+        .or_else(|| s(&raw, "lmModel"))
+        .unwrap_or_default();
+    let caption = body.style.clone().or(body.prompt.clone()).unwrap_or_default();
+    let lyrics = body.lyrics.clone().unwrap_or_default();
+    let keyscale = s(&raw, "keyscale")
+        .or_else(|| s(&raw, "keyScale"))
+        .unwrap_or_default();
+    let timesignature = s(&raw, "timesignature")
+        .or_else(|| s(&raw, "timeSignature"))
+        .unwrap_or_default();
+    let vocal_language = s(&raw, "vocal_language")
+        .or_else(|| s(&raw, "vocalLanguage"))
+        .unwrap_or_default();
+    let lm_neg_prompt = s(&raw, "lm_negative_prompt")
+        .or_else(|| s(&raw, "lmNegativePrompt"))
+        .unwrap_or_default();
+    let track = s(&raw, "track")
+        .or_else(|| s(&raw, "trackName"))
+        .or_else(|| s(&raw, "track_name"))
+        .unwrap_or_default();
+    let bpm = u(&raw, "bpm").unwrap_or(0) as i64;
+    let lm_batch_size = u(&raw, "lm_batch_size")
+        .or_else(|| u(&raw, "lmBatchSize"))
+        .unwrap_or(1);
+    let lm_top_k = u(&raw, "lm_top_k")
+        .or_else(|| u(&raw, "lmTopK"))
+        .unwrap_or(0);
+    let lm_temperature = f(&raw, "lm_temperature")
+        .or_else(|| f(&raw, "lmTemperature"))
+        .unwrap_or(0.85);
+    let lm_cfg_scale = f(&raw, "lm_cfg_scale")
+        .or_else(|| f(&raw, "lmCfgScale"))
+        .unwrap_or(2.0);
+    let lm_top_p = f(&raw, "lm_top_p")
+        .or_else(|| f(&raw, "lmTopP"))
+        .unwrap_or(0.9);
+    let audio_cover_strength = f(&raw, "audio_cover_strength")
+        .or_else(|| f(&raw, "audioCoverStrength"))
+        .unwrap_or(1.0);
+    let cover_noise_strength = f(&raw, "cover_noise_strength")
+        .or_else(|| f(&raw, "coverNoiseStrength"))
+        .unwrap_or(0.0);
+    let repainting_start = f(&raw, "repainting_start")
+        .or_else(|| f(&raw, "repaintingStart"))
+        .unwrap_or(0.0);
+    let repainting_end = f(&raw, "repainting_end")
+        .or_else(|| f(&raw, "repaintingEnd"))
+        .unwrap_or(-1.0);
+    let repaint_strength = f(&raw, "repaint_strength")
+        .or_else(|| f(&raw, "repaintStrength"))
+        .unwrap_or(1.0);
+    let peak_clip = f(&raw, "peak_clip")
+        .or_else(|| f(&raw, "peakClip"))
+        .unwrap_or(1.0);
+
+    let ace_req = json!({
+        "synth_model": synth_model,
+        "lm_model": lm_model,
+        "caption": caption,
+        "lyrics": lyrics,
+        "keyscale": keyscale,
+        "timesignature": timesignature,
+        "vocal_language": vocal_language,
+        "audio_codes": audio_codes,
+        "audio": source_audio_b64,
+        "lm_negative_prompt": lm_neg_prompt,
+        "task_type": effective_task_type,
+        "track": track,
+        "infer_method": body.method.clone().unwrap_or_else(|| "ode".into()),
+        "bpm": bpm,
+        "duration": duration,
+        "seed": body.seed,
+        "inference_steps": body.steps,
+        "guidance_scale": body.guidance_scale,
+        "shift": body.shift,
+        "synth_batch_size": body.batch_size,
+        "lm_batch_size": lm_batch_size,
+        "lm_top_k": lm_top_k,
+        "lm_temperature": lm_temperature,
+        "lm_cfg_scale": lm_cfg_scale,
+        "lm_top_p": lm_top_p,
+        "audio_cover_strength": audio_cover_strength,
+        "cover_noise_strength": cover_noise_strength,
+        "repainting_start": repainting_start,
+        "repainting_end": repainting_end,
+        "repaint_strength": repaint_strength,
+        "peak_clip": peak_clip,
+        "use_cot_caption": body.use_cot,
+    });
+
+    let audio_format = s(&raw, "audioFormat")
+        .or_else(|| s(&raw, "audio_format"))
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    let synth_path = if matches!(audio_format.as_str(), "flac" | "wav" | "wave" | "lossless") {
+        "/synth?format=wav24"
+    } else {
+        "/synth"
+    };
+
+    let submit = if !source_audio_b64.is_empty() || !ref_audio_b64.is_empty() {
+        let mut req_json = ace_req.clone();
+        if let Some(obj) = req_json.as_object_mut() {
+            obj.remove("audio");
+        }
+        let mut form = Form::new().part(
+            "request",
+            Part::text(req_json.to_string())
+                .mime_str("application/json")
+                .unwrap(),
+        );
+        let audio_bytes = base64_decode(&source_audio_b64);
+        let ref_audio_bytes = base64_decode(&ref_audio_b64);
+        if !audio_bytes.is_empty() {
+            form = form.part(
+                "audio",
+                Part::bytes(audio_bytes)
+                    .file_name("source.mp3")
+                    .mime_str("audio/mpeg")
+                    .unwrap(),
+            );
+        }
+        if !ref_audio_bytes.is_empty() {
+            form = form.part(
+                "ref_audio",
+                Part::bytes(ref_audio_bytes)
+                    .file_name("reference.mp3")
+                    .mime_str("audio/mpeg")
+                    .unwrap(),
+            );
+        }
+        st.client
+            .post(format!("{}{}", st.ace_url, synth_path))
+            .multipart(form)
+            .send()
             .await
-            .insert(job_id.to_string(), title.to_string());
+    } else {
+        st.client
+            .post(format!("{}{}", st.ace_url, synth_path))
+            .json(&ace_req)
+            .send()
+            .await
+    };
+
+    match submit {
+        Ok(r) if r.status().is_success() => {
+            let resp: Value = r.json().await.unwrap_or(json!({}));
+            let id_str: Option<String> = resp
+                .get("id")
+                .and_then(|v| v.as_str().map(str::to_string))
+                .or_else(|| resp.get("id").and_then(|v| v.as_u64()).map(|n| n.to_string()));
+            if let Some(id) = id_str {
+                if let Some(title) = s(&raw, "title") {
+                    let trimmed = title.trim();
+                    if !trimmed.is_empty() {
+                        st.pending_titles
+                            .lock()
+                            .await
+                            .insert(id.clone(), trimmed.to_string());
+                    }
+                }
+                if task_type == "extract" {
+                    let source_song_title = s(&raw, "sourceSongTitle")
+                        .or_else(|| s(&raw, "source_song_title"))
+                        .unwrap_or_else(|| "Unknown".into());
+                    let track_name = s(&raw, "trackName")
+                        .or_else(|| s(&raw, "track_name"))
+                        .or_else(|| s(&raw, "track"))
+                        .unwrap_or_else(|| "stem".into());
+                    st.pending_stem_meta.lock().await.insert(
+                        id.clone(),
+                        StemJobMeta {
+                            source_song_title,
+                            track_name,
+                        },
+                    );
+                }
+                return Ok(Json(json!({
+                    "id": id,
+                    "jobId": format!("gen_{}", id),
+                    "status": "running",
+                    "queuePosition": resp.get("queue_position").cloned(),
+                    "etaSeconds": resp.get("eta_seconds").cloned(),
+                })));
+            }
+
+            if let Some(b64) = resp.get("audio_base64").and_then(|v| v.as_str()) {
+                return Ok(Json(json!({
+                    "jobId": format!("gen_{}", now_ms()),
+                    "status": "succeeded",
+                    "result": {
+                        "audioBase64": b64,
+                        "audioContentType": resp.get("content_type").and_then(|v| v.as_str()).unwrap_or("audio/mpeg"),
+                        "duration": duration,
+                        "seed": body.seed,
+                    }
+                })));
+            }
+
+            Err((
+                StatusCode::BAD_GATEWAY,
+                Json(json!({
+                    "error": "bad_engine_response",
+                    "message": "The engine returned an unexpected generation response."
+                })),
+            ))
+        }
+        Ok(r) => {
+            let status = StatusCode::from_u16(r.status().as_u16())
+                .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+            let body_txt = r.text().await.unwrap_or_default();
+            Err((
+                status,
+                Json(json!({ "error": "engine_rejected", "message": body_txt })),
+            ))
+        }
+        Err(e) => Err((
+            StatusCode::BAD_GATEWAY,
+            Json(json!({ "error": "engine_unreachable", "message": e.to_string() })),
+        )),
     }
-    Ok(Json(data))
 }
 
 async fn generate_status(
     State(st): State<Arc<ShimState>>,
     AxPath(job_id): AxPath<String>,
-) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    let resp = st
-        .client
-        .get(format!("{}/job/{}", st.ace_url, job_id))
-        .send()
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::BAD_GATEWAY,
-                Json(json!({ "error": e.to_string() })),
-            )
-        })?;
-    let data: Value = resp.json().await.unwrap_or(json!({}));
-    Ok(Json(data))
+) -> Json<Value> {
+    let id = job_id.trim_start_matches("gen_").to_string();
+    if id.is_empty() {
+        return Json(json!({
+            "jobId": job_id,
+            "status": "failed",
+            "error": "invalid job id"
+        }));
+    }
+
+    let mut poll_result = None;
+    for attempt in 0..3u32 {
+        let poll = st
+            .client
+            .get(format!("{}/job?id={}", st.ace_url, id))
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await;
+        match poll {
+            Ok(r) if r.status().is_success() => {
+                poll_result = Some(r.json::<Value>().await.unwrap_or(json!({})));
+                break;
+            }
+            Ok(r) => {
+                tracing::warn!(
+                    "ace-server /job?id={} returned {} (attempt {})",
+                    id,
+                    r.status(),
+                    attempt
+                );
+                if attempt < 2 {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+                return Json(json!({
+                    "jobId": job_id,
+                    "status": "failed",
+                    "error": format!("engine returned {}", r.status())
+                }));
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "ace-server /job?id={} unreachable (attempt {}): {}",
+                    id,
+                    attempt,
+                    e
+                );
+                if attempt < 2 {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+                return Json(json!({
+                    "jobId": job_id,
+                    "status": "loading",
+                    "message": "Engine loading model into GPU, please wait..."
+                }));
+            }
+        }
+    }
+
+    let status = poll_result.unwrap_or_else(|| json!({ "status": "running" }));
+    let state_str = status.get("status").and_then(|s| s.as_str()).unwrap_or("");
+    match state_str {
+        "done" | "complete" | "completed" | "succeeded" => {
+            let result_resp = st
+                .client
+                .get(format!("{}/job?id={}&result=1", st.ace_url, id))
+                .send()
+                .await;
+            let (bytes, content_type) = match result_resp {
+                Ok(r) if r.status().is_success() => {
+                    let ct = r
+                        .headers()
+                        .get("content-type")
+                        .and_then(|v| v.to_str().ok())
+                        .unwrap_or("audio/mpeg")
+                        .to_string();
+                    let b = r.bytes().await.unwrap_or_default().to_vec();
+                    (b, ct)
+                }
+                _ => (Vec::new(), "audio/mpeg".to_string()),
+            };
+
+            let ext = match content_type.as_str() {
+                "audio/wav" | "audio/wave" | "audio/x-wav" => "wav",
+                "audio/flac" | "audio/x-flac" => "flac",
+                "audio/ogg" | "application/ogg" => "ogg",
+                "audio/mp4" | "audio/x-m4a" => "m4a",
+                _ => "mp3",
+            };
+            let title = st.pending_titles.lock().await.remove(&id);
+            let stem_meta = st.pending_stem_meta.lock().await.remove(&id);
+            let audio_key = if let Some(ref sm) = stem_meta {
+                format!(
+                    "stems/{}/{}.{}",
+                    sanitise_title(&sm.source_song_title),
+                    sanitise_title(&sm.track_name),
+                    ext
+                )
+            } else {
+                format!("gener8/{}.{}", build_track_filename(title.as_deref(), &id), ext)
+            };
+
+            let mut audio_urls: Vec<String> = Vec::new();
+            let mut persisted_key: Option<String> = None;
+            let mut file_path: Option<String> = None;
+            if !bytes.is_empty() {
+                match storage::write_audio(&audio_key, &bytes).await {
+                    Ok(path) => {
+                        tracing::info!("wrote audio to {}", path.display());
+                        persisted_key = Some(audio_key.clone());
+                        file_path = Some(path.display().to_string());
+                        audio_urls.push(format!("/audio/{}", audio_key));
+                    }
+                    Err(e) => tracing::error!("failed to persist audio {}: {}", audio_key, e),
+                }
+            }
+
+            let ace_result = status.get("result");
+            let field = |key: &str| -> Option<Value> {
+                ace_result
+                    .and_then(|r| r.get(key))
+                    .cloned()
+                    .or_else(|| status.get(key).cloned())
+            };
+            let probed_duration =
+                probe_audio_duration_seconds(&bytes, &content_type).map(Value::from);
+            let duration_value = probed_duration.or_else(|| field("duration"));
+            let audio_b64 = if bytes.is_empty() {
+                String::new()
+            } else {
+                base64_encode(&bytes)
+            };
+
+            Json(json!({
+                "jobId": job_id,
+                "status": "succeeded",
+                "audio_url": audio_urls.first().cloned(),
+                "file_path": file_path,
+                "title": title,
+                "duration": duration_value,
+                "result": {
+                    "audioUrls": audio_urls,
+                    "audioKey": persisted_key,
+                    "filePath": file_path,
+                    "audioBase64": audio_b64,
+                    "audioContentType": content_type,
+                    "duration": duration_value,
+                    "bpm": field("bpm"),
+                    "keyScale": field("key_scale").or_else(|| field("keyScale")),
+                    "timeSignature": field("time_signature").or_else(|| field("timeSignature")),
+                    "lrcData": field("lrc_data").or_else(|| field("lrcData")),
+                    "warnings": field("warnings").unwrap_or(json!([]))
+                }
+            }))
+        }
+        "error" | "failed" => Json(json!({
+            "jobId": job_id,
+            "status": "failed",
+            "error": status.get("error").and_then(|e| e.as_str()).unwrap_or("generation failed")
+        })),
+        "queued" | "pending" => Json(json!({
+            "jobId": job_id,
+            "status": "queued",
+            "queuePosition": status.get("queue_position").cloned(),
+            "etaSeconds": status.get("eta_seconds").cloned()
+        })),
+        _ => Json(json!({
+            "jobId": job_id,
+            "status": "running",
+            "progress": status.get("progress").cloned()
+        })),
+    }
 }
 
 async fn generate_history() -> Json<Value> {
-    Json(json!({ "history": [] }))
+    Json(json!({ "jobs": [] }))
 }
 
 async fn upload_audio(
@@ -566,6 +1313,10 @@ async fn upload_audio(
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let tier = current_tier(&st).await;
+    if !tier_is_pro(tier) {
+        return Err(upgrade_required_with_actual("gener8_pro", tier));
+    }
     let settings = settings::load_settings().await;
     let refs_dir = settings.references_dir();
     tokio::fs::create_dir_all(&refs_dir).await.map_err(|e| {
@@ -833,13 +1584,18 @@ async fn launcher_reveal_in_folder(Json(body): Json<Value>) -> Json<Value> {
 
 // ─── Tier-gated stubs ─────────────────────────────────────────────────
 
-async fn tier_gated_studio() -> (StatusCode, Json<Value>) {
+async fn tier_gated_studio(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return upgrade_required_with_actual("creator_studio", tier);
+    }
     (
         StatusCode::NOT_IMPLEMENTED,
         Json(json!({
-            "error":   "Creator Studio tier required",
-            "code":    501,
-            "upgrade": true
+            "error": "not_implemented",
+            "required_tier": "creator_studio",
+            "message": "Creator Studio endpoint is gated and reserved for the local engine implementation.",
+            "code": 501
         })),
     )
 }
@@ -850,28 +1606,124 @@ async fn director_analyze(
     State(st): State<Arc<ShimState>>,
     Json(body): Json<Value>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    // TODO: wire to crate::ai_director::analyze_audio
-    Ok(Json(json!({ "status": "not_implemented" })))
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return Err(upgrade_required_with_actual("creator_studio", tier));
+    }
+    let audio_path = body
+        .get("audio_path")
+        .or_else(|| body.get("audioPath"))
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "audio_path_required" })),
+            )
+        })?;
+    crate::ai_director::analyze_audio(&st.beats, audio_path, tier)
+        .await
+        .map(|beat_map| Json(json!({ "beatMap": beat_map })))
+        .map_err(|e| (StatusCode::BAD_REQUEST, Json(json!({ "error": e }))))
 }
 
 async fn director_plan(
     State(st): State<Arc<ShimState>>,
     Json(body): Json<Value>,
 ) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
-    // TODO: wire to crate::ai_director::shot_planner::plan_shots
-    Ok(Json(json!({ "status": "not_implemented" })))
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return Err(upgrade_required_with_actual("creator_studio", tier));
+    }
+    let params: crate::ai_director::PlanShotsParams = serde_json::from_value(body).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "bad_director_plan_request", "message": e.to_string() })),
+        )
+    })?;
+    let target_duration_ms = params
+        .target_duration_ms
+        .unwrap_or(params.beat_map.duration_ms);
+    let shots = build_fallback_shots(&params.beat_map, &params.brief, target_duration_ms);
+    let plan = crate::ai_director::ShotPlan {
+        shots,
+        style_preset: params.style_preset,
+        brief: params.brief,
+        total_duration_ms: target_duration_ms,
+    };
+    let render_sequence = crate::ai_director::render_sequence(&plan);
+    Ok(Json(json!({ "plan": plan, "renderSequence": render_sequence })))
 }
 
-async fn director_lm_load(State(_st): State<Arc<ShimState>>) -> Json<Value> {
-    Json(json!({ "status": "not_implemented" }))
+async fn director_lm_load(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return upgrade_required_with_actual("creator_studio", tier);
+    }
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(json!({ "status": "not_implemented", "required_tier": "creator_studio" })),
+    )
 }
 
-async fn director_lm_unload(State(_st): State<Arc<ShimState>>) -> Json<Value> {
-    Json(json!({ "status": "not_implemented" }))
+async fn director_lm_unload(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return upgrade_required_with_actual("creator_studio", tier);
+    }
+    (
+        StatusCode::NOT_IMPLEMENTED,
+        Json(json!({ "status": "not_implemented", "required_tier": "creator_studio" })),
+    )
 }
 
-async fn director_lm_status(State(_st): State<Arc<ShimState>>) -> Json<Value> {
-    Json(json!({ "loaded": false, "model": null }))
+async fn director_lm_status(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
+    let tier = current_tier(&st).await;
+    if !tier_is_creator(tier) {
+        return upgrade_required_with_actual("creator_studio", tier);
+    }
+    (StatusCode::OK, Json(json!({ "loaded": false, "model": null })))
+}
+
+fn build_fallback_shots(
+    beat_map: &crate::ai_director::BeatMap,
+    brief: &str,
+    target_duration_ms: u64,
+) -> Vec<crate::ai_director::Shot> {
+    let mut shots = Vec::new();
+    let mut start = 0u64;
+    let mut idx = 0usize;
+    while start < target_duration_ms {
+        let section = beat_map
+            .sections
+            .iter()
+            .find(|s| start >= s.start_ms && start < s.end_ms)
+            .map(|s| s.label.as_str())
+            .unwrap_or("performance");
+        let end = (start + 4_000).min(target_duration_ms);
+        let shot_id = format!("shot-{}", idx + 1);
+        let visual_prompt = format!("{}; {} section; beat-synced music video shot", brief, section);
+        let init_source = if idx == 0 || beat_map.sections.iter().any(|s| s.start_ms == start) {
+            crate::ai_director::InitSource::KeyframeGenerated {
+                keyframe_prompt: visual_prompt.clone(),
+            }
+        } else {
+            crate::ai_director::InitSource::PreviousShotEndFrame {
+                previous_shot_id: format!("shot-{}", idx),
+            }
+        };
+        shots.push(crate::ai_director::Shot {
+            shot_id,
+            start_ms: start,
+            end_ms: end,
+            visual_prompt,
+            shot_type: if idx % 3 == 0 { "wide" } else { "medium" }.to_string(),
+            reference_tags: vec![section.to_string()],
+            init_source,
+        });
+        start = end;
+        idx += 1;
+    }
+    shots
 }
 
 // ─── Video ────────────────────────────────────────────────────────────

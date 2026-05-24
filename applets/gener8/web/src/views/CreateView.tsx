@@ -8,12 +8,19 @@
  *   - Generate button + progress display
  *   - Recent generations gallery
  *
- * Phase 4: fully wired to Gener8 shim on localhost:3001.
+ * Wired to the Everywear shell-owned Gener8 IPC bridge.
  */
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Sparkles, Upload, Settings2, ChevronDown, AlertCircle } from 'lucide-react';
+import { Sparkles, Upload, Settings2, ChevronDown, AlertCircle, Music2, Wand2 } from 'lucide-react';
 import { useSongStore } from '../context/SongStoreContext';
-import { vaultRegisterAudio } from '@everywear/transport';
+import { useAuth } from '../context/AuthContext';
+import {
+  fileToBase64,
+  gener8Generate,
+  gener8GenerationStatus,
+  gener8UploadAudio,
+  vaultRegisterAudio,
+} from '@everywear/transport';
 import { getLogger } from '@everywear/shared';
 
 const log = getLogger('gener8');
@@ -32,18 +39,29 @@ interface GenerationParams {
 
 interface GenerateResponse {
   id: string;
+  jobId?: string;
   [key: string]: unknown;
 }
 
 interface JobStatus {
-  status: 'queued' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'queued' | 'running' | 'loading' | 'completed' | 'succeeded' | 'failed';
   progress?: number;
   audio_url?: string;
+  file_path?: string;
   error?: string;
   title?: string;
   duration?: number;
+  result?: {
+    audioUrls?: string[];
+    audioKey?: string;
+    filePath?: string;
+    duration?: number;
+    bpm?: number;
+  };
   [key: string]: unknown;
 }
+
+type AudioMode = 'song' | 'reference' | 'cover';
 
 const DEFAULT_PARAMS: GenerationParams = {
   prompt: '',
@@ -55,12 +73,6 @@ const DEFAULT_PARAMS: GenerationParams = {
   model: 'ace-step-v1',
 };
 
-const BACKEND_BASE = 'http://localhost:3001';
-
-function apiUrl(path: string): string {
-  return `${BACKEND_BASE}${path}`;
-}
-
 // ── Component ────────────────────────────────────────────────────
 
 export default function CreateView() {
@@ -70,14 +82,24 @@ export default function CreateView() {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [audioMode, setAudioMode] = useState<AudioMode>('song');
+  const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
+  const [sourceAudioUrl, setSourceAudioUrl] = useState('');
+  const [referenceLabel, setReferenceLabel] = useState('');
+  const [sourceLabel, setSourceLabel] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [vaultSaveState, setVaultSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [vaultSaveError, setVaultSaveError] = useState<string | null>(null);
   const [autoSaveToVault, setAutoSaveToVault] = useState<boolean>(() => {
-    try { return localStorage.getItem('gener8:auto_save_vault') === '1'; } catch { return false; }
+    try { return localStorage.getItem('gener8:auto_save_vault') !== '0'; } catch { return true; }
   });
-  const [lastCompletedJob, setLastCompletedJob] = useState<{ id: string; title: string; duration?: number } | null>(null);
+  const [lastCompletedJob, setLastCompletedJob] = useState<{ id: string; title: string; duration?: number; filePath?: string } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { addSong, refetch } = useSongStore();
+  const { hasTier } = useAuth();
+  const canUseReferenceCover = hasTier('gener8_pro');
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -99,12 +121,10 @@ export default function CreateView() {
   const pollJobStatus = useCallback((jobId: string) => {
     pollRef.current = setInterval(async () => {
       try {
-        const res = await fetch(apiUrl(`/api/generate/status/${jobId}`));
-        if (!res.ok) return;
-        const data: JobStatus = await res.json();
+        const data = await gener8GenerationStatus(jobId) as JobStatus;
 
-        if (data.progress !== undefined) {
-          setProgress(Math.round(data.progress * 100));
+        if (typeof data.progress === 'number') {
+          setProgress(Math.round(data.progress <= 1 ? data.progress * 100 : data.progress));
         }
 
         switch (data.status) {
@@ -112,45 +132,43 @@ export default function CreateView() {
             setStatusText('Queued... waiting for engine');
             break;
           case 'running':
-            setStatusText(`Generating${data.progress ? ` (${Math.round(data.progress * 100)}%)` : '...'}`);
+            setStatusText(`Generating${typeof data.progress === 'number' ? ` (${Math.round(data.progress <= 1 ? data.progress * 100 : data.progress)}%)` : '...'}`);
             break;
+          case 'loading':
+            setStatusText(data.message as string || 'Engine loading model into GPU...');
+            break;
+          case 'succeeded':
           case 'completed':
             stopPolling();
             setStatusText('Complete!');
             setProgress(100);
+            const filePath = data.file_path || data.result?.filePath;
+            const duration = data.duration ?? data.result?.duration ?? params.duration;
             log.endTrace('generation', 'Music generated', {
               job_id: jobId,
               title: data.title,
-              duration_seconds: data.duration,
+              duration_seconds: duration,
             });
             // Refetch song library to pick up the new track
             await refetch();
             setLastCompletedJob({
               id: jobId,
               title: data.title || params.prompt.slice(0, 60),
-              duration: data.duration,
+              duration,
+              filePath,
             });
             setVaultSaveState('idle');
             setVaultSaveError(null);
             // Auto-save to vault if enabled
-            if (autoSaveToVault && data.audio_url) {
-              /**
-               * CODEX_NEEDED: Gener8 shim filesystem path for vault registration.
-               * The shim returns audio_url as a relative API path (e.g. /api/audio/{key}),
-               * NOT a filesystem path. vaultRegisterAudio needs a filePath on disk.
-               * Options:
-               *   (A) Add a file_path field to the shim's job status response
-               *   (B) Add a Tauri command that resolves audio_url → filesystem path
-               *   (C) Have the shim save to Everywear Vault dir and return the path
-               * Until resolved, we pass the API-relative URL as a placeholder.
-               */
+            if (autoSaveToVault && filePath) {
               try {
                 setVaultSaveState('saving');
                 await vaultRegisterAudio({
                   title: data.title || `Song ${new Date().toISOString().slice(0, 10)}`,
-                  filePath: data.audio_url ?? '', // CODEX_NEEDED: resolve to actual filesystem path
-                  durationSeconds: data.duration ?? params.duration,
-                  tags: ['gener8', 'music'],
+                  filePath,
+                  durationSeconds: duration,
+                  bpm: params.bpm,
+                  tags: ['gener8', 'music', audioMode],
                 });
                 setVaultSaveState('saved');
               } catch {
@@ -180,10 +198,51 @@ export default function CreateView() {
         // Network blip; keep polling
       }
     }, 1500);
-  }, [stopPolling, refetch]);
+  }, [stopPolling, refetch, autoSaveToVault, params.duration, params.bpm, params.prompt, audioMode]);
+
+  const handleAudioFile = async (file: File) => {
+    if (!canUseReferenceCover || audioMode === 'song') return;
+    if (file.size > 15 * 1024 * 1024) {
+      setUploadError('Audio uploads are limited to 15 MB.');
+      return;
+    }
+    setIsUploading(true);
+    setUploadError(null);
+    try {
+      const data = await gener8UploadAudio({
+        fileName: file.name,
+        contentType: file.type || 'application/octet-stream',
+        dataBase64: await fileToBase64(file),
+      });
+      if (audioMode === 'reference') {
+        setReferenceAudioUrl(data.audioUrl || data.path);
+        setReferenceLabel(file.name);
+      } else {
+        setSourceAudioUrl(data.audioUrl || data.path);
+        setSourceLabel(file.name);
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleGenerate = async () => {
     if (!params.prompt.trim() || isGenerating) return;
+    if (audioMode !== 'song' && !canUseReferenceCover) {
+      setError('Reference and Cover require Gener8 Pro or Creator Studio.');
+      return;
+    }
+    if (audioMode === 'reference' && !referenceAudioUrl) {
+      setError('Upload reference audio before generating.');
+      return;
+    }
+    if (audioMode === 'cover' && !sourceAudioUrl) {
+      setError('Upload source audio before creating a cover.');
+      return;
+    }
     setIsGenerating(true);
     setError(null);
     setProgress(0);
@@ -198,36 +257,33 @@ export default function CreateView() {
     });
 
     try {
-      const res = await fetch(apiUrl('/api/generate'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const data = await gener8Generate({
           prompt: params.prompt,
+          style: params.prompt,
+          lyrics: '',
           duration: params.duration,
           bpm: params.bpm,
-          num_inference_steps: params.steps,
-          guidance_scale: params.guidanceScale,
+          inferenceSteps: params.steps,
+          guidanceScale: params.guidanceScale,
           seed: params.seed === -1 ? undefined : params.seed,
+          synth_model: params.model,
           model: params.model,
+          taskType: audioMode === 'cover' ? 'cover' : 'text2music',
+          referenceAudioUrl: audioMode === 'reference' ? referenceAudioUrl : undefined,
+          sourceAudioUrl: audioMode === 'cover' ? sourceAudioUrl : undefined,
+          audioCoverStrength: audioMode === 'cover' ? 1.0 : undefined,
+          inferMethod: 'ode',
+          audioFormat: 'mp3',
           title: params.prompt.slice(0, 60),
-        }),
       });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(
-          typeof errData.error === 'string' ? errData.error : `Engine returned ${res.status}`,
-        );
-      }
-
-      const data: GenerateResponse = await res.json();
-      if (!data.id) {
+      const jobId = data.jobId || data.id;
+      if (!jobId) {
         throw new Error('No job ID returned from engine');
       }
 
-      log.traceEvent('generation', 'Shim accepted request', { job_id: data.id });
+      log.traceEvent('generation', 'Shim accepted request', { job_id: jobId });
       setStatusText('Queued... waiting for engine');
-      pollJobStatus(data.id);
+      pollJobStatus(String(jobId));
     } catch (e: any) {
       const errMsg = e.message || 'Failed to start generation';
       setError(errMsg);
@@ -356,13 +412,85 @@ export default function CreateView() {
         </div>
       )}
 
-      {/* Audio upload (reference track) */}
-      <div className="flex items-center gap-3">
-        <button className="ew-btn ew-btn--ghost ew-btn--sm">
-          <Upload size={14} />
-          Reference Audio
-        </button>
-        <span className="ew-small">Optional. Upload a reference track for style guidance.</span>
+      {/* Audio mode rail */}
+      <div className="flex flex-col gap-3 p-4 bg-s3-card border border-s3-border rounded-lg">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span className="text-xs font-bold uppercase tracking-wide text-s3-text-muted">Audio</span>
+          <div className="flex items-center gap-1 p-1 rounded-md bg-black/20 border border-s3-border">
+            <button
+              type="button"
+              className={`ew-btn ew-btn--sm ${audioMode === 'song' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
+              onClick={() => {
+                setAudioMode('song');
+                setReferenceAudioUrl('');
+                setSourceAudioUrl('');
+                setError(null);
+              }}
+            >
+              <Music2 size={14} />
+              Song
+            </button>
+            <button
+              type="button"
+              className={`ew-btn ew-btn--sm ${audioMode === 'reference' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
+              onClick={() => {
+                if (!canUseReferenceCover) {
+                  setError('Reference generation requires Gener8 Pro or Creator Studio.');
+                  return;
+                }
+                setAudioMode('reference');
+                setSourceAudioUrl('');
+                setError(null);
+              }}
+            >
+              <Wand2 size={14} />
+              Reference
+            </button>
+            <button
+              type="button"
+              className={`ew-btn ew-btn--sm ${audioMode === 'cover' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
+              onClick={() => {
+                if (!canUseReferenceCover) {
+                  setError('Cover generation requires Gener8 Pro or Creator Studio.');
+                  return;
+                }
+                setAudioMode('cover');
+                setReferenceAudioUrl('');
+                setError(null);
+              }}
+            >
+              Cover
+            </button>
+          </div>
+        </div>
+        {audioMode !== 'song' && (
+          <div className="flex items-center gap-3 flex-wrap">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.currentTarget.files?.[0];
+                if (file) void handleAudioFile(file);
+              }}
+            />
+            <button
+              className="ew-btn ew-btn--ghost ew-btn--sm"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload size={14} />
+              {isUploading ? 'Uploading...' : audioMode === 'reference' ? 'Upload Reference' : 'Upload Source'}
+            </button>
+            <span className="ew-small">
+              {audioMode === 'reference'
+                ? referenceLabel || 'Style inspiration audio. Pro execution is enforced by the applet runtime.'
+                : sourceLabel || 'Source audio for Cover/Remix. Pro execution is enforced by the applet runtime.'}
+            </span>
+            {uploadError && <span className="text-[10px] text-[var(--ew-danger)]">{uploadError}</span>}
+          </div>
+        )}
       </div>
 
       {/* Generate button */}
@@ -416,15 +544,15 @@ export default function CreateView() {
                   setVaultSaveState('saving');
                   setVaultSaveError(null);
                   try {
-                    /**
-                     * CODEX_NEEDED: Same filesystem path gap as auto-save above.
-                     * Need shim to expose file_path in job status or a resolve command.
-                     */
+                    if (!lastCompletedJob.filePath) {
+                      throw new Error('Completed job has no filesystem path yet.');
+                    }
                     await vaultRegisterAudio({
                       title: lastCompletedJob.title || `Song ${new Date().toISOString().slice(0, 10)}`,
-                      filePath: '', // CODEX_NEEDED: resolve to actual filesystem path
+                      filePath: lastCompletedJob.filePath,
                       durationSeconds: lastCompletedJob.duration ?? 0,
-                      tags: ['gener8', 'music'],
+                      bpm: params.bpm,
+                      tags: ['gener8', 'music', audioMode],
                     });
                     setVaultSaveState('saved');
                     setTimeout(() => setVaultSaveState('idle'), 3000);

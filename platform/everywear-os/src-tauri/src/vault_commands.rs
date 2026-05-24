@@ -135,7 +135,7 @@ pub async fn auto_register_job_result(
 }
 
 #[derive(Debug, Clone)]
-struct VaultDirs {
+pub(crate) struct VaultDirs {
     images: PathBuf,
     audio: PathBuf,
     audio_stems: PathBuf,
@@ -144,7 +144,7 @@ struct VaultDirs {
 }
 
 impl VaultDirs {
-    fn default_paths() -> Result<Self, String> {
+    pub(crate) fn default_paths() -> Result<Self, String> {
         everywear_paths::ensure_vault_dirs().map_err(|e| e.to_string())?;
         Ok(Self {
             images: everywear_paths::vault_images(),
@@ -457,7 +457,7 @@ fn register_image_with_dirs(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn register_audio_with_dirs(
+pub(crate) fn register_audio_with_dirs(
     vault: &VaultIndex,
     dirs: &VaultDirs,
     title: String,

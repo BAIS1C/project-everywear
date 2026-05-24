@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@everywear/ewds": "*",
+    "@everywear/shared": "*",
+    "@everywear/transport": "*",
     "@everywear/video-modal": "*",
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",

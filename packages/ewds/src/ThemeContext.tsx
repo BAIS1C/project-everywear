@@ -154,6 +154,8 @@ function applySkin(skin: Skin) {
 function applyMode(mode: Mode) {
   if (typeof document === 'undefined') return;
   document.body.dataset.mode = mode;
+  document.documentElement.classList.toggle('dark', mode === 'dark');
+  document.body.classList.toggle('dark', mode === 'dark');
 }
 
 function applyAccent(accent: Accent) {

@@ -11,8 +11,20 @@
 use anyhow::{Context, Result};
 use nvml_wrapper::Nvml;
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
+use std::process::Command;
 use tracing::{info, warn};
+
+fn command_no_window(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(windows)]
+    {
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    cmd
+}
 
 // ---------------------------------------------------------------------------
 // Compute Backend Types (from Kasai-Local compute_backend.rs)
@@ -317,7 +329,8 @@ fn try_cuda_nvml(app_runtime_dir: &std::path::Path) -> Result<ComputeBackend> {
 }
 
 fn try_cuda_nvidia_smi(app_runtime_dir: &std::path::Path) -> Result<ComputeBackend> {
-    let output = std::process::Command::new("nvidia-smi")
+    let mut cmd = command_no_window("nvidia-smi");
+    let output = cmd
         .args([
             "--query-gpu=name,memory.total,driver_version,compute_cap",
             "--format=csv,noheader,nounits",
@@ -429,10 +442,8 @@ fn find_cublas(app_runtime_dir: &std::path::Path) -> (bool, Option<PathBuf>) {
 
 /// Detect system-installed CUDA toolkit version via nvcc.
 fn detect_cuda_toolkit_version() -> Option<String> {
-    let output = std::process::Command::new("nvcc")
-        .arg("--version")
-        .output()
-        .ok()?;
+    let mut cmd = command_no_window("nvcc");
+    let output = cmd.arg("--version").output().ok()?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     stdout
@@ -451,7 +462,8 @@ fn try_vulkan() -> Option<ComputeBackend> {
 }
 
 fn try_vulkan_cli() -> Result<ComputeBackend> {
-    let output = std::process::Command::new("vulkaninfo")
+    let mut cmd = command_no_window("vulkaninfo");
+    let output = cmd
         .arg("--summary")
         .output()
         .context("vulkaninfo not found")?;
@@ -546,7 +558,8 @@ fn system_ram_mb() -> u64 {
 
     #[cfg(target_os = "windows")]
     {
-        if let Ok(output) = std::process::Command::new("wmic")
+        let mut cmd = command_no_window("wmic");
+        if let Ok(output) = cmd
             .args([
                 "computersystem",
                 "get",

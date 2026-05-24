@@ -17,7 +17,76 @@ version = "0.1.0"
 description = "AI music generation, stem mixing, and production powered by ACE-Step"
 icon = "gener8"
 transport = "ipc"
-frontend_port = 3001
+# Frontend mounts inside Everywear through AppletViewRouter; no public
+# localhost frontend/shim port is part of the UI contract.
+
+[ui]
+entry = "web/src/ShellApp.tsx"
+shell_router = "platform/everywear-os/src/components/AppletViewRouter.tsx"
+surfaces = ["cut", "square"]
+ewds_css = [
+    "@everywear/ewds/css/global.css",
+    "@everywear/ewds/css/window-frame.css",
+]
+applet_css = ["web/src/styles/app.css"]
+shell_owned = [
+    "desktop",
+    "window_chrome",
+    "theme_context",
+    "auth",
+    "vault",
+    "registry",
+    "gpu_vram_scheduler",
+]
+applet_owned = [
+    "music_creation_workflow",
+    "generation_ui",
+    "daw",
+    "library_surface",
+    "vid_studio_surface",
+    "ai_director_surface",
+    "applet_settings",
+]
+
+[[assets]]
+id = "gener8-shell-app"
+kind = "ui"
+path = "web/src/ShellApp.tsx"
+
+[[assets]]
+id = "gener8-applet-css"
+kind = "style"
+path = "web/src/styles/app.css"
+
+[permissions]
+vault_read = ["gener8/*"]
+vault_write = ["gener8/*"]
+ipc = [
+    "get_auth_context",
+    "gener8_engine_models",
+    "gener8_upload_audio",
+    "gener8_generate",
+    "gener8_generation_status",
+    "vault_search",
+    "vault_file_url",
+    "vault_register_file",
+]
+models = ["model.use"]
+
+[entitlements.reference_generation]
+min_tier = "gener8_pro"
+enforced_by = ["rust", "cloud"]
+features = ["reference_generation"]
+
+[entitlements.cover_remix]
+min_tier = "gener8_pro"
+enforced_by = ["rust", "cloud"]
+features = ["cover", "remix"]
+
+[entitlements.creator_studio]
+min_tier = "creator_studio"
+enforced_by = ["rust", "cloud"]
+features = ["daw_creator_studio", "ai_director", "local_video", "stems", "style_training"]
 
 [engine]
 type = "audio"

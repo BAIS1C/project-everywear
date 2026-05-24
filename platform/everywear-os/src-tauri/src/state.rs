@@ -1,6 +1,6 @@
 use crate::{
-    auth, budget, engine_registry, gpu, launcher, profile, registry, video_encoder, vram_scheduler,
-    wallet,
+    auth, budget, engine_registry, gener8_engine, gpu, launcher, profile, registry, video_encoder,
+    vram_scheduler, wallet,
 };
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
@@ -24,5 +24,6 @@ pub struct AppState {
     pub licence_tier: Arc<Mutex<model_manager::LicenceTier>>,
     pub user_session: Arc<Mutex<Option<auth::UserClaim>>>,
     pub video_encoder: Arc<Mutex<video_encoder::VideoEncoderService>>,
+    pub gener8_engine: gener8_engine::Gener8Engine,
     pub vault: crate::vault_commands::VaultState,
 }

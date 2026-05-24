@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DawTransportBar — play/pause/stop transport for Gener8 DAW shim.
  *

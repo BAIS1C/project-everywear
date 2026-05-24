@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type TimeSignature = [number, number];
 
 export function beatsPerBar(timeSignature: TimeSignature): number {

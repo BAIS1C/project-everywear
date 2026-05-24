@@ -14,6 +14,7 @@ mod crash;
 mod discourse;
 mod engine_registry;
 mod engine_router;
+mod gener8_engine;
 mod gpu;
 mod launcher;
 mod mait_bridge;
@@ -50,6 +51,13 @@ async fn get_vram_budget(state: tauri::State<'_, AppState>) -> Result<budget::Vr
 async fn get_active_applet(state: tauri::State<'_, AppState>) -> Result<Option<String>, String> {
     let active = state.active_applet.lock().await;
     Ok(active.clone())
+}
+
+#[tauri::command]
+async fn quit_everywear(app: tauri::AppHandle) -> Result<(), String> {
+    tracing::info!("Everywear quit requested from shell titlebar");
+    app.exit(0);
+    Ok(())
 }
 
 /// Check if an applet can launch without modifying state.
@@ -1277,6 +1285,7 @@ pub fn run() {
             licence_tier: Arc::new(Mutex::new(model_manager::LicenceTier::Demo)),
             user_session: Arc::new(Mutex::new(None)),
             video_encoder: Arc::new(Mutex::new(video_encoder::VideoEncoderService::new())),
+            gener8_engine: Arc::new(Mutex::new(gener8_engine::Gener8EngineState::default())),
             vault: vault_state.clone(),
         })
         .manage::<vault_commands::VaultState>(vault_state)
@@ -1331,6 +1340,7 @@ pub fn run() {
             // Bridge: VRAM lifecycle
             get_vram_budget,
             get_active_applet,
+            quit_everywear,
             check_applet_requirements,
             request_applet_switch,
             close_applet_webview,
@@ -1342,9 +1352,15 @@ pub fn run() {
             commands::video_encoder::request_video_encoder,
             commands::video_encoder::release_video_encoder,
             commands::video_encoder::video_encoder_health,
+            // Gener8 shell-owned engine bridge
+            gener8_engine::gener8_upload_audio,
+            gener8_engine::gener8_generate,
+            gener8_engine::gener8_generation_status,
+            gener8_engine::gener8_engine_models,
             // Migration
             commands::migration::get_phase5_migration_plan,
             commands::migration::run_phase5_migration,
+            commands::migration::run_gener8_vault_audio_import,
             // Vault
             vault_commands::vault_search,
             vault_commands::vault_get_item,

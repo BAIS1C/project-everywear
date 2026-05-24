@@ -29,6 +29,7 @@ const APPLET_COMPONENTS: Record<string, {
   component: React.LazyExoticComponent<React.ComponentType<{ skin?: string; mode?: string }>>;
   displayName: string;
   needsRouter?: boolean;
+  initialPath?: string;
 }> = {
   kasai: {
     component: React.lazy(() =>
@@ -50,10 +51,27 @@ const APPLET_COMPONENTS: Record<string, {
   },
   gener8: {
     component: React.lazy(() =>
-      import('@applets/gener8/web/src/App').then(m => ({ default: m.App }))
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
     ),
     displayName: 'Gener8',
     needsRouter: true,
+    initialPath: '/',
+  },
+  vid: {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
+    ),
+    displayName: 'Vid Studio',
+    needsRouter: true,
+    initialPath: '/vid',
+  },
+  'ai-director': {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
+    ),
+    displayName: 'AI Director',
+    needsRouter: true,
+    initialPath: '/director',
   },
   '3nvizen': {
     component: React.lazy(() => import('@applets/3nvizen/src/index')),
@@ -219,7 +237,7 @@ export function AppletViewRouter({ appletId, skin, mode, onClose, onCrashReport 
           onCrashReport={onCrashReport}
         >
           {entry.needsRouter ? (
-            <MemoryRouter>{appletContent}</MemoryRouter>
+            <MemoryRouter initialEntries={[entry.initialPath ?? '/']}>{appletContent}</MemoryRouter>
           ) : (
             appletContent
           )}

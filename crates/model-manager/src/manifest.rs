@@ -6,6 +6,7 @@
 //! fits the current VRAM budget.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 // ---------------------------------------------------------------------------
@@ -275,6 +276,14 @@ pub struct UpgradePackQuant {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppletManifest {
     pub applet: AppletMeta,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ui: Option<UiManifest>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub assets: Vec<AssetDeclaration>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<PermissionManifest>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub entitlements: BTreeMap<String, EntitlementDeclaration>,
     pub engine: EngineMeta,
     pub model_groups: Vec<ModelGroup>,
     #[serde(default)]
@@ -297,6 +306,68 @@ pub struct AppletMeta {
     /// after the headless backend is running.
     #[serde(default)]
     pub frontend_port: Option<u16>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UiManifest {
+    /// Local applet body entry mounted by the shell router.
+    pub entry: String,
+    /// Shell router/component that owns the frame and supplies this entry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell_router: Option<String>,
+    /// EWDS surfaces this applet body is built to support.
+    #[serde(default)]
+    pub surfaces: Vec<String>,
+    /// Canonical EWDS CSS assets the shell must serve before applet CSS.
+    #[serde(default)]
+    pub ewds_css: Vec<String>,
+    /// Applet-local CSS assets layered on top of EWDS.
+    #[serde(default)]
+    pub applet_css: Vec<String>,
+    /// Integration boundaries retained for review and package verification.
+    #[serde(default)]
+    pub shell_owned: Vec<String>,
+    #[serde(default)]
+    pub applet_owned: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetDeclaration {
+    pub id: String,
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PermissionManifest {
+    #[serde(default)]
+    pub vault_read: Vec<String>,
+    #[serde(default)]
+    pub vault_write: Vec<String>,
+    #[serde(default)]
+    pub ipc: Vec<String>,
+    #[serde(default)]
+    pub models: Vec<String>,
+    #[serde(default)]
+    pub network_fetch: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EntitlementDeclaration {
+    pub min_tier: LicenceTier,
+    #[serde(default)]
+    pub enforced_by: Vec<String>,
+    #[serde(default)]
+    pub features: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -450,19 +521,23 @@ mod tests {
     use super::*;
 
     fn sample_manifest() -> AppletManifest {
-        AppletManifest {
-            applet: AppletMeta {
-                id: "test".to_string(),
-                name: "Test".to_string(),
-                version: "0.1.0".to_string(),
+            AppletManifest {
+                applet: AppletMeta {
+                    id: "test".to_string(),
+                    name: "Test".to_string(),
+                    version: "0.1.0".to_string(),
                 description: "Test applet".to_string(),
                 icon: "icon.png".to_string(),
-                transport: "tauri".to_string(),
-                frontend_port: None,
-            },
-            engine: EngineMeta {
-                engine_type: "llm".to_string(),
-                backend: "server".to_string(),
+                    transport: "tauri".to_string(),
+                    frontend_port: None,
+                },
+                ui: None,
+                assets: Vec::new(),
+                permissions: None,
+                entitlements: BTreeMap::new(),
+                engine: EngineMeta {
+                    engine_type: "llm".to_string(),
+                    backend: "server".to_string(),
                 server_binary: String::new(),
                 sidecar: None,
             },

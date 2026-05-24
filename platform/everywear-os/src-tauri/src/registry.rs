@@ -90,7 +90,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "1magen".into(),
                 status: AppletStatus::Active,
-                launch_kind: AppletLaunchKind::BinaryLocal,
+                launch_kind: AppletLaunchKind::FrontendInline,
                 engine_type: "diffusion".into(),
                 min_vram_mb: 7400,
                 tags: vec!["image".into(), "generation".into(), "editing".into()],
@@ -108,7 +108,7 @@ impl AppletRegistry {
                 version: "0.1.0".into(),
                 icon: "gener8".into(),
                 status: AppletStatus::Active,
-                launch_kind: AppletLaunchKind::BinaryLocal,
+                launch_kind: AppletLaunchKind::FrontendInline,
                 engine_type: "audio".into(),
                 min_vram_mb: 6144,
                 tags: vec![
@@ -118,15 +118,13 @@ impl AppletRegistry {
                     "daw".into(),
                 ],
                 launch_url: None,
-                launch_binary: Some("gener8".into()),
-                frontend_port: Some(3001),
+                launch_binary: None,
+                frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
             },
-            // Vid Studio: standalone frontend-only applet.
-            // Uses the shell-owned video-encoder sidecar (port 9877) on
-            // demand via request_video_encoder IPC. No backend binary,
-            // no VRAM reservation, instant launch.
+            // Vid Studio is a Gener8 studio surface mounted inline by
+            // AppletViewRouter. It uses shell IPC for video sidecars.
             AppletEntry {
                 id: "vid".into(),
                 name: "Vid Studio".into(),
@@ -139,10 +137,27 @@ impl AppletRegistry {
                 min_vram_mb: 0, // NVENC uses dedicated encoder chip, not CUDA cores
                 tags: vec!["video".into(), "visualiser".into(), "music".into()],
                 launch_url: None,
-                launch_binary: None,       // frontend-only: no backend process
-                frontend_port: Some(3006), // own Vite dev server
+                launch_binary: None,
+                frontend_port: None,
                 frontend_route: None,
-                shares_backend: None,
+                shares_backend: Some("gener8".into()),
+            },
+            AppletEntry {
+                id: "ai-director".into(),
+                name: "AI Director".into(),
+                description: "Creator Studio shot planning and music-video direction".into(),
+                version: "0.1.0".into(),
+                icon: "ai-director".into(),
+                status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
+                engine_type: "video".into(),
+                min_vram_mb: 0,
+                tags: vec!["video".into(), "director".into(), "creator-studio".into()],
+                launch_url: None,
+                launch_binary: None,
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: Some("gener8".into()),
             },
             AppletEntry {
                 id: "s3studio".into(),

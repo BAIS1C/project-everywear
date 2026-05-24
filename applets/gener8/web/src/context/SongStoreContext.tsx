@@ -3,7 +3,7 @@
  * Ported from s3studio-web/src/shell/SongStoreContext.tsx.
  *
  * Adapted for Everywear:
- *   - No Supabase auth; uses local Gener8 backend shim on localhost:3001
+ *   - No Supabase auth; reads Everywear Vault through shell IPC
  *   - Auth context from Everywear's AuthContext (Tauri invoke)
  *   - No social layer (like/dislike stubs retained for UI compat)
  *
@@ -12,30 +12,18 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Song } from '../types';
 import { useAuth } from './AuthContext';
-
-// -- API helpers (inline; extracted from s3studio services/api) ----------------
-
-const BACKEND_BASE = 'http://localhost:3001';
-
-function apiUrl(path: string): string {
-  return `${BACKEND_BASE}${path}`;
-}
+import { vaultFileUrl, vaultSearch, type VaultItem } from '@everywear/transport';
 
 function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
   if (!audioUrl) return undefined;
   if (audioUrl.startsWith('http')) return audioUrl;
-  // Local shim serves audio at /api/audio/:key
-  return apiUrl(`/api/audio/${audioUrl}`);
+  return vaultFileUrl(audioUrl);
 }
 
-async function fetchMySongs(token: string): Promise<any[]> {
+async function fetchMySongs(): Promise<VaultItem[]> {
   try {
-    const res = await fetch(apiUrl('/api/songs/my'), {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) return [];
-    const raw = await res.json();
-    return raw?.songs ?? raw?.data?.songs ?? [];
+    const response = await vaultSearch('', 'audio', 'newest', 100, 0);
+    return response.items.filter((item) => item.media_type === 'audio');
   } catch {
     return [];
   }
@@ -68,9 +56,9 @@ function mapWireSong(s: any): Song {
     duration: s.duration && s.duration > 0
       ? `${Math.floor(s.duration / 60)}:${String(Math.floor(s.duration % 60)).padStart(2, '0')}`
       : '0:00',
-    createdAt: new Date(s.created_at || s.createdAt),
+    createdAt: new Date(s.created_at || s.createdAt || s.created_at_ms || Date.now()),
     tags: s.tags || [],
-    audioUrl: getAudioUrl(s.audio_url, s.id),
+    audioUrl: getAudioUrl(s.audio_url || s.file_path, s.id),
     isPublic: s.is_public,
     likeCount: s.like_count || 0,
     viewCount: s.view_count || 0,
@@ -158,8 +146,7 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
     fetchInFlight.current = true;
     setIsLoading(true);
     try {
-      // Fetch from local Gener8 backend shim
-      const wireSongs = await fetchMySongs('');
+      const wireSongs = await fetchMySongs();
       const mapped = wireSongs.map(mapWireSong);
       _setSongs(prev => {
         const generating = prev.filter(s => s.isGenerating);

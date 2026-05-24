@@ -25,6 +25,8 @@ use model_manager::{AppletManifest, ModelManager, ModelRole};
 use anyhow::{Context, Result};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use tauri::Emitter;
 use tracing::{info, warn};
@@ -866,6 +868,10 @@ pub async fn launch_applet_process(
 
         // 3. Build command with all env vars
         let mut cmd = std::process::Command::new(&resolved);
+        #[cfg(windows)]
+        {
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
 
         // IPC port + shared secret
         cmd.env(env_key, &env_val);

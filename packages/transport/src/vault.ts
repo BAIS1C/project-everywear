@@ -72,6 +72,33 @@ export interface VaultStats {
   total_size_bytes: number;
 }
 
+export interface MigrationOperation {
+  phase: string;
+  action: string;
+  source: string;
+  target: string;
+  bytes: number;
+  sha256?: string;
+  status: string;
+}
+
+export interface MigrationReceipt {
+  id: string;
+  created_at: string;
+  legacy_app_data_dir: string;
+  target_models_dir: string;
+  target_data_dir: string;
+  target_vault_audio_dir: string;
+  operations: MigrationOperation[];
+  warnings: string[];
+}
+
+export interface MigrationSummary {
+  dry_run: boolean;
+  receipt_path?: string;
+  receipt: MigrationReceipt;
+}
+
 // ── Search / Read ─────────────────────────────────────────────────────
 
 export async function vaultSearch(
@@ -96,6 +123,10 @@ export async function vaultGetItem(id: string): Promise<VaultItem | null> {
 
 export async function vaultGetStats(): Promise<VaultStats> {
   return invoke('vault_get_stats');
+}
+
+export async function runGener8VaultAudioImport(dryRun = true): Promise<MigrationSummary> {
+  return invoke('run_gener8_vault_audio_import', { dryRun });
 }
 
 // ── Mutations ─────────────────────────────────────────────────────────

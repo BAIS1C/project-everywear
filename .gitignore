@@ -55,6 +55,7 @@ desktop.ini
 
 # Logs
 *.log
+!CHANGELOG.log
 npm-debug.log*
 
 # Internal docs (not for repo; keep LICENCE.md and README.md)

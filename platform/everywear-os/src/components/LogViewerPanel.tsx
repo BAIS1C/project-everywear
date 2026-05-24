@@ -14,7 +14,7 @@ import { getAllBufferedEntries } from '@everywear/shared';
 
 const LEVEL_OPTIONS: LogLevel[] = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
 
-const SOURCE_OPTIONS = ['shell', '1magen', 'gener8', 'kasai', '3nvizen', 'vid'];
+const SOURCE_OPTIONS = ['shell', '1magen', 'gener8', 'kasai', '3nvizen', 'vid', 'ai-director'];
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   trace: 'var(--ew-text-muted)',

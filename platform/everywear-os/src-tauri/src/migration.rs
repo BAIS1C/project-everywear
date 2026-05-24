@@ -10,15 +10,20 @@
 
 use anyhow::{Context, Result};
 use chrono::Utc;
+use ew_vault::{AudioDocument, VaultIndex};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::VecDeque;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const APPLET_ID: &str = "gener8";
 const RECEIPT_PREFIX: &str = "phase5-gener8";
+const VAULT_AUDIO_RECEIPT_PREFIX: &str = "phase5-gener8-vault-audio";
+const LEGACY_STUDIO_SUBDIR: &str = "Strands Sound Studio";
+const LEGACY_AUDIO_IMPORT_DIR: &str = "Gener8 Legacy";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MigrationPlan {
@@ -26,10 +31,12 @@ pub struct MigrationPlan {
     pub legacy_models_dir: PathBuf,
     pub target_models_dir: PathBuf,
     pub target_data_dir: PathBuf,
+    pub target_vault_audio_dir: PathBuf,
     pub receipt_dir: PathBuf,
     pub legacy_app_data_exists: bool,
     pub model_files: Vec<PlannedFile>,
     pub library_settings_files: Vec<PlannedFile>,
+    pub vault_audio_files: Vec<PlannedFile>,
     pub warnings: Vec<String>,
 }
 
@@ -55,6 +62,7 @@ pub struct MigrationReceipt {
     pub legacy_app_data_dir: PathBuf,
     pub target_models_dir: PathBuf,
     pub target_data_dir: PathBuf,
+    pub target_vault_audio_dir: PathBuf,
     pub operations: Vec<MigrationOperation>,
     pub warnings: Vec<String>,
 }
@@ -76,12 +84,14 @@ pub fn plan() -> Result<MigrationPlan> {
     let legacy_models_dir = legacy_app_data_dir.join("models");
     let target_models_dir = everywear_paths::models_dir().join(APPLET_ID);
     let target_data_dir = everywear_paths::data_dir(APPLET_ID);
+    let target_vault_audio_dir = everywear_paths::vault_audio();
     let receipt_dir = everywear_paths::migration_dir();
 
     let mut warnings = Vec::new();
     let model_files = collect_planned_files(&legacy_models_dir, &target_models_dir)?;
     let library_settings_files =
         collect_library_settings_files(&legacy_app_data_dir, &target_data_dir)?;
+    let vault_audio_files = collect_vault_audio_import_files()?;
 
     if !legacy_app_data_dir.exists() {
         warnings.push(format!(
@@ -95,15 +105,17 @@ pub fn plan() -> Result<MigrationPlan> {
         legacy_models_dir,
         target_models_dir,
         target_data_dir,
+        target_vault_audio_dir,
         receipt_dir,
         legacy_app_data_exists: legacy_app_data_dir.exists(),
         model_files,
         library_settings_files,
+        vault_audio_files,
         warnings,
     })
 }
 
-pub fn run(dry_run: bool) -> Result<MigrationSummary> {
+pub fn run(dry_run: bool, vault_index: Option<&VaultIndex>) -> Result<MigrationSummary> {
     let plan = plan()?;
     let mut receipt = MigrationReceipt {
         id: format!("{}-{}", RECEIPT_PREFIX, Utc::now().format("%Y%m%dT%H%M%SZ")),
@@ -111,12 +123,54 @@ pub fn run(dry_run: bool) -> Result<MigrationSummary> {
         legacy_app_data_dir: plan.legacy_app_data_dir.clone(),
         target_models_dir: plan.target_models_dir.clone(),
         target_data_dir: plan.target_data_dir.clone(),
+        target_vault_audio_dir: plan.target_vault_audio_dir.clone(),
         operations: Vec::new(),
         warnings: plan.warnings.clone(),
     };
 
     migrate_models(&plan, dry_run, &mut receipt)?;
     migrate_library_settings(&plan, dry_run, &mut receipt)?;
+    migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
+
+    let receipt_path = if dry_run {
+        None
+    } else {
+        fs::create_dir_all(&plan.receipt_dir)
+            .with_context(|| format!("create {}", plan.receipt_dir.display()))?;
+        let path = plan.receipt_dir.join(format!("{}.json", receipt.id));
+        fs::write(&path, serde_json::to_vec_pretty(&receipt)?)
+            .with_context(|| format!("write migration receipt {}", path.display()))?;
+        Some(path)
+    };
+
+    Ok(MigrationSummary {
+        dry_run,
+        receipt_path,
+        receipt,
+    })
+}
+
+pub fn run_vault_audio_import(
+    dry_run: bool,
+    vault_index: Option<&VaultIndex>,
+) -> Result<MigrationSummary> {
+    let plan = plan()?;
+    let mut receipt = MigrationReceipt {
+        id: format!(
+            "{}-{}",
+            VAULT_AUDIO_RECEIPT_PREFIX,
+            Utc::now().format("%Y%m%dT%H%M%SZ")
+        ),
+        created_at: Utc::now().to_rfc3339(),
+        legacy_app_data_dir: plan.legacy_app_data_dir.clone(),
+        target_models_dir: plan.target_models_dir.clone(),
+        target_data_dir: plan.target_data_dir.clone(),
+        target_vault_audio_dir: plan.target_vault_audio_dir.clone(),
+        operations: Vec::new(),
+        warnings: plan.warnings.clone(),
+    };
+
+    migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
 
     let receipt_path = if dry_run {
         None
@@ -316,6 +370,90 @@ fn migrate_library_settings(
     Ok(())
 }
 
+fn migrate_vault_audio(
+    plan: &MigrationPlan,
+    dry_run: bool,
+    vault_index: Option<&VaultIndex>,
+    receipt: &mut MigrationReceipt,
+) -> Result<()> {
+    if plan.vault_audio_files.is_empty() {
+        return Ok(());
+    }
+
+    if !dry_run {
+        everywear_paths::ensure_vault_dirs().context("ensure Everywear Vault directories")?;
+    }
+
+    for planned in &plan.vault_audio_files {
+        let mut target = planned.target.clone();
+        let hash = if dry_run {
+            None
+        } else {
+            Some(sha256_file(&planned.source)?)
+        };
+        let mut status = "planned copy; source preserved".to_string();
+
+        if !dry_run {
+            if target.exists() {
+                let target_hash = sha256_file(&target)?;
+                if Some(target_hash.as_str()) == hash.as_deref() {
+                    status = "target already exists with same SHA256; indexed".to_string();
+                } else {
+                    target = conflict_target(&target, &receipt.id);
+                    status = "target existed; copied to conflict-safe legacy filename".to_string();
+                }
+            }
+
+            if !target.exists() {
+                if let Some(parent) = target.parent() {
+                    fs::create_dir_all(parent)
+                        .with_context(|| format!("create {}", parent.display()))?;
+                }
+                fs::copy(&planned.source, &target).with_context(|| {
+                    format!("copy {} -> {}", planned.source.display(), target.display())
+                })?;
+                let copied_hash = sha256_file(&target)?;
+                if Some(copied_hash.as_str()) != hash.as_deref() {
+                    let _ = fs::remove_file(&target);
+                    anyhow::bail!(
+                        "SHA256 mismatch after audio copy: {} -> {}",
+                        planned.source.display(),
+                        target.display()
+                    );
+                }
+                status = "copied, verified, source preserved".to_string();
+            }
+
+            if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
+                let doc = audio_document_for_import(&target, hash)?;
+                index.index_audio(&doc).with_context(|| {
+                    format!("index imported audio in vault {}", target.display())
+                })?;
+                if status == "copied, verified, source preserved" {
+                    status = "copied, verified, indexed; source preserved".to_string();
+                }
+            } else if vault_index.is_none() {
+                receipt.warnings.push(format!(
+                    "Audio copied but not indexed because no Vault index was provided: {}",
+                    target.display()
+                ));
+            }
+        }
+
+        receipt.operations.push(MigrationOperation {
+            phase: "5.3".to_string(),
+            action: "copy_legacy_audio_to_vault".to_string(),
+            source: planned.source.clone(),
+            target,
+            bytes: planned.bytes,
+            sha256: hash,
+            status,
+        });
+    }
+
+    Ok(())
+}
+
 fn collect_planned_files(source_root: &Path, target_root: &Path) -> Result<Vec<PlannedFile>> {
     let mut out = Vec::new();
     if !source_root.exists() {
@@ -360,6 +498,69 @@ fn collect_library_settings_files(
                 .strip_prefix(source_root)
                 .with_context(|| format!("strip prefix {}", source.display()))?;
             collect_one_if_exists(source.clone(), target_root.join(rel), &mut files)?;
+        }
+    }
+
+    Ok(files)
+}
+
+fn collect_vault_audio_import_files() -> Result<Vec<PlannedFile>> {
+    let mut files = Vec::new();
+    let mut candidates = Vec::new();
+
+    if let Some(audio_dir) = dirs::audio_dir() {
+        candidates.push((
+            audio_dir.join(LEGACY_STUDIO_SUBDIR),
+            "music-library".to_string(),
+        ));
+    }
+
+    let legacy_app_data_dir = legacy_s3_app_data_dir();
+    candidates.push((legacy_app_data_dir.join("audio"), "legacy-app-audio".to_string()));
+    candidates.push((
+        everywear_paths::data_dir(APPLET_ID).join("audio"),
+        "everywear-data-audio".to_string(),
+    ));
+
+    let vault_root = everywear_paths::vault_root();
+    let mut seen = Vec::<PathBuf>::new();
+    for (source_root, label) in candidates {
+        if !source_root.exists() || path_is_under(&source_root, &vault_root) {
+            continue;
+        }
+
+        let canonical_root = source_root
+            .canonicalize()
+            .unwrap_or_else(|_| source_root.clone());
+        if seen.iter().any(|seen_root| seen_root == &canonical_root) {
+            continue;
+        }
+        seen.push(canonical_root);
+
+        for source in walk_files(&source_root)? {
+            if !is_audio_file(&source) || path_is_under(&source, &vault_root) {
+                continue;
+            }
+            let rel = source
+                .strip_prefix(&source_root)
+                .with_context(|| format!("strip prefix {}", source.display()))?;
+            let metadata = fs::metadata(&source)?;
+            let target_root = if is_stem_path(&source) {
+                everywear_paths::vault_audio_stems()
+                    .join(LEGACY_AUDIO_IMPORT_DIR)
+                    .join(&label)
+            } else {
+                everywear_paths::vault_audio()
+                    .join(LEGACY_AUDIO_IMPORT_DIR)
+                    .join(&label)
+            };
+            let target = target_root.join(rel);
+            files.push(PlannedFile {
+                source,
+                target: target.clone(),
+                bytes: metadata.len(),
+                exists_at_target: target.exists(),
+            });
         }
     }
 
@@ -419,6 +620,134 @@ fn sha256_file(path: &Path) -> Result<String> {
         hasher.update(&buf[..n]);
     }
     Ok(hex::encode(hasher.finalize()))
+}
+
+fn audio_document_for_import(path: &Path, source_sha256: &str) -> Result<AudioDocument> {
+    let metadata = fs::metadata(path).with_context(|| format!("metadata {}", path.display()))?;
+    let timestamp = metadata
+        .created()
+        .or_else(|_| metadata.modified())
+        .ok()
+        .and_then(system_time_to_unix_seconds)
+        .unwrap_or_else(now_timestamp);
+    let is_stem = is_stem_path(path);
+    let mut tags = vec!["gener8".to_string(), "legacy-import".to_string()];
+    if is_stem {
+        tags.push("stem".to_string());
+    }
+
+    Ok(AudioDocument {
+        id: stable_audio_import_id(path, source_sha256),
+        applet_id: APPLET_ID.to_string(),
+        title: path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .unwrap_or("Legacy Gener8 Audio")
+            .to_string(),
+        tags,
+        created_at: timestamp,
+        updated_at: now_timestamp(),
+        file_path: path.to_string_lossy().to_string(),
+        file_size_bytes: metadata.len(),
+        mime_type: mime_from_path(path),
+        favorite: false,
+        duration_seconds: 0.0,
+        sample_rate: 0,
+        channels: 0,
+        genre: None,
+        bpm: None,
+        key_signature: None,
+        is_stem,
+        stem_type: infer_stem_type(path),
+        lyrics_aligned: false,
+        lyrics_text: None,
+    })
+}
+
+fn stable_audio_import_id(path: &Path, source_sha256: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(path.to_string_lossy().as_bytes());
+    hasher.update(source_sha256.as_bytes());
+    let hash = hex::encode(hasher.finalize());
+    format!("legacy-gener8-{}", &hash[..32])
+}
+
+fn mime_from_path(path: &Path) -> String {
+    match path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "mp3" => "audio/mpeg",
+        "wav" => "audio/wav",
+        "flac" => "audio/flac",
+        "ogg" => "audio/ogg",
+        "m4a" | "aac" => "audio/mp4",
+        _ => "audio/wav",
+    }
+    .to_string()
+}
+
+fn is_audio_file(path: &Path) -> bool {
+    matches!(
+        path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+            .as_str(),
+        "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac"
+    )
+}
+
+fn is_stem_path(path: &Path) -> bool {
+    path.components().any(|component| {
+        component
+            .as_os_str()
+            .to_str()
+            .map(|part| part.eq_ignore_ascii_case("stems") || part.eq_ignore_ascii_case("stem"))
+            .unwrap_or(false)
+    })
+}
+
+fn infer_stem_type(path: &Path) -> Option<String> {
+    let stem_names = [
+        "vocals",
+        "vocal",
+        "drums",
+        "bass",
+        "guitar",
+        "piano",
+        "melody",
+        "accompaniment",
+        "instrumental",
+        "other",
+    ];
+    path.components().find_map(|component| {
+        let part = component.as_os_str().to_str()?.to_ascii_lowercase();
+        stem_names
+            .iter()
+            .find(|stem| part == **stem || part.contains(*stem))
+            .map(|stem| (*stem).to_string())
+    })
+}
+
+fn path_is_under(path: &Path, root: &Path) -> bool {
+    let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let canonical_root = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    canonical_path.starts_with(canonical_root)
+}
+
+fn system_time_to_unix_seconds(value: SystemTime) -> Option<u64> {
+    value
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_secs())
+}
+
+fn now_timestamp() -> u64 {
+    Utc::now().timestamp().max(0) as u64
 }
 
 fn remove_empty_dirs(root: &Path) -> Result<()> {
@@ -552,6 +881,7 @@ mod tests {
             legacy_app_data_dir: PathBuf::from("old"),
             target_models_dir: PathBuf::from("models"),
             target_data_dir: PathBuf::from("data"),
+            target_vault_audio_dir: PathBuf::from("vault-audio"),
             operations: Vec::new(),
             warnings: Vec::new(),
         };

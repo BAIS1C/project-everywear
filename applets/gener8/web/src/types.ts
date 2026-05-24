@@ -1,9 +1,3 @@
-/**
- * Shared type definitions for Gener8 web frontend.
- * Ported from s3studio-web/src/types.ts — canonical Song interface
- * used by Gener8 core, library, and Vid Studio.
- */
-
 export interface Song {
   id: string;
   title: string;
@@ -53,19 +47,68 @@ export interface Song {
   lrc_data?: string | null;
 }
 
+export interface Playlist {
+  id: string;
+  name: string;
+  description?: string;
+  coverUrl?: string;
+  cover_url?: string;
+  songIds?: string[];
+  isPublic?: boolean;
+  is_public?: boolean;
+  user_id?: string;
+  creator?: string;
+  created_at?: string;
+  song_count?: number;
+  songs?: any[];
+}
+
+export interface Comment {
+  id: string;
+  songId?: string;
+  song_id?: string;
+  userId?: string;
+  user_id?: string;
+  username: string;
+  content: string;
+  createdAt?: Date | string;
+  created_at?: string;
+}
+
 export interface GenerationParams {
+  // 2026-05-04 SGT (#36): Simple/Custom mode toggle killed. Custom is the
+  // only mode now; tier-gating governs panel surface (see CreatePanel
+  // header comment for spec). `customMode` and `songDescription` removed
+  // from the contract; legacy library entries with these fields are
+  // ignored by consumers.
   prompt: string;
   lyrics: string;
   style: string;
   title: string;
+  /** When Style Assist enhanced the style, this holds the raw user-authored
+   *  style text. `style` contains the AI-enhanced version that was actually
+   *  used for generation. Stored on Song.caption for the sidebar Copy button. */
   rawStyle?: string;
+
+  // Common
   instrumental: boolean;
   vocalLanguage: string;
+
+  // Music Parameters
   bpm: number;
   keyScale: string;
   timeSignature: string;
   duration: number;
+
+  // 2026-05-04 SGT (engine-detected model swap): synth_model selects
+  // which DiT GGUF ace-server should use for this request. Empty/omitted
+  // = keep current; otherwise ace-server lazy-loads + swaps via
+  // ServerFields.synth_model parsing in tools/ace-server.cpp:443.
+  // Full filename per shim engine_models output, e.g.
+  // "acestep-v15-xl-turbo-Q8_0.gguf".
   synth_model?: string;
+
+  // Generation Settings
   inferenceSteps: number;
   guidanceScale: number;
   batchSize: number;
@@ -75,11 +118,15 @@ export interface GenerationParams {
   audioFormat: 'mp3' | 'flac';
   inferMethod: 'ode' | 'sde';
   shift: number;
+
+  // LM Parameters
   lmTemperature: number;
   lmCfgScale: number;
   lmTopK: number;
   lmTopP: number;
   lmNegativePrompt: string;
+
+  // Expert Parameters
   referenceAudioUrl?: string;
   sourceAudioUrl?: string;
   audioCodes?: string;
@@ -113,4 +160,27 @@ export interface PlayerState {
   volume: number;
 }
 
-export type View = 'create' | 'library' | 'vid' | 'settings';
+export interface User {
+  id: string;
+  username: string;
+  createdAt: Date;
+  followerCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  isAdmin?: boolean;
+  avatar_url?: string;
+  banner_url?: string;
+}
+
+export interface UserProfile {
+  user: User;
+  publicSongs: Song[];
+  publicPlaylists: Playlist[];
+  stats: {
+    totalSongs: number;
+    totalLikes: number;
+  };
+}
+
+// Simplified views for ACE-Step UI
+export type View = 'create' | 'library' | 'videos' | 'profile' | 'song' | 'playlist' | 'search' | 'video-studio' | 'style-forge' | 'daw';

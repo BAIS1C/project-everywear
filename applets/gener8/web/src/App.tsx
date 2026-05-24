@@ -1,55 +1,26 @@
-/**
- * Gener8 App Shell
- *
- * Stripped version of S3 Studio's App.tsx:
- *   - NO Taskbar, Window, LockScreen (provided by Everywear OS shell)
- *   - NO WindowFrame (provided by shell's Tauri WindowFrame.tsx)
- *   - Auth from Tauri invoke, not Supabase directly
- *   - EWDS via @everywear/ewds, not local copies
- *
- * Layout: Sidebar + Main area (CreatePanel / Library / Settings)
- */
-import React, { useState, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { useTheme } from '@everywear/ewds';
-import { Sidebar } from './components/Sidebar';
+import React, { Suspense, lazy } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { DawTransportBar } from './components/DawTransportBar';
+import Gener8Core from './shell/applets/Gener8Core';
 
-// Lazy-load heavy views
-const CreateView = lazy(() => import('./views/CreateView'));
-const DawView = lazy(() => import('./views/DawView'));
-const LibraryView = lazy(() => import('./views/LibraryView'));
+const DawCore = lazy(() => import('./shell/applets/DawCore'));
+const VidApp = lazy(() => import('./shell/VidApp'));
+const AIDirectorView = lazy(() => import('./views/AIDirectorView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 
 export function App() {
-  const { skin } = useTheme();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const location = useLocation();
-  const isDawRoute = location.pathname.startsWith('/daw');
-
   return (
-    <div className="flex w-full h-full bg-s3 text-s3-text-primary">
-      {/* Sidebar: navigation between Create / Library / Settings */}
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((c) => !c)}
-      />
-
-      {/* Main content area + transport */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<CreateView />} />
-              <Route path="/daw" element={<DawView />} />
-              <Route path="/library" element={<LibraryView />} />
-              <Route path="/settings" element={<SettingsView />} />
-            </Routes>
-          </Suspense>
-        </main>
-        {!isDawRoute && <DawTransportBar />}
-      </div>
+    <div className="w-full h-full bg-s3 text-s3-text-primary overflow-hidden">
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={<Gener8Core />} />
+          <Route path="/daw" element={<DawCore />} />
+          <Route path="/library" element={<Gener8Core />} />
+          <Route path="/vid" element={<VidApp />} />
+          <Route path="/director" element={<AIDirectorView />} />
+          <Route path="/settings" element={<SettingsView />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 }

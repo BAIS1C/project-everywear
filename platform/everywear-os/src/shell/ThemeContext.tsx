@@ -25,10 +25,13 @@ const ThemeCtx = createContext<ThemeState | null>(null);
 function apply(skin: Skin, mode: Mode, accent: Accent, widgetSurface: WidgetSurface) {
   const el = document.documentElement;
   const effectiveSkin = mode === 'light' ? 'classic' : skin;
+  el.classList.toggle('dark', mode === 'dark');
   el.setAttribute('data-skin', effectiveSkin);
   el.setAttribute('data-mode', mode);
   el.setAttribute('data-accent', accent);
   el.setAttribute('data-widget-surface', widgetSurface);
+  document.body.classList.add('ew');
+  document.body.classList.toggle('dark', mode === 'dark');
   document.body.setAttribute('data-skin', effectiveSkin);
   document.body.setAttribute('data-mode', mode);
   document.body.setAttribute('data-accent', accent);

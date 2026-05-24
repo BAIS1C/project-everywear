@@ -1,17 +1,18 @@
-const LOCAL_ENGINE = 'http://localhost:3001';
+// @ts-nocheck
+import { gener8Generate, gener8GenerationStatus } from '@everywear/transport';
 
 async function api<T>(endpoint: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(`${LOCAL_ENGINE}${endpoint}`, {
-    method: options.method ?? 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: 'omit',
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(String(error.error ?? error.message ?? res.statusText));
+  if (endpoint.startsWith('/api/generate/status/')) {
+    const jobId = decodeURIComponent(endpoint.slice('/api/generate/status/'.length));
+    return gener8GenerationStatus(jobId) as Promise<T>;
   }
-  return res.json();
+  if (endpoint === '/api/v1/generate' || endpoint === '/api/generate') {
+    return gener8Generate((options.body ?? {}) as Record<string, unknown>) as Promise<T>;
+  }
+  if (endpoint === '/api/generate/history') {
+    return { jobs: [] } as T;
+  }
+  throw new Error(`Gener8 IPC endpoint is not wired yet: ${endpoint}`);
 }
 
 function getAudioRequestPath(audioUrl: string | undefined): string | undefined {

@@ -1,0 +1,360 @@
+/* ═══════════════════════════════════════════════════════════════
+   BugReportModal styling — EWDS token-aware. Mirrors the modal
+   chrome conventions used elsewhere (cut-corner polygons disabled
+   for forms; we want the corners squared for legibility against
+   long textareas). Skin-aware via the same body[data-skin] hooks
+   as Window.module.css.
+   ═══════════════════════════════════════════════════════════════ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--ew-bg-base, #000) 78%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--ew-surface-1, #0F1419);
+  border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.12));
+  color: var(--ew-text, #E6EDF3);
+  font: 14px/1.45 var(--ew-font-sans, 'Inter', system-ui, sans-serif);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  animation: lift 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:global(body[data-skin="terminal"]) .modal {
+  border-width: 2px;
+  border-color: var(--ew-primary, #00FF9C);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ew-border, rgba(255, 255, 255, 0.12));
+}
+
+.headerIcon {
+  color: var(--ew-warning, #FFB020);
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.headerContext {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 11px var(--ew-font-mono, 'JetBrains Mono', monospace);
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.55));
+}
+
+.headerAppId {
+  opacity: 0.6;
+}
+
+.closeButton {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.55));
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.closeButton:hover:not(:disabled) {
+  color: var(--ew-text, #E6EDF3);
+  background: color-mix(in srgb, var(--ew-text, #E6EDF3) 8%, transparent);
+  border-color: var(--ew-border, rgba(255, 255, 255, 0.18));
+}
+
+.closeButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labelText {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 10px 12px;
+  background: var(--ew-surface-2, #0A0E13);
+  border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.16));
+  color: var(--ew-text, #E6EDF3);
+  font: 13px/1.5 var(--ew-font-sans, 'Inter', system-ui, sans-serif);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea:focus {
+  border-color: var(--ew-primary, #00C2FF);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ew-primary, #00C2FF) 25%, transparent);
+}
+
+.textarea::placeholder {
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.35));
+}
+
+.severityRow {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.severityChips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.severityChip {
+  flex: 1 1 auto;
+  min-width: 64px;
+  padding: 6px 10px;
+  background: var(--ew-surface-2, #0A0E13);
+  border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.16));
+  color: var(--ew-text, #E6EDF3);
+  font: 600 12px var(--ew-font-sans, 'Inter', system-ui, sans-serif);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.severityChip:hover:not(:disabled) {
+  border-color: var(--ew-primary, #00C2FF);
+}
+
+.severityChipActive {
+  background: color-mix(in srgb, var(--ew-primary, #00C2FF) 18%, transparent);
+  border-color: var(--ew-primary, #00C2FF);
+  color: var(--ew-primary, #00C2FF);
+}
+
+.screenshotSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.screenshotHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iconButton {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.16));
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.6));
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.iconButton:hover:not(:disabled) {
+  color: var(--ew-primary, #00C2FF);
+  border-color: var(--ew-primary, #00C2FF);
+  background: color-mix(in srgb, var(--ew-primary, #00C2FF) 10%, transparent);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.screenshotPreview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background: var(--ew-surface-2, #0A0E13);
+  border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.16));
+}
+
+.screenshotEmpty {
+  padding: 18px 12px;
+  background: var(--ew-surface-2, #0A0E13);
+  border: 1px dashed var(--ew-border, rgba(255, 255, 255, 0.18));
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.55));
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Hint shown under the screenshot preview when capture lands. */
+.clipboardHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--ew-success, #4ADE80) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ew-success, #4ADE80) 30%, transparent);
+  color: var(--ew-success, #4ADE80);
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* Static instructional block for log file attachment workflow. */
+.logsHint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--ew-surface-2, #0A0E13);
+  border: 1px dashed var(--ew-border, rgba(255, 255, 255, 0.18));
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.55));
+}
+
+.logsHintTitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.logsHintBody {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--ew-error, #FF5252) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ew-error, #FF5252) 40%, transparent);
+  color: var(--ew-error, #FF5252);
+  font-size: 12px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--ew-border, rgba(255, 255, 255, 0.08));
+  margin-top: 4px;
+  padding-top: 14px;
+}
+
+.contextHint {
+  font: 10.5px var(--ew-font-mono, 'JetBrains Mono', monospace);
+  color: var(--ew-text-muted, rgba(255, 255, 255, 0.45));
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.submitButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--ew-primary, #00C2FF);
+  border: 1px solid var(--ew-primary, #00C2FF);
+  color: var(--ew-bg-base, #0A0E13);
+  font: 700 12px var(--ew-font-sans, 'Inter', system-ui, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.08s ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.successPane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 24px;
+}
+
+.successIcon {
+  color: var(--ew-success, #4ADE80);
+}
+
+.successText {
+  margin: 0;
+  font-weight: 600;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lift {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}

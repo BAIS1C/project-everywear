@@ -46,8 +46,8 @@ type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
 type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
 const THEME_OPTIONS = ['light', 'classic', 'refined', 'terminal'] as const;
-const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', '3nvizen']);
-const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', '3nvizen'];
+const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', 'ai-director', '3nvizen']);
+const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', 'ai-director', '3nvizen'];
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
 const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
@@ -472,6 +472,7 @@ function DesktopCanvas({
   launchingApplet,
   activeApplet,
   inferencePhase,
+  widgetsEnabled,
 }: {
   theme: string;
   gpu: SystemGpuState | null;
@@ -479,6 +480,7 @@ function DesktopCanvas({
   launchingApplet: AppletEntry | null;
   activeApplet: AppletEntry | null;
   inferencePhase: InferencePhase;
+  widgetsEnabled: boolean;
 }) {
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
@@ -503,28 +505,30 @@ function DesktopCanvas({
                 : 'ew-canvas--classic-home'
         }`}
       >
-        <div className="ew-canvas__center-hud">
-          <DesktopClock />
-          <div className="ew-canvas__subtitle">LOCAL &middot; HOME NODE &middot; BUILD 1.0.0</div>
-          <div className="ew-canvas__status-row">
-            <div className="ew-canvas__status-card">
-              <div className="ew-canvas__status-label">NODE</div>
-              <div className="ew-canvas__status-value">home.strands.local</div>
-              <div className="ew-canvas__status-detail">status: awake</div>
+        {widgetsEnabled && (
+          <div className="ew-canvas__center-hud">
+            <DesktopClock />
+            <div className="ew-canvas__subtitle">LOCAL &middot; HOME NODE &middot; BUILD 1.0.0</div>
+            <div className="ew-canvas__status-row">
+              <div className="ew-canvas__status-card">
+                <div className="ew-canvas__status-label">NODE</div>
+                <div className="ew-canvas__status-value">home.strands.local</div>
+                <div className="ew-canvas__status-detail">status: awake</div>
+              </div>
+              <div className="ew-canvas__status-card">
+                <div className="ew-canvas__status-label">INFERENCE</div>
+                <div className="ew-canvas__status-value">{inferenceReadout.value}</div>
+                <div className="ew-canvas__status-detail">{inferenceReadout.detail}</div>
+              </div>
+              <div className="ew-canvas__status-card">
+                <div className="ew-canvas__status-label">NETWORK</div>
+                <div className="ew-canvas__status-value">peers: 0 online</div>
+                <div className="ew-canvas__status-detail">friends: 0 present</div>
+              </div>
             </div>
-            <div className="ew-canvas__status-card">
-              <div className="ew-canvas__status-label">INFERENCE</div>
-              <div className="ew-canvas__status-value">{inferenceReadout.value}</div>
-              <div className="ew-canvas__status-detail">{inferenceReadout.detail}</div>
-            </div>
-            <div className="ew-canvas__status-card">
-              <div className="ew-canvas__status-label">NETWORK</div>
-              <div className="ew-canvas__status-value">peers: 0 online</div>
-              <div className="ew-canvas__status-detail">friends: 0 present</div>
-            </div>
+            <WeatherWidget />
           </div>
-          <WeatherWidget />
-        </div>
+        )}
       </div>
     );
   }
@@ -943,7 +947,25 @@ export function ShellLayout() {
       // Our event listener above handles the rest.
     } catch (err) {
       console.error(`Failed to launch ${applet.id}:`, err);
+      const message = err instanceof Error ? err.message : String(err);
+      log.error('ui', `Failed to launch ${applet.id}`, {
+        applet_id: applet.id,
+        message,
+      });
       markLaunchError();
+      openBugReport({
+        source: applet.id,
+        crashKind: 'frontend',
+        occurredAt: new Date().toISOString(),
+        errorMessage: message,
+        description: `${applet.name} failed to launch.`,
+        extra: {
+          applet_id: applet.id,
+          launch_kind: applet.launch_kind,
+          frontend_port: applet.frontend_port,
+          launch_binary: applet.launch_binary,
+        },
+      });
       // If launch fails but the applet has a frontend_port, fall through
       // to headless view (dev mode: sidecar may not be needed)
       if (applet.frontend_port) {
@@ -967,6 +989,16 @@ export function ShellLayout() {
     openPanel(iconId);
   };
 
+  const quitEverywear = useCallback(async () => {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('quit_everywear');
+    } catch (err) {
+      console.error('Failed to quit Everywear cleanly:', err);
+      await getCurrentWindow().close();
+    }
+  }, []);
+
   const displayName = authUser?.handle || profile?.display_name || 'User';
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
@@ -988,6 +1020,14 @@ export function ShellLayout() {
   const activeInferenceApplet = activeInferenceAppletId
     ? registryApplets.find((applet) => applet.id === activeInferenceAppletId) ?? null
     : null;
+  const hasOpenApplet = useMemo(
+    () => !!launchingId || !!tauriApplet || windows.some((win) => win.content.kind === 'applet'),
+    [launchingId, tauriApplet, windows],
+  );
+
+  useEffect(() => {
+    if (hasOpenApplet) setS3FolderOpen(false);
+  }, [hasOpenApplet]);
 
   // GPU status for footer
   const gpuLabel = gpu?.backend?.type === 'Cuda'
@@ -1032,7 +1072,7 @@ export function ShellLayout() {
         <div className="ew-titlebar__left">
           {/* Traffic lights */}
           <div className="ew-traffic-lights">
-            <button className="ew-traffic-light ew-traffic-light--close" onClick={() => getCurrentWindow().close()} title="Close" />
+            <button className="ew-traffic-light ew-traffic-light--close" onClick={quitEverywear} title="Quit Everywear" />
             <button className="ew-traffic-light ew-traffic-light--minimize" onClick={() => getCurrentWindow().minimize()} title="Minimize" />
             <button className="ew-traffic-light ew-traffic-light--maximize" onClick={() => getCurrentWindow().toggleMaximize()} title="Maximize" />
           </div>
@@ -1054,6 +1094,7 @@ export function ShellLayout() {
           launchingApplet={launchingApplet}
           activeApplet={activeInferenceApplet}
           inferencePhase={inferencePhase}
+          widgetsEnabled={!hasOpenApplet}
         />
 
         {/* Icon grid: registry applets + system icons */}

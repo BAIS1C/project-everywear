@@ -22,6 +22,7 @@ import {
   vaultDeleteItem,
   vaultFileUrl,
   vaultThumbnailUrl,
+  runGener8VaultAudioImport,
   type VaultItem,
   type VaultSearchResponse,
   type VaultStats,
@@ -133,12 +134,24 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const [selectedItem, setSelectedItem] = useState<VaultItem | null>(null);
   const pageSize = 20;
   const fetchRef = useRef(false);
+  const legacyImportRef = useRef(false);
+
+  const runLegacyAudioImport = useCallback(async (force = false) => {
+    if (legacyImportRef.current && !force) return;
+    legacyImportRef.current = true;
+    try {
+      await runGener8VaultAudioImport(false);
+    } catch (err) {
+      console.warn('[Vault] Legacy Gener8 audio import skipped:', err);
+    }
+  }, []);
 
   const fetchItems = useCallback(async () => {
     if (fetchRef.current) return;
     fetchRef.current = true;
     setIsLoading(true);
     try {
+      await runLegacyAudioImport();
       const response: VaultSearchResponse = await vaultSearch(
         searchQuery,
         mapFilter(filter),
@@ -158,7 +171,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       setHasLoaded(true);
       fetchRef.current = false;
     }
-  }, [searchQuery, filter, sortBy, page]);
+  }, [searchQuery, filter, sortBy, page, runLegacyAudioImport]);
 
   const refreshStats = useCallback(async () => {
     try {
@@ -180,9 +193,10 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, [refreshStats]);
 
   const refetch = useCallback(async () => {
+    await runLegacyAudioImport(true);
     await fetchItems();
     await refreshStats();
-  }, [fetchItems, refreshStats]);
+  }, [fetchItems, refreshStats, runLegacyAudioImport]);
 
   const toggleFavorite = useCallback(async (id: string, current: boolean) => {
     try {

@@ -1,0 +1,110 @@
+# Everywear Changelog
+
+Versioning note:
+
+- Everywear root package is currently `0.1.0`.
+- Gener8 Everywear applet package is currently `0.1.0`.
+- The S3Studio/Gener8 desktop line remains pre-1.0 beta during this migration.
+- Do not label this work "v12" or "version 12"; it is still pre-GA.
+
+## Unreleased - 2026-05-24
+
+### Architecture
+
+- Accepted Gener8 AIO as a first-party local Everywear applet target instead of
+  continuing standalone desktop shell work as the long-term architecture.
+- Clarified that the AIO migration is a full current Gener8 internals and
+  applet-visuals port, excluding only the superseded S3Studio desktop shell.
+- Kept `s3studio-web` as the web/cloud product source for future hosted
+  instances, marketing, community, and cloud endpoints.
+- Defined the Everywear Vault as the Gener8 AIO Library source of truth.
+- Defined video-specific integration for Vid Studio, 3nvizen, AI Director
+  outputs, and shared `@everywear/video-modal` exports through the Vault.
+- Defined shell-owned GPU/VRAM scheduling as the AIO authority, with applet
+  VRAM probing limited to fallback diagnostics during migration.
+- Defined the shell widget lifecycle: live desktop widgets and transient desktop
+  folders deactivate while applets are launching or open.
+
+### Security
+
+- Reaffirmed that Gener8 applet entitlement enforcement must reference shell auth
+  and Rust/cloud execution gates, not frontend state alone.
+- Marked Reference Audio and Cover/Remix generation as `gener8_pro` execution
+  gates.
+- Marked DAW Creator Studio features, AI Director, local video, stems, and style
+  training as `creator_studio` execution gates.
+- Added shell-auth tier reads to the Gener8 applet web context, including a
+  cascading `hasTier` helper for `gener8_pro` and `creator_studio` applet UI
+  gates.
+- Ported Reference/Cover execution gates into the Gener8 shim so uploaded
+  reference/source audio and cover generation fail closed below `gener8_pro`.
+
+### Gener8 AIO
+
+- Ported the current upstream ACE `/synth` generation path into the Everywear
+  Gener8 shim, including source/reference audio normalization, Cover
+  `cover-nofsq` routing, multipart `audio`/`ref_audio` submission, model
+  passthrough, extended generation parameters, async job polling, and persisted
+  audio output paths.
+- Added the first shell-owned Gener8 IPC bridge so the Everywear-mounted Create
+  flow no longer depends on the public `localhost:3001` shim. The React applet
+  now calls `@everywear/transport` for upload, generate, status, and model
+  queries while the shell keeps ACE private behind Rust.
+- Changed the Everywear registry fallback for Gener8 from `BinaryLocal` with
+  `frontend_port = 3001` to an inline applet mounted by `AppletViewRouter`.
+- Added the Everywear inline Gener8 shell wrapper so shell launches mount the
+  same EWDS, auth, song-store, and Vault providers as the standalone Gener8
+  web entrypoint.
+- Wired Vid Studio and AI Director as deep-linked Gener8 studio surfaces in
+  Everywear, with `vid` and `ai-director` registry entries opening the inline
+  React host instead of depending on stale frontend ports.
+- Added a visible launch-failure bug report seed from the shell launcher so
+  applet launch errors are surfaced even when the OS log panel is unavailable.
+- Folded Gener8 applet CSS into the main Everywear shell bundle for packaged
+  Tauri builds, avoiding lazy CSS preload crashes for `ShellApp`.
+- Changed the Everywear shell CSS source of truth to
+  `@everywear/ewds/css/global.css` so S3Studio-era `--s3-*` and `--accent-*`
+  surfaces are served through EWDS tokens instead of partial token imports.
+- Added parsed Gener8 applet manifest declarations for UI entry, supported
+  EWDS surfaces, EWDS/app CSS assets, scoped Vault/IPC permissions, and
+  Rust/cloud-enforced entitlement gates.
+- Ported the current S3Studio Gener8 product body into Everywear's inline
+  applet host, including `Gener8Core`, `CreatePanel`, `SongList`,
+  `RightSidebar`, Vid Studio, DAW Core, video worker assets, and supporting
+  applet internals while leaving the old S3Studio desktop shell behind.
+- Added Everywear compatibility shims around the ported S3Studio internals for
+  shell auth, shell audio, local workspaces, cross-surface intents, Vault-backed
+  song reads, and IPC-backed generation/model/audio upload calls.
+- Added a platform Tailwind/PostCSS build config that scans the mounted Gener8
+  applet source so packaged Tauri builds include the full S3Studio utility set
+  instead of rendering native controls and broken layout.
+- Added Tailwind `dark` class syncing to the Everywear and EWDS theme providers
+  so ported S3Studio `dark:*` classes follow the shell mode.
+- Packaged the S3Studio logo asset with the Everywear shell so the Gener8
+  CreatePanel header does not render a broken image in Tauri.
+- Changed the main red titlebar control to quit the Everywear process instead
+  of closing only the main webview while the hidden studio window keeps the
+  executable locked.
+- Added Windows `CREATE_NO_WINDOW` flags to shell GPU probes and applet binary
+  launches so helper processes do not flash terminal windows during normal use.
+- Added Song / Reference / Cover mode controls to the Everywear Gener8 Create
+  view with 15 MB local audio upload support and Pro-gated Reference/Cover UI.
+- Replaced placeholder Vault saves with real completed-job filesystem paths
+  returned by the shim so generated audio registers into Everywear Vault by
+  default.
+- Changed the shell-owned Gener8 ACE result path to register completed audio
+  directly into Everywear Vault and return Vault file paths/ids to the applet.
+- Added transport support for applets to read shell-owned auth context via
+  `get_auth_context`.
+- Changed the Gener8 shim VRAM status response to report the shell-provided
+  VRAM budget as authoritative, with `nvidia-smi` retained only as diagnostic
+  fallback metadata.
+- Hardened Creator Studio shim routes and AI Director routes so they return a
+  shell-tier-aware `creator_studio` gate before any local analysis, planning,
+  training, patch, or Director LM work is attempted.
+
+### Documentation
+
+- Added `docs/gener8-aio-everywear-architecture.md` as the canonical slot-in
+  architecture for moving the latest S3Studio Gener8 work into Project
+  Everywear.

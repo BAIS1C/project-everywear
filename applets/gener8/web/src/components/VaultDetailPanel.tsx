@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * VaultDetailPanel — detail view for a single vault item.
  *

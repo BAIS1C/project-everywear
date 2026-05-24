@@ -18,6 +18,7 @@ export default defineConfig({
       '@everywear/ewds': path.resolve(__dirname, '../../packages/ewds/src/index.ts'),
       '@everywear/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
       '@everywear/transport': path.resolve(__dirname, '../../packages/transport/src/index.ts'),
+      '@': path.resolve(__dirname, '../../applets/gener8/web/src'),
     },
   },
   build: {

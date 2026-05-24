@@ -5,11 +5,9 @@ import { AuthProvider } from './shell/AuthContext';
 import { AuthGate } from './shell/AuthGate';
 import { ShellLayout } from './shell/ShellLayout';
 import { initLogger, getLogger } from '@everywear/shared';
-import '@everywear/ewds/css/tokens.css';
-import '@everywear/ewds/css/components.css';
-import '@everywear/ewds/css/fonts.css';
-import '@everywear/ewds/css/icons.css';
+import '@everywear/ewds/css/global.css';
 import '@everywear/ewds/css/window-frame.css';
+import '@applets/gener8/web/src/styles/app.css';
 import './styles/shell.css';
 
 // ── Logger bootstrap ────────────────────────────────────────────────

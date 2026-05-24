@@ -13,6 +13,7 @@ function iconGlyph(id: string): string {
     'mymories': 'MY',
     'gener8': 'G8',
     'vid': 'VD',
+    'ai-director': 'AD',
   };
   return map[id] || id.slice(0, 2).toUpperCase();
 }
@@ -44,6 +45,10 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
 
   const gener8 = byId.get('gener8');
   if (gener8) s3Children.push({ type: 'applet', applet: gener8 });
+  const vid = byId.get('vid');
+  if (vid) s3Children.push({ type: 'applet', applet: vid });
+  const director = byId.get('ai-director');
+  if (director) s3Children.push({ type: 'applet', applet: director });
 
   const creatorChildren: FolderItem[] = [];
   const onemagen = byId.get('1magen');
@@ -73,7 +78,7 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
     });
   }
 
-  const grouped = new Set(['s3studio', 'gener8', '1magen', '3nvizen']);
+  const grouped = new Set(['s3studio', 'gener8', 'vid', 'ai-director', '1magen', '3nvizen']);
   for (const applet of applets) {
     if (!grouped.has(applet.id)) {
       items.push({ type: 'applet', applet });

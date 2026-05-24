@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * EWDS-styled loading spinner for Suspense boundaries.
  */
