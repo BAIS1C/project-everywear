@@ -1,7 +1,7 @@
 use chrono::Utc;
 use ew_vault::{
-    item_file_size, item_favorite, AudioDocument, ImageDocument, MediaFilter, SortField, VaultIndex,
-    VaultItem, VideoDocument,
+    item_favorite, item_file_size, AudioDocument, ImageDocument, MediaFilter, SortField,
+    VaultIndex, VaultItem, VideoDocument,
 };
 use serde::Serialize;
 use std::fs;
@@ -108,6 +108,10 @@ pub async fn auto_register_job_result(
                 .unwrap_or(false),
             result.get("stem_type").and_then(as_string),
             result.get("lyrics_text").and_then(as_string),
+            result
+                .get("asset_kind")
+                .or_else(|| result.get("assetKind"))
+                .and_then(as_string),
             tags,
         )
         .map(Some),
@@ -158,7 +162,7 @@ impl VaultDirs {
 
 // CLAUDE_INTERFACE: Search vault
 // Command: "vault_search"
-// Args: { query?: string, media_filter?: "all"|"images"|"audio"|"videos"|"stems"|"favorites", sort_by?: "newest"|"oldest"|"title"|"size"|"duration", limit?: number, offset?: number }
+// Args: { query?: string, media_filter?: "all"|"images"|"audio"|"gener8_song"|"stem"|"riff"|"sample"|"reference"|"cover_source"|"local_audio"|"videos"|"favorites", sort_by?: "newest"|"oldest"|"title"|"size"|"duration", limit?: number, offset?: number }
 // Returns: VaultSearchResponse { items: VaultItem[], total: number, limit: number, offset: number }
 // Note: VaultItem is discriminated union by media_type: "image" | "audio" | "video"
 #[tauri::command]
@@ -307,6 +311,7 @@ pub async fn vault_register_audio(
     is_stem: bool,
     stem_type: Option<String>,
     lyrics_text: Option<String>,
+    asset_kind: Option<String>,
     tags: Vec<String>,
     vault: State<'_, VaultState>,
 ) -> Result<VaultItem, String> {
@@ -325,6 +330,7 @@ pub async fn vault_register_audio(
         is_stem,
         stem_type,
         lyrics_text,
+        asset_kind,
         tags,
     )
 }
@@ -372,6 +378,15 @@ fn parse_media_filter(value: Option<&str>) -> Result<MediaFilter, String> {
         "all" => Ok(MediaFilter::All),
         "images" | "image" => Ok(MediaFilter::Images),
         "audio" => Ok(MediaFilter::Audio),
+        "gener8_songs" | "gener8_song" | "songs" => {
+            Ok(MediaFilter::AudioKind("gener8_song".to_string()))
+        }
+        "riffs" | "riff" => Ok(MediaFilter::AudioKind("riff".to_string())),
+        "samples" | "sample" => Ok(MediaFilter::AudioKind("sample".to_string())),
+        "references" | "reference" => Ok(MediaFilter::AudioKind("reference".to_string())),
+        "cover_sources" | "cover_source" => Ok(MediaFilter::AudioKind("cover_source".to_string())),
+        "cover_outputs" | "cover_output" => Ok(MediaFilter::AudioKind("cover_output".to_string())),
+        "local_audio" => Ok(MediaFilter::AudioKind("local_audio".to_string())),
         "videos" | "video" => Ok(MediaFilter::Videos),
         "stems" | "stem" => Ok(MediaFilter::Stems),
         "favorites" | "favorite" => Ok(MediaFilter::Favorites),
@@ -470,16 +485,26 @@ pub(crate) fn register_audio_with_dirs(
     is_stem: bool,
     stem_type: Option<String>,
     lyrics_text: Option<String>,
+    asset_kind: Option<String>,
     tags: Vec<String>,
 ) -> Result<VaultItem, String> {
     let id = Uuid::new_v4().to_string();
-    let target_dir = if is_stem { &dirs.audio_stems } else { &dirs.audio };
+    let target_dir = if is_stem {
+        &dirs.audio_stems
+    } else {
+        &dirs.audio
+    };
     fs::create_dir_all(target_dir).map_err(|e| e.to_string())?;
     let destination = destination_path(target_dir, &id, &source);
     move_into_vault(&source, &destination)?;
 
     let metadata = fs::metadata(&destination).map_err(|e| e.to_string())?;
     let now = now_timestamp();
+    let mut tags = tags;
+    let resolved_asset_kind = resolve_audio_asset_kind(asset_kind, is_stem, &tags);
+    tags.push(format!("asset:{resolved_asset_kind}"));
+    tags.sort();
+    tags.dedup();
     let doc = AudioDocument {
         id,
         applet_id: "gener8".into(),
@@ -501,9 +526,30 @@ pub(crate) fn register_audio_with_dirs(
         stem_type,
         lyrics_aligned: false,
         lyrics_text,
+        asset_kind: Some(resolved_asset_kind),
     };
     vault.index_audio(&doc).map_err(|e| e.to_string())?;
     Ok(VaultItem::Audio(doc))
+}
+
+fn resolve_audio_asset_kind(asset_kind: Option<String>, is_stem: bool, tags: &[String]) -> String {
+    if let Some(kind) = asset_kind
+        .as_deref()
+        .map(str::trim)
+        .filter(|kind| !kind.is_empty())
+    {
+        return kind.to_string();
+    }
+    if let Some(kind) = tags
+        .iter()
+        .find_map(|tag| tag.strip_prefix("asset:").filter(|kind| !kind.is_empty()))
+    {
+        return kind.to_string();
+    }
+    if is_stem {
+        return "stem".to_string();
+    }
+    "gener8_song".to_string()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -697,9 +743,18 @@ mod tests {
 
     #[test]
     fn vault_parse_filters_and_sorts() {
-        assert_eq!(parse_media_filter(Some("images")).unwrap(), MediaFilter::Images);
-        assert_eq!(parse_media_filter(Some("stems")).unwrap(), MediaFilter::Stems);
-        assert_eq!(parse_sort_field(Some("duration")).unwrap(), SortField::Duration);
+        assert_eq!(
+            parse_media_filter(Some("images")).unwrap(),
+            MediaFilter::Images
+        );
+        assert_eq!(
+            parse_media_filter(Some("stems")).unwrap(),
+            MediaFilter::Stems
+        );
+        assert_eq!(
+            parse_sort_field(Some("duration")).unwrap(),
+            SortField::Duration
+        );
     }
 
     #[test]

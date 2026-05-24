@@ -168,6 +168,7 @@ export default function CreateView() {
                   filePath,
                   durationSeconds: duration,
                   bpm: params.bpm,
+                  assetKind: 'gener8_song',
                   tags: ['gener8', 'music', audioMode],
                 });
                 setVaultSaveState('saved');
@@ -552,6 +553,7 @@ export default function CreateView() {
                       filePath: lastCompletedJob.filePath,
                       durationSeconds: lastCompletedJob.duration ?? 0,
                       bpm: params.bpm,
+                      assetKind: 'gener8_song',
                       tags: ['gener8', 'music', audioMode],
                     });
                     setVaultSaveState('saved');

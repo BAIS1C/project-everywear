@@ -20,12 +20,17 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'all',       label: 'All',       icon: null },
-  { id: 'image',     label: 'Images',    icon: <Image size={13} /> },
-  { id: 'audio',     label: 'Audio',     icon: <Music size={13} /> },
-  { id: 'video',     label: 'Videos',    icon: <Film size={13} /> },
-  { id: 'stem',      label: 'Stems',     icon: <FileAudio size={13} /> },
-  { id: 'favorites', label: 'Favorites', icon: <Star size={13} /> },
+  { id: 'all',          label: 'All',           icon: null },
+  { id: 'gener8_song',  label: 'Gener8 Songs',  icon: <Music size={13} /> },
+  { id: 'stem',         label: 'Stems',         icon: <FileAudio size={13} /> },
+  { id: 'riff',         label: 'Riffs',         icon: <FileAudio size={13} /> },
+  { id: 'sample',       label: 'Samples',       icon: <FileAudio size={13} /> },
+  { id: 'reference',    label: 'References',    icon: <FileAudio size={13} /> },
+  { id: 'cover_source', label: 'Cover Sources', icon: <FileAudio size={13} /> },
+  { id: 'local_audio',  label: 'Local Audio',   icon: <FileAudio size={13} /> },
+  { id: 'image',        label: 'Images',        icon: <Image size={13} /> },
+  { id: 'video',        label: 'Videos',        icon: <Film size={13} /> },
+  { id: 'favorites',    label: 'Favorites',     icon: <Star size={13} /> },
 ];
 
 const SORT_OPTIONS: { value: VaultSortBy; label: string }[] = [
@@ -66,6 +71,20 @@ function mediaIcon(type: string): React.ReactNode {
     case 'audio': return <Music size={14} />;
     case 'video': return <Film size={14} />;
     default: return <FileAudio size={14} />;
+  }
+}
+
+function itemKindLabel(item: VaultItem): string {
+  switch (item.asset_kind) {
+    case 'gener8_song': return 'Gener8 song';
+    case 'stem': return item.stem_type ? `Stem: ${item.stem_type}` : 'Stem';
+    case 'riff': return 'Riff';
+    case 'sample': return 'Sample';
+    case 'reference': return 'Reference';
+    case 'cover_source': return 'Cover source';
+    case 'cover_output': return 'Cover output';
+    case 'local_audio': return 'Local audio';
+    default: return item.media_type;
   }
 }
 
@@ -120,7 +139,7 @@ function VaultItemRow({
           {item.title}
         </div>
         <div className="text-xs text-s3-text-muted truncate flex items-center gap-2">
-          <span className="flex items-center gap-1">{mediaIcon(item.media_type)} {item.media_type}</span>
+          <span className="flex items-center gap-1">{mediaIcon(item.media_type)} {itemKindLabel(item)}</span>
           {item.applet_id && <span>{item.applet_id}</span>}
         </div>
       </div>
@@ -389,7 +408,7 @@ export default function LibraryView() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 px-6 pt-3 pb-1">
+      <div className="flex flex-wrap gap-1 px-6 pt-3 pb-1">
         {TABS.map((tab) => (
           <button
             key={tab.id}

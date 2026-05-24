@@ -521,23 +521,23 @@ mod tests {
     use super::*;
 
     fn sample_manifest() -> AppletManifest {
-            AppletManifest {
-                applet: AppletMeta {
-                    id: "test".to_string(),
-                    name: "Test".to_string(),
-                    version: "0.1.0".to_string(),
+        AppletManifest {
+            applet: AppletMeta {
+                id: "test".to_string(),
+                name: "Test".to_string(),
+                version: "0.1.0".to_string(),
                 description: "Test applet".to_string(),
                 icon: "icon.png".to_string(),
-                    transport: "tauri".to_string(),
-                    frontend_port: None,
-                },
-                ui: None,
-                assets: Vec::new(),
-                permissions: None,
-                entitlements: BTreeMap::new(),
-                engine: EngineMeta {
-                    engine_type: "llm".to_string(),
-                    backend: "server".to_string(),
+                transport: "tauri".to_string(),
+                frontend_port: None,
+            },
+            ui: None,
+            assets: Vec::new(),
+            permissions: None,
+            entitlements: BTreeMap::new(),
+            engine: EngineMeta {
+                engine_type: "llm".to_string(),
+                backend: "server".to_string(),
                 server_binary: String::new(),
                 sidecar: None,
             },

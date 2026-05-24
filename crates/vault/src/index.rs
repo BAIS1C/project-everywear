@@ -21,6 +21,7 @@ pub enum MediaFilter {
     All,
     Images,
     Audio,
+    AudioKind(String),
     Videos,
     Stems,
     Favorites,
@@ -89,17 +90,32 @@ impl VaultIndex {
 
     pub fn index_image(&self, doc: &ImageDocument) -> Result<()> {
         let tantivy_doc = image_to_tantivy(&self.image_schema, doc)?;
-        replace_document(&self.images_index, self.image_fields.id, &doc.id, tantivy_doc)
+        replace_document(
+            &self.images_index,
+            self.image_fields.id,
+            &doc.id,
+            tantivy_doc,
+        )
     }
 
     pub fn index_audio(&self, doc: &AudioDocument) -> Result<()> {
         let tantivy_doc = audio_to_tantivy(&self.audio_schema, doc)?;
-        replace_document(&self.audio_index, self.audio_fields.id, &doc.id, tantivy_doc)
+        replace_document(
+            &self.audio_index,
+            self.audio_fields.id,
+            &doc.id,
+            tantivy_doc,
+        )
     }
 
     pub fn index_video(&self, doc: &VideoDocument) -> Result<()> {
         let tantivy_doc = video_to_tantivy(&self.video_schema, doc)?;
-        replace_document(&self.video_index, self.video_fields.id, &doc.id, tantivy_doc)
+        replace_document(
+            &self.video_index,
+            self.video_fields.id,
+            &doc.id,
+            tantivy_doc,
+        )
     }
 
     pub fn search(
@@ -110,25 +126,24 @@ impl VaultIndex {
         limit: usize,
         offset: usize,
     ) -> Result<Vec<VaultItem>> {
-        let mut items = self.search_all_matching(query, media_filter.unwrap_or(MediaFilter::All))?;
+        let mut items =
+            self.search_all_matching(query, media_filter.unwrap_or(MediaFilter::All))?;
         sort_items(&mut items, sort_by);
         dedupe_items(&mut items);
         Ok(items.into_iter().skip(offset).take(limit).collect())
     }
 
     pub fn search_total(&self, query: &str, media_filter: Option<MediaFilter>) -> Result<usize> {
-        let mut items = self.search_all_matching(query, media_filter.unwrap_or(MediaFilter::All))?;
+        let mut items =
+            self.search_all_matching(query, media_filter.unwrap_or(MediaFilter::All))?;
         dedupe_items(&mut items);
         Ok(items.len())
     }
 
     pub fn get_by_id(&self, id: &str) -> Result<Option<VaultItem>> {
-        if let Some(doc) = find_one(
-            &self.images_index,
-            self.image_fields.id,
-            id,
-            |doc| self.image_from_tantivy(doc),
-        )? {
+        if let Some(doc) = find_one(&self.images_index, self.image_fields.id, id, |doc| {
+            self.image_from_tantivy(doc)
+        })? {
             return Ok(Some(VaultItem::Image(doc)));
         }
         if let Some(doc) = find_one(&self.audio_index, self.audio_fields.id, id, |doc| {
@@ -215,7 +230,10 @@ impl VaultIndex {
         let mut items = Vec::new();
         let include_images = matches!(
             filter,
-            MediaFilter::All | MediaFilter::Images | MediaFilter::Favorites | MediaFilter::Applet(_)
+            MediaFilter::All
+                | MediaFilter::Images
+                | MediaFilter::Favorites
+                | MediaFilter::Applet(_)
         );
         let include_audio = matches!(
             filter,
@@ -227,7 +245,10 @@ impl VaultIndex {
         );
         let include_video = matches!(
             filter,
-            MediaFilter::All | MediaFilter::Videos | MediaFilter::Favorites | MediaFilter::Applet(_)
+            MediaFilter::All
+                | MediaFilter::Videos
+                | MediaFilter::Favorites
+                | MediaFilter::Applet(_)
         );
 
         if include_images {
@@ -302,7 +323,7 @@ impl VaultIndex {
     }
 
     fn audio_from_tantivy(&self, doc: &TantivyDocument) -> Result<AudioDocument> {
-        Ok(AudioDocument {
+        let mut audio = AudioDocument {
             id: text_value(doc, self.audio_fields.id).unwrap_or_default(),
             applet_id: text_value(doc, self.audio_fields.applet_id).unwrap_or_default(),
             title: text_value(doc, self.audio_fields.title).unwrap_or_default(),
@@ -323,7 +344,10 @@ impl VaultIndex {
             stem_type: text_value(doc, self.audio_fields.stem_type),
             lyrics_aligned: bool_value(doc, self.audio_fields.lyrics_aligned),
             lyrics_text: text_value(doc, self.audio_fields.lyrics_text),
-        })
+            asset_kind: None,
+        };
+        audio.asset_kind = Some(audio_asset_kind(&audio).to_string());
+        Ok(audio)
     }
 
     fn video_from_tantivy(&self, doc: &TantivyDocument) -> Result<VideoDocument> {
@@ -436,6 +460,7 @@ fn audio_to_tantivy(schema: &Schema, doc: &AudioDocument) -> Result<TantivyDocum
     let mut value = serde_json::to_value(doc)?;
     if let serde_json::Value::Object(map) = &mut value {
         remove_nulls(map);
+        map.remove("asset_kind");
         return TantivyDocument::from_json_object(schema, map.clone()).map_err(Into::into);
     }
     unreachable!("document structs serialize to objects")
@@ -524,11 +549,35 @@ fn item_matches_filter(item: &VaultItem, filter: &MediaFilter) -> bool {
         MediaFilter::All => true,
         MediaFilter::Images => matches!(item, VaultItem::Image(_)),
         MediaFilter::Audio => matches!(item, VaultItem::Audio(_)),
+        MediaFilter::AudioKind(kind) => matches!(
+            item,
+            VaultItem::Audio(doc) if audio_asset_kind(doc) == kind.as_str()
+        ),
         MediaFilter::Videos => matches!(item, VaultItem::Video(_)),
         MediaFilter::Stems => matches!(item, VaultItem::Audio(doc) if doc.is_stem),
         MediaFilter::Favorites => item_favorite(item),
         MediaFilter::Applet(applet_id) => item_applet_id(item) == applet_id,
     }
+}
+
+pub fn audio_asset_kind(doc: &AudioDocument) -> &str {
+    if let Some(kind) = doc.asset_kind.as_deref().filter(|kind| !kind.is_empty()) {
+        return kind;
+    }
+    if let Some(kind) = doc
+        .tags
+        .iter()
+        .find_map(|tag| tag.strip_prefix("asset:").filter(|kind| !kind.is_empty()))
+    {
+        return kind;
+    }
+    if doc.is_stem {
+        return "stem";
+    }
+    if doc.applet_id == "gener8" {
+        return "gener8_song";
+    }
+    "local_audio"
 }
 
 fn dedupe_items(items: &mut Vec<VaultItem>) {
@@ -670,7 +719,13 @@ mod tests {
         index.index_image(&doc).unwrap();
 
         let hits = index
-            .search("portrait", Some(MediaFilter::Images), SortField::Newest, 10, 0)
+            .search(
+                "portrait",
+                Some(MediaFilter::Images),
+                SortField::Newest,
+                10,
+                0,
+            )
             .unwrap();
         assert_eq!(hits.len(), 1);
         assert_eq!(item_id(&hits[0]), doc.id);

@@ -146,6 +146,8 @@ pub struct AudioDocument {
     pub lyrics_aligned: bool,
     #[serde(default)]
     pub lyrics_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub asset_kind: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]

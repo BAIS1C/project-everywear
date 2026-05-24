@@ -40,12 +40,20 @@ pub fn build_requirements_from_manifest(
 
     for group in &manifest.model_groups {
         for model in &group.models {
-            push_unique(&mut requirements, requirement_from_model(applet_id, &manifest.engine.engine_type, model));
+            push_unique(
+                &mut requirements,
+                requirement_from_model(applet_id, &manifest.engine.engine_type, model),
+            );
         }
     }
 
     for pack in manifest.upgrade_packs.values() {
-        collect_pack_requirements(applet_id, &manifest.engine.engine_type, pack, &mut requirements);
+        collect_pack_requirements(
+            applet_id,
+            &manifest.engine.engine_type,
+            pack,
+            &mut requirements,
+        );
     }
 
     apply_known_applet_overrides(applet_id, &mut requirements);
@@ -382,7 +390,10 @@ fn collect_pack_requirements(
             size_bytes: Some(file.size_bytes),
             sha256: file.sha256.clone(),
         };
-        push_unique(out, requirement_from_model(applet_id, engine_type, &manifest_req));
+        push_unique(
+            out,
+            requirement_from_model(applet_id, engine_type, &manifest_req),
+        );
     }
 
     for quant in &pack.quants {
@@ -397,7 +408,10 @@ fn collect_pack_requirements(
             size_bytes: Some(quant.size_bytes),
             sha256: quant.sha256.clone(),
         };
-        push_unique(out, requirement_from_model(applet_id, engine_type, &manifest_req));
+        push_unique(
+            out,
+            requirement_from_model(applet_id, engine_type, &manifest_req),
+        );
     }
 }
 
@@ -507,7 +521,11 @@ fn accepted_formats(filename: Option<&str>, engine_type: &str, key: &str) -> Vec
     } else if lower.ends_with(".ckpt") {
         vec![ModelFormat::CKPT]
     } else {
-        vec![ModelFormat::GGUF, ModelFormat::Safetensors, ModelFormat::CKPT]
+        vec![
+            ModelFormat::GGUF,
+            ModelFormat::Safetensors,
+            ModelFormat::CKPT,
+        ]
     }
 }
 
@@ -555,8 +573,8 @@ fn strip_quant_and_extension(filename: &str) -> &str {
         .or_else(|| filename.strip_suffix(".ckpt"))
         .unwrap_or(filename);
     for quant in [
-        "-Q8_0", "-Q6_K", "-Q5_K_M", "-Q4_K_M", "-Q4_0", "_Q8_0", "_Q6_K", "_Q5_K_M",
-        "_Q4_K_M", "_Q4_0",
+        "-Q8_0", "-Q6_K", "-Q5_K_M", "-Q4_K_M", "-Q4_0", "_Q8_0", "_Q6_K", "_Q5_K_M", "_Q4_K_M",
+        "_Q4_0",
     ] {
         if let Some(prefix) = without_ext.strip_suffix(quant) {
             return prefix;
@@ -606,7 +624,10 @@ fn gguf_requirement(
         everywear_model_id: id.into(),
         applet_id: applet_id.into(),
         accepted_formats: vec![ModelFormat::GGUF],
-        accepted_architectures: accepted_architectures.into_iter().map(str::to_string).collect(),
+        accepted_architectures: accepted_architectures
+            .into_iter()
+            .map(str::to_string)
+            .collect(),
         preferred_quant: Some(preferred_quant.into()),
         accepted_quants: accepted_quants.into_iter().map(str::to_string).collect(),
         min_layers: None,

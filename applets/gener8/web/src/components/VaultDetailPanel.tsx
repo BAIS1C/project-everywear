@@ -3,18 +3,12 @@
  * VaultDetailPanel — detail view for a single vault item.
  *
  * Features:
- *   - Image/video preview via convertFileSrc, audio placeholder
+ *   - Image/video/audio preview via convertFileSrc
  *   - Favorite toggle (star icon)
  *   - Delete with confirmation modal
  *   - Editable tags (remove + add)
  *   - Generation info per media type
  *   - Download / Open Folder actions
- *
- * CODEX_NEEDED: Audio preview playback
- * No audio player in vault detail yet. Need either:
- * (A) An audio player component (use HTML5 <audio> with vault file URL via convertFileSrc)
- * (B) A "Play in Gener8" button that opens Gener8 and loads the song
- * For now, show a waveform placeholder with "Audio preview coming soon"
  *
  * CODEX_NEEDED: Vault file path in asset protocol scope
  * Same as vault.ts — convertFileSrc needs vault dirs in Tauri scope
@@ -197,6 +191,20 @@ function formatDuration(secs?: number): string | null {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function itemKindLabel(item: VaultItem): string {
+  switch (item.asset_kind) {
+    case 'gener8_song': return 'Gener8 song';
+    case 'stem': return item.stem_type ? `Stem: ${item.stem_type}` : 'Stem';
+    case 'riff': return 'Riff';
+    case 'sample': return 'Sample';
+    case 'reference': return 'Reference';
+    case 'cover_source': return 'Cover source';
+    case 'cover_output': return 'Cover output';
+    case 'local_audio': return 'Local audio';
+    default: return item.media_type;
+  }
+}
+
 // ── Main Component ──────────────────────────────────────────────────
 
 export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: () => void }) {
@@ -306,10 +314,9 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
         )}
 
         {item.media_type === 'audio' && (
-          <div className="flex flex-col items-center gap-3" style={{ color: 'var(--ew-text-muted)' }}>
+          <div className="flex flex-col items-center gap-4 w-full max-w-xl" style={{ color: 'var(--ew-text-muted)' }}>
             <Music size={48} className="opacity-30" />
-            <span className="text-xs">Audio preview coming soon</span>
-            {/* CODEX_NEEDED: HTML5 <audio> with convertFileSrc URL */}
+            <audio src={fileUrl} controls preload="metadata" className="w-full" />
           </div>
         )}
       </div>
@@ -326,6 +333,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
         {/* Meta */}
         <div className="mb-4">
           <InfoRow label="Applet" value={item.applet_id} />
+          <InfoRow label="Section" value={itemKindLabel(item)} />
           <InfoRow label="Created" value={formatDate(item.created_at)} />
           <InfoRow label="Size" value={formatBytes(item.file_size_bytes)} />
           <InfoRow label="Type" value={item.mime_type} />

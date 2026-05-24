@@ -215,7 +215,11 @@ pub async fn gener8_generate(
     let id = data
         .get("id")
         .and_then(|v| v.as_str().map(str::to_string))
-        .or_else(|| data.get("id").and_then(|v| v.as_u64()).map(|n| n.to_string()))
+        .or_else(|| {
+            data.get("id")
+                .and_then(|v| v.as_u64())
+                .map(|n| n.to_string())
+        })
         .ok_or_else(|| "ace-server did not return a job id".to_string())?;
     if let Some(title) = string_field(&params, &["title"]) {
         state
@@ -316,6 +320,7 @@ pub async fn gener8_generation_status(
                     false,
                     None,
                     None,
+                    Some("gener8_song".to_string()),
                     vec!["gener8".to_string()],
                 )?
             };
@@ -451,7 +456,14 @@ fn preferred_dit_model(models: &[String]) -> String {
 fn supported_task_types(model: &str) -> Vec<&'static str> {
     let lower = model.to_ascii_lowercase();
     if lower.contains("xl-base") {
-        vec!["text2music", "reference", "cover", "extract", "lego", "complete"]
+        vec![
+            "text2music",
+            "reference",
+            "cover",
+            "extract",
+            "lego",
+            "complete",
+        ]
     } else {
         vec!["text2music"]
     }
@@ -731,7 +743,11 @@ fn build_track_filename(title: Option<&str>, id: &str) -> String {
 }
 
 fn extension_for_content_type(content_type: Option<&str>) -> &'static str {
-    match content_type.unwrap_or_default().to_ascii_lowercase().as_str() {
+    match content_type
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
         ct if ct.contains("wav") => "wav",
         ct if ct.contains("flac") => "flac",
         ct if ct.contains("ogg") => "ogg",

@@ -208,7 +208,9 @@ pub fn default_scan_targets() -> Vec<ScanTarget> {
         push_target(
             &mut targets,
             ModelSourceTool::LmStudio,
-            PathBuf::from(local_appdata).join("LM Studio").join("models"),
+            PathBuf::from(local_appdata)
+                .join("LM Studio")
+                .join("models"),
             true,
             vec!["*.gguf"],
         );
@@ -393,31 +395,34 @@ fn looks_like_gguf(path: &Path) -> bool {
         && &buf == b"GGUF"
 }
 
-fn discovered_from_path(path: &Path, tool: &ModelSourceTool, size_bytes: u64) -> Option<DiscoveredModel> {
+fn discovered_from_path(
+    path: &Path,
+    tool: &ModelSourceTool,
+    size_bytes: u64,
+) -> Option<DiscoveredModel> {
     let filename = path.file_name()?.to_string_lossy().to_string();
     let lower = filename.to_ascii_lowercase();
 
-    let (format, gguf_metadata, safetensors_metadata) = if lower.ends_with(".gguf")
-        || looks_like_gguf(path)
-    {
-        (
-            ModelFormat::GGUF,
-            LocalModelScanner::read_gguf_metadata(path).ok(),
-            None,
-        )
-    } else if lower.ends_with(".safetensors") {
-        (
-            ModelFormat::Safetensors,
-            None,
-            LocalModelScanner::read_safetensors_metadata(path).ok(),
-        )
-    } else if lower.ends_with(".ckpt") {
-        (ModelFormat::CKPT, None, None)
-    } else if lower.ends_with(".bin") {
-        (ModelFormat::Bin, None, None)
-    } else {
-        return None;
-    };
+    let (format, gguf_metadata, safetensors_metadata) =
+        if lower.ends_with(".gguf") || looks_like_gguf(path) {
+            (
+                ModelFormat::GGUF,
+                LocalModelScanner::read_gguf_metadata(path).ok(),
+                None,
+            )
+        } else if lower.ends_with(".safetensors") {
+            (
+                ModelFormat::Safetensors,
+                None,
+                LocalModelScanner::read_safetensors_metadata(path).ok(),
+            )
+        } else if lower.ends_with(".ckpt") {
+            (ModelFormat::CKPT, None, None)
+        } else if lower.ends_with(".bin") {
+            (ModelFormat::Bin, None, None)
+        } else {
+            return None;
+        };
 
     Some(DiscoveredModel {
         source_path: path.to_path_buf(),
@@ -501,10 +506,11 @@ fn check_gguf_compatibility(
             .iter()
             .any(|accepted| accepted.eq_ignore_ascii_case(quant));
 
-    if filename_matches && required
-        .preferred_quant
-        .as_deref()
-        .is_some_and(|preferred| preferred.eq_ignore_ascii_case(quant))
+    if filename_matches
+        && required
+            .preferred_quant
+            .as_deref()
+            .is_some_and(|preferred| preferred.eq_ignore_ascii_case(quant))
     {
         return Compatibility::Exact;
     }
@@ -746,7 +752,12 @@ fn read_safetensors_metadata_impl(path: &Path) -> Result<SafetensorsMetadata> {
 }
 
 fn infer_safetensors_architecture(tensor_names: &[&str]) -> Option<String> {
-    let joined = tensor_names.iter().take(64).copied().collect::<Vec<_>>().join("\n");
+    let joined = tensor_names
+        .iter()
+        .take(64)
+        .copied()
+        .collect::<Vec<_>>()
+        .join("\n");
     if joined.contains("diffusion_model") && joined.contains("ltx") {
         Some("ltx-video".into())
     } else if joined.contains("transformer_blocks") && joined.contains("time_text_embed") {
@@ -786,7 +797,10 @@ fn metadata_u64(values: &HashMap<String, MetadataValue>, key: &str) -> u64 {
     values.get(key).and_then(MetadataValue::as_u64).unwrap_or(0)
 }
 
-fn read_metadata_value(cursor: &mut Cursor<Vec<u8>>, value_type: u32) -> Result<Option<MetadataValue>> {
+fn read_metadata_value(
+    cursor: &mut Cursor<Vec<u8>>,
+    value_type: u32,
+) -> Result<Option<MetadataValue>> {
     match value_type {
         0 => Ok(Some(MetadataValue::U64(read_u8(cursor)? as u64))),
         1 => {
@@ -984,7 +998,8 @@ mod tests {
         let path = dir.path().join("z-image-q8.safetensors");
         let header = br#"{"transformer_blocks.0.time_text_embed.weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]}}"#;
         let mut file = File::create(&path).unwrap();
-        file.write_all(&(header.len() as u64).to_le_bytes()).unwrap();
+        file.write_all(&(header.len() as u64).to_le_bytes())
+            .unwrap();
         file.write_all(header).unwrap();
         file.write_all(&[0u8; 4]).unwrap();
 
@@ -1053,7 +1068,9 @@ mod tests {
                 head_count: 20,
             }),
             safetensors_metadata: None,
-            everywear_compatibility: Compatibility::Possible { note: String::new() },
+            everywear_compatibility: Compatibility::Possible {
+                note: String::new(),
+            },
             suggested_everywear_model_id: None,
         };
         let req = ModelRequirement {
@@ -1073,7 +1090,10 @@ mod tests {
             size_bytes: Some(2_500_000_000),
             sha256: None,
         };
-        assert_eq!(scanner.check_compatibility(&discovered, &req), Compatibility::Exact);
+        assert_eq!(
+            scanner.check_compatibility(&discovered, &req),
+            Compatibility::Exact
+        );
 
         let mut q8 = discovered.clone();
         q8.filename = "Qwen3-4B-Q8_0.gguf".into();

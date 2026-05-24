@@ -46,4 +46,3 @@ pub async fn focus_applet_window(label: String, app: tauri::AppHandle) -> Result
 pub async fn is_applet_window_open(label: String, app: tauri::AppHandle) -> Result<bool, String> {
     Ok(app.get_webview_window(&label).is_some())
 }
-

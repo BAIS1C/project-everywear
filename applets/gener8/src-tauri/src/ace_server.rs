@@ -158,9 +158,12 @@ fn locate_binary() -> Result<PathBuf> {
 
 fn provision_sidecar_dir(candidate: &Path, platform_dir: &Path) -> Result<()> {
     std::fs::create_dir_all(platform_dir)?;
-    let source_dir = candidate
-        .parent()
-        .ok_or_else(|| anyhow!("ace-server candidate has no parent: {}", candidate.display()))?;
+    let source_dir = candidate.parent().ok_or_else(|| {
+        anyhow!(
+            "ace-server candidate has no parent: {}",
+            candidate.display()
+        )
+    })?;
 
     for entry in std::fs::read_dir(source_dir)? {
         let entry = entry?;

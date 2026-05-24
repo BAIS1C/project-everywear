@@ -58,7 +58,10 @@ pub async fn add_custom_model_path(
 ) -> Result<(), String> {
     let path = PathBuf::from(path);
     if !path.exists() {
-        return Err(format!("custom model path does not exist: {}", path.display()));
+        return Err(format!(
+            "custom model path does not exist: {}",
+            path.display()
+        ));
     }
 
     {

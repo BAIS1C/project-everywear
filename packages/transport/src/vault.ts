@@ -33,6 +33,7 @@ export interface VaultItem {
   file_size_bytes: number;
   mime_type: string;
   favorite: boolean;
+  asset_kind?: VaultAssetKind;
   // Image-specific (present when media_type === "image")
   width?: number;
   height?: number;
@@ -54,6 +55,23 @@ export interface VaultItem {
   generation_mode?: string;
   has_audio?: boolean;
 }
+
+export type VaultAssetKind =
+  | 'gener8_song'
+  | 'stem'
+  | 'riff'
+  | 'sample'
+  | 'reference'
+  | 'cover_source'
+  | 'cover_output'
+  | 'local_audio'
+  | 'style_patch'
+  | 'visual_patch'
+  | 'trait_shard'
+  | 'skill_shard'
+  | 'conversation'
+  | 'context'
+  | 'log';
 
 export interface VaultSearchResponse {
   items: VaultItem[];
@@ -180,6 +198,7 @@ export interface RegisterAudioParams {
   isStem?: boolean;
   stemType?: string;
   lyricsText?: string;
+  assetKind?: VaultAssetKind;
   tags?: string[];
 }
 
@@ -195,6 +214,7 @@ export async function vaultRegisterAudio(params: RegisterAudioParams): Promise<V
     isStem: params.isStem,
     stemType: params.stemType,
     lyricsText: params.lyricsText,
+    assetKind: params.assetKind,
     tags: params.tags,
   });
 }

@@ -79,6 +79,37 @@ pub struct MigrationOperation {
     pub status: String,
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LegacyLibraryIndex {
+    #[serde(default)]
+    tracks: Vec<LegacyLibraryTrack>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LegacyLibraryTrack {
+    title: String,
+    #[serde(default)]
+    style: String,
+    #[serde(default)]
+    lyrics: String,
+    #[serde(default)]
+    audio_key: String,
+    #[serde(default)]
+    duration: f64,
+    #[serde(default)]
+    bpm: Option<f64>,
+    #[serde(default)]
+    key_scale: Option<String>,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    created_at: String,
+    #[serde(default)]
+    lrc_data: Option<String>,
+}
+
 pub fn plan() -> Result<MigrationPlan> {
     let legacy_app_data_dir = legacy_s3_app_data_dir();
     let legacy_models_dir = legacy_app_data_dir.join("models");
@@ -384,6 +415,8 @@ fn migrate_vault_audio(
         everywear_paths::ensure_vault_dirs().context("ensure Everywear Vault directories")?;
     }
 
+    let legacy_tracks = load_legacy_library_tracks(&plan.legacy_app_data_dir)?;
+
     for planned in &plan.vault_audio_files {
         let mut target = planned.target.clone();
         let hash = if dry_run {
@@ -425,7 +458,8 @@ fn migrate_vault_audio(
             }
 
             if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
-                let doc = audio_document_for_import(&target, hash)?;
+                let legacy_track = match_legacy_track(&legacy_tracks, &planned.source, &target);
+                let doc = audio_document_for_import(&target, hash, legacy_track)?;
                 index.index_audio(&doc).with_context(|| {
                     format!("index imported audio in vault {}", target.display())
                 })?;
@@ -516,7 +550,10 @@ fn collect_vault_audio_import_files() -> Result<Vec<PlannedFile>> {
     }
 
     let legacy_app_data_dir = legacy_s3_app_data_dir();
-    candidates.push((legacy_app_data_dir.join("audio"), "legacy-app-audio".to_string()));
+    candidates.push((
+        legacy_app_data_dir.join("audio"),
+        "legacy-app-audio".to_string(),
+    ));
     candidates.push((
         everywear_paths::data_dir(APPLET_ID).join("audio"),
         "everywear-data-audio".to_string(),
@@ -622,28 +659,49 @@ fn sha256_file(path: &Path) -> Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-fn audio_document_for_import(path: &Path, source_sha256: &str) -> Result<AudioDocument> {
+fn audio_document_for_import(
+    path: &Path,
+    source_sha256: &str,
+    legacy_track: Option<&LegacyLibraryTrack>,
+) -> Result<AudioDocument> {
     let metadata = fs::metadata(path).with_context(|| format!("metadata {}", path.display()))?;
-    let timestamp = metadata
+    let file_timestamp = metadata
         .created()
         .or_else(|_| metadata.modified())
         .ok()
         .and_then(system_time_to_unix_seconds)
         .unwrap_or_else(now_timestamp);
     let is_stem = is_stem_path(path);
-    let mut tags = vec!["gener8".to_string(), "legacy-import".to_string()];
+    let asset_kind = if is_stem { "stem" } else { "gener8_song" };
+    let timestamp = legacy_track
+        .and_then(|track| chrono::DateTime::parse_from_rfc3339(&track.created_at).ok())
+        .map(|created| created.timestamp().max(0) as u64)
+        .unwrap_or(file_timestamp);
+    let mut tags = legacy_track
+        .map(|track| track.tags.clone())
+        .unwrap_or_default();
+    tags.push("gener8".to_string());
+    tags.push("legacy-import".to_string());
+    tags.push(format!("asset:{asset_kind}"));
     if is_stem {
         tags.push("stem".to_string());
     }
+    tags.sort();
+    tags.dedup();
 
     Ok(AudioDocument {
         id: stable_audio_import_id(path, source_sha256),
         applet_id: APPLET_ID.to_string(),
-        title: path
-            .file_stem()
-            .and_then(|stem| stem.to_str())
-            .unwrap_or("Legacy Gener8 Audio")
-            .to_string(),
+        title: legacy_track
+            .map(|track| track.title.trim())
+            .filter(|title| !title.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                path.file_stem()
+                    .and_then(|stem| stem.to_str())
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| "Legacy Gener8 Audio".to_string()),
         tags,
         created_at: timestamp,
         updated_at: now_timestamp(),
@@ -651,17 +709,90 @@ fn audio_document_for_import(path: &Path, source_sha256: &str) -> Result<AudioDo
         file_size_bytes: metadata.len(),
         mime_type: mime_from_path(path),
         favorite: false,
-        duration_seconds: 0.0,
+        duration_seconds: legacy_track
+            .map(|track| track.duration)
+            .filter(|duration| *duration > 0.0)
+            .unwrap_or_default(),
         sample_rate: 0,
         channels: 0,
-        genre: None,
-        bpm: None,
-        key_signature: None,
+        genre: legacy_track
+            .map(|track| track.style.trim())
+            .filter(|style| !style.is_empty())
+            .map(str::to_string),
+        bpm: legacy_track.and_then(|track| track.bpm.map(|value| value.round().max(0.0) as u64)),
+        key_signature: legacy_track.and_then(|track| track.key_scale.clone()),
         is_stem,
         stem_type: infer_stem_type(path),
         lyrics_aligned: false,
-        lyrics_text: None,
+        lyrics_text: legacy_track
+            .map(|track| {
+                if track.lyrics.trim().is_empty() {
+                    track.lrc_data.as_deref().unwrap_or_default().trim()
+                } else {
+                    track.lyrics.trim()
+                }
+            })
+            .filter(|lyrics| !lyrics.is_empty())
+            .map(str::to_string),
+        asset_kind: Some(asset_kind.to_string()),
     })
+}
+
+fn load_legacy_library_tracks(legacy_app_data_dir: &Path) -> Result<Vec<LegacyLibraryTrack>> {
+    let mut tracks = Vec::new();
+    read_legacy_library_file(&legacy_app_data_dir.join("library.json"), &mut tracks)?;
+
+    let users_dir = legacy_app_data_dir.join("users");
+    if users_dir.exists() {
+        for path in walk_files(&users_dir)? {
+            if path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.eq_ignore_ascii_case("library.json"))
+            {
+                read_legacy_library_file(&path, &mut tracks)?;
+            }
+        }
+    }
+
+    Ok(tracks)
+}
+
+fn read_legacy_library_file(path: &Path, tracks: &mut Vec<LegacyLibraryTrack>) -> Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+    let raw = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let library = serde_json::from_str::<LegacyLibraryIndex>(&raw)
+        .with_context(|| format!("parse legacy library {}", path.display()))?;
+    tracks.extend(
+        library
+            .tracks
+            .into_iter()
+            .filter(|track| !track.audio_key.is_empty()),
+    );
+    Ok(())
+}
+
+fn match_legacy_track<'a>(
+    tracks: &'a [LegacyLibraryTrack],
+    source: &Path,
+    target: &Path,
+) -> Option<&'a LegacyLibraryTrack> {
+    let source = normalized_path(source);
+    let target = normalized_path(target);
+    tracks.iter().find(|track| {
+        let audio_key = normalized_key(&track.audio_key);
+        !audio_key.is_empty() && (source.ends_with(&audio_key) || target.ends_with(&audio_key))
+    })
+}
+
+fn normalized_path(path: &Path) -> String {
+    normalized_key(&path.to_string_lossy())
+}
+
+fn normalized_key(value: &str) -> String {
+    value.replace('\\', "/").to_ascii_lowercase()
 }
 
 fn stable_audio_import_id(path: &Path, source_sha256: &str) -> String {

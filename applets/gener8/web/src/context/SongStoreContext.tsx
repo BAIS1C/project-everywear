@@ -22,8 +22,8 @@ function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
 
 async function fetchMySongs(): Promise<VaultItem[]> {
   try {
-    const response = await vaultSearch('', 'audio', 'newest', 100, 0);
-    return response.items.filter((item) => item.media_type === 'audio' && !item.is_stem);
+    const response = await vaultSearch('', 'gener8_song', 'newest', 100, 0);
+    return response.items.filter((item) => item.media_type === 'audio' && item.asset_kind === 'gener8_song');
   } catch {
     return [];
   }

@@ -30,7 +30,18 @@ import {
 
 // ── Types ───────────────────────────────────────────────────────────────
 
-export type VaultMediaFilter = 'all' | 'image' | 'audio' | 'video' | 'stem' | 'favorites';
+export type VaultMediaFilter =
+  | 'all'
+  | 'image'
+  | 'gener8_song'
+  | 'stem'
+  | 'riff'
+  | 'sample'
+  | 'reference'
+  | 'cover_source'
+  | 'local_audio'
+  | 'video'
+  | 'favorites';
 export type VaultSortBy = 'newest' | 'oldest' | 'title' | 'size' | 'duration';
 
 export interface VaultContextValue {
@@ -100,9 +111,14 @@ function mapFilter(f: VaultMediaFilter): string | undefined {
   switch (f) {
     case 'all': return undefined;
     case 'image': return 'image';
-    case 'audio': return 'audio';
-    case 'video': return 'video';
+    case 'gener8_song': return 'gener8_song';
     case 'stem': return 'stem';
+    case 'riff': return 'riff';
+    case 'sample': return 'sample';
+    case 'reference': return 'reference';
+    case 'cover_source': return 'cover_source';
+    case 'local_audio': return 'local_audio';
+    case 'video': return 'video';
     case 'favorites': return 'favorites';
     default: return undefined;
   }

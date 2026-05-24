@@ -407,7 +407,14 @@ fn preferred_dit_model(models: &[String]) -> String {
 fn supported_task_types(model: &str) -> Vec<&'static str> {
     let lower = model.to_ascii_lowercase();
     if lower.contains("xl-base") {
-        vec!["text2music", "reference", "cover", "extract", "lego", "complete"]
+        vec![
+            "text2music",
+            "reference",
+            "cover",
+            "extract",
+            "lego",
+            "complete",
+        ]
     } else {
         vec!["text2music"]
     }
@@ -698,7 +705,12 @@ fn now_ms() -> u64 {
 fn strip_audio_url_to_key(url: &str) -> Option<String> {
     let u = url.trim();
     if let Some(idx) = u.find("/audio/") {
-        return Some(u[idx + "/audio/".len()..].split(['?', '#']).next()?.to_string());
+        return Some(
+            u[idx + "/audio/".len()..]
+                .split(['?', '#'])
+                .next()?
+                .to_string(),
+        );
     }
     u.strip_prefix("audio/")
         .map(|s| s.split(['?', '#']).next().unwrap_or(s).to_string())
@@ -733,7 +745,11 @@ async fn resolve_audio_request_b64(label: &str, audio_path_raw: &str) -> String 
             }
         }
     } else {
-        tracing::warn!("generate: {} audio key '{}' could not be resolved", label, key);
+        tracing::warn!(
+            "generate: {} audio key '{}' could not be resolved",
+            label,
+            key
+        );
         String::new()
     }
 }
@@ -933,8 +949,7 @@ async fn generate(
     }
 
     let source_audio_b64 = resolve_audio_request_b64("source", &source_audio_path_raw).await;
-    let mut ref_audio_b64 =
-        resolve_audio_request_b64("reference", &reference_audio_path_raw).await;
+    let mut ref_audio_b64 = resolve_audio_request_b64("reference", &reference_audio_path_raw).await;
     if ref_audio_b64.is_empty()
         && effective_task_type == "cover-nofsq"
         && !source_audio_b64.is_empty()
@@ -984,7 +999,11 @@ async fn generate(
     let lm_model = s(&raw, "lm_model")
         .or_else(|| s(&raw, "lmModel"))
         .unwrap_or_default();
-    let caption = body.style.clone().or(body.prompt.clone()).unwrap_or_default();
+    let caption = body
+        .style
+        .clone()
+        .or(body.prompt.clone())
+        .unwrap_or_default();
     let lyrics = body.lyrics.clone().unwrap_or_default();
     let keyscale = s(&raw, "keyscale")
         .or_else(|| s(&raw, "keyScale"))
@@ -1132,7 +1151,11 @@ async fn generate(
             let id_str: Option<String> = resp
                 .get("id")
                 .and_then(|v| v.as_str().map(str::to_string))
-                .or_else(|| resp.get("id").and_then(|v| v.as_u64()).map(|n| n.to_string()));
+                .or_else(|| {
+                    resp.get("id")
+                        .and_then(|v| v.as_u64())
+                        .map(|n| n.to_string())
+                });
             if let Some(id) = id_str {
                 if let Some(title) = s(&raw, "title") {
                     let trimmed = title.trim();
@@ -1308,7 +1331,11 @@ async fn generate_status(
                     ext
                 )
             } else {
-                format!("gener8/{}.{}", build_track_filename(title.as_deref(), &id), ext)
+                format!(
+                    "gener8/{}.{}",
+                    build_track_filename(title.as_deref(), &id),
+                    ext
+                )
             };
 
             let mut audio_urls: Vec<String> = Vec::new();
@@ -1412,12 +1439,20 @@ async fn upload_audio(
         .map(str::to_string);
     let ext = requested_name
         .as_deref()
-        .and_then(|name| std::path::Path::new(name).extension().and_then(|e| e.to_str()))
+        .and_then(|name| {
+            std::path::Path::new(name)
+                .extension()
+                .and_then(|e| e.to_str())
+        })
         .map(|s| s.to_ascii_lowercase())
         .unwrap_or_else(|| "mp3".into());
     let stem = requested_name
         .as_deref()
-        .and_then(|name| std::path::Path::new(name).file_stem().and_then(|s| s.to_str()))
+        .and_then(|name| {
+            std::path::Path::new(name)
+                .file_stem()
+                .and_then(|s| s.to_str())
+        })
         .map(sanitize_upload_stem)
         .filter(|s| !s.is_empty())
         .unwrap_or(fallback_stem);
@@ -1713,12 +1748,13 @@ async fn director_plan(
     if !tier_is_creator(tier) {
         return Err(upgrade_required_with_actual("creator_studio", tier));
     }
-    let params: crate::ai_director::PlanShotsParams = serde_json::from_value(body).map_err(|e| {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "bad_director_plan_request", "message": e.to_string() })),
-        )
-    })?;
+    let params: crate::ai_director::PlanShotsParams =
+        serde_json::from_value(body).map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "bad_director_plan_request", "message": e.to_string() })),
+            )
+        })?;
     let target_duration_ms = params
         .target_duration_ms
         .unwrap_or(params.beat_map.duration_ms);
@@ -1730,7 +1766,9 @@ async fn director_plan(
         total_duration_ms: target_duration_ms,
     };
     let render_sequence = crate::ai_director::render_sequence(&plan);
-    Ok(Json(json!({ "plan": plan, "renderSequence": render_sequence })))
+    Ok(Json(
+        json!({ "plan": plan, "renderSequence": render_sequence }),
+    ))
 }
 
 async fn director_lm_load(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
@@ -1760,7 +1798,10 @@ async fn director_lm_status(State(st): State<Arc<ShimState>>) -> (StatusCode, Js
     if !tier_is_creator(tier) {
         return upgrade_required_with_actual("creator_studio", tier);
     }
-    (StatusCode::OK, Json(json!({ "loaded": false, "model": null })))
+    (
+        StatusCode::OK,
+        Json(json!({ "loaded": false, "model": null })),
+    )
 }
 
 fn build_fallback_shots(
@@ -1780,7 +1821,10 @@ fn build_fallback_shots(
             .unwrap_or("performance");
         let end = (start + 4_000).min(target_duration_ms);
         let shot_id = format!("shot-{}", idx + 1);
-        let visual_prompt = format!("{}; {} section; beat-synced music video shot", brief, section);
+        let visual_prompt = format!(
+            "{}; {} section; beat-synced music video shot",
+            brief, section
+        );
         let init_source = if idx == 0 || beat_map.sections.iter().any(|s| s.start_ms == start) {
             crate::ai_director::InitSource::KeyframeGenerated {
                 keyframe_prompt: visual_prompt.clone(),

@@ -4,9 +4,7 @@
 //! Everywear vault, known local tool installs, custom user paths, then
 //! HuggingFace only as a final unresolved state.
 
-use crate::local_discovery::{
-    Compatibility, DiscoveredModel, LocalModelScanner, ModelSourceTool,
-};
+use crate::local_discovery::{Compatibility, DiscoveredModel, LocalModelScanner, ModelSourceTool};
 use crate::requirements::ModelRequirement;
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
@@ -104,7 +102,12 @@ impl ModelResolver {
     }
 
     pub fn add_custom_path(&mut self, path: PathBuf) {
-        if !self.scanner.custom_paths.iter().any(|existing| existing == &path) {
+        if !self
+            .scanner
+            .custom_paths
+            .iter()
+            .any(|existing| existing == &path)
+        {
             self.scanner.custom_paths.push(path);
         }
     }
@@ -283,9 +286,7 @@ impl ModelResolver {
 
         match action {
             SuggestedAction::Symlink => symlink_file(&discovered.source_path, &vault_path)
-                .or_else(|_| {
-                    std::fs::copy(&discovered.source_path, &vault_path).map(|_| ())
-                })
+                .or_else(|_| std::fs::copy(&discovered.source_path, &vault_path).map(|_| ()))
                 .with_context(|| {
                     format!(
                         "adopt {} -> {}",
@@ -474,7 +475,9 @@ mod tests {
                 head_count: 20,
             }),
             safetensors_metadata: None,
-            everywear_compatibility: Compatibility::Possible { note: String::new() },
+            everywear_compatibility: Compatibility::Possible {
+                note: String::new(),
+            },
             suggested_everywear_model_id: None,
         }
     }
@@ -509,7 +512,10 @@ mod tests {
         let result = resolver
             .resolve_single(&req(), &[discovered(source)])
             .unwrap();
-        assert!(matches!(result.status, ResolutionStatus::FoundLocally { .. }));
+        assert!(matches!(
+            result.status,
+            ResolutionStatus::FoundLocally { .. }
+        ));
         assert_eq!(result.source, ModelSource::LmStudio);
     }
 
@@ -522,7 +528,10 @@ mod tests {
             dir.path().join("vault"),
         );
         let result = resolver.resolve_single(&req(), &[]).unwrap();
-        assert!(matches!(result.status, ResolutionStatus::NeedsDownload { .. }));
+        assert!(matches!(
+            result.status,
+            ResolutionStatus::NeedsDownload { .. }
+        ));
     }
 
     #[test]
@@ -537,7 +546,10 @@ mod tests {
             dir.path().join("vault"),
         );
         let result = resolver.resolve_single(&req(), &[item]).unwrap();
-        assert!(matches!(result.status, ResolutionStatus::Incompatible { .. }));
+        assert!(matches!(
+            result.status,
+            ResolutionStatus::Incompatible { .. }
+        ));
     }
 
     #[test]

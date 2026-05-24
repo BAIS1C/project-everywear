@@ -25,8 +25,8 @@ pub use local_discovery::{
 };
 pub use manifest::{
     plan_for_vram, AppletManifest, LicenceTier, ModelGroup, ModelInfo, ModelManifest,
-    ModelRequirement as ManifestModelRequirement, ModelRole, ModelType, SidecarBundle,
-    UpgradePack, UpgradePackFile, UpgradePackQuant,
+    ModelRequirement as ManifestModelRequirement, ModelRole, ModelType, SidecarBundle, UpgradePack,
+    UpgradePackFile, UpgradePackQuant,
 };
 pub use requirements::ModelRequirement;
 pub use resolution::{

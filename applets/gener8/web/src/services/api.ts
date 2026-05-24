@@ -763,6 +763,9 @@ export interface GenerationJob {
 }
 
 function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
+  const createdAtMs = typeof item.created_at === 'number' && item.created_at < 10_000_000_000
+    ? item.created_at * 1000
+    : item.created_at || Date.now();
   return {
     id: item.id,
     title: item.title,
@@ -775,7 +778,7 @@ function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
     timeSignature: undefined,
     tags: item.tags ?? [],
     generationParams: {},
-    createdAt: new Date(item.created_at || Date.now()).toISOString(),
+    createdAt: new Date(createdAtMs).toISOString(),
     shared: false,
     stems: null,
     coverKey: null,
@@ -783,12 +786,16 @@ function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
   };
 }
 
+function isGener8Song(item: VaultItem): boolean {
+  return item.media_type === 'audio' && item.asset_kind === 'gener8_song';
+}
+
 async function handleVaultSongs<T>(endpoint: string, method: string, body: unknown): Promise<T> {
   if (method === 'GET' && endpoint.startsWith('/api/songs?')) {
-    const response = await vaultSearch('', 'audio', 'newest', 500, 0);
+    const response = await vaultSearch('', 'gener8_song', 'newest', 500, 0);
     return {
       tracks: response.items
-        .filter((item) => item.media_type === 'audio' && !item.is_stem)
+        .filter(isGener8Song)
         .map(vaultItemToTrack),
       total: response.total,
     } as T;
@@ -796,7 +803,7 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
   if (method === 'GET' && endpoint.startsWith('/api/songs/')) {
     const id = decodeURIComponent(endpoint.slice('/api/songs/'.length).split(/[?#]/, 1)[0]);
     const item = await vaultGetItem(id);
-    if (!item || item.media_type !== 'audio' || item.is_stem) {
+    if (!item || !isGener8Song(item)) {
       throw new Error('404: Song not found');
     }
     return vaultItemToTrack(item) as T;
@@ -819,6 +826,7 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
       durationSeconds: Number(track.duration || 0),
       genre: track.style,
       bpm: track.bpm ?? undefined,
+      assetKind: 'gener8_song',
       lyricsText: track.lyrics,
       tags: track.tags,
     });
@@ -827,7 +835,7 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
   if (method === 'PUT' && endpoint.startsWith('/api/songs/')) {
     const id = decodeURIComponent(endpoint.slice('/api/songs/'.length).split(/[?#]/, 1)[0]);
     const item = await vaultGetItem(id);
-    if (!item || item.media_type !== 'audio' || item.is_stem) {
+    if (!item || !isGener8Song(item)) {
       throw new Error('404: Song not found');
     }
     return {

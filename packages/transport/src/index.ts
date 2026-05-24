@@ -31,6 +31,7 @@ export {
 } from './vault';
 export type {
   VaultItem,
+  VaultAssetKind,
   VaultSearchResponse,
   VaultStats,
   MigrationSummary,

@@ -1,7 +1,9 @@
 use crate::{budget, state::AppState};
 
 #[tauri::command]
-pub async fn platform_status(state: tauri::State<'_, AppState>) -> Result<serde_json::Value, String> {
+pub async fn platform_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
     let gpu_state = state.gpu.lock().await;
     let profile_mgr = state.profile.lock().await;
     let wallet = state.wallet.lock().await;

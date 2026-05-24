@@ -128,4 +128,3 @@ pub async fn discourse_disconnect(state: tauri::State<'_, AppState>) -> Result<(
     client.disconnect();
     Ok(())
 }
-

@@ -2,8 +2,7 @@ use axum::{
     extract::{Query, State},
     http::StatusCode,
     routing::{get, post},
-    Json,
-    Router,
+    Json, Router,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -143,7 +142,10 @@ async fn daw_seek(
     let position_ms = body
         .position_ms
         .or_else(|| body.position_seconds.map(seconds_to_ms))
-        .ok_or((StatusCode::BAD_REQUEST, "position_seconds is required".into()))?;
+        .ok_or((
+            StatusCode::BAD_REQUEST,
+            "position_seconds is required".into(),
+        ))?;
     let was_playing = matches!(
         engine.transport().mode(),
         crate::daw_engine::transport::PlaybackMode::Playing
@@ -178,7 +180,9 @@ async fn daw_set_loop(
         .as_mut()
         .ok_or((StatusCode::BAD_REQUEST, "DAW not initialised".into()))?;
     let total_ms = project_total_ms(engine);
-    let start_ms = body.start_ms.unwrap_or(engine.transport().loop_range.start_ms);
+    let start_ms = body
+        .start_ms
+        .unwrap_or(engine.transport().loop_range.start_ms);
     let end_ms = body
         .end_ms
         .unwrap_or_else(|| engine.transport().loop_range.end_ms.max(total_ms));

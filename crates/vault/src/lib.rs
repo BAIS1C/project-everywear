@@ -13,6 +13,8 @@ pub mod index;
 pub mod schema;
 pub mod search;
 
-pub use index::{item_file_size, item_favorite, item_id, MediaFilter, SortField, VaultIndex};
+pub use index::{
+    audio_asset_kind, item_favorite, item_file_size, item_id, MediaFilter, SortField, VaultIndex,
+};
 pub use schema::{AudioDocument, ImageDocument, VaultItem, VideoDocument};
 pub use search::SearchRequest;
