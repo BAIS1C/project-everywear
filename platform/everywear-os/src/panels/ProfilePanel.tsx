@@ -3,10 +3,11 @@ import { getProfile, updateProfile, type UserProfile, type ProfileUpdate } from 
 import { useAuth } from '../shell/AuthContext';
 
 export function ProfilePanel() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProfileUpdate>({});
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     getProfile().then((p) => {
@@ -26,6 +27,15 @@ export function ProfilePanel() {
     setProfile(updated);
     setEditing(false);
   }, [authUser?.email, form]);
+
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  }, [signOut]);
 
   if (!profile) return <div className="ew-text-muted">Loading profile...</div>;
 
@@ -159,6 +169,27 @@ export function ProfilePanel() {
         )}
       </div>
       )}
+
+      <div className="ew-section">
+        <div className="ew-section__title">Session</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 14, color: 'var(--ew-text)' }}>
+              {displayProfile.email || 'Local profile'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--ew-text-faint)', marginTop: 4 }}>
+              Sign out clears the saved 30-day profile on this device.
+            </div>
+          </div>
+          <button
+            className="ew-btn ew-btn--ghost"
+            onClick={handleSignOut}
+            disabled={signingOut}
+          >
+            {signingOut ? 'Signing Out...' : 'Sign Out'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
