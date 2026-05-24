@@ -8,6 +8,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/__gener8_ace_props': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        rewrite: () => '/props',
+      },
+    },
   },
   envPrefix: ['VITE_', 'TAURI_'],
   resolve: {

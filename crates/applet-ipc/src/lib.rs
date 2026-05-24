@@ -25,7 +25,10 @@ pub mod shell;
 
 // Legacy (v1) re-exports
 pub use protocol::{Command, CommandKind, ModelPath, Response, ResponseStatus};
-pub use protocol::{ENV_CMD_PORT, ENV_IPC_SECRET};
+pub use protocol::{
+    ENV_CMD_PORT, ENV_IPC_SECRET, ENV_LICENCE_TIER, ENV_MAIT_DIR, ENV_MODEL_ENCODER,
+    ENV_MODEL_PRIMARY, ENV_MODEL_VAE, ENV_VAULT_DIR, ENV_VRAM_MB,
+};
 
 // Envelope (v2) re-exports
 pub use envelope::{IpcEnvelope, IpcKind, IpcSource};

@@ -399,6 +399,11 @@ async fn request_applet_switch(
 
     // Record VRAM allocations
     launcher::record_allocations(&mut budget_lock, &applet_id, selected_group);
+    let launch_env = {
+        let gpu = state.gpu.lock().await;
+        let tier = *state.licence_tier.lock().await;
+        launcher::AppletLaunchEnv::from_shell(gpu.total_vram_mb, tier)
+    };
 
     // Update active applet
     let mut active = state.active_applet.lock().await;
@@ -412,6 +417,7 @@ async fn request_applet_switch(
         applet.launch_binary.as_deref(),
         applet.launch_url.as_deref(),
         &model_paths,
+        &launch_env,
     )
     .await
     .map_err(|e| format!("Launch failed: {e}"))?;
@@ -718,20 +724,15 @@ fn spawn_applet_event_pump(
         while let Some(envelope) = event_rx.recv().await {
             let payload = envelope.payload.clone();
 
-            if payload
-                .get("event")
-                .and_then(|value| value.as_str())
-                .is_some_and(|event| event == "heartbeat")
-            {
+            if payload_event_is(&payload, &["heartbeat"]) {
                 vram_scheduler.lock().await.record_heartbeat(&applet_id);
                 continue;
             }
 
-            if payload
-                .get("event")
-                .and_then(|value| value.as_str())
-                .is_some_and(|event| event == "kasai_tool_call_update")
-            {
+            if payload_event_is(
+                &payload,
+                &["kasai_tool_call_update", "kasai://tool-call/update"],
+            ) {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
                         commands::kasai::record_kasai_tool_call_update(
@@ -746,11 +747,10 @@ fn spawn_applet_event_pump(
                 continue;
             }
 
-            if payload
-                .get("event")
-                .and_then(|value| value.as_str())
-                .is_some_and(|event| event == "kasai_tool_call_complete")
-            {
+            if payload_event_is(
+                &payload,
+                &["kasai_tool_call_complete", "kasai://tool-call/complete"],
+            ) {
                 if applet_id == "kasai" {
                     if let Some(tool_call) = payload.get("tool_call").cloned() {
                         commands::kasai::record_kasai_tool_call_update(
@@ -765,11 +765,21 @@ fn spawn_applet_event_pump(
                 continue;
             }
 
-            if payload
-                .get("event")
-                .and_then(|value| value.as_str())
-                .is_some_and(|event| event == "kasai_shell_tool_call")
-            {
+            if payload_event_is(&payload, &["kasai_slot_event", "kasai://slot-event"]) {
+                if applet_id == "kasai" {
+                    let _ = app.emit("kasai://slot-event", &payload);
+                }
+                continue;
+            }
+
+            if payload_event_is(&payload, &["kasai://reasoning-trace"]) {
+                if applet_id == "kasai" {
+                    let _ = app.emit("kasai://reasoning-trace", &payload);
+                }
+                continue;
+            }
+
+            if payload_event_is(&payload, &["kasai_shell_tool_call"]) {
                 tracing::info!(
                     applet = %applet_id,
                     request_id = payload.get("request_id").and_then(|value| value.as_str()).unwrap_or(""),
@@ -900,6 +910,13 @@ fn spawn_applet_event_pump(
             .unregister_connection(&applet_id);
         tracing::warn!(applet = %applet_id, "Applet IPC event stream closed");
     });
+}
+
+fn payload_event_is(payload: &serde_json::Value, accepted: &[&str]) -> bool {
+    payload
+        .get("event")
+        .and_then(|value| value.as_str())
+        .is_some_and(|event| accepted.contains(&event))
 }
 
 fn spawn_submitted_job_route(

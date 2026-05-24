@@ -157,8 +157,9 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     }) as Promise<T>;
   }
   if (endpoint.startsWith('/api/engine/models')) {
-    const inventory = await gener8EngineModels().catch(() => null);
-    if (inventory && typeof inventory === 'object' && 'models' in inventory) return inventory as T;
+    const inventory = await gener8EngineModels().catch(fetchModelInventoryFallback);
+    const normalized = normalizeModelInventory(inventory);
+    if (normalized) return normalized as T;
     return {
       models: [
         { name: 'ACE-Step v1', is_default: true, is_loaded: true, supported_task_types: ['text2music', 'reference', 'cover'] },
@@ -226,6 +227,81 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   }
 
   return response.json();
+}
+
+async function fetchModelInventoryFallback(): Promise<unknown> {
+  const candidates = [
+    '/__gener8_ace_props',
+    'http://127.0.0.1:8080/props',
+  ];
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { cache: 'no-store', credentials: 'omit' });
+      if (response.ok) return await response.json();
+    } catch {
+      // Try the next route. Direct localhost may be CORS-blocked in browser dev.
+    }
+  }
+  return null;
+}
+
+function normalizeModelInventory(raw: unknown): ModelInventory | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const source = raw as Record<string, any>;
+  const rawModels = source.models;
+  const ditList = Array.isArray(rawModels)
+    ? rawModels
+    : Array.isArray(rawModels?.dit)
+      ? rawModels.dit
+      : Array.isArray(source.dit)
+        ? source.dit
+        : [];
+  const lmList = Array.isArray(source.lm_models)
+    ? source.lm_models
+    : Array.isArray(rawModels?.lm)
+      ? rawModels.lm
+      : Array.isArray(source.lm)
+        ? source.lm
+        : [];
+
+  if (!ditList.length && !lmList.length) return null;
+
+  const ditNames = ditList
+    .map((item: any) => typeof item === 'string' ? item : item?.name)
+    .filter(Boolean);
+  const defaultModel =
+    source.default_model ||
+    ditNames.find((name: string) => name.toLowerCase().includes('sftturbo50')) ||
+    ditNames.find((name: string) => name.toLowerCase().includes('xl-turbo')) ||
+    ditNames.find((name: string) => !name.toLowerCase().includes('xl-base')) ||
+    ditNames[0] ||
+    '';
+  const loadedLmModel = source.loaded_lm_model || (
+    typeof lmList[0] === 'string' ? lmList[0] : lmList[0]?.name || ''
+  );
+
+  return {
+    models: ditNames.map((name: string) => {
+      const existing = ditList.find((item: any) => item?.name === name);
+      const isDefault = Boolean(existing?.is_default) || name === defaultModel;
+      return {
+        name,
+        is_default: isDefault,
+        is_loaded: Boolean(existing?.is_loaded) || isDefault,
+        supported_task_types: existing?.supported_task_types || (
+          name.toLowerCase().includes('xl-base')
+            ? ['text2music', 'reference', 'cover', 'extract', 'lego', 'complete']
+            : ['text2music']
+        ),
+      };
+    }),
+    default_model: defaultModel,
+    lm_models: lmList
+      .map((item: any) => typeof item === 'string' ? { name: item, is_loaded: item === loadedLmModel } : item)
+      .filter((item: any) => item?.name),
+    loaded_lm_model: loadedLmModel,
+    llm_initialized: source.llm_initialized ?? lmList.length > 0,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -711,14 +787,16 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
   if (method === 'GET' && endpoint.startsWith('/api/songs?')) {
     const response = await vaultSearch('', 'audio', 'newest', 500, 0);
     return {
-      tracks: response.items.filter((item) => item.media_type === 'audio').map(vaultItemToTrack),
+      tracks: response.items
+        .filter((item) => item.media_type === 'audio' && !item.is_stem)
+        .map(vaultItemToTrack),
       total: response.total,
     } as T;
   }
   if (method === 'GET' && endpoint.startsWith('/api/songs/')) {
     const id = decodeURIComponent(endpoint.slice('/api/songs/'.length).split(/[?#]/, 1)[0]);
     const item = await vaultGetItem(id);
-    if (!item || item.media_type !== 'audio') {
+    if (!item || item.media_type !== 'audio' || item.is_stem) {
       throw new Error('404: Song not found');
     }
     return vaultItemToTrack(item) as T;
@@ -749,7 +827,7 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
   if (method === 'PUT' && endpoint.startsWith('/api/songs/')) {
     const id = decodeURIComponent(endpoint.slice('/api/songs/'.length).split(/[?#]/, 1)[0]);
     const item = await vaultGetItem(id);
-    if (!item || item.media_type !== 'audio') {
+    if (!item || item.media_type !== 'audio' || item.is_stem) {
       throw new Error('404: Song not found');
     }
     return {

@@ -340,11 +340,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     (modelName: string) => {
       switch (modelKind(modelName)) {
         case 'capability':
-          return 'PRO MODEL';
+          return 'PRO';
         case 'song':
-          return 'SONG MODEL';
+          return 'SONG';
         case 'fast-song':
-          return 'FAST SONG MODEL';
+          return 'SONG';
         default:
           return 'MODEL';
       }

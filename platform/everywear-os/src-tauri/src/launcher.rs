@@ -15,8 +15,8 @@
 //! 7. WebviewWindow: spawn applet UI inside Everywear OS (lib.rs)
 
 use crate::budget::{
-    select_model_group, PurgePolicy, PurgeRequest, PurgeResult, PurgeScope,
-    RequirementsCheck, VramAllocation, VramBudget,
+    select_model_group, PurgePolicy, PurgeRequest, PurgeResult, PurgeScope, RequirementsCheck,
+    VramAllocation, VramBudget,
 };
 use crate::gpu;
 use applet_ipc::{ModelPath, ShellChannel};
@@ -590,9 +590,10 @@ fn discover_ace_server_binary(executable: &str) -> Option<PathBuf> {
     if let Ok(cwd) = std::env::current_dir() {
         candidates.push(cwd.join("engines").join("ace-server").join(executable));
     }
-    candidates.push(PathBuf::from(
-        r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release",
-    ).join(executable));
+    candidates.push(
+        PathBuf::from(r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release")
+            .join(executable),
+    );
     candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(executable));
     candidates.push(PathBuf::from(r"C:\ACE-Step").join(executable));
 
@@ -825,6 +826,35 @@ pub struct AppletProcess {
     pub advertisement: Option<serde_json::Value>,
 }
 
+/// Shell-owned process environment passed to local applet backends.
+#[derive(Debug, Clone)]
+pub struct AppletLaunchEnv {
+    pub vram_mb: u64,
+    pub vault_dir: PathBuf,
+    pub mait_dir: PathBuf,
+    pub licence_tier: String,
+}
+
+impl AppletLaunchEnv {
+    pub fn from_shell(vram_mb: u64, tier: model_manager::LicenceTier) -> Self {
+        Self {
+            vram_mb,
+            vault_dir: everywear_paths::local_vault_dir(),
+            mait_dir: everywear_paths::mait_dir(),
+            licence_tier: applet_licence_tier(tier).into(),
+        }
+    }
+}
+
+fn applet_licence_tier(tier: model_manager::LicenceTier) -> &'static str {
+    match tier {
+        model_manager::LicenceTier::Demo => "demo",
+        model_manager::LicenceTier::Gener8 => "local",
+        model_manager::LicenceTier::Gener8Pro => "local_full",
+        model_manager::LicenceTier::CreatorStudio => "pro",
+    }
+}
+
 /// Launch an applet binary or open a web URL.
 ///
 /// For binary applets:
@@ -840,6 +870,7 @@ pub async fn launch_applet_process(
     launch_binary: Option<&str>,
     launch_url: Option<&str>,
     model_paths: &ModelPaths,
+    launch_env: &AppletLaunchEnv,
 ) -> Result<Option<AppletProcess>> {
     if let Some(url) = launch_url {
         // Web applets: open in default browser
@@ -876,16 +907,32 @@ pub async fn launch_applet_process(
         // IPC port + shared secret
         cmd.env(env_key, &env_val);
         cmd.env(applet_ipc::ENV_IPC_SECRET, &ipc_secret);
+        std::fs::create_dir_all(&launch_env.vault_dir).with_context(|| {
+            format!(
+                "failed to create applet vault dir: {}",
+                launch_env.vault_dir.display()
+            )
+        })?;
+        std::fs::create_dir_all(&launch_env.mait_dir).with_context(|| {
+            format!(
+                "failed to create applet MAIT dir: {}",
+                launch_env.mait_dir.display()
+            )
+        })?;
+        cmd.env(applet_ipc::ENV_VRAM_MB, launch_env.vram_mb.to_string());
+        cmd.env(applet_ipc::ENV_VAULT_DIR, &launch_env.vault_dir);
+        cmd.env(applet_ipc::ENV_MAIT_DIR, &launch_env.mait_dir);
+        cmd.env(applet_ipc::ENV_LICENCE_TIER, &launch_env.licence_tier);
 
         // Model paths
         if let Some(p) = &model_paths.primary {
-            cmd.env("EVERYWEAR_MODEL_PRIMARY", p);
+            cmd.env(applet_ipc::ENV_MODEL_PRIMARY, p);
         }
         if let Some(p) = &model_paths.encoder {
-            cmd.env("EVERYWEAR_MODEL_ENCODER", p);
+            cmd.env(applet_ipc::ENV_MODEL_ENCODER, p);
         }
         if let Some(p) = &model_paths.vae {
-            cmd.env("EVERYWEAR_MODEL_VAE", p);
+            cmd.env(applet_ipc::ENV_MODEL_VAE, p);
         }
 
         // 4. Spawn

@@ -23,7 +23,7 @@ function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
 async function fetchMySongs(): Promise<VaultItem[]> {
   try {
     const response = await vaultSearch('', 'audio', 'newest', 100, 0);
-    return response.items.filter((item) => item.media_type === 'audio');
+    return response.items.filter((item) => item.media_type === 'audio' && !item.is_stem);
   } catch {
     return [];
   }
@@ -47,19 +47,25 @@ function seededFauxPeaks(id: string, opts: { bins: number }): number[] {
 // -- Wire mapping -------------------------------------------------------------
 
 function mapWireSong(s: any): Song {
+  const durationSeconds = Number(s.duration_seconds ?? s.duration ?? 0);
+  const createdAtRaw = s.created_at ?? s.createdAt ?? s.created_at_ms ?? Date.now();
+  const createdAtMs = typeof createdAtRaw === 'number' && createdAtRaw < 10_000_000_000
+    ? createdAtRaw * 1000
+    : createdAtRaw;
+
   return {
     id: s.id,
-    title: s.title,
-    lyrics: s.lyrics,
-    style: s.style,
+    title: s.title || 'Untitled',
+    lyrics: s.lyrics ?? s.lyrics_text ?? '',
+    style: s.style ?? s.genre ?? '',
     coverUrl: `https://picsum.photos/seed/${s.id}/400/400`,
-    duration: s.duration && s.duration > 0
-      ? `${Math.floor(s.duration / 60)}:${String(Math.floor(s.duration % 60)).padStart(2, '0')}`
+    duration: durationSeconds > 0
+      ? `${Math.floor(durationSeconds / 60)}:${String(Math.floor(durationSeconds % 60)).padStart(2, '0')}`
       : '0:00',
-    createdAt: new Date(s.created_at || s.createdAt || s.created_at_ms || Date.now()),
+    createdAt: new Date(createdAtMs),
     tags: s.tags || [],
     audioUrl: getAudioUrl(s.audio_url || s.file_path, s.id),
-    isPublic: s.is_public,
+    isPublic: Boolean(s.is_public),
     likeCount: s.like_count || 0,
     viewCount: s.view_count || 0,
     userId: s.user_id,

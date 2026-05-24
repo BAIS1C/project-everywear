@@ -54,6 +54,20 @@ pub fn mymory_root() -> PathBuf {
         })
 }
 
+/// Local applet-readable Vault root: `~/.everywear/vault/`.
+///
+/// This is the process-local data vault path handed to applets through
+/// `EVERYWEAR_VAULT_DIR`. It is intentionally separate from the user-facing
+/// media library at `~/Documents/Everywear Vault/`.
+pub fn local_vault_dir() -> PathBuf {
+    root().join("vault")
+}
+
+/// Local MAIT store root: `~/.everywear/mait/`.
+pub fn mait_dir() -> PathBuf {
+    root().join("mait")
+}
+
 /// Structured log output: `~/.everywear/logs/`
 pub fn logs_dir() -> PathBuf {
     root().join("logs")
@@ -109,6 +123,8 @@ pub fn ensure_dirs() -> std::io::Result<()> {
         staging_dir(),
         bin_dir(),
         config_dir(),
+        local_vault_dir(),
+        mait_dir(),
         logs_dir(),
     ];
     for dir in &dirs {
@@ -176,6 +192,14 @@ mod tests {
     fn mymory_root_has_expected_default_name() {
         let r = mymory_root();
         assert!(r.ends_with("Project Mymory"));
+    }
+
+    #[test]
+    fn local_vault_and_mait_dirs_under_root() {
+        assert!(local_vault_dir().starts_with(root()));
+        assert!(local_vault_dir().ends_with("vault"));
+        assert!(mait_dir().starts_with(root()));
+        assert!(mait_dir().ends_with("mait"));
     }
 
     #[test]

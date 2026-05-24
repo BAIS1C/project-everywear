@@ -15,6 +15,27 @@ pub const ENV_CMD_PORT: &str = "EVERYWEAR_CMD_PORT";
 /// Environment variable the shell sets: shared secret for HMAC authentication.
 pub const ENV_IPC_SECRET: &str = "EVERYWEAR_IPC_SECRET";
 
+/// Environment variable the shell sets: primary/orchestrator model GGUF path.
+pub const ENV_MODEL_PRIMARY: &str = "EVERYWEAR_MODEL_PRIMARY";
+
+/// Environment variable the shell sets: encoder/agent/worker model GGUF path.
+pub const ENV_MODEL_ENCODER: &str = "EVERYWEAR_MODEL_ENCODER";
+
+/// Environment variable the shell sets: optional VAE/embedder model GGUF path.
+pub const ENV_MODEL_VAE: &str = "EVERYWEAR_MODEL_VAE";
+
+/// Environment variable the shell sets: total detected VRAM in MB.
+pub const ENV_VRAM_MB: &str = "EVERYWEAR_VRAM_MB";
+
+/// Environment variable the shell sets: local Everywear vault directory.
+pub const ENV_VAULT_DIR: &str = "EVERYWEAR_VAULT_DIR";
+
+/// Environment variable the shell sets: local MAIT store directory.
+pub const ENV_MAIT_DIR: &str = "EVERYWEAR_MAIT_DIR";
+
+/// Environment variable the shell sets: applet-facing licence tier.
+pub const ENV_LICENCE_TIER: &str = "EVERYWEAR_LICENCE_TIER";
+
 // ---------------------------------------------------------------------------
 // Legacy wire types (v1, backward compat)
 // ---------------------------------------------------------------------------

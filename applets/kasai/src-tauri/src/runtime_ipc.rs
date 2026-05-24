@@ -130,19 +130,19 @@ fn spawn_slot_event_pump(
 
             let payload = match event {
                 SlotEvent::ToolCallUpdate { tool_call } => json!({
-                    "event": "kasai_tool_call_update",
+                    "event": "kasai://tool-call/update",
                     "applet_id": APPLET_ID,
                     "engine_id": ENGINE_ID,
                     "tool_call": tool_call,
                 }),
                 SlotEvent::ToolCallComplete { tool_call } => json!({
-                    "event": "kasai_tool_call_complete",
+                    "event": "kasai://tool-call/complete",
                     "applet_id": APPLET_ID,
                     "engine_id": ENGINE_ID,
                     "tool_call": tool_call,
                 }),
                 other => json!({
-                    "event": "kasai_slot_event",
+                    "event": "kasai://slot-event",
                     "applet_id": APPLET_ID,
                     "engine_id": ENGINE_ID,
                     "slot_event": other,
@@ -168,12 +168,16 @@ async fn advertise(
     runtime: SharedRuntime,
 ) -> anyhow::Result<()> {
     let status = runtime.lock().await.status();
+    let capabilities = ["chat", "tool_use", "rag", "mcp", "plan", "orchestrate"];
     let capabilities = json!({
         "applet_id": APPLET_ID,
+        "engine_id": ENGINE_ID,
+        "capabilities": capabilities,
+        "slots": status.slots,
         "engines": [{
             "engine_id": ENGINE_ID,
             "label": "Kasai Local",
-            "capabilities": ["chat", "plan", "expand_prompt", "classify", "orchestrate"],
+            "capabilities": capabilities,
             "status": status.status,
             "inference_ready": status.inference_ready,
             "slots": status.slots,

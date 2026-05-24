@@ -367,7 +367,94 @@ pub async fn gener8_engine_models(
         .json::<Value>()
         .await
         .map_err(|e| e.to_string())?;
-    Ok(props.get("models").cloned().unwrap_or(props))
+    Ok(normalize_model_inventory(&props))
+}
+
+fn normalize_model_inventory(props: &Value) -> Value {
+    let dit_models = props
+        .get("models")
+        .and_then(|models| models.get("dit"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let lm_models = props
+        .get("models")
+        .and_then(|models| models.get("lm"))
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+
+    let dit_names: Vec<String> = dit_models
+        .into_iter()
+        .filter_map(|model| model.as_str().map(str::to_string))
+        .collect();
+    let lm_names: Vec<String> = lm_models
+        .into_iter()
+        .filter_map(|model| model.as_str().map(str::to_string))
+        .collect();
+
+    let default_model = preferred_dit_model(&dit_names);
+    let loaded_lm_model = lm_names.first().cloned().unwrap_or_default();
+
+    let models: Vec<Value> = dit_names
+        .iter()
+        .map(|name| {
+            let is_default = *name == default_model;
+            json!({
+                "name": name,
+                "is_default": is_default,
+                "is_loaded": is_default,
+                "supported_task_types": supported_task_types(name),
+            })
+        })
+        .collect();
+    let lm_models: Vec<Value> = lm_names
+        .iter()
+        .map(|name| {
+            json!({
+                "name": name,
+                "is_loaded": *name == loaded_lm_model,
+            })
+        })
+        .collect();
+
+    json!({
+        "engine": "acestep.cpp",
+        "runtime": "gguf",
+        "models": models,
+        "default_model": default_model,
+        "lm_models": lm_models,
+        "loaded_lm_model": loaded_lm_model,
+        "llm_initialized": !loaded_lm_model.is_empty(),
+    })
+}
+
+fn preferred_dit_model(models: &[String]) -> String {
+    models
+        .iter()
+        .find(|name| name.to_ascii_lowercase().contains("sftturbo50"))
+        .or_else(|| {
+            models
+                .iter()
+                .find(|name| name.to_ascii_lowercase().contains("xl-turbo"))
+        })
+        .or_else(|| {
+            models
+                .iter()
+                .find(|name| !name.to_ascii_lowercase().contains("xl-base"))
+        })
+        .or_else(|| models.first())
+        .cloned()
+        .unwrap_or_default()
+}
+
+fn supported_task_types(model: &str) -> Vec<&'static str> {
+    let lower = model.to_ascii_lowercase();
+    if lower.contains("xl-base") {
+        vec!["text2music", "reference", "cover", "extract", "lego", "complete"]
+    } else {
+        vec!["text2music"]
+    }
 }
 
 async fn require_tier(

@@ -95,7 +95,7 @@ fn locate_binary() -> Result<PathBuf> {
     // 1. Platform standard location
     let platform = everywear_paths::bin_dir().join("ace-server").join(bin_name);
     if platform.exists() {
-        return Ok(platform);
+        return Ok(std::fs::canonicalize(&platform).unwrap_or(platform));
     }
 
     let stub = everywear_paths::bin_dir()
@@ -142,12 +142,11 @@ fn locate_binary() -> Result<PathBuf> {
 
     for candidate in discover_local_ace_candidates(bin_name) {
         if candidate.exists() {
-            if let Some(parent) = platform.parent() {
-                std::fs::create_dir_all(parent).ok();
+            if let Some(platform_dir) = platform.parent() {
+                provision_sidecar_dir(&candidate, platform_dir)?;
+                return Ok(platform.clone());
             }
-            let _ = create_file_symlink(&candidate, &platform)
-                .or_else(|_| std::fs::copy(&candidate, &platform).map(|_| ()));
-            return Ok(candidate);
+            return Ok(std::fs::canonicalize(&candidate).unwrap_or(candidate));
         }
     }
 
@@ -155,6 +154,25 @@ fn locate_binary() -> Result<PathBuf> {
         "ace-server binary not found. Expected at {}",
         platform.display()
     ))
+}
+
+fn provision_sidecar_dir(candidate: &Path, platform_dir: &Path) -> Result<()> {
+    std::fs::create_dir_all(platform_dir)?;
+    let source_dir = candidate
+        .parent()
+        .ok_or_else(|| anyhow!("ace-server candidate has no parent: {}", candidate.display()))?;
+
+    for entry in std::fs::read_dir(source_dir)? {
+        let entry = entry?;
+        let source = entry.path();
+        if !source.is_file() {
+            continue;
+        }
+        let target = platform_dir.join(entry.file_name());
+        std::fs::copy(&source, &target)?;
+    }
+
+    Ok(())
 }
 
 fn discover_local_ace_candidates(bin_name: &str) -> Vec<PathBuf> {
@@ -169,16 +187,6 @@ fn discover_local_ace_candidates(bin_name: &str) -> Vec<PathBuf> {
     candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(bin_name));
     candidates.push(PathBuf::from(r"C:\ACE-Step").join(bin_name));
     candidates
-}
-
-#[cfg(windows)]
-fn create_file_symlink(source: &Path, target: &Path) -> std::io::Result<()> {
-    std::os::windows::fs::symlink_file(source, target)
-}
-
-#[cfg(not(windows))]
-fn create_file_symlink(source: &Path, target: &Path) -> std::io::Result<()> {
-    std::os::unix::fs::symlink(source, target)
 }
 
 fn resolve_models_dir() -> PathBuf {
@@ -251,6 +259,9 @@ fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
     }
 
     let mut cmd = Command::new(bin);
+    let sidecar_dir = bin
+        .parent()
+        .ok_or_else(|| anyhow!("ace-server binary has no parent: {}", bin.display()))?;
     cmd.args([
         "--models",
         &models_dir.to_string_lossy(),
@@ -258,8 +269,19 @@ fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
         &port.to_string(),
         "--keep-loaded",
     ])
+    .current_dir(sidecar_dir)
     .stdout(Stdio::piped())
     .stderr(Stdio::piped());
+
+    #[cfg(windows)]
+    {
+        let mut paths = vec![sidecar_dir.to_path_buf()];
+        if let Some(existing) = std::env::var_os("PATH") {
+            paths.extend(std::env::split_paths(&existing));
+        }
+        let joined = std::env::join_paths(paths)?;
+        cmd.env("PATH", joined);
+    }
 
     #[cfg(windows)]
     {

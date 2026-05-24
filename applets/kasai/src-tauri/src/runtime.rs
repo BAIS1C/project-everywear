@@ -71,12 +71,19 @@ impl KasaiRuntime {
     pub fn new(applet_id: &str, engine_id: &str) -> Self {
         // Detect VRAM tier from env (shell provides this) or default to Ultra
         // for the RTX 5090 dev machine.
-        let vram_mb: u32 = std::env::var("EVERYWEAR_VRAM_MB")
+        let vram_mb: u32 = std::env::var(applet_ipc::ENV_VRAM_MB)
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(32_000);
         let vram_tier = VramTier::from_vram_mb(vram_mb);
-        tracing::info!(vram_mb, tier = vram_tier.label(), "VRAM tier detected");
+        tracing::info!(
+            vram_mb,
+            tier = vram_tier.label(),
+            vault_dir = std::env::var(applet_ipc::ENV_VAULT_DIR).ok(),
+            mait_dir = std::env::var(applet_ipc::ENV_MAIT_DIR).ok(),
+            licence_tier = std::env::var(applet_ipc::ENV_LICENCE_TIER).ok(),
+            "Kasai launch environment detected"
+        );
 
         let mut runtime = Self {
             applet_id: applet_id.to_string(),
@@ -104,14 +111,14 @@ impl KasaiRuntime {
 
     pub fn refresh_from_env(&mut self) {
         self.load_env_slot(
-            "EVERYWEAR_MODEL_PRIMARY",
+            applet_ipc::ENV_MODEL_PRIMARY,
             SlotId::Orchestrator,
             "primary",
             0,
         );
-        self.load_env_slot("EVERYWEAR_MODEL_ENCODER", SlotId::Agent, "agent", 0);
+        self.load_env_slot(applet_ipc::ENV_MODEL_ENCODER, SlotId::Agent, "agent", 0);
         self.load_env_slot("EVERYWEAR_MODEL_EMBEDDER", SlotId::Embedder, "embedder", 0);
-        self.load_env_slot("EVERYWEAR_MODEL_VAE", SlotId::Embedder, "embedder", 0);
+        self.load_env_slot(applet_ipc::ENV_MODEL_VAE, SlotId::Embedder, "embedder", 0);
     }
 
     pub fn start_inference(&mut self, model_paths: Vec<ModelPath>) -> Result<RuntimeStatus> {

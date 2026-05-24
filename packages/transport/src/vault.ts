@@ -17,7 +17,7 @@
  * Reference: https://tauri.app/security/capability/#fs-scope
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -239,16 +239,8 @@ export async function vaultRegisterVideo(params: RegisterVideoParams): Promise<V
  * Until then, convertFileSrc() will return 403.
  */
 export function vaultFileUrl(filePath: string): string {
-  try {
-    // Dynamic import to avoid hard dependency on Tauri in web-only contexts
-    // In production, use: import { convertFileSrc } from '@tauri-apps/api/core';
-    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      // Tauri v2: convertFileSrc is in @tauri-apps/api/core
-      return `http://asset.localhost/${encodeURIComponent(filePath)}`;
-    }
-  } catch {
-    // Fallback for non-Tauri environments
-  }
+  if (/^(https?|asset|file|data|blob):/i.test(filePath)) return filePath;
+  try { return convertFileSrc(filePath); } catch {}
   return filePath;
 }
 

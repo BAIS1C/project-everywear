@@ -17,6 +17,13 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     host: host || false,
+    proxy: {
+      '/__gener8_ace_props': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        rewrite: () => '/props',
+      },
+    },
     hmr: host
       ? { protocol: 'ws', host, port: 1421 }
       : undefined,
