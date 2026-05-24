@@ -40,6 +40,20 @@ pub fn config_dir() -> PathBuf {
     root().join("config")
 }
 
+/// Project MyMory vault root.
+///
+/// Defaults to `~/Project Mymory/` and can be overridden with `MYMORY_ROOT`
+/// for other local installs or external LLM adapter processes.
+pub fn mymory_root() -> PathBuf {
+    std::env::var_os("MYMORY_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            dirs::home_dir()
+                .expect("no home directory found")
+                .join("Project Mymory")
+        })
+}
+
 /// Structured log output: `~/.everywear/logs/`
 pub fn logs_dir() -> PathBuf {
     root().join("logs")
@@ -156,6 +170,12 @@ mod tests {
         let s = staging_dir();
         assert!(s.starts_with(root()));
         assert!(s.ends_with("staging"));
+    }
+
+    #[test]
+    fn mymory_root_has_expected_default_name() {
+        let r = mymory_root();
+        assert!(r.ends_with("Project Mymory"));
     }
 
     #[test]

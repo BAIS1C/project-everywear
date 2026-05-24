@@ -64,6 +64,10 @@ export interface MymoryStatus {
   exists: boolean;
   wings: string[];
   markdown_files: number;
+  memory_layers?: string[];
+  graph_projection_json?: string | null;
+  graph_projection_mermaid?: string | null;
+  schema_template?: string | null;
 }
 
 export interface AgentEvent {
@@ -180,7 +184,16 @@ const MOCK_RESPONSES: Record<string, unknown> = {
   load_chat_history: { schema_version: 1, messages: [] },
   save_chat_history: null,
   clear_chat_history: null,
-  get_mymory_status: { root: 'C:\\Users\\MAG MSI\\Project Mymory', exists: true, wings: ['engineering', 'product', 'ops', 'creative', 'research', 'meta'], markdown_files: 142 },
+  get_mymory_status: {
+    root: 'C:\\Users\\MAG MSI\\Project Mymory',
+    exists: true,
+    wings: ['strands', 'uddin', 'claude', 'ace', 'fintrek', 'mymory'],
+    markdown_files: 1409,
+    memory_layers: ['MKV-L0 raw evidence', 'MKV-L1 atoms', 'MKV-L2 scenarios', 'MKV-L3 canon'],
+    graph_projection_json: 'C:\\Users\\MAG MSI\\Project Mymory\\_graph\\mkv_projection.json',
+    graph_projection_mermaid: 'C:\\Users\\MAG MSI\\Project Mymory\\_graph\\mkv_projection.mmd',
+    schema_template: 'C:\\Users\\MAG MSI\\Project Mymory\\_templates\\mkv_memory_unit_schema.md',
+  },
 };
 
 class MockTransport implements KasaiTransport {
