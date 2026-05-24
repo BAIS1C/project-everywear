@@ -36,6 +36,7 @@ function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [rememberProfile, setRememberProfile] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,7 +53,7 @@ function LoginScreen() {
           setLocalError('Password is required.');
           return;
         }
-        await signInWithPassword(email, password);
+        await signInWithPassword(email, password, rememberProfile);
       } else if (mode === 'signup') {
         if (!password) {
           setLocalError('Password is required for signup.');
@@ -111,6 +112,17 @@ function LoginScreen() {
                   required
                 />
               </label>
+
+              {mode === 'login' && (
+                <label className="ew-auth-remember">
+                  <input
+                    type="checkbox"
+                    checked={rememberProfile}
+                    onChange={(event) => setRememberProfile(event.target.checked)}
+                  />
+                  <span>Save my profile on this device for 30 days</span>
+                </label>
+              )}
             </>
           )}
 

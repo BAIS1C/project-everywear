@@ -15,9 +15,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import StudioTab from '@/components/studio/StudioTab';
 import StemStudio from '@/components/studio/StemStudio';
+import MixAssistantTab from '@/components/studio/MixAssistantTab';
 import { LegoPanel } from '@/components/studio/LegoPanel';
 import { CompletePanel } from '@/components/studio/CompletePanel';
-import { Music, Layers, Flame, Lock, Blocks, ArrowRight } from 'lucide-react';
+import { Music, Layers, Flame, Lock, Blocks, ArrowRight, Activity } from 'lucide-react';
 import { useSongStore } from '@/shell/SongStoreContext';
 import { intentBus, ensureModel } from '@/shell/intentBus';
 import { useAuth } from '@/context/AuthContext';
@@ -27,7 +28,7 @@ import type { TrackName } from '@/services/api';
 import { TRACK_NAMES } from '@/services/api';
 import { dawApi, type StemUrlEntry } from '@/services/dawApi';
 
-type DawTab = 'timeline' | 'stems' | 'lego' | 'complete';
+type DawTab = 'timeline' | 'stems' | 'analysis' | 'lego' | 'complete';
 
 export default function DawCore() {
   const [activeTab, setActiveTab] = useState<DawTab>('stems');
@@ -294,6 +295,14 @@ export default function DawCore() {
           badge={extractedStems ? `${Object.values(extractedStems).filter(Boolean).length}` : undefined}
         />
         <TabButton
+          tourId="daw.tab.analysis"
+          active={activeTab === 'analysis'}
+          onClick={() => switchTab('analysis')}
+          icon={<Activity size={13} />}
+          label="MixLens"
+          disabled={!extractedStems && !sourceAudioUrl}
+        />
+        <TabButton
           tourId="daw.tab.lego"
           active={activeTab === 'lego'}
           onClick={() => switchTab('lego')}
@@ -357,6 +366,15 @@ export default function DawCore() {
             trackTitle={trackTitle}
             mixer={mixer}
             engineSynced={engineSynced}
+          />
+        </div>
+        <div data-tour="daw.analysis-panel" className={`absolute inset-0 ${activeTab === 'analysis' ? '' : 'hidden'}`}>
+          <MixAssistantTab
+            stems={extractedStems}
+            sourceAudioUrl={sourceAudioUrl}
+            trackTitle={trackTitle}
+            bpm={trackBpm}
+            keySignature={trackKey}
           />
         </div>
         {activeTab === 'lego' && extractedStems && sourceAudioUrl && (

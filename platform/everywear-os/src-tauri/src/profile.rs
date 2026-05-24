@@ -4,11 +4,12 @@
 //! linked external accounts (Discourse, Strands Chain wallet).
 //! All data persisted in a local SQLite database.
 
+use crate::auth::UserClaim;
 use anyhow::Result;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserProfile {
@@ -42,14 +43,12 @@ pub struct ProfileManager {
 
 impl ProfileManager {
     pub fn new() -> Self {
-        let db_path = dirs::data_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("everywear")
-            .join("profile.db");
+        let db_path = everywear_paths::config_dir().join("profile.db");
 
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent).ok();
         }
+        migrate_legacy_profile_db(&db_path);
 
         let mgr = Self { db_path };
         mgr.init_db().ok();
@@ -139,6 +138,47 @@ impl ProfileManager {
         }
     }
 
+    /// Merge the authenticated Everywear ID into the local profile row.
+    ///
+    /// The local row stores editable preferences, but the auth session owns
+    /// immutable identity fields such as user id and email.
+    pub fn sync_auth_identity(&self, claim: &UserClaim) -> Result<UserProfile> {
+        let profile = self.get_profile()?;
+        let conn = Connection::open(&self.db_path)?;
+        let now = chrono::Utc::now().to_rfc3339();
+
+        let is_placeholder_name = profile.display_name.trim().is_empty()
+            || profile
+                .display_name
+                .trim()
+                .eq_ignore_ascii_case("Everywear User");
+        let display_name = if is_placeholder_name {
+            claim
+                .display_name
+                .clone()
+                .or_else(|| claim.handle.clone())
+                .or_else(|| {
+                    claim
+                        .email
+                        .as_deref()
+                        .and_then(|email| email.split('@').next())
+                        .map(str::to_string)
+                })
+                .unwrap_or(profile.display_name)
+        } else {
+            profile.display_name
+        };
+        let alias = profile.alias.or_else(|| claim.handle.clone());
+        let email = claim.email.clone().or(profile.email);
+
+        conn.execute(
+            "UPDATE profile SET id = ?1, display_name = ?2, alias = ?3, email = ?4, updated_at = ?5",
+            rusqlite::params![claim.sub, display_name, alias, email, now],
+        )?;
+
+        self.get_profile()
+    }
+
     /// Update profile fields.
     pub fn update_profile(&self, update: ProfileUpdate) -> Result<UserProfile> {
         let conn = Connection::open(&self.db_path)?;
@@ -221,5 +261,40 @@ impl ProfileManager {
             rusqlite::params![key, value],
         )?;
         Ok(())
+    }
+}
+
+fn legacy_profile_db_path() -> Option<PathBuf> {
+    dirs::data_dir().map(|dir| dir.join("everywear").join("profile.db"))
+}
+
+fn migrate_legacy_profile_db(db_path: &PathBuf) {
+    if db_path.exists() {
+        return;
+    }
+    let Some(legacy_path) = legacy_profile_db_path() else {
+        return;
+    };
+    if !legacy_path.exists() {
+        return;
+    }
+    if let Some(parent) = db_path.parent() {
+        if let Err(error) = std::fs::create_dir_all(parent) {
+            warn!(%error, target = %db_path.display(), "failed to create profile db parent");
+            return;
+        }
+    }
+    match std::fs::copy(&legacy_path, db_path) {
+        Ok(_) => info!(
+            source = %legacy_path.display(),
+            target = %db_path.display(),
+            "Migrated legacy profile database to Everywear config dir"
+        ),
+        Err(error) => warn!(
+            %error,
+            source = %legacy_path.display(),
+            target = %db_path.display(),
+            "failed to migrate legacy profile database"
+        ),
     }
 }

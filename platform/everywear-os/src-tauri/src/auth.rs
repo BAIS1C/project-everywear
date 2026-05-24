@@ -37,6 +37,8 @@ pub struct UserClaim {
     pub handle: Option<String>,
     /// Email address.
     pub email: Option<String>,
+    /// Human display name from Supabase user metadata, when present.
+    pub display_name: Option<String>,
     /// JWT expiry (unix timestamp).
     pub exp: i64,
 }
@@ -107,6 +109,16 @@ struct RawClaims {
     handle: Option<String>,
 }
 
+fn metadata_string(metadata: Option<&serde_json::Value>, keys: &[&str]) -> Option<String> {
+    let metadata = metadata?;
+    keys.iter()
+        .filter_map(|key| metadata.get(*key))
+        .filter_map(|value| value.as_str())
+        .map(str::trim)
+        .find(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
 /// Strip "Bearer " prefix from an Authorization header value.
 pub fn strip_bearer(authz: Option<&str>) -> Result<&str, AuthError> {
     let header = authz.ok_or(AuthError::Missing)?;
@@ -140,18 +152,19 @@ pub fn parse_jwt_unverified(token: &str) -> Result<UserClaim, AuthError> {
     }
 
     // Handle: try top-level claim first, then user_metadata.handle
-    let handle = raw.handle.or_else(|| {
-        raw.user_metadata
-            .as_ref()
-            .and_then(|m| m.get("handle"))
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-    });
+    let handle = raw
+        .handle
+        .or_else(|| metadata_string(raw.user_metadata.as_ref(), &["handle", "username"]));
+    let display_name = metadata_string(
+        raw.user_metadata.as_ref(),
+        &["display_name", "name", "full_name"],
+    );
 
     Ok(UserClaim {
         sub,
         handle,
         email: raw.email,
+        display_name,
         exp,
     })
 }
@@ -233,6 +246,12 @@ pub async fn push_auth_state(
     {
         let mut session_lock = state.user_session.lock().await;
         *session_lock = user_claim.clone();
+    }
+    if let Some(claim) = user_claim.as_ref() {
+        let profile = state.profile.lock().await;
+        if let Err(error) = profile.sync_auth_identity(claim) {
+            warn!(error = %error, "failed to sync auth identity into local profile");
+        }
     }
 
     Ok(AuthReport {

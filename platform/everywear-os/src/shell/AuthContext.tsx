@@ -27,6 +27,8 @@ import { pushAuthState, clearAuth, type LicenceTier, type AuthReport } from '../
 
 const SUPABASE_URL = 'https://ykqdsihnzroglepoxwcj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_uDAHS1s4gvl8hr9b1G-_yA_I7TY1RTE';
+const REMEMBER_AUTH_KEY = 'ew_auth_remember_until';
+const REMEMBER_AUTH_DAYS = 30;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -53,6 +55,7 @@ export interface EverywearUser {
   id: string;
   email: string;
   handle: string;
+  displayName?: string;
   tier: LicenceTier;
   isPaid: boolean;
   isPro: boolean;
@@ -64,7 +67,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   /** Sign in with email + password. */
-  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string, rememberProfile?: boolean) => Promise<void>;
   /** Sign up with email + password. */
   signUp: (email: string, password: string) => Promise<void>;
   /** Verify OTP code from email. */
@@ -128,6 +131,32 @@ async function fetchActiveTier(userId: string): Promise<string> {
   }
 }
 
+async function fetchProfileIdentity(userId: string): Promise<{ handle?: string; displayName?: string }> {
+  try {
+    const result = await Promise.race([
+      supabase
+        .from('profiles')
+        .select('handle, display_name')
+        .eq('id', userId)
+        .maybeSingle(),
+      new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({
+          data: null,
+          error: { message: 'profiles identity lookup timed out after 3s' },
+        }), 3000),
+      ),
+    ]);
+    const { data, error } = result;
+    if (error || !data) return {};
+    return {
+      handle: typeof data.handle === 'string' ? data.handle : undefined,
+      displayName: typeof data.display_name === 'string' ? data.display_name : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 /**
  * Push the current Supabase session + tier to the Tauri shell backend.
  * The shell stores this in AppState for upgrade pack gating and
@@ -153,6 +182,35 @@ async function syncToShell(session: Session | null, tier: string): Promise<AuthR
   }
 }
 
+function rememberUntilTimestamp() {
+  return Date.now() + REMEMBER_AUTH_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function setRememberedAuth(rememberProfile: boolean) {
+  if (typeof window === 'undefined') return;
+  if (rememberProfile) {
+    window.localStorage.setItem(REMEMBER_AUTH_KEY, String(rememberUntilTimestamp()));
+  } else {
+    window.localStorage.setItem(REMEMBER_AUTH_KEY, '0');
+  }
+}
+
+function clearRememberedAuth() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(REMEMBER_AUTH_KEY);
+}
+
+function rememberedAuthIsValid() {
+  if (typeof window === 'undefined') return true;
+  const raw = window.localStorage.getItem(REMEMBER_AUTH_KEY);
+  if (raw === null) {
+    window.localStorage.setItem(REMEMBER_AUTH_KEY, String(rememberUntilTimestamp()));
+    return true;
+  }
+  const expiry = Number(raw);
+  return Number.isFinite(expiry) && expiry > Date.now();
+}
+
 // ── Provider ─────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -169,7 +227,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const supaUser = session.user;
-    const handle =
+    const metadataDisplayName =
+      (supaUser.user_metadata?.display_name as string) ||
+      (supaUser.user_metadata?.name as string) ||
+      (supaUser.user_metadata?.full_name as string) ||
+      undefined;
+    const fallbackHandle =
       (supaUser.user_metadata?.handle as string) ||
       (supaUser.user_metadata?.username as string) ||
       supaUser.email?.split('@')[0] ||
@@ -181,19 +244,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({
       id: supaUser.id,
       email: supaUser.email || '',
-      handle,
+      handle: fallbackHandle,
+      displayName: metadataDisplayName,
       tier: 'demo',
       isPaid: false,
       isPro: false,
     });
 
-    const tierStr = await fetchActiveTier(session.user.id);
+    const [tierStr, profileIdentity] = await Promise.all([
+      fetchActiveTier(session.user.id),
+      fetchProfileIdentity(session.user.id),
+    ]);
     const report = await syncToShell(session, tierStr);
+    const handle = profileIdentity.handle || fallbackHandle;
 
     setUser({
       id: supaUser.id,
       email: supaUser.email || '',
       handle,
+      displayName: profileIdentity.displayName || metadataDisplayName || handle,
       tier: (report?.tier as LicenceTier) || (tierStr as LicenceTier) || 'demo',
       isPaid: report?.is_paid ?? false,
       isPro: report?.is_pro ?? false,
@@ -243,6 +312,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }, 4000)
           ),
         ]);
+        if (result.data.session && !rememberedAuthIsValid()) {
+          await supabase.auth.signOut();
+          await hydrateSession(null);
+          return;
+        }
         if (mounted) {
           await hydrateSession(result.data.session);
         }
@@ -271,7 +345,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Auth methods ────────────────────────────────────────────────
 
-  const signInWithPassword = async (email: string, password: string) => {
+  const signInWithPassword = async (email: string, password: string, rememberProfile = true) => {
     setError(null);
     const { data, error: err } = await supabase.auth.signInWithPassword({
       email,
@@ -286,6 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(message);
       throw new Error(message);
     }
+    setRememberedAuth(rememberProfile);
     await hydrateSession(data.session);
   };
 
@@ -297,6 +372,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw err;
     }
     if (data.session) {
+      setRememberedAuth(true);
       await hydrateSession(data.session);
     }
   };
@@ -326,6 +402,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(message);
       throw new Error(message);
     }
+    setRememberedAuth(true);
     await hydrateSession(data.session);
   };
 
@@ -333,6 +410,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     await supabase.auth.signOut();
     setUser(null);
+    clearRememberedAuth();
     await clearAuth().catch(() => {});
   };
 

@@ -480,7 +480,14 @@ body[data-mode="light"] .ew-folder-tray {
   background: var(--ew-chrome-bg);
   border-bottom: 1px solid var(--ew-chrome-border);
   user-select: none;
+  cursor: grab;
   flex-shrink: 0;
+}
+.ew-window--maximized .ew-window__titlebar {
+  cursor: default;
+}
+.ew-window__titlebar:active {
+  cursor: grabbing;
 }
 .ew-window__controls {
   display: flex;
@@ -1635,6 +1642,20 @@ body[data-mode="light"] .ew-desktop-clock__time {
 }
 .ew-auth-field__input:focus {
   border-color: var(--ew-primary);
+}
+
+.ew-auth-remember {
+  display: flex;
+  align-items: center;
+  gap: var(--ew-space-2);
+  color: var(--ew-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  user-select: none;
+}
+.ew-auth-remember input {
+  accent-color: var(--ew-primary);
 }
 
 .ew-auth-card__error {

@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getProfile, updateProfile, type UserProfile, type ProfileUpdate } from '../lib/transport';
+import { useAuth } from '../shell/AuthContext';
 
 export function ProfilePanel() {
+  const { user: authUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProfileUpdate>({});
@@ -19,14 +21,25 @@ export function ProfilePanel() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    const updated = await updateProfile(form);
+    const update = authUser?.email ? { ...form, email: undefined } : form;
+    const updated = await updateProfile(update);
     setProfile(updated);
     setEditing(false);
-  }, [form]);
+  }, [authUser?.email, form]);
 
   if (!profile) return <div className="ew-text-muted">Loading profile...</div>;
 
-  const initials = profile.display_name
+  const displayProfile: UserProfile = {
+    ...profile,
+    id: authUser?.id || profile.id,
+    display_name: profile.display_name === 'Everywear User'
+      ? authUser?.displayName || authUser?.handle || authUser?.email?.split('@')[0] || profile.display_name
+      : profile.display_name,
+    alias: profile.alias || authUser?.handle || null,
+    email: authUser?.email || profile.email,
+  };
+  const hasConnectedAccounts = !!displayProfile.discourse_session_valid || !!displayProfile.wallet_connected;
+  const initials = displayProfile.display_name
     .split(' ')
     .map((w) => w[0])
     .join('')
@@ -39,11 +52,11 @@ export function ProfilePanel() {
         <div className="ew-profile-panel__avatar-large">{initials}</div>
         <div>
           <h2 style={{ fontFamily: 'var(--ew-font-display)', fontSize: 22 }}>
-            {profile.display_name}
+            {displayProfile.display_name}
           </h2>
-          {profile.alias && (
+          {displayProfile.alias && (
             <div style={{ color: 'var(--ew-text-muted)', fontSize: 14, marginTop: 4 }}>
-              @{profile.alias}
+              @{displayProfile.alias}
             </div>
           )}
         </div>
@@ -60,7 +73,7 @@ export function ProfilePanel() {
               onChange={(e) => setForm({ ...form, display_name: e.target.value })}
             />
           ) : (
-            <div style={{ fontSize: 14 }}>{profile.display_name}</div>
+            <div style={{ fontSize: 14 }}>{displayProfile.display_name}</div>
           )}
         </div>
         <div className="ew-field">
@@ -73,8 +86,8 @@ export function ProfilePanel() {
               placeholder="e.g., somo_kasane"
             />
           ) : (
-            <div style={{ fontSize: 14, color: profile.alias ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
-              {profile.alias || 'Not set'}
+            <div style={{ fontSize: 14, color: displayProfile.alias ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
+              {displayProfile.alias || 'Not set'}
             </div>
           )}
         </div>
@@ -84,12 +97,13 @@ export function ProfilePanel() {
             <input
               className="ew-field__input"
               type="email"
-              value={form.email || ''}
+              value={authUser?.email || form.email || ''}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              readOnly={!!authUser?.email}
             />
           ) : (
-            <div style={{ fontSize: 14, color: profile.email ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
-              {profile.email || 'Not set'}
+            <div style={{ fontSize: 14, color: displayProfile.email ? 'var(--ew-text)' : 'var(--ew-text-faint)' }}>
+              {displayProfile.email || 'Not set'}
             </div>
           )}
         </div>
@@ -120,27 +134,31 @@ export function ProfilePanel() {
         )}
       </div>
 
+      {hasConnectedAccounts && (
       <div className="ew-section">
         <div className="ew-section__title">Connected Accounts</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        {displayProfile.discourse_session_valid && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: displayProfile.wallet_connected ? 12 : 0 }}>
           <span style={{ fontSize: 14 }}>Discourse Forum</span>
-          <span style={{ fontSize: 13, color: profile.discourse_session_valid ? 'var(--ew-success)' : 'var(--ew-text-faint)' }}>
-            {profile.discourse_session_valid ? `@${profile.discourse_username}` : 'Not connected'}
+          <span style={{ fontSize: 13, color: 'var(--ew-success)' }}>
+            @{displayProfile.discourse_username}
           </span>
         </div>
+        )}
+        {displayProfile.wallet_connected && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 14 }}>Strands Chain Wallet</span>
           <span style={{
             fontSize: 13,
             fontFamily: 'var(--ew-font-mono)',
-            color: profile.wallet_connected ? 'var(--ew-primary)' : 'var(--ew-text-faint)',
+            color: 'var(--ew-primary)',
           }}>
-            {profile.wallet_connected
-              ? `${profile.wallet_address?.slice(0, 8)}...${profile.wallet_address?.slice(-6)}`
-              : 'Not connected'}
+            {`${displayProfile.wallet_address?.slice(0, 8)}...${displayProfile.wallet_address?.slice(-6)}`}
           </span>
         </div>
+        )}
       </div>
+      )}
     </div>
   );
 }

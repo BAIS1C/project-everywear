@@ -101,6 +101,10 @@ interface ShellWindowState {
   title: string;
   sublabel?: string;
   content: ShellWindowContent;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   zIndex: number;
   isMinimized: boolean;
   isMaximized: boolean;
@@ -135,6 +139,7 @@ function ShellWindowFrame({
   onClose,
   onMinimize,
   onMaximize,
+  onMove,
   children,
 }: {
   win: ShellWindowState;
@@ -144,17 +149,72 @@ function ShellWindowFrame({
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
+  onMove: (x: number, y: number) => void;
   children: React.ReactNode;
 }) {
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+
   if (win.isMinimized) return null;
+
+  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (win.isMaximized || event.button !== 0) return;
+    if ((event.target as HTMLElement).closest('button')) return;
+    onFocus();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: win.x,
+      originY: win.y,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handleDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    onMove(
+      drag.originX + event.clientX - drag.startX,
+      drag.originY + event.clientY - drag.startY,
+    );
+  };
+
+  const handleDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    }
+  };
 
   return (
     <div
       className={`ew-window ${isActive ? 'ew-window--active' : ''} ${win.isMaximized ? 'ew-window--maximized' : ''}`}
-      style={{ zIndex: win.zIndex }}
+      style={win.isMaximized ? { zIndex: win.zIndex } : {
+        zIndex: win.zIndex,
+        left: win.x,
+        top: win.y,
+        width: win.width,
+        height: win.height,
+      }}
       onPointerDown={onFocus}
     >
-      <div className="ew-window__titlebar" onDoubleClick={onMaximize}>
+      <div
+        className="ew-window__titlebar"
+        onDoubleClick={onMaximize}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+      >
         <div className="ew-window__controls">
           <button className="ew-window__control ew-window__control--close" onClick={(e) => { e.stopPropagation(); onClose(); }} title="Close" />
           <button className="ew-window__control ew-window__control--minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }} title="Minimize" />
@@ -640,6 +700,16 @@ export function ShellLayout() {
     ));
   }, []);
 
+  const moveShellWindow = useCallback((id: string, x: number, y: number) => {
+    const maxX = Math.max(0, window.innerWidth - 96);
+    const maxY = Math.max(44, window.innerHeight - 96);
+    const nextX = Math.max(0, Math.min(x, maxX));
+    const nextY = Math.max(44, Math.min(y, maxY));
+    setWindows(prev => prev.map(win =>
+      win.id === id ? { ...win, x: nextX, y: nextY } : win
+    ));
+  }, []);
+
   const clearInferenceTimer = useCallback(() => {
     if (inferenceTimerRef.current) {
       clearTimeout(inferenceTimerRef.current);
@@ -700,11 +770,22 @@ export function ShellLayout() {
       const id = `${key}:${zIndex}`;
       const title = content.kind === 'panel' ? panelLabel(content.panel) : content.applet.name;
       const sublabel = content.kind === 'panel' ? 'Everywear OS' : content.applet.description;
+      const viewportWidth = window.innerWidth || 1280;
+      const viewportHeight = window.innerHeight || 800;
+      const width = Math.min(1120, Math.max(720, Math.round(viewportWidth * 0.78)));
+      const height = Math.min(760, Math.max(520, Math.round(viewportHeight * 0.78)));
+      const offset = Math.min(prev.length * 28, 112);
+      const x = Math.max(16, Math.min(Math.round(viewportWidth * 0.04) + offset, viewportWidth - width - 16));
+      const y = Math.max(56, Math.min(Math.round(viewportHeight * 0.04) + offset, viewportHeight - height - 64));
       const nextWindow: ShellWindowState = {
         id,
         title,
         sublabel,
         content,
+        x,
+        y,
+        width,
+        height,
         zIndex,
         isMinimized: false,
         isMaximized: true,
@@ -999,7 +1080,7 @@ export function ShellLayout() {
     }
   }, []);
 
-  const displayName = authUser?.handle || profile?.display_name || 'User';
+  const displayName = authUser?.displayName || authUser?.handle || profile?.display_name || 'User';
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   // Show the registry as the desktop source of truth. S3 Studio is a desktop
@@ -1152,6 +1233,7 @@ export function ShellLayout() {
               onClose={() => closeShellWindow(win.id)}
               onMinimize={() => minimizeShellWindow(win.id)}
               onMaximize={() => maximizeShellWindow(win.id)}
+              onMove={(x, y) => moveShellWindow(win.id, x, y)}
             >
               {renderWindowContent(win)}
             </ShellWindowFrame>

@@ -540,14 +540,7 @@ fn collect_library_settings_files(
 
 fn collect_vault_audio_import_files() -> Result<Vec<PlannedFile>> {
     let mut files = Vec::new();
-    let mut candidates = Vec::new();
-
-    if let Some(audio_dir) = dirs::audio_dir() {
-        candidates.push((
-            audio_dir.join(LEGACY_STUDIO_SUBDIR),
-            "music-library".to_string(),
-        ));
-    }
+    let mut candidates = legacy_music_audio_roots()?;
 
     let legacy_app_data_dir = legacy_s3_app_data_dir();
     candidates.push((
@@ -602,6 +595,57 @@ fn collect_vault_audio_import_files() -> Result<Vec<PlannedFile>> {
     }
 
     Ok(files)
+}
+
+fn legacy_music_audio_roots() -> Result<Vec<(PathBuf, String)>> {
+    let Some(audio_dir) = dirs::audio_dir() else {
+        return Ok(Vec::new());
+    };
+    let studio_root = audio_dir.join(LEGACY_STUDIO_SUBDIR);
+    if !studio_root.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut profile_roots = Vec::new();
+    for entry in
+        fs::read_dir(&studio_root).with_context(|| format!("read {}", studio_root.display()))?
+    {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let path = entry.path();
+        if !looks_like_legacy_music_profile_root(&path) {
+            continue;
+        }
+        let label = entry
+            .file_name()
+            .to_str()
+            .map(safe_import_label)
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "profile".to_string());
+        profile_roots.push((path, format!("music-user-{label}")));
+    }
+
+    if profile_roots.is_empty() {
+        Ok(vec![(studio_root, "music-library".to_string())])
+    } else {
+        Ok(profile_roots)
+    }
+}
+
+fn looks_like_legacy_music_profile_root(path: &Path) -> bool {
+    ["gener8", "stems", "references", "covers"]
+        .iter()
+        .any(|dir| path.join(dir).is_dir())
+}
+
+fn safe_import_label(value: &str) -> String {
+    value
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+        .take(48)
+        .collect()
 }
 
 fn collect_one_if_exists(

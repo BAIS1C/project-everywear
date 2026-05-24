@@ -1,7 +1,7 @@
 /**
  * Gener8 applet entry point.
  *
- * Renders: ThemeProvider (EWDS) → AuthProvider (Tauri invoke) → App
+ * Renders: BrowserRouter -> Gener8ShellApp provider stack
  * No shell chrome here (Taskbar, Window, LockScreen stripped).
  * WindowFrame is provided by the Everywear OS shell around this webview.
  */
@@ -13,24 +13,12 @@ import { BrowserRouter } from 'react-router-dom';
 import '@everywear/ewds/css/global.css';
 import './styles/app.css';
 
-import { ThemeProvider } from '@everywear/ewds';
-import { AuthProvider } from './context/AuthContext';
-import { SongStoreProvider } from './context/SongStoreContext';
-import { VaultProvider } from './context/VaultProvider';
-import { App } from './App';
+import { Gener8ShellApp } from './ShellApp';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <AuthProvider>
-        <SongStoreProvider>
-          <VaultProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </VaultProvider>
-        </SongStoreProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <Gener8ShellApp />
+    </BrowserRouter>
   </React.StrictMode>,
 );

@@ -4,8 +4,13 @@ use crate::{profile, state::AppState};
 pub async fn get_profile(
     state: tauri::State<'_, AppState>,
 ) -> Result<profile::UserProfile, String> {
+    let session = state.user_session.lock().await.clone();
     let mgr = state.profile.lock().await;
-    mgr.get_profile().map_err(|e| e.to_string())
+    if let Some(claim) = session.as_ref() {
+        mgr.sync_auth_identity(claim).map_err(|e| e.to_string())
+    } else {
+        mgr.get_profile().map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
