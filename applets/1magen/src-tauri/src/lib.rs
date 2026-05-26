@@ -1,4 +1,4 @@
-//! 1magen: local AI image generation and editing powered by Z-Image.
+//! 1magen: local AI image generation and editing.
 //!
 //! Architecture: diffusion-rs (Rust FFI to stable-diffusion.cpp) linked
 //! directly into the Tauri binary. No sidecar process, no HTTP.

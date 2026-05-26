@@ -43,6 +43,7 @@ import {
   vaultGetItem,
   vaultRegisterAudio,
   vaultSearch,
+  type VaultAssetKind,
   type VaultItem,
 } from '@everywear/transport';
 import { supabase } from '../lib/supabase';
@@ -162,19 +163,19 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     if (normalized) return normalized as T;
     return {
       models: [
-        { name: 'ACE-Step v1', is_default: true, is_loaded: true, supported_task_types: ['text2music', 'reference', 'cover'] },
+        { name: 'Gener8 Music Engine', is_default: true, is_loaded: true, supported_task_types: ['text2music', 'reference', 'cover'] },
       ],
-      default_model: 'ACE-Step v1',
+      default_model: 'Gener8 Music Engine',
       lm_models: [],
       loaded_lm_model: '',
       llm_initialized: true,
     } as T;
   }
   if (endpoint.startsWith('/api/engine/init')) {
-    return { message: 'Ready', loaded_model: 'ACE-Step v1', llm_initialized: true } as T;
+    return { message: 'Ready', loaded_model: 'Gener8 Music Engine', llm_initialized: true } as T;
   }
   if (endpoint.startsWith('/api/engine/health')) {
-    return { status: 'ready', model_initialized: true, llm_initialized: true, loaded_model: 'ACE-Step v1' } as T;
+    return { status: 'ready', model_initialized: true, llm_initialized: true, loaded_model: 'Gener8 Music Engine' } as T;
   }
   if (endpoint.startsWith('/api/engine/model-defaults')) {
     return {
@@ -768,7 +769,7 @@ function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
     : item.created_at || Date.now();
   return {
     id: item.id,
-    title: item.title,
+    title: vaultDisplayTitle(item),
     style: item.genre ?? '',
     lyrics: item.lyrics_text ?? '',
     audioKey: item.file_path,
@@ -788,6 +789,25 @@ function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
 
 function isGener8Song(item: VaultItem): boolean {
   return item.media_type === 'audio' && item.asset_kind === 'gener8_song';
+}
+
+function fileStem(filePath?: string): string | undefined {
+  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
+  if (!name) return undefined;
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function looksSyntheticTitle(title?: string): boolean {
+  const value = (title || '').trim();
+  if (!value) return true;
+  return /^(untitled|gener8 output|legacy gener8 audio)$/i.test(value)
+    || /^track_\d+$/i.test(value)
+    || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+}
+
+function vaultDisplayTitle(item: VaultItem): string {
+  if (!looksSyntheticTitle(item.title)) return item.title;
+  return fileStem(item.file_path) || item.title || 'Untitled';
 }
 
 async function handleVaultSongs<T>(endpoint: string, method: string, body: unknown): Promise<T> {
@@ -888,6 +908,7 @@ export const generateApi = {
   uploadAudio: async (
     file: File,
     token: string,
+    assetKind: VaultAssetKind = 'local_audio',
   ): Promise<{
     url: string;
     key: string;
@@ -905,9 +926,17 @@ export const generateApi = {
       contentType: file.type,
       dataBase64: await fileToBase64(file),
     });
+    const title = file.name.replace(/\.[^.]+$/, '').trim() || file.name;
+    const registered = await vaultRegisterAudio({
+      title,
+      filePath: uploaded.path,
+      durationSeconds: 0,
+      assetKind,
+      tags: ['gener8', assetKind],
+    });
     return {
-      url: uploaded.audioUrl,
-      key: uploaded.key,
+      url: registered.file_path || uploaded.audioUrl,
+      key: registered.id || uploaded.key,
       filename: uploaded.filename,
       original_filename: file.name,
       size_bytes: uploaded.size,

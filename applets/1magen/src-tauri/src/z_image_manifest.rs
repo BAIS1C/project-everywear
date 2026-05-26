@@ -28,7 +28,7 @@ pub fn manifest() -> Vec<ModelInfo> {
         // ── DiT (main generation model) ─────────────────────────────
         ModelInfo {
             key: "z-image-turbo-q4km".into(),
-            name: "Z-Image Turbo Q4_K_M (recommended)".into(),
+            name: "Fast Image Model (recommended)".into(),
             filename: "z_image_turbo-Q4_K.gguf".into(),
             size_bytes: 4_511_501_376,
             // The upstream Leejet GGUF hashes differ from the earlier gguf-org mirror.
@@ -42,7 +42,7 @@ pub fn manifest() -> Vec<ModelInfo> {
         },
         ModelInfo {
             key: "z-image-turbo-q8".into(),
-            name: "Z-Image Turbo Q8_0 (quality)".into(),
+            name: "Quality Image Model".into(),
             filename: "z_image_turbo-Q8_0.gguf".into(),
             size_bytes: 6_577_440_704,
             sha256: Some("df1c5baa86d1398c979495a6072dbcee79444fdb884a2445582ba0769c44e9a1".into()),

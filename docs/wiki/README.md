@@ -18,6 +18,7 @@ Root `WIKI.md` remains the legacy onboarding document. Pages here are the curren
 - `shell/commands-video-migration.md`
 - `gener8/shim.md`
 - `gener8/modal.md`
+- `gener8/vault-library.md`
 - `vid/modal.md`
 - `packages/video-modal.md`
 

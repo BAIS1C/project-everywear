@@ -88,6 +88,25 @@ function itemKindLabel(item: VaultItem): string {
   }
 }
 
+function fileStem(filePath?: string): string | undefined {
+  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
+  if (!name) return undefined;
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function looksSyntheticTitle(title?: string): boolean {
+  const value = (title || '').trim();
+  if (!value) return true;
+  return /^(untitled|gener8 output|legacy gener8 audio)$/i.test(value)
+    || /^track_\d+$/i.test(value)
+    || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+}
+
+function displayItemTitle(item: VaultItem): string {
+  if (!looksSyntheticTitle(item.title)) return item.title;
+  return fileStem(item.file_path) || item.title || 'Untitled';
+}
+
 // ── Item Row ────────────────────────────────────────────────────────
 
 function VaultItemRow({
@@ -103,6 +122,7 @@ function VaultItemRow({
 }) {
   const [thumbError, setThumbError] = useState(false);
   const showThumb = item.media_type === 'image' || item.media_type === 'video';
+  const title = displayItemTitle(item);
 
   return (
     <div
@@ -136,7 +156,7 @@ function VaultItemRow({
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-s3-text-primary truncate flex items-center gap-1.5">
           {item.favorite && <Star size={10} className="text-amber-400 fill-amber-400 flex-shrink-0" />}
-          {item.title}
+          {title}
         </div>
         <div className="text-xs text-s3-text-muted truncate flex items-center gap-2">
           <span className="flex items-center gap-1">{mediaIcon(item.media_type)} {itemKindLabel(item)}</span>
@@ -181,7 +201,7 @@ function VaultItemRow({
         }}
         className="p-1.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-white/5 transition"
         title="Delete item"
-        aria-label={`Delete ${item.title}`}
+        aria-label={`Delete ${title}`}
         style={{ color: 'var(--ew-status-red)' }}
       >
         <Trash2 size={14} />
@@ -512,7 +532,7 @@ export default function LibraryView() {
 
       {deleteTarget && (
         <DeleteConfirmDialog
-          itemTitle={deleteTarget.title}
+          itemTitle={displayItemTitle(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
           onConfirm={confirmDeleteItem}
         />

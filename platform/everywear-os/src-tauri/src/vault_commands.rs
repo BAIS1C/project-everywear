@@ -605,7 +605,37 @@ fn destination_path(target_dir: &Path, id: &str, source: &Path) -> PathBuf {
         .and_then(|ext| ext.to_str())
         .filter(|ext| !ext.is_empty())
         .unwrap_or("bin");
-    target_dir.join(format!("{id}.{extension}"))
+    let stem = source
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(sanitize_file_stem)
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| id.to_string());
+    let candidate = target_dir.join(format!("{stem}.{extension}"));
+    if !candidate.exists() {
+        return candidate;
+    }
+    target_dir.join(format!("{stem}-{}.{}", &id[..8], extension))
+}
+
+fn sanitize_file_stem(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut last_sep = false;
+    for ch in value.chars() {
+        if ch.is_ascii_alphanumeric() || matches!(ch, ' ' | '-' | '_' | '(' | ')' | '.') {
+            out.push(ch);
+            last_sep = false;
+        } else if !last_sep {
+            out.push('_');
+            last_sep = true;
+        }
+        if out.len() >= 120 {
+            break;
+        }
+    }
+    out.trim_matches(|c: char| c == '_' || c == '-' || c == ' ')
+        .trim()
+        .to_string()
 }
 
 fn move_into_vault(source: &Path, destination: &Path) -> Result<(), String> {

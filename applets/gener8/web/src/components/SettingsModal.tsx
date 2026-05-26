@@ -66,7 +66,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
         } catch (err) {
             setEngineConnected(false);
             setEngineStatus('error');
-            setEngineMessage('Cannot reach ACE-Step engine');
+            setEngineMessage('Cannot reach local music engine');
         }
     }, [token]);
 
@@ -319,13 +319,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                                             className="text-sm font-medium"
                                             style={{ color: 'var(--ew-danger)' }}
                                         >
-                                            ACE-Step engine unreachable
+                                            Local music engine unreachable
                                         </p>
                                         <p
                                             className="text-xs mt-1"
                                             style={{ color: 'var(--ew-danger)', opacity: 0.85 }}
                                         >
-                                            Make sure the Python API is running on localhost:8001
+                                            Make sure the local music engine is running.
                                         </p>
                                         <button
                                             onClick={fetchModelInventory}

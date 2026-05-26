@@ -86,7 +86,7 @@ impl AppletRegistry {
             AppletEntry {
                 id: "1magen".into(),
                 name: "1magen".into(),
-                description: "AI image generation and editing powered by Z-Image".into(),
+                description: "Local AI image generation and editing".into(),
                 version: "0.1.0".into(),
                 icon: "1magen".into(),
                 status: AppletStatus::Active,
@@ -103,7 +103,7 @@ impl AppletRegistry {
             AppletEntry {
                 id: "gener8".into(),
                 name: "Gener8".into(),
-                description: "AI music generation, stem mixing, and production powered by ACE-Step"
+                description: "Local AI music generation, stem mixing, and production"
                     .into(),
                 version: "0.1.0".into(),
                 icon: "gener8".into(),

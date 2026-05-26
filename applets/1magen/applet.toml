@@ -6,7 +6,7 @@
 id = "1magen"
 name = "1magen"
 version = "0.1.0"
-description = "Local AI image generation and editing powered by Z-Image"
+description = "Local AI image generation and editing"
 icon = "icons/1magen.png"
 transport = "tauri"
 

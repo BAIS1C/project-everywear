@@ -3,7 +3,7 @@
  * PatchSelector — Style Patch picker for CreatePanel
  *
  * Horizontal scrollable strip of patch cards.
- * Selecting a patch loads it into ACE-Step and auto-inserts the trigger keyword.
+ * Selecting a patch loads it into the local music engine and auto-inserts the trigger keyword.
  * Includes a strength slider per-patch.
  */
 

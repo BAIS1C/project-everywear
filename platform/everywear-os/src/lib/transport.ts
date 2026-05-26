@@ -207,7 +207,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
   {
     id: '1magen',
     name: '1magen',
-    description: 'AI image generation and editing powered by Z-Image',
+    description: 'Local AI image generation and editing',
     version: '0.1.0',
     icon: '1magen',
     status: 'Active',
@@ -224,7 +224,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
   {
     id: 'gener8',
     name: 'Gener8',
-    description: 'AI music generation, stem mixing, and production powered by ACE-Step',
+    description: 'Local AI music generation, stem mixing, and production',
     version: '0.1.0',
     icon: 'gener8',
     status: 'Active',

@@ -10,6 +10,7 @@ import { drawS3Hero, drawDJAtWork } from '../lib/silhouetteEngine';
 import { showToast } from './ToastHost';
 import { parseLrc, getCurrentLine, srtToLrc, naiveLrcFromLyrics } from '../lib/lrcParser';
 import { getApiBase } from '../services/api';
+import { vaultRegisterVideo } from '@everywear/transport';
 
 interface VideoGeneratorModalProps {
   isOpen: boolean;
@@ -1783,6 +1784,17 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
     } else {
       const saveData = await saveRes.json();
       console.log(`[GPU Encode] Saved to: ${saveData.path} (${saveData.size_bytes} bytes)`);
+      if (saveData.path) {
+        await vaultRegisterVideo({
+          title: videoTitle,
+          filePath: saveData.path,
+          durationSeconds: Number.isFinite(duration) ? duration : undefined,
+          generationMode: 'gener8_visualizer',
+          prompt: song.title || videoTitle,
+          hasAudio: true,
+          tags: ['gener8', 'video'],
+        });
+      }
       const sizeMb = (saveData.size_bytes / (1024 * 1024)).toFixed(1);
       showToast({ kind: 'success', message: `Video saved (${sizeMb} MB) → Videos/Strands Sound Studio`, durationMs: 5000 });
     }

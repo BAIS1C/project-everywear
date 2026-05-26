@@ -357,8 +357,8 @@ export default function CreateView() {
             value={params.model}
             onChange={(e) => updateParam('model', e.target.value)}
           >
-            <option value="ace-step-v1">ACE-Step v1</option>
-            <option value="ace-step-v1.5">ACE-Step v1.5</option>
+            <option value="ace-step-v1">Gener8 Music Engine</option>
+            <option value="ace-step-v1.5">Gener8 Music Engine Pro</option>
           </select>
         </div>
       </div>

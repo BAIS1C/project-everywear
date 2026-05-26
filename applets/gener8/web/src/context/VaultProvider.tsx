@@ -105,6 +105,8 @@ const VaultContext = createContext<VaultContextValue>({
   setSelectedItem: () => {},
 });
 
+const LEGACY_IMPORT_REPAIR_KEY = 'gener8:vault-import-repair:2026-05-26-readable-names-videos-dedupe';
+
 // ── Filter/sort mapping ─────────────────────────────────────────────────
 
 function mapFilter(f: VaultMediaFilter): string | undefined {
@@ -154,9 +156,15 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
 
   const runLegacyAudioImport = useCallback(async (force = false) => {
     if (legacyImportRef.current && !force) return;
+    if (!force) {
+      try {
+        if (localStorage.getItem(LEGACY_IMPORT_REPAIR_KEY) === 'done') return;
+      } catch {}
+    }
     legacyImportRef.current = true;
     try {
       await runGener8VaultAudioImport(false);
+      try { localStorage.setItem(LEGACY_IMPORT_REPAIR_KEY, 'done'); } catch {}
     } catch (err) {
       console.warn('[Vault] Legacy Gener8 audio import skipped:', err);
     }

@@ -10,7 +10,7 @@
 
 use anyhow::{Context, Result};
 use chrono::Utc;
-use ew_vault::{AudioDocument, VaultIndex};
+use ew_vault::{AudioDocument, VaultIndex, VideoDocument};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashSet, VecDeque};
@@ -24,6 +24,7 @@ const RECEIPT_PREFIX: &str = "phase5-gener8";
 const VAULT_AUDIO_RECEIPT_PREFIX: &str = "phase5-gener8-vault-audio";
 const LEGACY_STUDIO_SUBDIR: &str = "Strands Sound Studio";
 const LEGACY_AUDIO_IMPORT_DIR: &str = "Gener8 Legacy";
+const LEGACY_VIDEO_IMPORT_DIR: &str = "Gener8 Legacy";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MigrationPlan {
@@ -163,6 +164,7 @@ pub fn run(dry_run: bool, vault_index: Option<&VaultIndex>) -> Result<MigrationS
     migrate_library_settings(&plan, dry_run, &mut receipt)?;
     migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
     repair_generated_vault_audio_index(dry_run, vault_index, &mut receipt)?;
+    migrate_legacy_videos(dry_run, vault_index, &mut receipt)?;
 
     let receipt_path = if dry_run {
         None
@@ -204,6 +206,7 @@ pub fn run_vault_audio_import(
 
     migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
     repair_generated_vault_audio_index(dry_run, vault_index, &mut receipt)?;
+    migrate_legacy_videos(dry_run, vault_index, &mut receipt)?;
 
     let receipt_path = if dry_run {
         None
@@ -422,21 +425,9 @@ fn migrate_vault_audio(
 
     for planned in &plan.vault_audio_files {
         let mut target = planned.target.clone();
-        if !dry_run
+        let was_indexed = !dry_run
             && planned.target.exists()
-            && indexed_audio_paths.contains(&normalized_path(&planned.target))
-        {
-            receipt.operations.push(MigrationOperation {
-                phase: "5.3".to_string(),
-                action: "copy_legacy_audio_to_vault".to_string(),
-                source: planned.source.clone(),
-                target,
-                bytes: planned.bytes,
-                sha256: None,
-                status: "target already exists and is indexed; skipped".to_string(),
-            });
-            continue;
-        }
+            && indexed_audio_paths.contains(&normalized_path(&planned.target));
         let hash = if dry_run {
             None
         } else {
@@ -478,9 +469,17 @@ fn migrate_vault_audio(
             if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
                 let legacy_track = match_legacy_track(&legacy_tracks, &planned.source, &target);
                 let doc = audio_document_for_import(&target, hash, legacy_track)?;
+                let stale_count = index
+                    .delete_audio_documents_by_file_path(&doc.file_path, Some(&doc.id))
+                    .with_context(|| {
+                        format!("remove stale audio index rows for {}", target.display())
+                    })?;
                 if index.get_by_id(&doc.id)?.is_some() {
+                    index.index_audio(&doc).with_context(|| {
+                        format!("repair imported audio metadata in vault {}", target.display())
+                    })?;
                     if status == "target already exists with same SHA256; indexed" {
-                        status = "target already exists with same SHA256; already indexed"
+                        status = "target already exists with same SHA256; metadata repaired"
                             .to_string();
                     }
                 } else {
@@ -493,6 +492,12 @@ fn migrate_vault_audio(
                 }
                 if status == "copied, verified, source preserved" {
                     status = "copied, verified, indexed; source preserved".to_string();
+                }
+                if was_indexed && status == "target already exists with same SHA256; metadata repaired" {
+                    status = "target already existed and was indexed; metadata repaired".to_string();
+                }
+                if stale_count > 0 {
+                    status = format!("{status}; removed {stale_count} stale duplicate index rows");
                 }
             } else if vault_index.is_none() {
                 receipt.warnings.push(format!(
@@ -528,6 +533,122 @@ fn indexed_audio_paths(vault_index: Option<&VaultIndex>) -> Result<HashSet<Strin
             _ => None,
         })
         .collect())
+}
+
+fn migrate_legacy_videos(
+    dry_run: bool,
+    vault_index: Option<&VaultIndex>,
+    receipt: &mut MigrationReceipt,
+) -> Result<()> {
+    let Some(video_dir) = dirs::video_dir() else {
+        return Ok(());
+    };
+    let source_root = video_dir.join(LEGACY_STUDIO_SUBDIR);
+    if !source_root.exists() {
+        return Ok(());
+    }
+
+    let target_root = everywear_paths::vault_video().join(LEGACY_VIDEO_IMPORT_DIR);
+    let vault_root = everywear_paths::vault_root();
+
+    for source in walk_files(&source_root)? {
+        if !is_video_file(&source) || path_is_under(&source, &vault_root) {
+            continue;
+        }
+        let rel = source
+            .strip_prefix(&source_root)
+            .with_context(|| format!("strip prefix {}", source.display()))?;
+        let metadata = fs::metadata(&source)?;
+        let mut target = target_root.join(rel);
+        let hash = if dry_run {
+            None
+        } else {
+            Some(sha256_file(&source)?)
+        };
+        let mut status = "planned copy; source preserved".to_string();
+
+        if !dry_run {
+            if target.exists() {
+                let target_hash = sha256_file(&target)?;
+                if Some(target_hash.as_str()) == hash.as_deref() {
+                    status = "target already exists with same SHA256; metadata repaired".to_string();
+                } else {
+                    target = conflict_target(&target, &receipt.id);
+                    status = "target existed; copied to conflict-safe legacy filename".to_string();
+                }
+            }
+
+            if !target.exists() {
+                if let Some(parent) = target.parent() {
+                    fs::create_dir_all(parent)
+                        .with_context(|| format!("create {}", parent.display()))?;
+                }
+                fs::copy(&source, &target).with_context(|| {
+                    format!("copy {} -> {}", source.display(), target.display())
+                })?;
+                let copied_hash = sha256_file(&target)?;
+                if Some(copied_hash.as_str()) != hash.as_deref() {
+                    let _ = fs::remove_file(&target);
+                    anyhow::bail!(
+                        "SHA256 mismatch after video copy: {} -> {}",
+                        source.display(),
+                        target.display()
+                    );
+                }
+                status = "copied, verified, indexed; source preserved".to_string();
+            }
+
+            if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
+                let target_metadata =
+                    fs::metadata(&target).with_context(|| format!("metadata {}", target.display()))?;
+                let timestamp = target_metadata
+                    .created()
+                    .or_else(|_| target_metadata.modified())
+                    .ok()
+                    .and_then(system_time_to_unix_seconds)
+                    .unwrap_or_else(now_timestamp);
+                let doc = VideoDocument {
+                    id: stable_video_import_id(&target, hash),
+                    applet_id: APPLET_ID.to_string(),
+                    title: video_title_for_import(&target),
+                    tags: vec![
+                        "gener8".to_string(),
+                        "legacy-import".to_string(),
+                        "video".to_string(),
+                    ],
+                    created_at: timestamp,
+                    updated_at: now_timestamp(),
+                    file_path: target.to_string_lossy().to_string(),
+                    file_size_bytes: target_metadata.len(),
+                    mime_type: mime_from_path(&target),
+                    favorite: false,
+                    duration_seconds: 0.0,
+                    width: 0,
+                    height: 0,
+                    frame_rate: 0.0,
+                    model_id: None,
+                    generation_mode: Some("gener8_visualizer".to_string()),
+                    prompt: None,
+                    has_audio: true,
+                };
+                index.index_video(&doc).with_context(|| {
+                    format!("index imported video in vault {}", target.display())
+                })?;
+            }
+        }
+
+        receipt.operations.push(MigrationOperation {
+            phase: "5.4".to_string(),
+            action: "copy_legacy_video_to_vault".to_string(),
+            source,
+            target,
+            bytes: metadata.len(),
+            sha256: hash,
+            status,
+        });
+    }
+
+    Ok(())
 }
 
 fn repair_generated_vault_audio_index(
@@ -579,9 +700,7 @@ fn repair_generated_vault_audio_root(
         let Some(id) = generated_vault_audio_id(&path) else {
             continue;
         };
-        if index.get_by_id(&id)?.is_some() {
-            continue;
-        }
+        let already_indexed = index.get_by_id(&id)?.is_some();
 
         let hash = sha256_file(&path)?;
         let metadata = fs::metadata(&path).with_context(|| format!("metadata {}", path.display()))?;
@@ -591,7 +710,8 @@ fn repair_generated_vault_audio_root(
             .ok()
             .and_then(system_time_to_unix_seconds)
             .unwrap_or_else(now_timestamp);
-        let asset_kind = if is_stem { "stem" } else { "gener8_song" };
+        let asset_kind = infer_audio_asset_kind(&path, is_stem);
+        let is_stem = is_stem || asset_kind == "stem";
         let mut tags = vec![
             "gener8".to_string(),
             "vault-repair".to_string(),
@@ -606,11 +726,7 @@ fn repair_generated_vault_audio_root(
         let doc = AudioDocument {
             id,
             applet_id: APPLET_ID.to_string(),
-            title: path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .map(str::to_string)
-                .unwrap_or_else(|| "Gener8 output".to_string()),
+            title: audio_title_for_import(&path, None, is_stem),
             tags,
             created_at: file_timestamp,
             updated_at: now_timestamp(),
@@ -630,6 +746,9 @@ fn repair_generated_vault_audio_root(
             lyrics_text: None,
             asset_kind: Some(asset_kind.to_string()),
         };
+        let stale_count = index
+            .delete_audio_documents_by_file_path(&doc.file_path, Some(&doc.id))
+            .with_context(|| format!("remove stale audio index rows for {}", path.display()))?;
         index
             .index_audio(&doc)
             .with_context(|| format!("repair vault audio index {}", path.display()))?;
@@ -640,7 +759,16 @@ fn repair_generated_vault_audio_root(
             target: path,
             bytes: metadata.len(),
             sha256: Some(hash),
-            status: "indexed existing vault file".to_string(),
+            status: match (already_indexed, stale_count) {
+                (true, 0) => "reindexed existing vault file".to_string(),
+                (true, count) => {
+                    format!("reindexed existing vault file; removed {count} stale duplicate index rows")
+                }
+                (false, 0) => "indexed existing vault file".to_string(),
+                (false, count) => {
+                    format!("indexed existing vault file; removed {count} stale duplicate index rows")
+                }
+            },
         });
     }
 
@@ -874,8 +1002,9 @@ fn audio_document_for_import(
         .ok()
         .and_then(system_time_to_unix_seconds)
         .unwrap_or_else(now_timestamp);
-    let is_stem = is_stem_path(path);
-    let asset_kind = if is_stem { "stem" } else { "gener8_song" };
+    let path_is_stem = is_stem_path(path);
+    let asset_kind = infer_audio_asset_kind(path, path_is_stem);
+    let is_stem = path_is_stem || asset_kind == "stem";
     let timestamp = legacy_track
         .and_then(|track| chrono::DateTime::parse_from_rfc3339(&track.created_at).ok())
         .map(|created| created.timestamp().max(0) as u64)
@@ -895,16 +1024,7 @@ fn audio_document_for_import(
     Ok(AudioDocument {
         id: stable_audio_import_id(path, source_sha256),
         applet_id: APPLET_ID.to_string(),
-        title: legacy_track
-            .map(|track| track.title.trim())
-            .filter(|title| !title.is_empty())
-            .map(str::to_string)
-            .or_else(|| {
-                path.file_stem()
-                    .and_then(|stem| stem.to_str())
-                    .map(str::to_string)
-            })
-            .unwrap_or_else(|| "Legacy Gener8 Audio".to_string()),
+        title: audio_title_for_import(path, legacy_track, is_stem),
         tags,
         created_at: timestamp,
         updated_at: now_timestamp(),
@@ -939,6 +1059,103 @@ fn audio_document_for_import(
             .map(str::to_string),
         asset_kind: Some(asset_kind.to_string()),
     })
+}
+
+fn infer_audio_asset_kind(path: &Path, is_stem: bool) -> &'static str {
+    if is_stem {
+        return "stem";
+    }
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if name.contains("(reference)")
+        || name.contains("_reference")
+        || name.contains("-reference")
+    {
+        return "reference";
+    }
+    if name.contains("(cover source)")
+        || name.contains("_cover_source")
+        || name.contains("-cover-source")
+    {
+        return "cover_source";
+    }
+    if name.contains("extract track_") {
+        return "stem";
+    }
+    "gener8_song"
+}
+
+fn audio_title_for_import(
+    path: &Path,
+    legacy_track: Option<&LegacyLibraryTrack>,
+    is_stem: bool,
+) -> String {
+    if let Some(title) = legacy_track
+        .map(|track| track.title.trim())
+        .filter(|title| !title.is_empty())
+    {
+        return title.to_string();
+    }
+    if is_stem {
+        let stem_label = path
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .map(readable_stem_label)
+            .unwrap_or_else(|| "Stem".to_string());
+        if let Some(parent) = path.parent().and_then(|parent| parent.file_name()).and_then(|name| name.to_str()) {
+            if !matches!(parent.to_ascii_lowercase().as_str(), "stems" | "stem" | "gener8") {
+                return format!("{parent} - {stem_label}");
+            }
+        }
+        return stem_label;
+    }
+    path.file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(strip_generated_hash_suffix)
+        .filter(|title| !title.is_empty())
+        .unwrap_or_else(|| "Legacy Gener8 Audio".to_string())
+}
+
+fn strip_generated_hash_suffix(value: &str) -> String {
+    let Some((head, tail)) = value.rsplit_once('_') else {
+        return value.trim().to_string();
+    };
+    if tail.len() == 8 && tail.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return head.trim().to_string();
+    }
+    value.trim().to_string()
+}
+
+fn readable_stem_label(value: &str) -> String {
+    match value.to_ascii_lowercase().as_str() {
+        "track_1" => "Vocals".to_string(),
+        "track_2" => "Backing Vocals".to_string(),
+        "track_3" => "Drums".to_string(),
+        "track_4" => "Bass".to_string(),
+        "track_5" => "Guitar".to_string(),
+        "track_6" => "Keyboard".to_string(),
+        "track_7" => "Percussion".to_string(),
+        "track_8" => "Strings".to_string(),
+        "track_9" => "Synth".to_string(),
+        "track_10" => "FX".to_string(),
+        "track_11" => "Brass".to_string(),
+        "track_12" => "Woodwinds".to_string(),
+        other => strip_generated_hash_suffix(other)
+            .replace('_', " ")
+            .split_whitespace()
+            .map(|part| {
+                let mut chars = part.chars();
+                match chars.next() {
+                    Some(first) => format!("{}{}", first.to_ascii_uppercase(), chars.as_str()),
+                    None => String::new(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
 }
 
 fn load_legacy_library_tracks(legacy_app_data_dir: &Path) -> Result<Vec<LegacyLibraryTrack>> {
@@ -1006,6 +1223,22 @@ fn stable_audio_import_id(path: &Path, source_sha256: &str) -> String {
     format!("legacy-gener8-{}", &hash[..32])
 }
 
+fn stable_video_import_id(path: &Path, source_sha256: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(path.to_string_lossy().as_bytes());
+    hasher.update(source_sha256.as_bytes());
+    let hash = hex::encode(hasher.finalize());
+    format!("legacy-gener8-video-{}", &hash[..32])
+}
+
+fn video_title_for_import(path: &Path) -> String {
+    path.file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(strip_generated_hash_suffix)
+        .filter(|title| !title.is_empty())
+        .unwrap_or_else(|| "Gener8 video".to_string())
+}
+
 fn generated_vault_audio_id(path: &Path) -> Option<String> {
     let stem = path.file_stem()?.to_str()?;
     if !looks_like_uuid(stem) {
@@ -1046,6 +1279,10 @@ fn mime_from_path(path: &Path) -> String {
         "flac" => "audio/flac",
         "ogg" => "audio/ogg",
         "m4a" | "aac" => "audio/mp4",
+        "mp4" | "m4v" => "video/mp4",
+        "mov" => "video/quicktime",
+        "webm" => "video/webm",
+        "mkv" => "video/x-matroska",
         _ => "audio/wav",
     }
     .to_string()
@@ -1059,6 +1296,17 @@ fn is_audio_file(path: &Path) -> bool {
             .to_ascii_lowercase()
             .as_str(),
         "mp3" | "wav" | "flac" | "ogg" | "m4a" | "aac"
+    )
+}
+
+fn is_video_file(path: &Path) -> bool {
+    matches!(
+        path.extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+            .as_str(),
+        "mp4" | "mov" | "m4v" | "webm" | "mkv"
     )
 }
 
@@ -1087,6 +1335,9 @@ fn infer_stem_type(path: &Path) -> Option<String> {
     ];
     path.components().find_map(|component| {
         let part = component.as_os_str().to_str()?.to_ascii_lowercase();
+        if part.starts_with("track_") {
+            return Some(readable_stem_label(&part).to_ascii_lowercase().replace(' ', "_"));
+        }
         stem_names
             .iter()
             .find(|stem| part == **stem || part.contains(*stem))

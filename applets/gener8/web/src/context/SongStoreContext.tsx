@@ -12,7 +12,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Song } from '../types';
 import { useAuth } from './AuthContext';
-import { vaultFileUrl, vaultSearch, type VaultItem } from '@everywear/transport';
+import {
+  runGener8VaultAudioImport,
+  vaultFileUrl,
+  vaultSearch,
+  type VaultItem,
+} from '@everywear/transport';
 
 function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
   if (!audioUrl) return undefined;
@@ -22,11 +27,30 @@ function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
 
 async function fetchMySongs(): Promise<VaultItem[]> {
   try {
-    const response = await vaultSearch('', 'gener8_song', 'newest', 100, 0);
+    const response = await vaultSearch('', 'gener8_song', 'newest', 500, 0);
     return response.items.filter((item) => item.media_type === 'audio' && item.asset_kind === 'gener8_song');
   } catch {
     return [];
   }
+}
+
+function fileStem(filePath?: string): string | undefined {
+  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
+  if (!name) return undefined;
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function looksSyntheticTitle(title?: string): boolean {
+  const value = (title || '').trim();
+  if (!value) return true;
+  return /^(untitled|gener8 output|legacy gener8 audio)$/i.test(value)
+    || /^track_\d+$/i.test(value)
+    || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+}
+
+function vaultDisplayTitle(item: VaultItem): string {
+  if (!looksSyntheticTitle(item.title)) return item.title;
+  return fileStem(item.file_path) || item.title || 'Untitled';
 }
 
 // -- Faux peaks (deterministic placeholder waveform) --------------------------
@@ -55,7 +79,7 @@ function mapWireSong(s: any): Song {
 
   return {
     id: s.id,
-    title: s.title || 'Untitled',
+    title: 'file_path' in s ? vaultDisplayTitle(s as VaultItem) : (s.title || 'Untitled'),
     lyrics: s.lyrics ?? s.lyrics_text ?? '',
     style: s.style ?? s.genre ?? '',
     coverUrl: `https://picsum.photos/seed/${s.id}/400/400`,
@@ -117,6 +141,7 @@ const SongStoreContext = createContext<SongStoreContextValue>({
 });
 
 const HAS_SONGS_CACHE_KEY = 'gener8.has_songs';
+const LEGACY_LIBRARY_REPAIR_KEY = 'gener8:vault-import-repair:2026-05-26-readable-names-videos-dedupe';
 
 export function SongStoreProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -146,12 +171,30 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
   }, [dislikedSongIds]);
 
   const fetchInFlight = useRef(false);
+  const importInFlight = useRef(false);
+
+  const runLegacyLibraryRepair = useCallback(async () => {
+    if (importInFlight.current) return;
+    try {
+      if (localStorage.getItem(LEGACY_LIBRARY_REPAIR_KEY) === 'done') return;
+    } catch {}
+    importInFlight.current = true;
+    try {
+      await runGener8VaultAudioImport(false);
+      try { localStorage.setItem(LEGACY_LIBRARY_REPAIR_KEY, 'done'); } catch {}
+    } catch (error) {
+      console.warn('[SongStore] Legacy Gener8 library repair skipped:', error);
+    } finally {
+      importInFlight.current = false;
+    }
+  }, []);
 
   const refetch = useCallback(async () => {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     setIsLoading(true);
     try {
+      await runLegacyLibraryRepair();
       const wireSongs = await fetchMySongs();
       const mapped = wireSongs.map(mapWireSong);
       _setSongs(prev => {
@@ -170,7 +213,7 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
       setHasLoaded(true);
       fetchInFlight.current = false;
     }
-  }, []);
+  }, [runLegacyLibraryRepair]);
 
   // Fire once on mount. Re-fires when auth state changes.
   useEffect(() => {

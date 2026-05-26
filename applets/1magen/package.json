@@ -2,7 +2,7 @@
   "name": "onemagen",
   "version": "0.1.0",
   "private": true,
-  "description": "1magen — local AI image generation and editing powered by Z-Image",
+  "description": "1magen — local AI image generation and editing",
   "type": "module",
   "scripts": {
     "dev": "vite",

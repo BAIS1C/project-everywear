@@ -44,7 +44,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://*.supabase.co https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co https://api.open-meteo.com; frame-src http://127.0.0.1:*"
+      "csp": "default-src 'self'; img-src 'self' asset: data: https:; media-src 'self' asset: data: blob: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://127.0.0.1:* https://*.supabase.co https://forum.strandsnation.xyz https://huggingface.co https://*.huggingface.co https://api.open-meteo.com; frame-src http://127.0.0.1:*"
     }
   },
   "plugins": {

@@ -907,7 +907,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     const setAudioDuration = target === 'reference' ? setReferenceDuration : setSourceDuration;
     setUploading(true);
     try {
-      const result = await generateApi.uploadAudio(file, token);
+      const result = await generateApi.uploadAudio(
+        file,
+        token,
+        target === 'reference' ? 'reference' : 'cover_source',
+      );
       const displayName = result.original_filename || result.filename || file.name;
       setUrl(result.url);
       setLabel(displayName);
@@ -2530,7 +2534,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                     )}
                     <p className="text-[10px] text-zinc-500">
                       {capabilityMode
-                        ? 'Pro Model Reference and Cover use ACE-Step Base/SFT defaults. Standard is the clean 50-step path; High is only for difficult source audio.'
+                        ? 'Pro Model Reference and Cover use the high-fidelity path. Standard is the clean 50-step path; High is only for difficult source audio.'
                         : isTurbo
                         ? 'Turbo models are fast — 8 steps is the sweet spot. Going higher won\'t help.'
                         : '50 steps is the sweet spot for the Song Model. Fast is a preview; High spends more time exploring.'}
@@ -2573,7 +2577,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
             {/*
               Style Influence + Weirdness sliders are MODEL-AWARE.
               Turbo/song defaults stay narrow, while Reference/Cover on
-              the Pro Model uses ACE-Step's real APG/CFG range. Per-model
+              the Pro Model uses the wider guidance range. Per-model
               ranges keep each model's canonical defaults in a sensible
               place instead of making users tune raw engine numbers.
             */}

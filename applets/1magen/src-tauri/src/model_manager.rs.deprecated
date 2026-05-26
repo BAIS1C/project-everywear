@@ -42,7 +42,7 @@ fn default_manifest() -> Vec<ModelInfo> {
         // leejet/Z-Image-Turbo-GGUF also available (sd.cpp author)
         ModelInfo {
             key: "z-image-turbo-q4km".into(),
-            name: "Z-Image Turbo Q4_K_M (recommended)".into(),
+            name: "Fast Image Model (recommended)".into(),
             filename: "z-image-turbo-q4_k_m.gguf".into(),
             size_bytes: 4_511_501_376,
             sha256: Some("c1d3bf7163a8ae9122118e6c82768ad0426971d6ea7cfaf5f1c300bbd110c321".into()),
@@ -54,7 +54,7 @@ fn default_manifest() -> Vec<ModelInfo> {
         },
         ModelInfo {
             key: "z-image-turbo-q8".into(),
-            name: "Z-Image Turbo Q8_0 (quality)".into(),
+            name: "Quality Image Model".into(),
             filename: "z-image-turbo-q8_0.gguf".into(),
             size_bytes: 7_224_691_776,
             sha256: Some("39674cec3b98e737276443cbf02f29b0aea616164e465c731f19903b00363cfd".into()),

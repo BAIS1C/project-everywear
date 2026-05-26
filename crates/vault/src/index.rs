@@ -110,6 +110,34 @@ impl VaultIndex {
         )
     }
 
+    pub fn delete_audio_documents_by_file_path(
+        &self,
+        file_path: &str,
+        except_id: Option<&str>,
+    ) -> Result<usize> {
+        let target = normalize_path_key(file_path);
+        if target.is_empty() {
+            return Ok(0);
+        }
+        let ids = self
+            .stats_items()?
+            .into_iter()
+            .filter_map(|item| match item {
+                VaultItem::Audio(doc)
+                    if normalize_path_key(&doc.file_path) == target
+                        && except_id.is_none_or(|keep| keep != doc.id) =>
+                {
+                    Some(doc.id)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        for id in &ids {
+            delete_from_index(&self.audio_index, self.audio_fields.id, id)?;
+        }
+        Ok(ids.len())
+    }
+
     pub fn index_video(&self, doc: &VideoDocument) -> Result<()> {
         let tantivy_doc = video_to_tantivy(&self.video_schema, doc)?;
         replace_document(
@@ -402,6 +430,10 @@ fn delete_from_index(index: &Index, id_field: Field, id: &str) -> Result<()> {
     Ok(())
 }
 
+fn normalize_path_key(value: &str) -> String {
+    value.replace('\\', "/").to_ascii_lowercase()
+}
+
 fn commit_with_windows_retry(writer: &mut tantivy::IndexWriter<TantivyDocument>) -> Result<()> {
     for attempt in 0..3 {
         match writer.commit() {
@@ -583,6 +615,12 @@ fn item_matches_filter(item: &VaultItem, filter: &MediaFilter) -> bool {
 }
 
 pub fn audio_asset_kind(doc: &AudioDocument) -> &str {
+    if doc.is_stem {
+        return "stem";
+    }
+    if let Some(kind) = inferred_legacy_gener8_asset_kind(doc) {
+        return kind;
+    }
     if let Some(kind) = doc.asset_kind.as_deref().filter(|kind| !kind.is_empty()) {
         return kind;
     }
@@ -593,13 +631,40 @@ pub fn audio_asset_kind(doc: &AudioDocument) -> &str {
     {
         return kind;
     }
-    if doc.is_stem {
-        return "stem";
-    }
     if doc.applet_id == "gener8" {
         return "gener8_song";
     }
     "local_audio"
+}
+
+fn inferred_legacy_gener8_asset_kind(doc: &AudioDocument) -> Option<&'static str> {
+    if doc.applet_id != "gener8" {
+        return None;
+    }
+    let legacy_indexed = doc
+        .tags
+        .iter()
+        .any(|tag| matches!(tag.as_str(), "legacy-import" | "vault-repair"));
+    if !legacy_indexed {
+        return None;
+    }
+    let haystack = format!("{} {}", doc.title, doc.file_path).to_ascii_lowercase();
+    if haystack.contains("(reference)")
+        || haystack.contains("_reference")
+        || haystack.contains("-reference")
+    {
+        return Some("reference");
+    }
+    if haystack.contains("(cover source)")
+        || haystack.contains("_cover_source")
+        || haystack.contains("-cover-source")
+    {
+        return Some("cover_source");
+    }
+    if haystack.contains("extract track_") {
+        return Some("stem");
+    }
+    None
 }
 
 fn dedupe_items(items: &mut Vec<VaultItem>) {

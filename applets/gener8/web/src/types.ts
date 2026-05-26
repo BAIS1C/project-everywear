@@ -105,7 +105,7 @@ export interface GenerationParams {
   // = keep current; otherwise ace-server lazy-loads + swaps via
   // ServerFields.synth_model parsing in tools/ace-server.cpp:443.
   // Full filename per shim engine_models output, e.g.
-  // "acestep-v15-xl-turbo-Q8_0.gguf".
+  // local engine model filename.
   synth_model?: string;
 
   // Generation Settings
@@ -182,5 +182,5 @@ export interface UserProfile {
   };
 }
 
-// Simplified views for ACE-Step UI
+// Simplified views for Gener8 UI
 export type View = 'create' | 'library' | 'videos' | 'profile' | 'song' | 'playlist' | 'search' | 'video-studio' | 'style-forge' | 'daw';

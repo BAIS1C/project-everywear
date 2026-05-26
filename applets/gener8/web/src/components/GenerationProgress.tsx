@@ -42,7 +42,7 @@ export interface GenerationProgressProps {
   startedAt?: number;
   /**
    * Expected total generation time, ms. Default 140_000 — calibrated to
-   * ACE-Step v1.5 Turbo measured cold-start (100s model load + 7s CoT +
+   * Local music engine measured cold-start (100s model load + 7s CoT +
    * 53s audio codes + 2s diffusion + 2s VAE + 3s mp3 ≈ 165s). Warm runs
    * land closer to 65s, so the fill will briefly overshoot on warm —
    * preferable to the old 35s default which stalled at 95% for 2+ minutes

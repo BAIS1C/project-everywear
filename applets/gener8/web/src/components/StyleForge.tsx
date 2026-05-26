@@ -172,7 +172,7 @@ export const StyleForge: React.FC = () => {
         startSSE();
       }
     } catch {
-      // ACE-Step API not running, that's fine
+      // Local music engine not running, that's fine
     }
   };
 
@@ -408,8 +408,8 @@ export const StyleForge: React.FC = () => {
           <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
             <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium">ACE-Step engine offline</p>
-              <p className="text-xs text-red-400/70 mt-1">Training requires a running engine. Start the Python API on port 8001.</p>
+              <p className="text-sm font-medium">Local music engine offline</p>
+              <p className="text-xs text-red-400/70 mt-1">Training requires the local music engine to be running.</p>
             </div>
           </div>
         )}
@@ -426,7 +426,7 @@ export const StyleForge: React.FC = () => {
           <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
             <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium">Turbo model loaded: {loadedModel.replace('acestep-v15-', '')}</p>
+              <p className="text-sm font-medium">Fast song model loaded</p>
               <p className="text-xs text-blue-400/70 mt-1">Training requires the Base model. It will be loaded automatically when you start a training run.</p>
             </div>
           </div>

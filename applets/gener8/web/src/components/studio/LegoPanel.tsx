@@ -17,7 +17,7 @@ interface LegoPanelProps {
   trackTitle?: string;
 }
 
-// Color + label mapping for ACE-Step's 12 canonical stem classes.
+// Color + label mapping for the local engine's 12 canonical stem classes.
 const _LEGO_COLORS = [
   "#F472B6", "#FB923C", "#A78BFA", "#34D399",
   "#60A5FA", "#FBBF24", "#F87171", "#2DD4BF",

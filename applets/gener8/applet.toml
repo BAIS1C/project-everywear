@@ -14,7 +14,7 @@
 id = "gener8"
 name = "Gener8"
 version = "0.1.0"
-description = "AI music generation, stem mixing, and production powered by ACE-Step"
+description = "Local AI music generation, stem mixing, and production"
 icon = "gener8"
 transport = "ipc"
 # Frontend mounts inside Everywear through AppletViewRouter; no public

@@ -4,7 +4,7 @@
  *
  * State machine: Empty → Track Loaded → Extracting → Extracted
  *
- * Wired to real ACE-Step extract/lego/repaint task types via studioApi.
+ * Wired to real local extract/add-layer/repaint task types via studioApi.
  * Surfaces clear errors when the engine is unreachable (no fake fallback).
  */
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
@@ -1899,7 +1899,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                 }} />
               </div>
               <p style={{ fontSize: 11, color: "#64748B", marginTop: 6 }}>
-                Separating audio into {TRACK_NAMES.length} stems via ACE-Step extract... {completedStems}/{TRACK_NAMES.length} complete
+                Separating audio into {TRACK_NAMES.length} stems... {completedStems}/{TRACK_NAMES.length} complete
               </p>
             </div>
           )}

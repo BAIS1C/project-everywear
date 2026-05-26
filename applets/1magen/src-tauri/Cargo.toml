@@ -2,7 +2,7 @@
 name = "onemagen"
 version = "0.1.0"
 edition = "2021"
-description = "1magen — local AI image generation and editing powered by Z-Image"
+description = "1magen — local AI image generation and editing"
 authors = ["Sean Uddin <somo@metafintek.xyz>"]
 license = "MIT OR Apache-2.0"
 publish = false

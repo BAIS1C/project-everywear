@@ -562,6 +562,16 @@ export default function Gener8Core() {
     if (activeJobsRef.current.size === 0) setIsGenerating(false);
   }, [songStore]);
 
+  const finishJob = useCallback((jobId: string) => {
+    const jobData = activeJobsRef.current.get(jobId);
+    if (jobData) {
+      clearInterval(jobData.pollInterval);
+      activeJobsRef.current.delete(jobId);
+    }
+    setActiveJobCount(activeJobsRef.current.size);
+    if (activeJobsRef.current.size === 0) setIsGenerating(false);
+  }, []);
+
   // Trigger a refresh from the shim through the shared store. Replaces
   // the previous duplicated mapper + sort pass; the store now owns the
   // canonical fetch + dedupe logic so we just fire its refetch.
@@ -629,12 +639,13 @@ export default function Gener8Core() {
           });
 
           if (status.status === 'succeeded' && status.result) {
-            cleanupJob(job.jobId, tempId);
+            finishJob(job.jobId);
 
             // Persist generation result into the local library (library.json).
             // Shim already wrote audio to <music>/gener8/<id>.mp3 and returned
             // audioUrls + audioKey in the status envelope. Without this POST the
             // library stays empty and refreshSongsList has nothing to show.
+            let persisted = false;
             try {
               const audioRef =
                 status.result.audioKey
@@ -664,6 +675,7 @@ export default function Gener8Core() {
                     peaksAttempted: false,
                   } as any);
                   setSelectedSong(persistResult.song);
+                  persisted = true;
                 }
                 // 2026-05-05 SGT: Auto-tag new generation into active workspace
                 if (activeWorkspaceId && persistResult?.song?.id) {
@@ -674,6 +686,14 @@ export default function Gener8Core() {
               }
             } catch (persistErr) {
               console.error(`Failed to persist track for job ${job.jobId}:`, persistErr);
+            } finally {
+              if (!persisted) {
+                songStore.updateSong(tempId, {
+                  isGenerating: false,
+                  statusMessage: 'Generation finished, but Vault registration did not complete.',
+                } as Partial<Song>);
+                showToast('Generation finished, but Vault registration failed. Check logs before retrying.', 'error');
+              }
             }
 
             await refreshSongsList();

@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.0
-Last updated: 2026-05-18 (full overhaul: all sections verified against disk)
+Version: 1.1.1
+Last updated: 2026-05-26 (Gener8/Vault repair addendum)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -12,6 +12,57 @@ Maintainer: Sean Uddin / Somo Kasane
 > match verified disk state. The OODA Refresh addendum below and the body
 > sections should now agree. For the shortest live handoff, read
 > [CONTEXT.md](./CONTEXT.md) first.
+
+> Current-state note, 2026-05-26 v1.1.1: Gener8/Vault repair work is tracked
+> in [docs/wiki/gener8/vault-library.md](./docs/wiki/gener8/vault-library.md).
+> The May 24 and May 26 vault notes did not update this root wiki or
+> `docs/wiki/README.md`; this addendum corrects that trail.
+
+## Current State Addendum 2026-05-26: Gener8 Vault Repair
+
+### Observe
+
+- `WIKI.md` and `docs/wiki/README.md` were last updated on May 22 before this
+  addendum. Newer May 24 and May 26 vault notes existed, but were not mirrored
+  into the module wiki.
+- The active Vault stats shown in the Everywear OS debug UI reported 1,221
+  audio items, 144 stems, 0 images, and 0 videos.
+- The newest migration receipt on disk was
+  `~/.everywear/.migration/phase5-gener8-vault-audio-20260526T084107Z.json`.
+- The Gener8 browser registry copy exposed the underlying music model name in
+  its app banner. That violates the user-facing naming rule in `CONTEXT.md`.
+
+### Decide
+
+- User-facing applet descriptions and Gener8 UI strings must use product names
+  such as "local music engine", "Gener8 Music Engine", "Add Layer", and
+  "Pro Model". They must not expose underlying model names.
+- The Gener8 Library is a Vault view over `asset_kind = gener8_song`, not a
+  separate local-only song list.
+- Uploaded reference audio and cover source audio must register into Vault with
+  typed asset kinds so the Vault tabs are populated.
+- Generated videos saved by the Gener8 video modal must register through
+  `vault_register_video`.
+- Placeholder legacy titles such as `track_#`, `Gener8 output`, and UUID stems
+  should display the file stem from the Vault path when a better stored title is
+  not available.
+
+### Verification State
+
+- Build verification for this repair pass is recorded in the final handoff for
+  the pass that edits this addendum.
+- Follow-up repair on 2026-05-26 fixed the import contract itself: existing
+  indexed legacy audio is reindexed instead of skipped, legacy videos under
+  `~/Videos/Strands Sound Studio` are imported to Vault, generated audio/video
+  Vault registration keeps readable source filenames instead of replacing them
+  with UUID-only filenames, and the Vault import runs once per repair key
+  rather than on every Vault mount.
+- Second follow-up on 2026-05-26 fixed stale duplicate audio index rows by
+  deleting older same-file audio documents before writing repaired metadata.
+  The local S3 library repair now runs from the Gener8 song store as a
+  one-time bridge, so the workspace can hydrate from the same S3 body of work
+  without requiring the user to open Vault first. The Tauri CSP now permits
+  `asset:` image/audio sources for Vault-backed playback.
 
 ## Current State Addendum 2026-05-18: OODA Refresh
 

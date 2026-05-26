@@ -205,6 +205,25 @@ function itemKindLabel(item: VaultItem): string {
   }
 }
 
+function fileStem(filePath?: string): string | undefined {
+  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
+  if (!name) return undefined;
+  return name.replace(/\.[^.]+$/, '');
+}
+
+function looksSyntheticTitle(title?: string): boolean {
+  const value = (title || '').trim();
+  if (!value) return true;
+  return /^(untitled|gener8 output|legacy gener8 audio)$/i.test(value)
+    || /^track_\d+$/i.test(value)
+    || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+}
+
+function displayItemTitle(item: VaultItem): string {
+  if (!looksSyntheticTitle(item.title)) return item.title;
+  return fileStem(item.file_path) || item.title || 'Untitled';
+}
+
 // ── Main Component ──────────────────────────────────────────────────
 
 export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: () => void }) {
@@ -215,6 +234,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
 
   const fileUrl = vault.getFileUrl(item.file_path);
   const thumbnailUrl = vault.getThumbnailUrl(item.id);
+  const title = displayItemTitle(item);
 
   const handleFavorite = useCallback(async () => {
     try {
@@ -286,7 +306,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
           !thumbError ? (
             <img
               src={fileUrl}
-              alt={item.title}
+              alt={title}
               className="max-w-full max-h-[400px] rounded"
               style={{ objectFit: 'contain' }}
               onError={() => setThumbError(true)}
@@ -327,7 +347,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
           className="text-lg font-semibold mb-1"
           style={{ color: 'var(--ew-text)' }}
         >
-          {item.title}
+          {title}
         </h2>
 
         {/* Meta */}
@@ -423,7 +443,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <ConfirmDeleteModal
-          itemTitle={item.title}
+          itemTitle={title}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
         />
