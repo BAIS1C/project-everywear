@@ -1,6 +1,6 @@
 # Everywear OS Module Wiki
 
-**Status:** scaffolded 2026-05-22 after commit `4e7507b` (`modularisation pass`).
+**Status:** scaffolded 2026-05-22 after commit `4e7507b` (`modularisation pass`); Gener8 Vault contract refreshed 2026-05-27 after the live-read/picker repair.
 
 This tree is the context-bounded module wiki required by `skills/context-protocol/SKILL.md` and `ARCHITECTURE_MODULES_2026-05-21.md`.
 

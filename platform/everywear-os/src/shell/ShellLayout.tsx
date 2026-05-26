@@ -14,7 +14,7 @@ import {
   type SystemGpuState,
 } from '../lib/transport';
 import { useAuth } from './AuthContext';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '@everywear/ewds';
 import { getLogger, getErrorCount } from '@everywear/shared';
 import { LogViewerPanel } from '../components/LogViewerPanel';
 import { BugReportModal, type BugReportSeed } from '../components/BugReportModal';

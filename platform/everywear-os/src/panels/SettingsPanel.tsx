@@ -1,4 +1,4 @@
-import { useTheme, type Theme, type WidgetSurface } from '../shell/ThemeContext';
+import { useTheme, type Theme, type WidgetSurface } from '@everywear/ewds';
 
 const THEMES: { id: Theme; name: string; desc: string }[] = [
   { id: 'light', name: 'Light', desc: 'Off-cream daytime desktop' },

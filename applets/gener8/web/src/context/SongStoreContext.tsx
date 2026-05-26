@@ -13,7 +13,6 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import type { Song } from '../types';
 import { useAuth } from './AuthContext';
 import {
-  runGener8VaultAudioImport,
   vaultFileUrl,
   vaultSearch,
   type VaultItem,
@@ -141,7 +140,6 @@ const SongStoreContext = createContext<SongStoreContextValue>({
 });
 
 const HAS_SONGS_CACHE_KEY = 'gener8.has_songs';
-const LEGACY_LIBRARY_REPAIR_KEY = 'gener8:vault-import-repair:2026-05-26-readable-names-videos-dedupe';
 
 export function SongStoreProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -171,30 +169,12 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
   }, [dislikedSongIds]);
 
   const fetchInFlight = useRef(false);
-  const importInFlight = useRef(false);
-
-  const runLegacyLibraryRepair = useCallback(async () => {
-    if (importInFlight.current) return;
-    try {
-      if (localStorage.getItem(LEGACY_LIBRARY_REPAIR_KEY) === 'done') return;
-    } catch {}
-    importInFlight.current = true;
-    try {
-      await runGener8VaultAudioImport(false);
-      try { localStorage.setItem(LEGACY_LIBRARY_REPAIR_KEY, 'done'); } catch {}
-    } catch (error) {
-      console.warn('[SongStore] Legacy Gener8 library repair skipped:', error);
-    } finally {
-      importInFlight.current = false;
-    }
-  }, []);
 
   const refetch = useCallback(async () => {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
     setIsLoading(true);
     try {
-      await runLegacyLibraryRepair();
       const wireSongs = await fetchMySongs();
       const mapped = wireSongs.map(mapWireSong);
       _setSongs(prev => {
@@ -213,7 +193,7 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
       setHasLoaded(true);
       fetchInFlight.current = false;
     }
-  }, [runLegacyLibraryRepair]);
+  }, []);
 
   // Fire once on mount. Re-fires when auth state changes.
   useEffect(() => {

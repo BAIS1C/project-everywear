@@ -35,6 +35,9 @@
 
 - Vault owns indexed media documents and file paths.
 - Gener8 song store mirrors `asset_kind = gener8_song` from Vault.
+- The legacy S3 import is an offline/local maintenance step for this machine.
+  Gener8 workspace and Vault providers must read the finished index directly
+  on open; they must not launch the import as part of normal UI hydration.
 - Placeholder legacy names are display-only corrected in UI when the indexed title is synthetic.
 - The local S3-to-Everywear bridge is a one-time repair for this user's
   existing S3 body of work, not a required workflow for new users.
@@ -60,10 +63,20 @@
   Without that branch, Gener8 Songs, References, Cover Sources, and Local Audio
   tabs can return zero even when documents are indexed correctly.
 - Opening Vault should not force a full legacy import every time. One-time
-  repair imports must be version-keyed or user-triggered.
+  repair imports must be version-keyed, user-triggered, or run offline before
+  app launch.
+- Reference/Cover source picking must use Vault IPC (`vault_search`) rather
+  than stale web routes such as `/api/reference-tracks`; those routes can
+  return shell HTML in Tauri and break JSON parsing.
+- Source picking should show usable audio kinds (`gener8_song`, `reference`,
+  `cover_source`, `local_audio`) and exclude stems unless the UI is explicitly
+  a stem workflow.
+- Preview playback can use `vaultFileUrl()` / Tauri `asset:` URLs, but
+  generation requests must keep the raw Vault file path so the Rust engine can
+  resolve the source audio on disk.
 - Vault-backed audio and image previews require Tauri CSP support for
   `asset:` URLs.
 
 **Tests**: Re-run `npm run build --workspace applets/gener8/web` and `cargo check -p everywear-os` after edits that touch this contract.
 
-**Last verified**: 2026-05-26, Codex Gener8/Vault repair pass. Follow-up same day added readable filename preservation, legacy metadata reindex, legacy video import, stale duplicate index cleanup, Gener8 song-store repair trigger, Vault media CSP support, batched Tantivy repair, offline import/stat examples, and `AudioKind` search coverage.
+**Last verified**: 2026-05-27, Codex Gener8/Vault repair pass. Verified with `npm run build --workspace applets/gener8/web`, `cargo run -p everywear-os --example vault_stats`, and `cargo tauri build --debug`. The debug app was rebuilt at `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`.

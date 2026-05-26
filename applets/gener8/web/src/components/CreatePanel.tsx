@@ -3,7 +3,14 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Upload, Play, Pause, Cpu, Zap, X, Disc3, AlertTriangle, Layers, Loader2 } from 'lucide-react';
 import { GenerationParams, Song } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { generateApi, engineApi, getApiBase, getAudioRequestPath, type ModelInfo, type PatchManifest } from '@/services/api';
+import { generateApi, engineApi, getAudioRequestPath, type ModelInfo, type PatchManifest } from '@/services/api';
+import {
+  vaultDeleteItem,
+  vaultFileUrl,
+  vaultSearch,
+  type VaultAssetKind,
+  type VaultItem,
+} from '@everywear/transport';
 import { AlbumCover } from './AlbumCover';
 import { PatchSelector } from './PatchSelector';
 import { BetterModelsBanner } from './BetterModelsBanner';
@@ -18,6 +25,7 @@ interface ReferenceTrack {
   tags: string[] | null;
   created_at: string;
   audio_url: string;
+  deletable?: boolean;
 }
 
 interface CreatePanelProps {
@@ -114,6 +122,31 @@ const formatFileSize = (bytes: number): string => {
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${bytes} B`;
 };
+
+const fileNameFromPath = (filePath?: string): string => {
+  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
+  return name || 'Audio';
+};
+
+const referenceTitle = (item: VaultItem): string => {
+  const title = (item.title || '').trim();
+  const synthetic = !title
+    || /^(untitled|gener8 output|legacy gener8 audio)$/i.test(title)
+    || /^track_\d+$/i.test(title);
+  return synthetic ? fileNameFromPath(item.file_path).replace(/\.[^.]+$/, '') : title;
+};
+
+const vaultItemToReferenceTrack = (item: VaultItem): ReferenceTrack => ({
+  id: item.id,
+  filename: referenceTitle(item),
+  storage_key: item.file_path,
+  duration: item.duration_seconds ?? null,
+  file_size_bytes: item.file_size_bytes ?? null,
+  tags: item.tags ?? [],
+  created_at: new Date(item.created_at || Date.now()).toISOString(),
+  audio_url: vaultFileUrl(item.file_path),
+  deletable: ['reference', 'cover_source'].includes(item.asset_kind || ''),
+});
 
 const KEY_SIGNATURES = [
   '',
@@ -996,16 +1029,20 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   const fetchReferenceTracks = useCallback(async () => {
     if (!token) return;
     setIsLoadingTracks(true);
+    setUploadError(null);
     try {
-      const response = await fetch(`${getApiBase()}/api/reference-tracks`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setReferenceTracks(data.tracks || []);
-      }
+      const response = await vaultSearch('', 'audio', 'newest', 500, 0);
+      const tracks = response.items
+        .filter((item) => {
+          if (item.media_type !== 'audio') return false;
+          if (item.is_stem || item.asset_kind === 'stem') return false;
+          return ['gener8_song', 'reference', 'cover_source', 'local_audio'].includes(item.asset_kind || '');
+        })
+        .map(vaultItemToReferenceTrack);
+      setReferenceTracks(tracks);
     } catch (err) {
       console.error('Failed to fetch reference tracks:', err);
+      setUploadError(err instanceof Error ? err.message : 'Could not load Vault audio.');
     } finally {
       setIsLoadingTracks(false);
     }
@@ -1031,31 +1068,30 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     setUploadError(null);
     setIsUploadingReference(true);
     try {
-      const formData = new FormData();
-      formData.append('audio', file);
+      const assetKind: VaultAssetKind = audioModalTarget === 'reference' ? 'reference' : 'cover_source';
+      const uploaded = await generateApi.uploadAudio(file, token, assetKind);
+      const track: ReferenceTrack = {
+        id: uploaded.key,
+        filename: uploaded.original_filename || uploaded.filename || file.name,
+        storage_key: uploaded.url,
+        duration: uploaded.duration_seconds ?? null,
+        file_size_bytes: uploaded.size_bytes ?? file.size,
+        tags: ['gener8', assetKind],
+        created_at: new Date().toISOString(),
+        audio_url: vaultFileUrl(uploaded.url),
+        deletable: true,
+      };
 
-      const response = await fetch(`${getApiBase()}/api/reference-tracks`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Upload failed');
-      }
-
-      const data = await response.json();
-      setReferenceTracks(prev => [data.track, ...prev]);
+      setReferenceTracks(prev => [track, ...prev.filter(t => t.id !== track.id)]);
 
       // Also set as current reference/source
       if (audioModalTarget === 'reference') {
-        setReferenceAudioUrl(data.track.audio_url);
-        setReferenceAudioLabel(data.track.filename || file.name);
+        setReferenceAudioUrl(track.storage_key);
+        setReferenceAudioLabel(track.filename || file.name);
       } else {
-        setSourceAudioUrl(data.track.audio_url);
-        setSourceAudioLabel(data.track.filename || file.name);
-        setTitle(filenameToTitle(data.track.filename || file.name));
+        setSourceAudioUrl(track.storage_key);
+        setSourceAudioLabel(track.filename || file.name);
+        setTitle(filenameToTitle(track.filename || file.name));
       }
       setShowAudioModal(false);
     } catch (err) {
@@ -1068,18 +1104,15 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
 
   const deleteReferenceTrack = async (trackId: string) => {
     if (!token) return;
+    const track = referenceTracks.find(t => t.id === trackId);
+    if (track && !track.deletable) return;
     try {
-      const response = await fetch(`${getApiBase()}/api/reference-tracks/${trackId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setReferenceTracks(prev => prev.filter(t => t.id !== trackId));
-        if (playingTrackId === trackId) {
-          setPlayingTrackId(null);
-          if (modalAudioRef.current) {
-            modalAudioRef.current.pause();
-          }
+      await vaultDeleteItem(trackId);
+      setReferenceTracks(prev => prev.filter(t => t.id !== trackId));
+      if (playingTrackId === trackId) {
+        setPlayingTrackId(null);
+        if (modalAudioRef.current) {
+          modalAudioRef.current.pause();
         }
       }
     } catch (err) {
@@ -1089,10 +1122,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
 
   const useReferenceTrack = (track: ReferenceTrack) => {
     if (audioModalTarget === 'reference') {
-      setReferenceAudioUrl(track.audio_url);
+      setReferenceAudioUrl(track.storage_key || track.audio_url);
       setReferenceAudioLabel(track.filename);
     } else {
-      setSourceAudioUrl(track.audio_url);
+      setSourceAudioUrl(track.storage_key || track.audio_url);
       setSourceAudioLabel(track.filename);
       setTitle(filenameToTitle(track.filename));
     }
@@ -3246,13 +3279,15 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                           >
                             Use
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => void deleteReferenceTrack(track.id)}
-                            className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-400 hover:text-rose-500 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {track.deletable && (
+                            <button
+                              type="button"
+                              onClick={() => void deleteReferenceTrack(track.id)}
+                              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-400 hover:text-rose-500 transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -3272,21 +3307,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               onLoadedMetadata={() => {
                 if (modalAudioRef.current) {
                   setModalTrackDuration(modalAudioRef.current.duration);
-                  // Update track duration in database if not set
                   const track = referenceTracks.find(t => t.id === playingTrackId);
-                  if (track && !track.duration && token) {
-                    fetch(`${getApiBase()}/api/reference-tracks/${track.id}`, {
-                      method: 'PATCH',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`
-                      },
-                      body: JSON.stringify({ duration: Math.round(modalAudioRef.current.duration) })
-                    }).then(() => {
-                      setReferenceTracks(prev => prev.map(t =>
-                        t.id === track.id ? { ...t, duration: Math.round(modalAudioRef.current?.duration || 0) } : t
-                      ));
-                    }).catch(() => undefined);
+                  if (track && !track.duration) {
+                    setReferenceTracks(prev => prev.map(t =>
+                      t.id === track.id ? { ...t, duration: Math.round(modalAudioRef.current?.duration || 0) } : t
+                    ));
                   }
                 }
               }}

@@ -46,3 +46,13 @@
 - Fixed Vault search routing so `MediaFilter::AudioKind(_)` actually searches the audio index. Before this, Gener8 Songs, References, and Cover Sources could be indexed but still show zero in the UI.
 - Re-ran the offline import. Latest receipt: `C:\Users\MAG MSI\.everywear\.migration\phase5-gener8-vault-audio-20260526T154454Z.json`.
 - Verified direct Vault stats after the clean rebuild: 623 total indexed items, 612 audio, 90 Gener8 songs, 96 stems, 105 references, 66 cover sources, 255 local audio, and 11 videos.
+
+## Fourth Follow-up Repair
+
+- Removed live UI calls to `runGener8VaultAudioImport` from `SongStoreContext` and `VaultProvider`. The app now treats the local Vault index as prebuilt state instead of importing on workspace/Vault open.
+- Replaced the Reference/Cover modal's stale `/api/reference-tracks` fetch/upload/delete/PATCH calls with Vault IPC and `generateApi.uploadAudio`.
+- The Reference/Cover picker now reads `gener8_song`, `reference`, `cover_source`, and `local_audio` from Vault, excludes stems, previews via Tauri `asset:` URLs, and sends raw Vault file paths into generation.
+- Prevented library songs from being deleted from the picker; only uploaded reference/cover-source rows show the delete action.
+- Updated the model swap response so selecting a different model updates the active UI state. Generation continues to pass `synth_model` to the engine request.
+- Verified `npm run build --workspace applets/gener8/web`, `cargo run -p everywear-os --example vault_stats`, and `cargo tauri build --debug`.
+- Rebuilt debug app: `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`, timestamp `2026-05-27 00:19:20`.

@@ -22,7 +22,6 @@ import {
   vaultDeleteItem,
   vaultFileUrl,
   vaultThumbnailUrl,
-  runGener8VaultAudioImport,
   type VaultItem,
   type VaultSearchResponse,
   type VaultStats,
@@ -105,8 +104,6 @@ const VaultContext = createContext<VaultContextValue>({
   setSelectedItem: () => {},
 });
 
-const LEGACY_IMPORT_REPAIR_KEY = 'gener8:vault-import-repair:2026-05-26-readable-names-videos-dedupe';
-
 // ── Filter/sort mapping ─────────────────────────────────────────────────
 
 function mapFilter(f: VaultMediaFilter): string | undefined {
@@ -152,30 +149,12 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const [selectedItem, setSelectedItem] = useState<VaultItem | null>(null);
   const pageSize = 20;
   const fetchRef = useRef(false);
-  const legacyImportRef = useRef(false);
-
-  const runLegacyAudioImport = useCallback(async (force = false) => {
-    if (legacyImportRef.current && !force) return;
-    if (!force) {
-      try {
-        if (localStorage.getItem(LEGACY_IMPORT_REPAIR_KEY) === 'done') return;
-      } catch {}
-    }
-    legacyImportRef.current = true;
-    try {
-      await runGener8VaultAudioImport(false);
-      try { localStorage.setItem(LEGACY_IMPORT_REPAIR_KEY, 'done'); } catch {}
-    } catch (err) {
-      console.warn('[Vault] Legacy Gener8 audio import skipped:', err);
-    }
-  }, []);
 
   const fetchItems = useCallback(async () => {
     if (fetchRef.current) return;
     fetchRef.current = true;
     setIsLoading(true);
     try {
-      await runLegacyAudioImport();
       const response: VaultSearchResponse = await vaultSearch(
         searchQuery,
         mapFilter(filter),
@@ -195,7 +174,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
       setHasLoaded(true);
       fetchRef.current = false;
     }
-  }, [searchQuery, filter, sortBy, page, runLegacyAudioImport]);
+  }, [searchQuery, filter, sortBy, page]);
 
   const refreshStats = useCallback(async () => {
     try {
@@ -217,10 +196,9 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, [refreshStats]);
 
   const refetch = useCallback(async () => {
-    await runLegacyAudioImport(true);
     await fetchItems();
     await refreshStats();
-  }, [fetchItems, refreshStats, runLegacyAudioImport]);
+  }, [fetchItems, refreshStats]);
 
   const toggleFavorite = useCallback(async (id: string, current: boolean) => {
     try {

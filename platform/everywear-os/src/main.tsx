@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ThemeProvider } from './shell/ThemeContext';
+import { ThemeProvider } from '@everywear/ewds';
 import { AuthProvider } from './shell/AuthContext';
 import { AuthGate } from './shell/AuthGate';
 import { ShellLayout } from './shell/ShellLayout';

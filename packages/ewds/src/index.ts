@@ -13,4 +13,4 @@
 export { ThemeProvider, useTheme, SKINS, ACCENTS, MODES, THEME_PRESETS } from './ThemeContext';
 
 // Types
-export type { Skin, Accent, Mode, ThemeState, SkinPreset, AccentPreset, ModePreset, ThemePreset, ThemeTokens } from './types';
+export type { Skin, Accent, Mode, Theme, WidgetSurface, ThemeState, SkinPreset, AccentPreset, ModePreset, ThemePreset, ThemeTokens } from './types';

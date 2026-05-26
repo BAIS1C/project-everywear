@@ -7,6 +7,8 @@
 export type Skin = 'classic' | 'refined' | 'terminal';
 export type Accent = 'signal' | 'amber' | 'plasma';
 export type Mode = 'dark' | 'light';
+export type Theme = 'light' | Skin;
+export type WidgetSurface = 'cut' | 'rounded' | 'square';
 
 // ── Preset shapes ─────────────────────────────────────────────────
 
@@ -38,6 +40,14 @@ export interface ThemeState {
   skin: Skin;
   accent: Accent;
   mode: Mode;
+  theme: Theme;
+  widgetSurface: WidgetSurface;
+  setSkin: (id: Skin) => void;
+  setAccent: (id: Accent) => void;
+  setMode: (id: Mode) => void;
+  setTheme: (id: Theme) => void;
+  setWidgetSurface: (surface: WidgetSurface) => void;
+  toggleMode: () => void;
 }
 
 // ── Legacy aliases ────────────────────────────────────────────────

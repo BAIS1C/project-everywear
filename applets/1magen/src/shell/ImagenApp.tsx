@@ -1,11 +1,11 @@
 /**
  * ImagenApp — standalone Tauri entry point.
- * Wraps ImagenCore in ThemeProvider for standalone mode.
+ * Wraps ImagenCore in the shared EWDS ThemeProvider for standalone mode.
  * When running inside Everywear OS, the shell provides ThemeProvider
  * and mounts ImagenCore directly.
  */
 import React from 'react';
-import { ThemeProvider } from './ThemeContext';
+import { ThemeProvider } from '@everywear/ewds';
 import { ImagenCore } from './ImagenCore';
 
 export function ImagenApp() {

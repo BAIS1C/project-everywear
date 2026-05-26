@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.1
-Last updated: 2026-05-26 (Gener8/Vault repair addendum)
+Version: 1.1.3
+Last updated: 2026-05-27 (Gener8 vault live-read/picker repair)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -17,6 +17,65 @@ Maintainer: Sean Uddin / Somo Kasane
 > in [docs/wiki/gener8/vault-library.md](./docs/wiki/gener8/vault-library.md).
 > The May 24 and May 26 vault notes did not update this root wiki or
 > `docs/wiki/README.md`; this addendum corrects that trail.
+
+> Current-state note, 2026-05-27 v1.1.2: Kasai is the Everywear planning
+> brain for keyword-to-narrated-short workflows. The shell and standalone
+> 1magen now consume the shared `@everywear/ewds` theme provider; their local
+> `ThemeContext` forks were removed.
+
+> Current-state note, 2026-05-27 v1.1.3: Gener8 now reads the prebuilt Vault
+> index directly on workspace/Vault open. The live providers no longer trigger
+> `run_gener8_vault_audio_import`, and the Reference/Cover picker no longer
+> calls stale `/api/reference-tracks` web routes that return app HTML.
+
+## Current State Addendum 2026-05-27: Kasai Short Creation + EWDS Provider
+
+### Observe
+
+- MoneyPrinterTurbo was evaluated as a capability pattern, not a dependency to
+  clone. Everywear already owns the relevant visual stack: AI Director,
+  `1magen`, `3nvizen`, and shared video/export surfaces.
+- Kasai now owns a `keyword_short_creation` / `narrated_short_plan` capability
+  contract inside `applets/kasai/src-tauri/src/short_creator.rs`.
+- `KasaiRuntime::execute_job` detects short-creation jobs before the normal
+  inference-ready check and returns a deterministic JSON plan.
+- The generated plan contains narrator hook/script/subtitle mode, search
+  queries, evidence notes, shot timings, per-shot narration, keyframe prompts,
+  video prompts, continuity notes, and render handoff steps for `1magen` and
+  `3nvizen`.
+- EWDS theme state is no longer forked between shell, EWDS, and 1magen.
+  `@everywear/ewds` now owns skin, accent, mode, derived `theme`, light mode,
+  widget surface, and setter/toggle APIs.
+
+### Decide
+
+- Kasai stays in Project Everywear as the orchestrator. The old standalone
+  `Kasai-Local` repo remains a donor/reference tree, not the active product
+  target.
+- The narrated-short workflow should evolve from deterministic contract to
+  live retrieval and shell job submission, rather than growing a separate
+  renderer/media pipeline.
+- AI Director remains the deeper shot/continuity layer for music/beat-aware
+  planning; Kasai's keyword short planner covers lightweight topical shorts.
+
+### Verification State
+
+- `cargo test -p everywear-kasai short_creator -- --nocapture` passed.
+- `cargo check -p everywear-kasai` passed.
+- `npm run build:ewds` passed.
+- `npm run build` in `platform/everywear-os` passed.
+- `npm run build` in `applets/1magen` passed.
+- Vite shell smoke on `http://127.0.0.1:5173/` returned HTTP 200.
+
+### Updated Implementation Status
+
+| Area | Current State | Notes |
+|---|---|---|
+| Kasai backend | Real runtime plus short planner | `keyword_short_creation` returns structured narrator/search/shot handoff JSON. |
+| Kasai frontend | Real EWDS agent hub | Older missing `ToolCallCard` build notes are stale unless fresh checks reproduce them. |
+| Shell frontend | Real | Uses shared `@everywear/ewds` provider. |
+| 1magen | End-to-end code exists | Standalone app now uses shared `@everywear/ewds` provider. |
+| EWDS | Canonical theme provider | Owns light mode and widget surface state used by shell. |
 
 ## Current State Addendum 2026-05-26: Gener8 Vault Repair
 
@@ -68,6 +127,22 @@ Maintainer: Sean Uddin / Somo Kasane
   fixed `AudioKind` Vault search so Gener8 Songs/References/Cover Sources tabs
   query audio, and rebuilt this user's audio/video Vault index from the
   materialized media files before app launch.
+- Fourth follow-up on 2026-05-27 removed the frontend open-time legacy import
+  triggers from `SongStoreContext` and `VaultProvider`. The imported Vault is
+  now treated as prebuilt local state for this machine.
+- The Reference/Cover modal now loads Vault audio through `vault_search`
+  directly, excludes stems from source picking, uses Tauri `asset:` URLs only
+  for preview playback, and passes raw Vault file paths into generation.
+- The Reference/Cover upload path now uses `generateApi.uploadAudio` and Vault
+  registration instead of posting to the old `/api/reference-tracks` route.
+- The model selector's swap response now reflects the selected model in UI
+  state; generation already passes `synth_model` so the engine receives the
+  selected model on the job request.
+- Verification on 2026-05-27: `npm run build --workspace applets/gener8/web`,
+  `cargo run -p everywear-os --example vault_stats`, and
+  `cargo tauri build --debug` passed. Debug exe:
+  `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`
+  timestamp `2026-05-27 00:19:20`.
 
 ## Current State Addendum 2026-05-18: OODA Refresh
 
@@ -108,8 +183,8 @@ the current architecture as:
 - Applets own actual model loading/generation inside their process or sidecar.
 - Frontend-only applets are first-class: shell can embed/navigate a studio
   webview when `frontend_port` exists and `launch_binary` is absent.
-- EWDS package adoption is partial: Gener8 and Kasai use `@everywear/ewds`;
-  shell and 1magen still carry local token copies.
+- EWDS package adoption is now centralized for the shell, Gener8, Kasai, and
+  standalone 1magen theme-provider path.
 
 ### Decide
 
@@ -124,7 +199,8 @@ Priority order:
 3. Split shell `lib.rs` into `state.rs`, `crash.rs`, and `commands/*` before
    adding more shell migration commands.
 4. Split Gener8 `shim.rs` by route group before adding more S3 shim endpoints.
-5. Fix Kasai frontend wiring (`ToolCallCard` import and message discriminants).
+5. Continue Kasai short creation by wiring live retrieval/Director LM execution
+   and shell job submission for `1magen`/`3nvizen`.
 6. Re-run Rust checks one crate at a time after clearing stale Cargo processes.
 7. Only then continue multi-applet process-table, Kasai tools, and 3nvizen LTX
    sidecar implementation.
@@ -151,13 +227,13 @@ Everywear-owned.
 | Area | Current State | Notes |
 |---|---|---|
 | Shell backend | Real, large, not freshly green | Single active binary applet process remains the major architecture limit. |
-| Shell frontend | Real | Uses local EWDS token copy. |
-| 1magen | End-to-end code exists | Still uses local EWDS token copy. |
+| Shell frontend | Real | Uses shared `@everywear/ewds` theme provider. |
+| 1magen | End-to-end code exists | Standalone path uses shared `@everywear/ewds` theme provider. |
 | Gener8 backend | Real headless applet | Shim, ACE, DAW, beats, tier reconciler, cpal playback. |
-| Gener8 frontend | Partly wired | Create posts to shim; TS build currently fails. |
+| Gener8 frontend | Partly wired | Create posts to shim; old copied-modal build failures are stale unless reproduced. |
 | Vid | Registered frontend-only applet | Build currently fails on malformed JSX. |
-| Kasai backend | Real runtime/orchestrator code | ToolExecutor and tool result return path remain incomplete. |
-| Kasai frontend | New scaffold | Build currently fails on missing component/types. |
+| Kasai backend | Real runtime/orchestrator code | Short-creation planner exists; ToolExecutor result return path remains incomplete. |
+| Kasai frontend | New scaffold | Portable EWDS agent hub exists; old component/type failure notes are stale unless reproduced. |
 | 3nvizen backend | IPC bridge plus sidecar scaffold | Needs real LTX adapter. |
 | 3nvizen frontend | New scaffold | Needs package/build metadata and endpoint verification. |
 | vault crate | Tantivy text search exists | Vector/LanceDB layer pending. |

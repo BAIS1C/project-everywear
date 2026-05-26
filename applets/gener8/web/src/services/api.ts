@@ -172,7 +172,14 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     } as T;
   }
   if (endpoint.startsWith('/api/engine/init')) {
-    return { message: 'Ready', loaded_model: 'Gener8 Music Engine', llm_initialized: true } as T;
+    const requested = (body && typeof body === 'object' && 'model' in body)
+      ? String((body as Record<string, unknown>).model || '')
+      : '';
+    return {
+      message: requested ? 'Selected model' : 'Ready',
+      loaded_model: requested || 'Gener8 Music Engine',
+      llm_initialized: true,
+    } as T;
   }
   if (endpoint.startsWith('/api/engine/health')) {
     return { status: 'ready', model_initialized: true, llm_initialized: true, loaded_model: 'Gener8 Music Engine' } as T;
