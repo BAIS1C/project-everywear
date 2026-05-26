@@ -19,7 +19,7 @@ mod gpu;
 mod launcher;
 mod mait_bridge;
 mod manifest_parser;
-mod migration;
+pub mod migration;
 mod model_commands;
 mod profile;
 mod registry;
@@ -1350,8 +1350,11 @@ pub fn run() {
 
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "everywear_os=debug,info".parse().unwrap()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "everywear_os=debug,ew_vault=info,tantivy=warn,warn"
+                    .parse()
+                    .unwrap()
+            }),
         )
         .init();
 

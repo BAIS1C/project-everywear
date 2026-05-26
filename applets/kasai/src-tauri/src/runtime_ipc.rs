@@ -168,7 +168,16 @@ async fn advertise(
     runtime: SharedRuntime,
 ) -> anyhow::Result<()> {
     let status = runtime.lock().await.status();
-    let capabilities = ["chat", "tool_use", "rag", "mcp", "plan", "orchestrate"];
+    let capabilities = [
+        "chat",
+        "tool_use",
+        "rag",
+        "mcp",
+        "plan",
+        "orchestrate",
+        "keyword_short_creation",
+        "narrated_short_plan",
+    ];
     let capabilities = json!({
         "applet_id": APPLET_ID,
         "engine_id": ENGINE_ID,

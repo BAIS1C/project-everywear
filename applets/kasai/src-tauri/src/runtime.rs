@@ -199,6 +199,29 @@ impl KasaiRuntime {
     }
 
     pub async fn execute_job(&mut self, job: Value) -> Result<KasaiJobResult> {
+        if crate::short_creator::is_short_creation_job(&job) {
+            let plan = crate::short_creator::plan_from_job(&job)
+                .map_err(|error| anyhow!("short creation planning failed: {error}"))?;
+            let response = serde_json::to_string_pretty(&plan)?;
+            let result = KasaiJobResult {
+                status: "completed".to_string(),
+                engine_id: self.engine_id.clone(),
+                inference_ready: self.inference_ready(),
+                prompt: Some(plan.topic.clone()),
+                response,
+                tokens_generated: None,
+                tokens_per_second: None,
+                generation_time_ms: None,
+                tool_calls: None,
+                slots: self.slot_statuses(),
+            };
+
+            if let Some(target) = extract_output_target(&job) {
+                write_job_output(&target, &result).await?;
+            }
+            return Ok(result);
+        }
+
         if !self.inference_ready() {
             return Err(anyhow!(
                 "Kasai runtime has no orchestrator model path. Shell must provision and hand off models first."

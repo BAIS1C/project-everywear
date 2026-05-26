@@ -138,6 +138,50 @@ impl VaultIndex {
         Ok(ids.len())
     }
 
+    pub fn replace_audio_documents_clearing_stale_by_file_path(
+        &self,
+        docs: &[AudioDocument],
+    ) -> Result<usize> {
+        if docs.is_empty() {
+            return Ok(0);
+        }
+
+        let mut target_paths = HashSet::new();
+        let mut keep_ids = HashSet::new();
+        for doc in docs {
+            let path = normalize_path_key(&doc.file_path);
+            if !path.is_empty() {
+                target_paths.insert(path);
+            }
+            keep_ids.insert(doc.id.clone());
+        }
+
+        let stale_ids = self
+            .stats_items()?
+            .into_iter()
+            .filter_map(|item| match item {
+                VaultItem::Audio(doc)
+                    if target_paths.contains(&normalize_path_key(&doc.file_path))
+                        && !keep_ids.contains(&doc.id) =>
+                {
+                    Some(doc.id)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+
+        let mut writer = self.audio_index.writer::<TantivyDocument>(50_000_000)?;
+        for id in &stale_ids {
+            writer.delete_term(Term::from_field_text(self.audio_fields.id, id));
+        }
+        for doc in docs {
+            writer.delete_term(Term::from_field_text(self.audio_fields.id, &doc.id));
+            writer.add_document(audio_to_tantivy(&self.audio_schema, doc)?)?;
+        }
+        commit_with_windows_retry(&mut writer)?;
+        Ok(stale_ids.len())
+    }
+
     pub fn index_video(&self, doc: &VideoDocument) -> Result<()> {
         let tantivy_doc = video_to_tantivy(&self.video_schema, doc)?;
         replace_document(
@@ -269,6 +313,7 @@ impl VaultIndex {
             filter,
             MediaFilter::All
                 | MediaFilter::Audio
+                | MediaFilter::AudioKind(_)
                 | MediaFilter::Stems
                 | MediaFilter::Favorites
                 | MediaFilter::Applet(_)

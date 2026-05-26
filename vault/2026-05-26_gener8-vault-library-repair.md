@@ -37,3 +37,12 @@
 - Moved the local S3 library repair trigger into the Gener8 song store as well as Vault, so the Gener8 workspace can hydrate from the same S3 body of work without requiring a Vault visit first.
 - Updated the repair key to force this dedupe pass once on the next run.
 - Updated Tauri CSP so Vault-backed `asset:` media URLs are allowed for image and audio playback.
+
+## Third Follow-up Repair
+
+- Replaced per-track Tantivy audio commits with batch reindex calls. The previous path committed inside the loop and produced the long segment merge spam seen in the debug console.
+- Added `gener8_vault_import` as a local maintenance Cargo example for this machine. It rebuilds the audio/video Tantivy index offline from the materialized Vault files, leaving source media intact.
+- Added `vault_stats` as a local verification Cargo example for the Vault index.
+- Fixed Vault search routing so `MediaFilter::AudioKind(_)` actually searches the audio index. Before this, Gener8 Songs, References, and Cover Sources could be indexed but still show zero in the UI.
+- Re-ran the offline import. Latest receipt: `C:\Users\MAG MSI\.everywear\.migration\phase5-gener8-vault-audio-20260526T154454Z.json`.
+- Verified direct Vault stats after the clean rebuild: 623 total indexed items, 612 audio, 90 Gener8 songs, 96 stems, 105 references, 66 cover sources, 255 local audio, and 11 videos.

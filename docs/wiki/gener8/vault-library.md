@@ -53,6 +53,12 @@
 - Reindex repair must remove stale duplicate audio documents for the same
   file path before writing the corrected document. Otherwise an older
   `gener8_song` row can keep a stem visible in the workspace.
+- Repair imports must batch audio index writes. Do not commit Tantivy once per
+  track; for this user's local S3 body of work, run the offline importer before
+  launching the app so open-time work is just reading the finished Vault index.
+- `MediaFilter::AudioKind(_)` must be included in the audio search branch.
+  Without that branch, Gener8 Songs, References, Cover Sources, and Local Audio
+  tabs can return zero even when documents are indexed correctly.
 - Opening Vault should not force a full legacy import every time. One-time
   repair imports must be version-keyed or user-triggered.
 - Vault-backed audio and image previews require Tauri CSP support for
@@ -60,4 +66,4 @@
 
 **Tests**: Re-run `npm run build --workspace applets/gener8/web` and `cargo check -p everywear-os` after edits that touch this contract.
 
-**Last verified**: 2026-05-26, Codex Gener8/Vault repair pass. Follow-up same day added readable filename preservation, legacy metadata reindex, legacy video import, stale duplicate index cleanup, Gener8 song-store repair trigger, and Vault media CSP support.
+**Last verified**: 2026-05-26, Codex Gener8/Vault repair pass. Follow-up same day added readable filename preservation, legacy metadata reindex, legacy video import, stale duplicate index cleanup, Gener8 song-store repair trigger, Vault media CSP support, batched Tantivy repair, offline import/stat examples, and `AudioKind` search coverage.

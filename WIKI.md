@@ -63,6 +63,11 @@ Maintainer: Sean Uddin / Somo Kasane
   one-time bridge, so the workspace can hydrate from the same S3 body of work
   without requiring the user to open Vault first. The Tauri CSP now permits
   `asset:` image/audio sources for Vault-backed playback.
+- Third follow-up on 2026-05-26 replaced per-track Tantivy commits with batch
+  audio reindexing, added local maintenance examples for offline import/stats,
+  fixed `AudioKind` Vault search so Gener8 Songs/References/Cover Sources tabs
+  query audio, and rebuilt this user's audio/video Vault index from the
+  materialized media files before app launch.
 
 ## Current State Addendum 2026-05-18: OODA Refresh
 

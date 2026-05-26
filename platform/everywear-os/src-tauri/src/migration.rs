@@ -422,6 +422,7 @@ fn migrate_vault_audio(
 
     let legacy_tracks = load_legacy_library_tracks(&plan.legacy_app_data_dir)?;
     let indexed_audio_paths = indexed_audio_paths(vault_index)?;
+    let mut docs_to_index = Vec::new();
 
     for planned in &plan.vault_audio_files {
         let mut target = planned.target.clone();
@@ -469,35 +470,19 @@ fn migrate_vault_audio(
             if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
                 let legacy_track = match_legacy_track(&legacy_tracks, &planned.source, &target);
                 let doc = audio_document_for_import(&target, hash, legacy_track)?;
-                let stale_count = index
-                    .delete_audio_documents_by_file_path(&doc.file_path, Some(&doc.id))
-                    .with_context(|| {
-                        format!("remove stale audio index rows for {}", target.display())
-                    })?;
-                if index.get_by_id(&doc.id)?.is_some() {
-                    index.index_audio(&doc).with_context(|| {
-                        format!("repair imported audio metadata in vault {}", target.display())
-                    })?;
-                    if status == "target already exists with same SHA256; indexed" {
-                        status = "target already exists with same SHA256; metadata repaired"
-                            .to_string();
-                    }
-                } else {
-                    index.index_audio(&doc).with_context(|| {
-                        format!("index imported audio in vault {}", target.display())
-                    })?;
-                    if status == "target already exists with same SHA256; indexed" {
-                        status = "target already exists with same SHA256; indexed".to_string();
-                    }
-                }
+                let already_indexed = index.get_by_id(&doc.id)?.is_some();
+                docs_to_index.push(doc);
                 if status == "copied, verified, source preserved" {
-                    status = "copied, verified, indexed; source preserved".to_string();
+                    status =
+                        "copied, verified, queued for batch index; source preserved".to_string();
                 }
-                if was_indexed && status == "target already exists with same SHA256; metadata repaired" {
-                    status = "target already existed and was indexed; metadata repaired".to_string();
-                }
-                if stale_count > 0 {
-                    status = format!("{status}; removed {stale_count} stale duplicate index rows");
+                if status == "target already exists with same SHA256; indexed" {
+                    status = if was_indexed || already_indexed {
+                        "target already existed and was indexed; queued for metadata repair"
+                            .to_string()
+                    } else {
+                        "target already exists with same SHA256; queued for batch index".to_string()
+                    };
                 }
             } else if vault_index.is_none() {
                 receipt.warnings.push(format!(
@@ -516,6 +501,28 @@ fn migrate_vault_audio(
             sha256: hash,
             status,
         });
+    }
+
+    if !dry_run {
+        if let Some(index) = vault_index {
+            if !docs_to_index.is_empty() {
+                let doc_count = docs_to_index.len();
+                let stale_count = index
+                    .replace_audio_documents_clearing_stale_by_file_path(&docs_to_index)
+                    .context("batch reindex imported Gener8 audio")?;
+                receipt.operations.push(MigrationOperation {
+                    phase: "5.3-index".to_string(),
+                    action: "batch_reindex_legacy_audio".to_string(),
+                    source: plan.target_vault_audio_dir.clone(),
+                    target: plan.target_vault_audio_dir.clone(),
+                    bytes: doc_count as u64,
+                    sha256: None,
+                    status: format!(
+                        "batch indexed {doc_count} audio documents; removed {stale_count} stale duplicate index rows"
+                    ),
+                });
+            }
+        }
     }
 
     Ok(())
@@ -571,7 +578,8 @@ fn migrate_legacy_videos(
             if target.exists() {
                 let target_hash = sha256_file(&target)?;
                 if Some(target_hash.as_str()) == hash.as_deref() {
-                    status = "target already exists with same SHA256; metadata repaired".to_string();
+                    status =
+                        "target already exists with same SHA256; metadata repaired".to_string();
                 } else {
                     target = conflict_target(&target, &receipt.id);
                     status = "target existed; copied to conflict-safe legacy filename".to_string();
@@ -599,8 +607,8 @@ fn migrate_legacy_videos(
             }
 
             if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
-                let target_metadata =
-                    fs::metadata(&target).with_context(|| format!("metadata {}", target.display()))?;
+                let target_metadata = fs::metadata(&target)
+                    .with_context(|| format!("metadata {}", target.display()))?;
                 let timestamp = target_metadata
                     .created()
                     .or_else(|_| target_metadata.modified())
@@ -663,18 +671,8 @@ fn repair_generated_vault_audio_index(
         return Ok(());
     };
 
-    repair_generated_vault_audio_root(
-        index,
-        &everywear_paths::vault_audio(),
-        false,
-        receipt,
-    )?;
-    repair_generated_vault_audio_root(
-        index,
-        &everywear_paths::vault_audio_stems(),
-        true,
-        receipt,
-    )?;
+    repair_generated_vault_audio_root(index, &everywear_paths::vault_audio(), false, receipt)?;
+    repair_generated_vault_audio_root(index, &everywear_paths::vault_audio_stems(), true, receipt)?;
     Ok(())
 }
 
@@ -687,6 +685,8 @@ fn repair_generated_vault_audio_root(
     if !root.exists() {
         return Ok(());
     }
+
+    let mut docs_to_index = Vec::new();
 
     for entry in fs::read_dir(root).with_context(|| format!("read {}", root.display()))? {
         let entry = entry?;
@@ -703,14 +703,15 @@ fn repair_generated_vault_audio_root(
         let already_indexed = index.get_by_id(&id)?.is_some();
 
         let hash = sha256_file(&path)?;
-        let metadata = fs::metadata(&path).with_context(|| format!("metadata {}", path.display()))?;
+        let metadata =
+            fs::metadata(&path).with_context(|| format!("metadata {}", path.display()))?;
         let file_timestamp = metadata
             .created()
             .or_else(|_| metadata.modified())
             .ok()
             .and_then(system_time_to_unix_seconds)
             .unwrap_or_else(now_timestamp);
-        let asset_kind = infer_audio_asset_kind(&path, is_stem);
+        let asset_kind = infer_audio_asset_kind(&path, is_stem, true);
         let is_stem = is_stem || asset_kind == "stem";
         let mut tags = vec![
             "gener8".to_string(),
@@ -741,17 +742,16 @@ fn repair_generated_vault_audio_root(
             bpm: None,
             key_signature: None,
             is_stem,
-            stem_type: if is_stem { infer_stem_type(&path) } else { None },
+            stem_type: if is_stem {
+                infer_stem_type(&path)
+            } else {
+                None
+            },
             lyrics_aligned: false,
             lyrics_text: None,
             asset_kind: Some(asset_kind.to_string()),
         };
-        let stale_count = index
-            .delete_audio_documents_by_file_path(&doc.file_path, Some(&doc.id))
-            .with_context(|| format!("remove stale audio index rows for {}", path.display()))?;
-        index
-            .index_audio(&doc)
-            .with_context(|| format!("repair vault audio index {}", path.display()))?;
+        docs_to_index.push(doc);
         receipt.operations.push(MigrationOperation {
             phase: "5.3-repair".to_string(),
             action: "repair_generated_audio_index".to_string(),
@@ -759,16 +759,29 @@ fn repair_generated_vault_audio_root(
             target: path,
             bytes: metadata.len(),
             sha256: Some(hash),
-            status: match (already_indexed, stale_count) {
-                (true, 0) => "reindexed existing vault file".to_string(),
-                (true, count) => {
-                    format!("reindexed existing vault file; removed {count} stale duplicate index rows")
-                }
-                (false, 0) => "indexed existing vault file".to_string(),
-                (false, count) => {
-                    format!("indexed existing vault file; removed {count} stale duplicate index rows")
-                }
+            status: if already_indexed {
+                "queued existing vault file for batch reindex".to_string()
+            } else {
+                "queued existing vault file for batch index".to_string()
             },
+        });
+    }
+
+    if !docs_to_index.is_empty() {
+        let doc_count = docs_to_index.len();
+        let stale_count = index
+            .replace_audio_documents_clearing_stale_by_file_path(&docs_to_index)
+            .with_context(|| format!("batch repair vault audio index under {}", root.display()))?;
+        receipt.operations.push(MigrationOperation {
+            phase: "5.3-repair-index".to_string(),
+            action: "batch_repair_generated_audio_index".to_string(),
+            source: root.to_path_buf(),
+            target: root.to_path_buf(),
+            bytes: doc_count as u64,
+            sha256: None,
+            status: format!(
+                "batch indexed {doc_count} existing vault audio documents; removed {stale_count} stale duplicate index rows"
+            ),
         });
     }
 
@@ -1003,7 +1016,7 @@ fn audio_document_for_import(
         .and_then(system_time_to_unix_seconds)
         .unwrap_or_else(now_timestamp);
     let path_is_stem = is_stem_path(path);
-    let asset_kind = infer_audio_asset_kind(path, path_is_stem);
+    let asset_kind = infer_audio_asset_kind(path, path_is_stem, legacy_track.is_some());
     let is_stem = path_is_stem || asset_kind == "stem";
     let timestamp = legacy_track
         .and_then(|track| chrono::DateTime::parse_from_rfc3339(&track.created_at).ok())
@@ -1061,31 +1074,40 @@ fn audio_document_for_import(
     })
 }
 
-fn infer_audio_asset_kind(path: &Path, is_stem: bool) -> &'static str {
+fn infer_audio_asset_kind(path: &Path, is_stem: bool, is_library_song: bool) -> &'static str {
     if is_stem {
         return "stem";
+    }
+    let path_key = normalized_path(path);
+    if path_key.contains("/references/") || path_key.contains("/reference/") {
+        return "reference";
+    }
+    if path_key.contains("/covers/") || path_key.contains("/cover sources/") {
+        return "cover_source";
     }
     let name = path
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default()
         .to_ascii_lowercase();
-    if name.contains("(reference)")
-        || name.contains("_reference")
-        || name.contains("-reference")
-    {
+    if name.contains("(reference)") || name.contains("_reference") || name.contains("-reference") {
         return "reference";
     }
     if name.contains("(cover source)")
         || name.contains("_cover_source")
         || name.contains("-cover-source")
+        || name.contains("(cover)")
     {
         return "cover_source";
     }
     if name.contains("extract track_") {
         return "stem";
     }
-    "gener8_song"
+    if is_library_song {
+        "gener8_song"
+    } else {
+        "local_audio"
+    }
 }
 
 fn audio_title_for_import(
@@ -1105,8 +1127,15 @@ fn audio_title_for_import(
             .and_then(|stem| stem.to_str())
             .map(readable_stem_label)
             .unwrap_or_else(|| "Stem".to_string());
-        if let Some(parent) = path.parent().and_then(|parent| parent.file_name()).and_then(|name| name.to_str()) {
-            if !matches!(parent.to_ascii_lowercase().as_str(), "stems" | "stem" | "gener8") {
+        if let Some(parent) = path
+            .parent()
+            .and_then(|parent| parent.file_name())
+            .and_then(|name| name.to_str())
+        {
+            if !matches!(
+                parent.to_ascii_lowercase().as_str(),
+                "stems" | "stem" | "gener8"
+            ) {
                 return format!("{parent} - {stem_label}");
             }
         }
@@ -1336,7 +1365,11 @@ fn infer_stem_type(path: &Path) -> Option<String> {
     path.components().find_map(|component| {
         let part = component.as_os_str().to_str()?.to_ascii_lowercase();
         if part.starts_with("track_") {
-            return Some(readable_stem_label(&part).to_ascii_lowercase().replace(' ', "_"));
+            return Some(
+                readable_stem_label(&part)
+                    .to_ascii_lowercase()
+                    .replace(' ', "_"),
+            );
         }
         stem_names
             .iter()

@@ -2,6 +2,7 @@ mod audit;
 mod inference;
 mod runtime;
 mod runtime_ipc;
+mod short_creator;
 mod slot_manager;
 mod types;
 
