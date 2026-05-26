@@ -13,7 +13,7 @@ use chrono::Utc;
 use ew_vault::{AudioDocument, VaultIndex};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -162,6 +162,7 @@ pub fn run(dry_run: bool, vault_index: Option<&VaultIndex>) -> Result<MigrationS
     migrate_models(&plan, dry_run, &mut receipt)?;
     migrate_library_settings(&plan, dry_run, &mut receipt)?;
     migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
+    repair_generated_vault_audio_index(dry_run, vault_index, &mut receipt)?;
 
     let receipt_path = if dry_run {
         None
@@ -202,6 +203,7 @@ pub fn run_vault_audio_import(
     };
 
     migrate_vault_audio(&plan, dry_run, vault_index, &mut receipt)?;
+    repair_generated_vault_audio_index(dry_run, vault_index, &mut receipt)?;
 
     let receipt_path = if dry_run {
         None
@@ -416,9 +418,25 @@ fn migrate_vault_audio(
     }
 
     let legacy_tracks = load_legacy_library_tracks(&plan.legacy_app_data_dir)?;
+    let indexed_audio_paths = indexed_audio_paths(vault_index)?;
 
     for planned in &plan.vault_audio_files {
         let mut target = planned.target.clone();
+        if !dry_run
+            && planned.target.exists()
+            && indexed_audio_paths.contains(&normalized_path(&planned.target))
+        {
+            receipt.operations.push(MigrationOperation {
+                phase: "5.3".to_string(),
+                action: "copy_legacy_audio_to_vault".to_string(),
+                source: planned.source.clone(),
+                target,
+                bytes: planned.bytes,
+                sha256: None,
+                status: "target already exists and is indexed; skipped".to_string(),
+            });
+            continue;
+        }
         let hash = if dry_run {
             None
         } else {
@@ -460,9 +478,19 @@ fn migrate_vault_audio(
             if let (Some(index), Some(hash)) = (vault_index, hash.as_deref()) {
                 let legacy_track = match_legacy_track(&legacy_tracks, &planned.source, &target);
                 let doc = audio_document_for_import(&target, hash, legacy_track)?;
-                index.index_audio(&doc).with_context(|| {
-                    format!("index imported audio in vault {}", target.display())
-                })?;
+                if index.get_by_id(&doc.id)?.is_some() {
+                    if status == "target already exists with same SHA256; indexed" {
+                        status = "target already exists with same SHA256; already indexed"
+                            .to_string();
+                    }
+                } else {
+                    index.index_audio(&doc).with_context(|| {
+                        format!("index imported audio in vault {}", target.display())
+                    })?;
+                    if status == "target already exists with same SHA256; indexed" {
+                        status = "target already exists with same SHA256; indexed".to_string();
+                    }
+                }
                 if status == "copied, verified, source preserved" {
                     status = "copied, verified, indexed; source preserved".to_string();
                 }
@@ -482,6 +510,137 @@ fn migrate_vault_audio(
             bytes: planned.bytes,
             sha256: hash,
             status,
+        });
+    }
+
+    Ok(())
+}
+
+fn indexed_audio_paths(vault_index: Option<&VaultIndex>) -> Result<HashSet<String>> {
+    let Some(index) = vault_index else {
+        return Ok(HashSet::new());
+    };
+    Ok(index
+        .stats_items()?
+        .into_iter()
+        .filter_map(|item| match item {
+            ew_vault::VaultItem::Audio(doc) => Some(normalized_path(Path::new(&doc.file_path))),
+            _ => None,
+        })
+        .collect())
+}
+
+fn repair_generated_vault_audio_index(
+    dry_run: bool,
+    vault_index: Option<&VaultIndex>,
+    receipt: &mut MigrationReceipt,
+) -> Result<()> {
+    if dry_run {
+        return Ok(());
+    }
+    let Some(index) = vault_index else {
+        return Ok(());
+    };
+
+    repair_generated_vault_audio_root(
+        index,
+        &everywear_paths::vault_audio(),
+        false,
+        receipt,
+    )?;
+    repair_generated_vault_audio_root(
+        index,
+        &everywear_paths::vault_audio_stems(),
+        true,
+        receipt,
+    )?;
+    Ok(())
+}
+
+fn repair_generated_vault_audio_root(
+    index: &VaultIndex,
+    root: &Path,
+    is_stem: bool,
+    receipt: &mut MigrationReceipt,
+) -> Result<()> {
+    if !root.exists() {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(root).with_context(|| format!("read {}", root.display()))? {
+        let entry = entry?;
+        if !entry.file_type()?.is_file() {
+            continue;
+        }
+        let path = entry.path();
+        if !is_audio_file(&path) {
+            continue;
+        }
+        let Some(id) = generated_vault_audio_id(&path) else {
+            continue;
+        };
+        if index.get_by_id(&id)?.is_some() {
+            continue;
+        }
+
+        let hash = sha256_file(&path)?;
+        let metadata = fs::metadata(&path).with_context(|| format!("metadata {}", path.display()))?;
+        let file_timestamp = metadata
+            .created()
+            .or_else(|_| metadata.modified())
+            .ok()
+            .and_then(system_time_to_unix_seconds)
+            .unwrap_or_else(now_timestamp);
+        let asset_kind = if is_stem { "stem" } else { "gener8_song" };
+        let mut tags = vec![
+            "gener8".to_string(),
+            "vault-repair".to_string(),
+            format!("asset:{asset_kind}"),
+        ];
+        if is_stem {
+            tags.push("stem".to_string());
+        }
+        tags.sort();
+        tags.dedup();
+
+        let doc = AudioDocument {
+            id,
+            applet_id: APPLET_ID.to_string(),
+            title: path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .map(str::to_string)
+                .unwrap_or_else(|| "Gener8 output".to_string()),
+            tags,
+            created_at: file_timestamp,
+            updated_at: now_timestamp(),
+            file_path: path.to_string_lossy().to_string(),
+            file_size_bytes: metadata.len(),
+            mime_type: mime_from_path(&path),
+            favorite: false,
+            duration_seconds: 0.0,
+            sample_rate: 0,
+            channels: 0,
+            genre: Some("Gener8".to_string()),
+            bpm: None,
+            key_signature: None,
+            is_stem,
+            stem_type: if is_stem { infer_stem_type(&path) } else { None },
+            lyrics_aligned: false,
+            lyrics_text: None,
+            asset_kind: Some(asset_kind.to_string()),
+        };
+        index
+            .index_audio(&doc)
+            .with_context(|| format!("repair vault audio index {}", path.display()))?;
+        receipt.operations.push(MigrationOperation {
+            phase: "5.3-repair".to_string(),
+            action: "repair_generated_audio_index".to_string(),
+            source: path.clone(),
+            target: path,
+            bytes: metadata.len(),
+            sha256: Some(hash),
+            status: "indexed existing vault file".to_string(),
         });
     }
 
@@ -845,6 +1004,33 @@ fn stable_audio_import_id(path: &Path, source_sha256: &str) -> String {
     hasher.update(source_sha256.as_bytes());
     let hash = hex::encode(hasher.finalize());
     format!("legacy-gener8-{}", &hash[..32])
+}
+
+fn generated_vault_audio_id(path: &Path) -> Option<String> {
+    let stem = path.file_stem()?.to_str()?;
+    if !looks_like_uuid(stem) {
+        return None;
+    }
+    Some(stem.to_string())
+}
+
+fn looks_like_uuid(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if bytes.len() != 36 {
+        return false;
+    }
+    for (index, byte) in bytes.iter().enumerate() {
+        if matches!(index, 8 | 13 | 18 | 23) {
+            if *byte != b'-' {
+                return false;
+            }
+            continue;
+        }
+        if !byte.is_ascii_hexdigit() {
+            return false;
+        }
+    }
+    true
 }
 
 fn mime_from_path(path: &Path) -> String {

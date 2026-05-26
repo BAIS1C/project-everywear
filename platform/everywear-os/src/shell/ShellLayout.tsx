@@ -1142,6 +1142,13 @@ export function ShellLayout() {
   }, []);
 
   const displayName = authUser?.displayName || authUser?.handle || profile?.display_name || 'User';
+  const profileIndicatorName = authUser?.everywearId
+    || (authUser?.rawUsername ? `${authUser.rawUsername}@everywear.id` : null)
+    || (authUser?.handle ? `${authUser.handle}@everywear.id` : null)
+    || displayName;
+  const compactProfileIndicator = profileIndicatorName.length > 19
+    ? `${profileIndicatorName.slice(0, 16)}...`
+    : profileIndicatorName;
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   // Show the registry as the desktop source of truth. S3 Studio is a desktop
@@ -1345,7 +1352,7 @@ export function ShellLayout() {
           {/* Profile mini */}
           <button className="ew-taskbar__profile" onClick={() => openPanel('profile')}>
             <span className="ew-taskbar__profile-avatar">{initials}</span>
-            <span className="ew-taskbar__profile-name">{authUser?.email?.split('@')[0] || displayName}@ever...</span>
+            <span className="ew-taskbar__profile-name">{compactProfileIndicator}</span>
           </button>
           {/* Bug report / notification bell */}
           <button

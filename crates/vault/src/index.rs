@@ -10,6 +10,8 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::thread;
+use std::time::Duration;
 use tantivy::collector::TopDocs;
 use tantivy::query::{AllQuery, Query, QueryParser, TermQuery};
 use tantivy::schema::{Field, OwnedValue, Schema, TantivyDocument, Value};
@@ -389,15 +391,35 @@ fn replace_document(index: &Index, id_field: Field, id: &str, doc: TantivyDocume
     let mut writer = index.writer::<TantivyDocument>(50_000_000)?;
     writer.delete_term(Term::from_field_text(id_field, id));
     writer.add_document(doc)?;
-    writer.commit()?;
+    commit_with_windows_retry(&mut writer)?;
     Ok(())
 }
 
 fn delete_from_index(index: &Index, id_field: Field, id: &str) -> Result<()> {
     let mut writer = index.writer::<TantivyDocument>(50_000_000)?;
     writer.delete_term(Term::from_field_text(id_field, id));
-    writer.commit()?;
+    commit_with_windows_retry(&mut writer)?;
     Ok(())
+}
+
+fn commit_with_windows_retry(writer: &mut tantivy::IndexWriter<TantivyDocument>) -> Result<()> {
+    for attempt in 0..3 {
+        match writer.commit() {
+            Ok(_) => return Ok(()),
+            Err(err) if attempt < 2 && is_transient_windows_index_error(&err) => {
+                thread::sleep(Duration::from_millis(150 * (attempt + 1) as u64));
+            }
+            Err(err) => return Err(err.into()),
+        }
+    }
+    Ok(())
+}
+
+fn is_transient_windows_index_error(error: &tantivy::TantivyError) -> bool {
+    let message = error.to_string();
+    message.contains("Access is denied")
+        || message.contains("os error 5")
+        || message.contains("OpenWriteError")
 }
 
 fn search_index<T>(

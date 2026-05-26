@@ -656,6 +656,15 @@ export default function Gener8Core() {
                   is_public: false,
                   generation_params: params as unknown as Record<string, unknown>,
                 }, token);
+                if (persistResult?.song) {
+                  songStore.removeSong(tempId);
+                  songStore.addSong({
+                    ...persistResult.song,
+                    fauxPeaks: (persistResult.song as any).fauxPeaks ?? seededFauxPeaks(persistResult.song.id, { bins: 400 }),
+                    peaksAttempted: false,
+                  } as any);
+                  setSelectedSong(persistResult.song);
+                }
                 // 2026-05-05 SGT: Auto-tag new generation into active workspace
                 if (activeWorkspaceId && persistResult?.song?.id) {
                   addSongToWorkspace(persistResult.song.id, activeWorkspaceId);

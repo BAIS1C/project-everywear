@@ -812,13 +812,12 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
     const track = body as Partial<LibraryTrackWire>;
     const filePath = track.audioKey || '';
     if (filePath.includes('Everywear Vault')) {
-      return {
-        ...track,
-        id: track.id || `vault_${Date.now()}`,
-        title: track.title || 'Untitled',
-        audioKey: filePath,
-        createdAt: track.createdAt || new Date().toISOString(),
-      } as T;
+      const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
+      const fileStem = normalizedPath.split('/').pop()?.replace(/\.[^.]+$/, '');
+      const item = fileStem ? await vaultGetItem(fileStem).catch(() => null) : null;
+      if (item && isGener8Song(item)) {
+        return vaultItemToTrack(item) as T;
+      }
     }
     const item = await vaultRegisterAudio({
       title: track.title || 'Untitled',
