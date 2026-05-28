@@ -1,5 +1,6 @@
 import React from 'react';
 import { CONTENT_PACKS, IGCSE_MODULES, PEDAGOGY } from './learningContent';
+import { MY_MAITS_LITE_HOST_CONTRACTS } from '@everywear/transport';
 
 export interface LoomCoreProps {
   skin?: string;
@@ -20,11 +21,11 @@ interface MigrationPhase {
 const PHASES: MigrationPhase[] = [
   {
     id: '01',
-    title: 'Kasai inference bridge',
+    title: 'My Maits Lite teacher bridge',
     state: 'active',
     source: 'Ollama Docker, OpenAI-compatible chat, embeddings',
-    target: 'loom-kasai over the existing Kasai Local runtime',
-    nextStep: 'Bind chat, model scan, embeddings, and benchmark contracts.',
+    target: 'loom-teacher over the shared My Maits Lite headless runtime',
+    nextStep: 'Bind lesson planning, model scan, embeddings, and benchmark contracts.',
   },
   {
     id: '02',
@@ -78,7 +79,7 @@ const PHASES: MigrationPhase[] = [
 
 const DOCS = [
   'NOMAD_Everywear_Rust_Port_Architecture_v1.md',
-  'Loom_Transfer_01_Ollama_to_KasaiLocal.md',
+  'Loom_Transfer_01_Ollama_to_MyMaitsLite.md',
   'Loom_Transfer_02_MySQL_to_SQLite.md',
   'Loom_Transfer_03_Qdrant_to_usearch.md',
   'Loom_Transfer_04_Kiwix_to_zimrs.md',
@@ -95,6 +96,7 @@ function stateLabel(state: PhaseState) {
 }
 
 export function LoomCore({ skin, mode }: LoomCoreProps) {
+  const teacherContract = MY_MAITS_LITE_HOST_CONTRACTS.loom_teacher;
   const [selectedPacks, setSelectedPacks] = React.useState<Set<string>>(
     () => new Set(CONTENT_PACKS.filter((pack) => pack.status !== 'optional').map((pack) => pack.id)),
   );
@@ -250,7 +252,7 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
       <section className="loom-teacher" aria-label="Teacher pedagogy model">
         <div className="loom-panel-head">
           <div>
-            <p className="loom-kicker">Kasai Teacher Agent</p>
+            <p className="loom-kicker">{teacherContract.label}</p>
             <h2>Pedagogy Model</h2>
           </div>
         </div>
@@ -259,7 +261,7 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
             <article
               key={principle.title}
               className="loom-principle"
-              title={`Kasai uses this principle when planning lessons, feedback, and revision prompts: ${principle.summary}`}
+              title={`My Maits Lite uses this principle when planning lessons, feedback, and revision prompts: ${principle.summary}`}
             >
               <h3>{principle.title}</h3>
               <p>{principle.summary}</p>
@@ -280,7 +282,7 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
         <section>
           <h2>Port Rules</h2>
           <p>
-            Single binary bias, offline-first storage, Kasai for inference, SQLite for durable state,
+            Single binary bias, offline-first storage, My Maits Lite for teacher-agent planning, SQLite for durable state,
             usearch for vectors, ZIM files as primary content packs, and Everywear owns the applet boundary.
           </p>
         </section>

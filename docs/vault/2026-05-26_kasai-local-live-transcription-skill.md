@@ -1,4 +1,4 @@
-# 2026-05-26 Kasai Local Live Transcription Skill
+# 2026-05-26 My Maits Local Live Transcription Skill
 
 ## Source Reference
 

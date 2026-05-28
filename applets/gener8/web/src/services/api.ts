@@ -855,6 +855,9 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
       assetKind: 'gener8_song',
       lyricsText: track.lyrics,
       tags: track.tags,
+      sourceAppId: 'gener8',
+      appletScope: 'gener8',
+      libraryScope: 'songs',
     });
     return vaultItemToTrack(item) as T;
   }
@@ -940,6 +943,9 @@ export const generateApi = {
       durationSeconds: 0,
       assetKind,
       tags: ['gener8', assetKind],
+      sourceAppId: 'gener8',
+      appletScope: 'gener8',
+      libraryScope: assetKind === 'reference' ? 'references' : assetKind === 'cover_source' ? 'cover_sources' : 'audio',
     });
     return {
       url: registered.file_path || uploaded.audioUrl,

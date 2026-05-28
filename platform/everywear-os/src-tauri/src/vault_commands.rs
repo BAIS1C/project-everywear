@@ -1,7 +1,8 @@
 use chrono::Utc;
 use ew_vault::{
-    item_favorite, item_file_size, AudioDocument, ImageDocument, MediaFilter, SortField,
-    VaultIndex, VaultItem, VideoDocument,
+    encode_contract_tags, entitlement_context_json, item_favorite, item_file_size, sha256_file,
+    stable_vault_id, AudioDocument, ImageDocument, MediaFilter, SortField, VaultIndex, VaultItem,
+    VideoDocument,
 };
 use serde::Serialize;
 use std::fs;
@@ -10,6 +11,8 @@ use std::sync::Arc;
 use tauri::State;
 use tokio::sync::Mutex;
 use uuid::Uuid;
+
+use crate::state::AppState;
 
 pub type VaultState = Arc<Mutex<VaultIndex>>;
 
@@ -30,6 +33,88 @@ pub struct VaultStats {
     pub stems: usize,
     pub favorites: usize,
     pub total_size_bytes: u64,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct RegistrationContext {
+    owner_user_id: Option<String>,
+    vault_id: Option<String>,
+    source_app_id: String,
+    storage_mode: String,
+    entitlement_tier: Option<String>,
+    applet_scope: String,
+    library_scope: String,
+}
+
+impl RegistrationContext {
+    pub(crate) fn new(source_app_id: impl Into<String>) -> Self {
+        let source_app_id = source_app_id.into();
+        Self {
+            owner_user_id: None,
+            vault_id: None,
+            source_app_id: source_app_id.clone(),
+            storage_mode: "vault_move".into(),
+            entitlement_tier: None,
+            applet_scope: source_app_id,
+            library_scope: "library".into(),
+        }
+    }
+
+    pub(crate) fn with_library(mut self, library_scope: impl Into<String>) -> Self {
+        self.library_scope = library_scope.into();
+        self
+    }
+
+    fn from_request(
+        app_state: &AppState,
+        source_app_id: Option<String>,
+        vault_id: Option<String>,
+        storage_mode: Option<String>,
+        applet_scope: Option<String>,
+        library_scope: Option<String>,
+        default_source_app_id: &str,
+        default_library_scope: &str,
+    ) -> Self {
+        let source_app_id =
+            clean_opt(source_app_id).unwrap_or_else(|| default_source_app_id.into());
+        let applet_scope = clean_opt(applet_scope).unwrap_or_else(|| source_app_id.clone());
+        let library_scope =
+            clean_opt(library_scope).unwrap_or_else(|| default_library_scope.into());
+        let storage_mode = clean_opt(storage_mode).unwrap_or_else(|| "vault_move".into());
+
+        Self {
+            owner_user_id: None,
+            vault_id: clean_opt(vault_id),
+            source_app_id,
+            storage_mode,
+            entitlement_tier: None,
+            applet_scope,
+            library_scope,
+        }
+        .with_shell_state(app_state)
+    }
+
+    pub(crate) fn with_shell_state(mut self, app_state: &AppState) -> Self {
+        if let Ok(session) = app_state.user_session.try_lock() {
+            self.owner_user_id = session.as_ref().map(|claim| claim.sub.clone());
+        }
+        if let Ok(tier) = app_state.licence_tier.try_lock() {
+            self.entitlement_tier = Some(tier.as_str().to_string());
+        }
+        self
+    }
+
+    fn vault_id<'a>(&'a self, dirs: &'a VaultDirs) -> String {
+        self.vault_id
+            .clone()
+            .unwrap_or_else(|| stable_vault_id(self.owner_user_id.as_deref(), &dirs.root))
+    }
+}
+
+fn clean_opt(value: Option<String>) -> Option<String> {
+    value
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
 }
 
 // CLAUDE_INTERFACE: Vault auto-registration is active by default
@@ -78,9 +163,11 @@ pub async fn auto_register_job_result(
     match applet_id {
         "1magen" => {
             let (width, height) = image_dimensions_from_result(result, &source)?;
+            let context = RegistrationContext::new("1magen").with_library("images");
             register_image_with_dirs(
                 &vault,
                 &dirs,
+                &context,
                 title,
                 source,
                 width,
@@ -92,54 +179,63 @@ pub async fn auto_register_job_result(
             )
             .map(Some)
         }
-        "gener8" => register_audio_with_dirs(
-            &vault,
-            &dirs,
-            title,
-            source,
-            number_value(result, "duration_seconds").unwrap_or_default(),
-            u64_value(result, "sample_rate"),
-            u64_value(result, "channels"),
-            result.get("genre").and_then(as_string),
-            u64_value(result, "bpm"),
-            result
-                .get("is_stem")
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false),
-            result.get("stem_type").and_then(as_string),
-            result.get("lyrics_text").and_then(as_string),
-            result
-                .get("asset_kind")
-                .or_else(|| result.get("assetKind"))
-                .and_then(as_string),
-            tags,
-        )
-        .map(Some),
-        "3nvizen" | "vid" => register_video_with_dirs(
-            &vault,
-            &dirs,
-            title,
-            source,
-            number_value(result, "duration_seconds").unwrap_or_default(),
-            u64_value(result, "width").unwrap_or_default(),
-            u64_value(result, "height").unwrap_or_default(),
-            number_value(result, "frame_rate").unwrap_or_default(),
-            result.get("model_id").and_then(as_string),
-            result.get("generation_mode").and_then(as_string),
-            result.get("prompt").and_then(as_string),
-            result
-                .get("has_audio")
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false),
-            tags,
-        )
-        .map(Some),
+        "gener8" => {
+            let context = RegistrationContext::new("gener8").with_library("songs");
+            register_audio_with_dirs(
+                &vault,
+                &dirs,
+                &context,
+                title,
+                source,
+                number_value(result, "duration_seconds").unwrap_or_default(),
+                u64_value(result, "sample_rate"),
+                u64_value(result, "channels"),
+                result.get("genre").and_then(as_string),
+                u64_value(result, "bpm"),
+                result
+                    .get("is_stem")
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(false),
+                result.get("stem_type").and_then(as_string),
+                result.get("lyrics_text").and_then(as_string),
+                result
+                    .get("asset_kind")
+                    .or_else(|| result.get("assetKind"))
+                    .and_then(as_string),
+                tags,
+            )
+            .map(Some)
+        }
+        "3nvizen" | "vid" => {
+            let context = RegistrationContext::new(applet_id).with_library("videos");
+            register_video_with_dirs(
+                &vault,
+                &dirs,
+                &context,
+                title,
+                source,
+                number_value(result, "duration_seconds").unwrap_or_default(),
+                u64_value(result, "width").unwrap_or_default(),
+                u64_value(result, "height").unwrap_or_default(),
+                number_value(result, "frame_rate").unwrap_or_default(),
+                result.get("model_id").and_then(as_string),
+                result.get("generation_mode").and_then(as_string),
+                result.get("prompt").and_then(as_string),
+                result
+                    .get("has_audio")
+                    .and_then(|value| value.as_bool())
+                    .unwrap_or(false),
+                tags,
+            )
+            .map(Some)
+        }
         _ => Ok(None),
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct VaultDirs {
+    root: PathBuf,
     images: PathBuf,
     audio: PathBuf,
     audio_stems: PathBuf,
@@ -151,6 +247,7 @@ impl VaultDirs {
     pub(crate) fn default_paths() -> Result<Self, String> {
         everywear_paths::ensure_vault_dirs().map_err(|e| e.to_string())?;
         Ok(Self {
+            root: everywear_paths::vault_root(),
             images: everywear_paths::vault_images(),
             audio: everywear_paths::vault_audio(),
             audio_stems: everywear_paths::vault_audio_stems(),
@@ -277,13 +374,30 @@ pub async fn vault_register_image(
     prompt: Option<String>,
     generation_params: Option<serde_json::Value>,
     tags: Vec<String>,
+    source_app_id: Option<String>,
+    vault_id: Option<String>,
+    storage_mode: Option<String>,
+    applet_scope: Option<String>,
+    library_scope: Option<String>,
     vault: State<'_, VaultState>,
+    app_state: State<'_, AppState>,
 ) -> Result<VaultItem, String> {
     let dirs = VaultDirs::default_paths()?;
+    let context = RegistrationContext::from_request(
+        app_state.inner(),
+        source_app_id,
+        vault_id,
+        storage_mode,
+        applet_scope,
+        library_scope,
+        "1magen",
+        "images",
+    );
     let vault = vault.lock().await;
     register_image_with_dirs(
         &vault,
         &dirs,
+        &context,
         title,
         PathBuf::from(file_path),
         width,
@@ -313,13 +427,30 @@ pub async fn vault_register_audio(
     lyrics_text: Option<String>,
     asset_kind: Option<String>,
     tags: Vec<String>,
+    source_app_id: Option<String>,
+    vault_id: Option<String>,
+    storage_mode: Option<String>,
+    applet_scope: Option<String>,
+    library_scope: Option<String>,
     vault: State<'_, VaultState>,
+    app_state: State<'_, AppState>,
 ) -> Result<VaultItem, String> {
     let dirs = VaultDirs::default_paths()?;
+    let context = RegistrationContext::from_request(
+        app_state.inner(),
+        source_app_id,
+        vault_id,
+        storage_mode,
+        applet_scope,
+        library_scope,
+        "gener8",
+        "songs",
+    );
     let vault = vault.lock().await;
     register_audio_with_dirs(
         &vault,
         &dirs,
+        &context,
         title,
         PathBuf::from(file_path),
         duration_seconds,
@@ -343,32 +474,49 @@ pub async fn vault_register_audio(
 pub async fn vault_register_video(
     title: String,
     file_path: String,
-    duration_seconds: f64,
-    width: u64,
-    height: u64,
-    frame_rate: f64,
+    duration_seconds: Option<f64>,
+    width: Option<u64>,
+    height: Option<u64>,
+    frame_rate: Option<f64>,
     model_id: Option<String>,
     generation_mode: Option<String>,
     prompt: Option<String>,
-    has_audio: bool,
+    has_audio: Option<bool>,
     tags: Vec<String>,
+    source_app_id: Option<String>,
+    vault_id: Option<String>,
+    storage_mode: Option<String>,
+    applet_scope: Option<String>,
+    library_scope: Option<String>,
     vault: State<'_, VaultState>,
+    app_state: State<'_, AppState>,
 ) -> Result<VaultItem, String> {
     let dirs = VaultDirs::default_paths()?;
+    let context = RegistrationContext::from_request(
+        app_state.inner(),
+        source_app_id,
+        vault_id,
+        storage_mode,
+        applet_scope,
+        library_scope,
+        "3nvizen",
+        "videos",
+    );
     let vault = vault.lock().await;
     register_video_with_dirs(
         &vault,
         &dirs,
+        &context,
         title,
         PathBuf::from(file_path),
-        duration_seconds,
-        width,
-        height,
-        frame_rate,
+        duration_seconds.unwrap_or_default(),
+        width.unwrap_or_default(),
+        height.unwrap_or_default(),
+        frame_rate.unwrap_or_default(),
         model_id,
         generation_mode,
         prompt,
-        has_audio,
+        has_audio.unwrap_or(false),
         tags,
     )
 }
@@ -432,6 +580,7 @@ fn stats_from_items(items: &[VaultItem]) -> VaultStats {
 fn register_image_with_dirs(
     vault: &VaultIndex,
     dirs: &VaultDirs,
+    context: &RegistrationContext,
     title: String,
     source: PathBuf,
     width: u64,
@@ -442,6 +591,7 @@ fn register_image_with_dirs(
     tags: Vec<String>,
 ) -> Result<VaultItem, String> {
     let id = Uuid::new_v4().to_string();
+    let original_path = source.clone();
     fs::create_dir_all(&dirs.images).map_err(|e| e.to_string())?;
     fs::create_dir_all(&dirs.thumbnails).map_err(|e| e.to_string())?;
     let destination = destination_path(&dirs.images, &id, &source);
@@ -449,10 +599,27 @@ fn register_image_with_dirs(
     create_image_thumbnail(&destination, &dirs.thumbnails.join(format!("{id}.jpg")))?;
 
     let metadata = fs::metadata(&destination).map_err(|e| e.to_string())?;
+    let sha256 = sha256_file(&destination).map_err(|e| e.to_string())?;
+    let vault_id = context.vault_id(dirs);
     let now = now_timestamp();
+    let mut tags = tags;
+    tags.extend(encode_contract_tags(
+        context.owner_user_id.as_deref(),
+        &vault_id,
+        &context.source_app_id,
+        &context.storage_mode,
+        &original_path,
+        &destination,
+        &sha256,
+        context.entitlement_tier.as_deref(),
+        &context.applet_scope,
+        &context.library_scope,
+    ));
+    tags.sort();
+    tags.dedup();
     let doc = ImageDocument {
         id,
-        applet_id: "1magen".into(),
+        applet_id: context.source_app_id.clone(),
         title,
         tags,
         created_at: now,
@@ -466,6 +633,16 @@ fn register_image_with_dirs(
         model_id,
         generation_params,
         prompt,
+        owner_user_id: context.owner_user_id.clone(),
+        vault_id: Some(vault_id),
+        source_app_id: Some(context.source_app_id.clone()),
+        storage_mode: Some(context.storage_mode.clone()),
+        original_path: Some(original_path.to_string_lossy().to_string()),
+        vault_path: Some(destination.to_string_lossy().to_string()),
+        sha256: Some(sha256),
+        entitlement_context: entitlement_context_json(context.entitlement_tier.as_deref()),
+        applet_scope: Some(context.applet_scope.clone()),
+        library_scope: Some(context.library_scope.clone()),
     };
     vault.index_image(&doc).map_err(|e| e.to_string())?;
     Ok(VaultItem::Image(doc))
@@ -475,6 +652,7 @@ fn register_image_with_dirs(
 pub(crate) fn register_audio_with_dirs(
     vault: &VaultIndex,
     dirs: &VaultDirs,
+    context: &RegistrationContext,
     title: String,
     source: PathBuf,
     duration_seconds: f64,
@@ -489,6 +667,7 @@ pub(crate) fn register_audio_with_dirs(
     tags: Vec<String>,
 ) -> Result<VaultItem, String> {
     let id = Uuid::new_v4().to_string();
+    let original_path = source.clone();
     let target_dir = if is_stem {
         &dirs.audio_stems
     } else {
@@ -499,15 +678,29 @@ pub(crate) fn register_audio_with_dirs(
     move_into_vault(&source, &destination)?;
 
     let metadata = fs::metadata(&destination).map_err(|e| e.to_string())?;
+    let sha256 = sha256_file(&destination).map_err(|e| e.to_string())?;
+    let vault_id = context.vault_id(dirs);
     let now = now_timestamp();
     let mut tags = tags;
     let resolved_asset_kind = resolve_audio_asset_kind(asset_kind, is_stem, &tags);
     tags.push(format!("asset:{resolved_asset_kind}"));
+    tags.extend(encode_contract_tags(
+        context.owner_user_id.as_deref(),
+        &vault_id,
+        &context.source_app_id,
+        &context.storage_mode,
+        &original_path,
+        &destination,
+        &sha256,
+        context.entitlement_tier.as_deref(),
+        &context.applet_scope,
+        &context.library_scope,
+    ));
     tags.sort();
     tags.dedup();
     let doc = AudioDocument {
         id,
-        applet_id: "gener8".into(),
+        applet_id: context.source_app_id.clone(),
         title,
         tags,
         created_at: now,
@@ -527,6 +720,16 @@ pub(crate) fn register_audio_with_dirs(
         lyrics_aligned: false,
         lyrics_text,
         asset_kind: Some(resolved_asset_kind),
+        owner_user_id: context.owner_user_id.clone(),
+        vault_id: Some(vault_id),
+        source_app_id: Some(context.source_app_id.clone()),
+        storage_mode: Some(context.storage_mode.clone()),
+        original_path: Some(original_path.to_string_lossy().to_string()),
+        vault_path: Some(destination.to_string_lossy().to_string()),
+        sha256: Some(sha256),
+        entitlement_context: entitlement_context_json(context.entitlement_tier.as_deref()),
+        applet_scope: Some(context.applet_scope.clone()),
+        library_scope: Some(context.library_scope.clone()),
     };
     vault.index_audio(&doc).map_err(|e| e.to_string())?;
     Ok(VaultItem::Audio(doc))
@@ -556,6 +759,7 @@ fn resolve_audio_asset_kind(asset_kind: Option<String>, is_stem: bool, tags: &[S
 fn register_video_with_dirs(
     vault: &VaultIndex,
     dirs: &VaultDirs,
+    context: &RegistrationContext,
     title: String,
     source: PathBuf,
     duration_seconds: f64,
@@ -569,15 +773,33 @@ fn register_video_with_dirs(
     tags: Vec<String>,
 ) -> Result<VaultItem, String> {
     let id = Uuid::new_v4().to_string();
+    let original_path = source.clone();
     fs::create_dir_all(&dirs.videos).map_err(|e| e.to_string())?;
     let destination = destination_path(&dirs.videos, &id, &source);
     move_into_vault(&source, &destination)?;
 
     let metadata = fs::metadata(&destination).map_err(|e| e.to_string())?;
+    let sha256 = sha256_file(&destination).map_err(|e| e.to_string())?;
+    let vault_id = context.vault_id(dirs);
     let now = now_timestamp();
+    let mut tags = tags;
+    tags.extend(encode_contract_tags(
+        context.owner_user_id.as_deref(),
+        &vault_id,
+        &context.source_app_id,
+        &context.storage_mode,
+        &original_path,
+        &destination,
+        &sha256,
+        context.entitlement_tier.as_deref(),
+        &context.applet_scope,
+        &context.library_scope,
+    ));
+    tags.sort();
+    tags.dedup();
     let doc = VideoDocument {
         id,
-        applet_id: "3nvizen".into(),
+        applet_id: context.source_app_id.clone(),
         title,
         tags,
         created_at: now,
@@ -594,6 +816,16 @@ fn register_video_with_dirs(
         generation_mode,
         prompt,
         has_audio,
+        owner_user_id: context.owner_user_id.clone(),
+        vault_id: Some(vault_id),
+        source_app_id: Some(context.source_app_id.clone()),
+        storage_mode: Some(context.storage_mode.clone()),
+        original_path: Some(original_path.to_string_lossy().to_string()),
+        vault_path: Some(destination.to_string_lossy().to_string()),
+        sha256: Some(sha256),
+        entitlement_context: entitlement_context_json(context.entitlement_tier.as_deref()),
+        applet_scope: Some(context.applet_scope.clone()),
+        library_scope: Some(context.library_scope.clone()),
     };
     vault.index_video(&doc).map_err(|e| e.to_string())?;
     Ok(VaultItem::Video(doc))
@@ -759,6 +991,7 @@ mod tests {
     fn temp_dirs() -> (PathBuf, VaultDirs, VaultIndex) {
         let root = std::env::temp_dir().join(format!("os-vault-test-{}", Uuid::new_v4()));
         let dirs = VaultDirs {
+            root: root.clone(),
             images: root.join("Images"),
             audio: root.join("Audio"),
             audio_stems: root.join("Audio").join("Stems"),
@@ -794,10 +1027,12 @@ mod tests {
         let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
             ImageBuffer::from_pixel(16, 16, Rgba([255, 0, 0, 255]));
         img.save(&source).unwrap();
+        let context = RegistrationContext::new("1magen").with_library("images");
 
         let item = register_image_with_dirs(
             &index,
             &dirs,
+            &context,
             "Test image".into(),
             source.clone(),
             16,

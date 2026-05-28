@@ -5,6 +5,7 @@ use crate::schema::{
     ImageDocument, ImageFields, VaultItem, VideoDocument, VideoFields,
 };
 use anyhow::{Context, Result};
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashSet;
@@ -378,11 +379,13 @@ impl VaultIndex {
     }
 
     fn image_from_tantivy(&self, doc: &TantivyDocument) -> Result<ImageDocument> {
+        let tags = tags_value(doc, self.image_fields.tags);
+        let contract = ContractFields::from_tags(&tags);
         Ok(ImageDocument {
             id: text_value(doc, self.image_fields.id).unwrap_or_default(),
             applet_id: text_value(doc, self.image_fields.applet_id).unwrap_or_default(),
             title: text_value(doc, self.image_fields.title).unwrap_or_default(),
-            tags: tags_value(doc, self.image_fields.tags),
+            tags,
             created_at: u64_value(doc, self.image_fields.created_at),
             updated_at: u64_value(doc, self.image_fields.updated_at),
             file_path: text_value(doc, self.image_fields.file_path).unwrap_or_default(),
@@ -394,15 +397,27 @@ impl VaultIndex {
             model_id: text_value(doc, self.image_fields.model_id),
             generation_params: json_value(doc, self.image_fields.generation_params),
             prompt: text_value(doc, self.image_fields.prompt),
+            owner_user_id: contract.owner_user_id,
+            vault_id: contract.vault_id,
+            source_app_id: contract.source_app_id,
+            storage_mode: contract.storage_mode,
+            original_path: contract.original_path,
+            vault_path: contract.vault_path,
+            sha256: contract.sha256,
+            entitlement_context: contract.entitlement_context,
+            applet_scope: contract.applet_scope,
+            library_scope: contract.library_scope,
         })
     }
 
     fn audio_from_tantivy(&self, doc: &TantivyDocument) -> Result<AudioDocument> {
+        let tags = tags_value(doc, self.audio_fields.tags);
+        let contract = ContractFields::from_tags(&tags);
         let mut audio = AudioDocument {
             id: text_value(doc, self.audio_fields.id).unwrap_or_default(),
             applet_id: text_value(doc, self.audio_fields.applet_id).unwrap_or_default(),
             title: text_value(doc, self.audio_fields.title).unwrap_or_default(),
-            tags: tags_value(doc, self.audio_fields.tags),
+            tags,
             created_at: u64_value(doc, self.audio_fields.created_at),
             updated_at: u64_value(doc, self.audio_fields.updated_at),
             file_path: text_value(doc, self.audio_fields.file_path).unwrap_or_default(),
@@ -420,17 +435,29 @@ impl VaultIndex {
             lyrics_aligned: bool_value(doc, self.audio_fields.lyrics_aligned),
             lyrics_text: text_value(doc, self.audio_fields.lyrics_text),
             asset_kind: None,
+            owner_user_id: contract.owner_user_id,
+            vault_id: contract.vault_id,
+            source_app_id: contract.source_app_id,
+            storage_mode: contract.storage_mode,
+            original_path: contract.original_path,
+            vault_path: contract.vault_path,
+            sha256: contract.sha256,
+            entitlement_context: contract.entitlement_context,
+            applet_scope: contract.applet_scope,
+            library_scope: contract.library_scope,
         };
         audio.asset_kind = Some(audio_asset_kind(&audio).to_string());
         Ok(audio)
     }
 
     fn video_from_tantivy(&self, doc: &TantivyDocument) -> Result<VideoDocument> {
+        let tags = tags_value(doc, self.video_fields.tags);
+        let contract = ContractFields::from_tags(&tags);
         Ok(VideoDocument {
             id: text_value(doc, self.video_fields.id).unwrap_or_default(),
             applet_id: text_value(doc, self.video_fields.applet_id).unwrap_or_default(),
             title: text_value(doc, self.video_fields.title).unwrap_or_default(),
-            tags: tags_value(doc, self.video_fields.tags),
+            tags,
             created_at: u64_value(doc, self.video_fields.created_at),
             updated_at: u64_value(doc, self.video_fields.updated_at),
             file_path: text_value(doc, self.video_fields.file_path).unwrap_or_default(),
@@ -445,6 +472,16 @@ impl VaultIndex {
             generation_mode: text_value(doc, self.video_fields.generation_mode),
             prompt: text_value(doc, self.video_fields.prompt),
             has_audio: bool_value(doc, self.video_fields.has_audio),
+            owner_user_id: contract.owner_user_id,
+            vault_id: contract.vault_id,
+            source_app_id: contract.source_app_id,
+            storage_mode: contract.storage_mode,
+            original_path: contract.original_path,
+            vault_path: contract.vault_path,
+            sha256: contract.sha256,
+            entitlement_context: contract.entitlement_context,
+            applet_scope: contract.applet_scope,
+            library_scope: contract.library_scope,
         })
     }
 }
@@ -550,6 +587,7 @@ fn image_to_tantivy(schema: &Schema, doc: &ImageDocument) -> Result<TantivyDocum
     let mut value = serde_json::to_value(doc)?;
     if let serde_json::Value::Object(map) = &mut value {
         remove_nulls(map);
+        strip_unindexed_contract_fields(map);
         return TantivyDocument::from_json_object(schema, map.clone()).map_err(Into::into);
     }
     unreachable!("document structs serialize to objects")
@@ -560,6 +598,7 @@ fn audio_to_tantivy(schema: &Schema, doc: &AudioDocument) -> Result<TantivyDocum
     if let serde_json::Value::Object(map) = &mut value {
         remove_nulls(map);
         map.remove("asset_kind");
+        strip_unindexed_contract_fields(map);
         return TantivyDocument::from_json_object(schema, map.clone()).map_err(Into::into);
     }
     unreachable!("document structs serialize to objects")
@@ -569,6 +608,7 @@ fn video_to_tantivy(schema: &Schema, doc: &VideoDocument) -> Result<TantivyDocum
     let mut value = serde_json::to_value(doc)?;
     if let serde_json::Value::Object(map) = &mut value {
         remove_nulls(map);
+        strip_unindexed_contract_fields(map);
         return TantivyDocument::from_json_object(schema, map.clone()).map_err(Into::into);
     }
     unreachable!("document structs serialize to objects")
@@ -576,6 +616,23 @@ fn video_to_tantivy(schema: &Schema, doc: &VideoDocument) -> Result<TantivyDocum
 
 fn remove_nulls(map: &mut serde_json::Map<String, serde_json::Value>) {
     map.retain(|_, value| !value.is_null());
+}
+
+fn strip_unindexed_contract_fields(map: &mut serde_json::Map<String, serde_json::Value>) {
+    for key in [
+        "owner_user_id",
+        "vault_id",
+        "source_app_id",
+        "storage_mode",
+        "original_path",
+        "vault_path",
+        "sha256",
+        "entitlement_context",
+        "applet_scope",
+        "library_scope",
+    ] {
+        map.remove(key);
+    }
 }
 
 fn text_value(doc: &TantivyDocument, field: Field) -> Option<String> {
@@ -618,6 +675,114 @@ fn bool_value(doc: &TantivyDocument, field: Field) -> bool {
 
 fn json_value(doc: &TantivyDocument, field: Field) -> Option<serde_json::Value> {
     doc.get_first(field).map(owned_value_to_json)
+}
+
+#[derive(Debug, Default)]
+struct ContractFields {
+    owner_user_id: Option<String>,
+    vault_id: Option<String>,
+    source_app_id: Option<String>,
+    storage_mode: Option<String>,
+    original_path: Option<String>,
+    vault_path: Option<String>,
+    sha256: Option<String>,
+    entitlement_context: Option<serde_json::Value>,
+    applet_scope: Option<String>,
+    library_scope: Option<String>,
+}
+
+impl ContractFields {
+    fn from_tags(tags: &[String]) -> Self {
+        let entitlement_tier = tag_value(tags, "entitlement_tier:");
+        Self {
+            owner_user_id: tag_value(tags, "owner:"),
+            vault_id: tag_value(tags, "vault_id:"),
+            source_app_id: tag_value(tags, "source_app:"),
+            storage_mode: tag_value(tags, "storage:"),
+            original_path: tag_path_value(tags, "original_path_b64:"),
+            vault_path: tag_path_value(tags, "vault_path_b64:"),
+            sha256: tag_value(tags, "sha256:"),
+            entitlement_context: entitlement_context_json(entitlement_tier.as_deref()),
+            applet_scope: tag_value(tags, "applet_scope:"),
+            library_scope: tag_value(tags, "library_scope:"),
+        }
+    }
+}
+
+fn tag_value(tags: &[String], prefix: &str) -> Option<String> {
+    tags.iter()
+        .find_map(|tag| tag.strip_prefix(prefix))
+        .filter(|value| !value.trim().is_empty())
+        .map(ToOwned::to_owned)
+}
+
+fn tag_path_value(tags: &[String], prefix: &str) -> Option<String> {
+    let encoded = tag_value(tags, prefix)?;
+    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(encoded.as_bytes())
+        .ok()?;
+    String::from_utf8(bytes).ok()
+}
+
+pub fn sha256_file(path: &Path) -> Result<String> {
+    use sha2::Digest as _;
+
+    let bytes = fs::read(path)
+        .with_context(|| format!("failed to read file for sha256 {}", path.display()))?;
+    let digest = sha2::Sha256::digest(&bytes);
+    Ok(hex::encode(digest))
+}
+
+pub fn stable_vault_id(owner_user_id: Option<&str>, vault_root: &Path) -> String {
+    use sha2::Digest as _;
+
+    let owner = owner_user_id
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("local-preview");
+    let material = format!("{}|{}", owner, vault_root.to_string_lossy());
+    let digest = sha2::Sha256::digest(material.as_bytes());
+    let encoded = hex::encode(digest);
+    format!("vault-{}", &encoded[..16])
+}
+
+pub fn entitlement_context_json(tier: Option<&str>) -> Option<serde_json::Value> {
+    tier.filter(|value| !value.trim().is_empty())
+        .map(|value| serde_json::json!({ "tier": value }))
+}
+
+pub fn encode_contract_tags(
+    owner_user_id: Option<&str>,
+    vault_id: &str,
+    source_app_id: &str,
+    storage_mode: &str,
+    original_path: &Path,
+    vault_path: &Path,
+    sha256: &str,
+    entitlement_tier: Option<&str>,
+    applet_scope: &str,
+    library_scope: &str,
+) -> Vec<String> {
+    let mut tags = vec![
+        format!("vault_id:{vault_id}"),
+        format!("source_app:{source_app_id}"),
+        format!("storage:{storage_mode}"),
+        format!("sha256:{sha256}"),
+        format!("applet_scope:{applet_scope}"),
+        format!("library_scope:{library_scope}"),
+        format!("original_path_b64:{}", path_b64(original_path)),
+        format!("vault_path_b64:{}", path_b64(vault_path)),
+    ];
+    if let Some(owner) = owner_user_id.filter(|value| !value.trim().is_empty()) {
+        tags.push(format!("owner:{owner}"));
+    }
+    if let Some(tier) = entitlement_tier.filter(|value| !value.trim().is_empty()) {
+        tags.push(format!("entitlement_tier:{tier}"));
+    }
+    tags
+}
+
+fn path_b64(path: &Path) -> String {
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(path.to_string_lossy().as_bytes())
 }
 
 fn owned_value_to_json(value: &OwnedValue) -> serde_json::Value {

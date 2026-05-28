@@ -102,6 +102,26 @@ pub struct ImageDocument {
     pub generation_params: Option<serde_json::Value>,
     #[serde(default)]
     pub prompt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_app_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entitlement_context: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applet_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library_scope: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -148,6 +168,26 @@ pub struct AudioDocument {
     pub lyrics_text: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub asset_kind: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_app_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entitlement_context: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applet_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library_scope: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -188,6 +228,26 @@ pub struct VideoDocument {
     pub prompt: Option<String>,
     #[serde(default)]
     pub has_audio: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_app_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entitlement_context: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applet_scope: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library_scope: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -80,12 +80,12 @@ Registered by Everywear desktop.
 Responsibilities:
 
 - accept messages only from the allowed extension ID
-- forward requests to the local Everywear/Kasai bridge
+- forward requests to the local Everywear/My Maits bridge
 - stream transcript status back to the extension
 - expose installed/entitled capability status
 - avoid direct cloud upload unless the user enabled a cloud feature
 
-### Everywear/Kasai Local Host
+### Everywear/My Maits Local Host
 
 Responsibilities:
 

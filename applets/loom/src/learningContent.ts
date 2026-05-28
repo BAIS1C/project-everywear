@@ -30,7 +30,7 @@ export const CONTENT_PACKS: ContentPack[] = [
   {
     id: 'teacher-skill',
     module: 'Teacher Agent',
-    title: 'Kasai IGCSE Teacher Skill',
+    title: 'My Maits Lite IGCSE Teacher Skill',
     type: 'skill',
     status: 'required',
     size: '< 1 MB',
@@ -50,15 +50,15 @@ export const CONTENT_PACKS: ContentPack[] = [
     tooltip: 'Stores learner profile, selected syllabus, progress, retrieval schedule, misconceptions, notes, and teacher feedback.',
   },
   {
-    id: 'kasai-model',
+    id: 'mymaits-lite-model',
     module: 'Teacher Agent',
-    title: 'Kasai local model slot',
+    title: 'My Maits Lite headless model slot',
     type: 'model',
     status: 'required',
     size: '3-22 GB depending tier',
     source: 'Everywear shared model registry',
-    resolver: 'Kasai model manager',
-    tooltip: 'Uses the existing Kasai model planner instead of downloading a separate tutor model when a suitable local model already exists.',
+    resolver: 'My Maits Lite runtime planner',
+    tooltip: 'Uses the shared My Maits Lite headless runtime instead of downloading a separate tutor model when a suitable local model already exists.',
   },
   {
     id: 'wikipedia-schools',
@@ -113,7 +113,7 @@ export const CONTENT_PACKS: ContentPack[] = [
     size: 'Medium',
     source: 'Kiwix library',
     resolver: 'Query Kiwix library for programming and computer science Stack Exchange archives',
-    tooltip: 'Optional support for programming explanations. Kasai should still align answers to the syllabus, not forum style.',
+    tooltip: 'Optional support for programming explanations. My Maits Lite should still align answers to the syllabus, not forum style.',
   },
   {
     id: 'openstreetmap-world',
@@ -135,7 +135,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE 0580',
     years: '2025-2027 now, 2028-2030 next cycle',
     focus: ['number', 'algebra', 'geometry', 'mensuration', 'statistics', 'probability', 'problem solving'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'wikibooks-maths', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'wikibooks-maths', 'wikipedia-schools'],
   },
   {
     id: 'biology-0610',
@@ -143,7 +143,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE 0610',
     years: '2026-2028',
     focus: ['cells', 'classification', 'nutrition', 'transport', 'coordination', 'reproduction', 'ecology', 'practical skills'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'wikipedia-science', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'wikipedia-science', 'wikipedia-schools'],
   },
   {
     id: 'chemistry-0620',
@@ -151,7 +151,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE 0620',
     years: '2026-2028',
     focus: ['particles', 'bonding', 'stoichiometry', 'energetics', 'rates', 'acids and bases', 'organic chemistry', 'practical skills'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'wikipedia-science', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'wikipedia-science', 'wikipedia-schools'],
   },
   {
     id: 'physics-0625',
@@ -159,7 +159,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE 0625',
     years: '2026-2028',
     focus: ['motion', 'forces', 'energy', 'thermal physics', 'waves', 'electricity', 'magnetism', 'atomic physics', 'practical skills'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'wikipedia-science', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'wikipedia-science', 'wikipedia-schools'],
   },
   {
     id: 'english',
@@ -167,7 +167,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE English track',
     years: 'Confirm exact syllabus code per learner',
     focus: ['reading comprehension', 'summary', 'writer effect', 'directed writing', 'speaking', 'vocabulary growth'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'gutenberg-literature', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'gutenberg-literature', 'wikipedia-schools'],
   },
   {
     id: 'computer-science',
@@ -175,7 +175,7 @@ export const IGCSE_MODULES: SyllabusModule[] = [
     code: 'Cambridge IGCSE 0478',
     years: 'Confirm latest active syllabus before exam entry',
     focus: ['systems', 'data representation', 'networks', 'security', 'algorithms', 'programming', 'databases'],
-    packIds: ['teacher-skill', 'loom-db', 'kasai-model', 'stackexchange-cs', 'wikipedia-schools'],
+    packIds: ['teacher-skill', 'loom-db', 'mymaits-lite-model', 'stackexchange-cs', 'wikipedia-schools'],
   },
 ];
 

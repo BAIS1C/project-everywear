@@ -1,18 +1,19 @@
-# My Mait Applet Manifest (internal kasai runtime)
+# My Maits Applet Manifest (legacy internal kasai runtime id)
 # Read by the Everywear OS shell to gate, provision, and launch this applet.
 # Engine: llama-cpp-2 / llama.cpp-compatible GGUF runtime.
 #
-# Distribution goal:
-# - My Mait Lite: one compact model that works on modest GPUs and CPU fallback.
-# - My Mait Local: stronger single-model agent on 8-16 GB GPUs.
-# - My Mait Local Full: larger orchestrator plus compact worker on 24 GB+ GPUs.
+# Product/runtime contract:
+# - My Maits is the standalone agent hub.
+# - My Maits Lite is a hidden headless runtime embedded by host surfaces such
+#   as Loom Teacher Agent and AI Director. It is not a launcher, SKU, or chat UI.
+# - "kasai" remains only the internal applet id until a deliberate rename pass.
 #
 # Model groups are ordered highest-quality first. The shell walks top-down and
 # selects the first group whose min_vram_mb fits the current VRAM plan.
 
 [applet]
 id = "kasai"
-name = "My Mait"
+name = "My Maits"
 version = "0.1.0"
 description = "Local MAIT agent with full system access, planning, and orchestration"
 icon = "kasai"
@@ -24,7 +25,7 @@ backend = "ffi"
 server_binary = ""
 
 [[model_groups]]
-label = "My Mait Ultra 32GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q8 agent)"
+label = "My Maits Ultra 32GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q8 agent)"
 min_vram_mb = 32768
 
   [[model_groups.models]]
@@ -48,7 +49,7 @@ min_vram_mb = 32768
   size_bytes = 9_527_501_216
 
 [[model_groups]]
-label = "My Mait Full 24GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q4 agent)"
+label = "My Maits Full 24GB (Qwen3.6 35B-A3B Q4 orchestrator + Qwen3.5 9B Q4 agent)"
 min_vram_mb = 24576
 
   [[model_groups.models]]
@@ -72,7 +73,7 @@ min_vram_mb = 24576
   size_bytes = 5_627_044_256
 
 [[model_groups]]
-label = "My Mait Pro 16GB (Qwen3.5 9B high-quality orchestrator + 4B worker)"
+label = "My Maits Pro 16GB (Qwen3.5 9B high-quality orchestrator + 4B worker)"
 min_vram_mb = 16384
 
   [[model_groups.models]]
@@ -96,7 +97,7 @@ min_vram_mb = 16384
   size_bytes = 2_497_281_312
 
 [[model_groups]]
-label = "My Mait 12GB (Qwen3.5 9B efficient single agent)"
+label = "My Maits 12GB (Qwen3.5 9B efficient single agent)"
 min_vram_mb = 12288
 
   [[model_groups.models]]
@@ -110,7 +111,7 @@ min_vram_mb = 12288
   size_bytes = 5_627_044_256
 
 [[model_groups]]
-label = "My Mait Lite 8GB (Nemotron 3 Nano compact agent)"
+label = "My Maits Lite 8GB Headless (Nemotron 3 Nano compact runtime)"
 min_vram_mb = 8192
 
   [[model_groups.models]]
@@ -124,7 +125,7 @@ min_vram_mb = 8192
   size_bytes = 2_837_072_896
 
 [[model_groups]]
-label = "My Mait Lite 4GB (4B compact agent)"
+label = "My Maits Lite 4GB Headless (4B compact runtime)"
 min_vram_mb = 4096
 
   [[model_groups.models]]

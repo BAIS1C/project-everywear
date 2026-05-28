@@ -185,7 +185,7 @@ async fn advertise(
         "slots": status.slots,
         "engines": [{
             "engine_id": ENGINE_ID,
-            "label": "Kasai Local",
+            "label": "My Maits Local",
             "capabilities": capabilities,
             "status": status.status,
             "inference_ready": status.inference_ready,

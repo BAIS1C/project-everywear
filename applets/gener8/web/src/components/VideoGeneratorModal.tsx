@@ -1793,6 +1793,9 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
           prompt: song.title || videoTitle,
           hasAudio: true,
           tags: ['gener8', 'video'],
+          sourceAppId: 'gener8',
+          appletScope: 'gener8',
+          libraryScope: 'videos',
         });
       }
       const sizeMb = (saveData.size_bytes / (1024 * 1024)).toFixed(1);

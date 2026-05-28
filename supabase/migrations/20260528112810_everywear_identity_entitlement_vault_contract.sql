@@ -129,6 +129,8 @@ create trigger trg_handle_new_user
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 -- Linked accounts. Steam lives here as a provider, never as root identity.
 create table if not exists public.external_identities (
   id uuid primary key default gen_random_uuid(),
@@ -325,39 +327,48 @@ alter table public.devices enable row level security;
 alter table public.webhook_events enable row level security;
 alter table public.steam_link_events enable row level security;
 
+drop policy if exists "catalog products readable" on public.products;
 create policy "catalog products readable"
   on public.products for select to anon, authenticated using (true);
+drop policy if exists "catalog plans readable" on public.plans;
 create policy "catalog plans readable"
   on public.plans for select to anon, authenticated using (active);
+drop policy if exists "catalog plan entitlements readable" on public.plan_entitlements;
 create policy "catalog plan entitlements readable"
   on public.plan_entitlements for select to anon, authenticated using (true);
 
+drop policy if exists "users read own provider subscriptions" on public.provider_subscriptions;
 create policy "users read own provider subscriptions"
   on public.provider_subscriptions
   for select to authenticated
   using (user_id = (select auth.uid()));
 
+drop policy if exists "users read own entitlements" on public.user_entitlements;
 create policy "users read own entitlements"
   on public.user_entitlements
   for select to authenticated
   using (user_id = (select auth.uid()));
 
+drop policy if exists "users read own devices" on public.devices;
 create policy "users read own devices"
   on public.devices
   for select to authenticated
   using (user_id = (select auth.uid()));
 
+drop policy if exists "users insert own devices" on public.devices;
 create policy "users insert own devices"
   on public.devices
   for insert to authenticated
   with check (user_id = (select auth.uid()));
 
+drop policy if exists "users update own devices" on public.devices;
 create policy "users update own devices"
   on public.devices
   for update to authenticated
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
+drop policy if exists "users read own steam events" on public.steam_link_events;
 create policy "users read own steam events"
   on public.steam_link_events
   for select to authenticated
@@ -385,8 +396,8 @@ values
   ('3nvizen', 'everywear', '3nvizen', 'applet', 'bundle_included', false),
   ('loom', 'everywear', 'Loom', 'applet', 'visible', true),
   ('character_studio', 'everywear', 'Character Studio', 'applet', 'visible', true),
-  ('mymaits_light', 'mymaits', 'MyMaits Light', 'applet', 'visible', true),
-  ('mymaits_full', 'mymaits', 'MyMaits Full', 'addon', 'visible', false),
+  ('mymaits_lite_runtime', 'mymaits', 'My Maits Lite Runtime', 'capability', 'hidden', true),
+  ('mymaits_full', 'mymaits', 'My Maits', 'addon', 'visible', false),
   ('strands_game', 'strands', 'Strands the Game', 'game', 'platform_launched', false),
   ('mymaids_game', 'strands', 'MyMaiDs / My Maids', 'game', 'platform_launched', false)
 on conflict (id) do update set
@@ -403,7 +414,7 @@ values
   ('gener8_4ever', 'gener8_4ever', 'Gener8 4ever', 'one_time', 'lemon_squeezy'),
   ('gener8_pro', 'gener8_pro', 'Gener8 Pro', 'subscription', 'lemon_squeezy'),
   ('creator_studio', 'creator_studio', 'Creator Studio', 'subscription', 'lemon_squeezy'),
-  ('mymaits_full_addon', 'mymaits_full', 'MyMaits Full', 'addon', 'steam')
+  ('mymaits_full_addon', 'mymaits_full', 'My Maits', 'addon', 'steam')
 on conflict (id) do update set
   product_id = excluded.product_id,
   name = excluded.name,
@@ -414,8 +425,9 @@ on conflict (id) do update set
 insert into public.plan_entitlements (plan_id, entitlement_key, entitlement_type, grant_policy)
 values
   ('free_everywear', 'loom', 'applet', 'included'),
+  ('free_everywear', 'loom.teacher_agent', 'feature', 'included'),
   ('free_everywear', 'character_studio', 'applet', 'included'),
-  ('free_everywear', 'mymaits_light', 'applet', 'included'),
+  ('free_everywear', 'mymaits_lite_runtime', 'engine', 'included'),
   ('gener8_4ever', 'gener8', 'applet', 'included'),
   ('gener8_4ever', 'gener8.audio', 'engine', 'included'),
   ('gener8_4ever', '1magen', 'applet', 'included'),
@@ -428,6 +440,7 @@ values
   ('gener8_pro', '3nvizen', 'applet', 'included'),
   ('gener8_pro', '3nvizen.video', 'engine', 'included'),
   ('creator_studio', 'ai_director', 'feature', 'included'),
+  ('creator_studio', 'ai_director.planner', 'feature', 'included'),
   ('creator_studio', 'daw_pro', 'feature', 'included'),
   ('creator_studio', 'vid_pro', 'feature', 'included'),
   ('mymaits_full_addon', 'mymaits_full', 'applet', 'included'),
@@ -562,23 +575,28 @@ alter table public.vaults enable row level security;
 alter table public.vault_records enable row level security;
 alter table public.vault_acl enable row level security;
 
+drop policy if exists "users read own vaults" on public.vaults;
 create policy "users read own vaults"
   on public.vaults for select to authenticated
   using (owner_user_id = (select auth.uid()));
 
+drop policy if exists "users insert own vaults" on public.vaults;
 create policy "users insert own vaults"
   on public.vaults for insert to authenticated
   with check (owner_user_id = (select auth.uid()));
 
+drop policy if exists "users update own vaults" on public.vaults;
 create policy "users update own vaults"
   on public.vaults for update to authenticated
   using (owner_user_id = (select auth.uid()))
   with check (owner_user_id = (select auth.uid()));
 
+drop policy if exists "users read own vault records" on public.vault_records;
 create policy "users read own vault records"
   on public.vault_records for select to authenticated
   using (owner_user_id = (select auth.uid()));
 
+drop policy if exists "users insert own vault records" on public.vault_records;
 create policy "users insert own vault records"
   on public.vault_records for insert to authenticated
   with check (
@@ -590,6 +608,7 @@ create policy "users insert own vault records"
     )
   );
 
+drop policy if exists "users update own vault records" on public.vault_records;
 create policy "users update own vault records"
   on public.vault_records for update to authenticated
   using (owner_user_id = (select auth.uid()))
@@ -602,6 +621,7 @@ create policy "users update own vault records"
     )
   );
 
+drop policy if exists "users read own vault acl" on public.vault_acl;
 create policy "users read own vault acl"
   on public.vault_acl for select to authenticated
   using (

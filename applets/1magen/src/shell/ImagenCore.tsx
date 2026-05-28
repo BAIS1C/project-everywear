@@ -219,6 +219,9 @@ export function ImagenCore() {
             height: resolution.height,
             prompt: prompt.trim(),
             tags: ['1magen', 'image'],
+            sourceAppId: '1magen',
+            appletScope: '1magen',
+            libraryScope: 'images',
           });
           setVaultSaveState('saved');
           log.info('vault', 'Image auto-saved to vault', { path: fullPath });
@@ -429,6 +432,9 @@ export function ImagenCore() {
                             height: resolution.height,
                             prompt: prompt.trim(),
                             tags: ['1magen', 'image'],
+                            sourceAppId: '1magen',
+                            appletScope: '1magen',
+                            libraryScope: 'images',
                           });
                           setVaultSaveState('saved');
                           setTimeout(() => setVaultSaveState('idle'), 3000);

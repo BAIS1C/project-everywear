@@ -67,6 +67,24 @@ async fn check_applet_requirements(
     state: tauri::State<'_, AppState>,
     applet_id: String,
 ) -> Result<budget::RequirementsCheck, String> {
+    {
+        let reg = state.registry.lock().await;
+        if let Some(applet) = reg.get(&applet_id) {
+            let tier = *state.licence_tier.lock().await;
+            if let Some(reason) = registry::applet_entitlement_error(applet, tier) {
+                return Ok(budget::RequirementsCheck {
+                    can_launch: false,
+                    selected_group: None,
+                    selected_group_vram_mb: None,
+                    needs_download: vec![],
+                    needs_purge: false,
+                    purge_applet: None,
+                    reason: Some(reason),
+                });
+            }
+        }
+    }
+
     let gpu_state = state.gpu.lock().await;
     let b = state.budget.lock().await;
     let model_mgr = state.model_mgr.lock().await;
@@ -133,6 +151,12 @@ async fn request_applet_switch(
     }
     if applet.status == registry::AppletStatus::NotBuilt {
         return Err("Applet is not yet available.".into());
+    }
+    {
+        let tier = *state.licence_tier.lock().await;
+        if let Some(reason) = registry::applet_entitlement_error(&applet, tier) {
+            return Err(reason);
+        }
     }
 
     match applet.launch_kind {
@@ -1266,6 +1290,12 @@ async fn launch_applet(
     }
     if applet.status == registry::AppletStatus::NotBuilt {
         return Err("Applet is not yet available.".into());
+    }
+    {
+        let tier = *state.licence_tier.lock().await;
+        if let Some(reason) = registry::applet_entitlement_error(&applet, tier) {
+            return Err(reason);
+        }
     }
 
     // Web applets: just open

@@ -16,6 +16,11 @@ type = "diffusion"
 backend = "server"
 server_binary = "3nvizen-ltx-sidecar"
 
+[entitlements.launch]
+min_tier = "gener8_pro"
+enforced_by = ["everywear_shell", "3nvizen_runtime"]
+features = ["3nvizen", "3nvizen.video"]
+
 # Model groups remain provisional until measured on the actual official LTX
 # runtime. These should map to user-facing quality ladders in Everywear rather
 # than exposing raw model names in the UI.
@@ -90,4 +95,3 @@ min_vram_mb = 12288
 
 [requirements]
 cuda_compute = "7.0"
-

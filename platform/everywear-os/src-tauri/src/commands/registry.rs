@@ -8,7 +8,8 @@ pub async fn list_applets(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<registry::AppletEntry>, String> {
     let reg = state.registry.lock().await;
-    Ok(reg.launchable())
+    let tier = *state.licence_tier.lock().await;
+    Ok(reg.launchable_for_tier(tier))
 }
 
 #[tauri::command]
@@ -17,7 +18,19 @@ pub async fn get_applet(
     id: String,
 ) -> Result<Option<registry::AppletEntry>, String> {
     let reg = state.registry.lock().await;
-    Ok(reg.get(&id).cloned())
+    let tier = *state.licence_tier.lock().await;
+    Ok(reg.get(&id).cloned().map(|entry| {
+        if registry::applet_entitlement_error(&entry, tier).is_some()
+            && entry.status == registry::AppletStatus::Active
+        {
+            registry::AppletEntry {
+                status: registry::AppletStatus::Locked,
+                ..entry
+            }
+        } else {
+            entry
+        }
+    }))
 }
 
 // CLAUDE_INTERFACE: Focus an applet's external window

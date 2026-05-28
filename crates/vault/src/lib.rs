@@ -14,7 +14,8 @@ pub mod schema;
 pub mod search;
 
 pub use index::{
-    audio_asset_kind, item_favorite, item_file_size, item_id, MediaFilter, SortField, VaultIndex,
+    audio_asset_kind, encode_contract_tags, entitlement_context_json, item_favorite,
+    item_file_size, item_id, sha256_file, stable_vault_id, MediaFilter, SortField, VaultIndex,
 };
 pub use schema::{AudioDocument, ImageDocument, VaultItem, VideoDocument};
 pub use search::SearchRequest;

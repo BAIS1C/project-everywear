@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Clapperboard, Film, ListVideo, Lock, Music, Sparkles, Wand2 } from 'lucide-react';
+import { AI_DIRECTOR_SAPI_PLANNER_CONTRACT } from '@everywear/transport';
 import { useAuth } from '../context/AuthContext';
 import { useSongStore } from '../context/SongStoreContext';
 import type { Song } from '../types';
@@ -68,6 +69,9 @@ export default function AIDirectorView() {
     [selectedSongId, songs],
   );
   const shotPlan = useMemo(() => makeShotPlan(selectedSong), [selectedSong]);
+  const plannerProviders = AI_DIRECTOR_SAPI_PLANNER_CONTRACT.providers
+    .map((provider) => provider === 'external_api' ? 'external API' : provider.replace('_', ' '))
+    .join(', ');
 
   return (
     <div className="s3-family-route h-full bg-s3 text-[color:var(--ew-text)] overflow-hidden flex">
@@ -127,7 +131,7 @@ export default function AIDirectorView() {
             <Lock size={16} className="text-accent-300" />
             <div>
               <p className="text-sm font-semibold text-[color:var(--ew-text)]">Creator Studio required</p>
-              <p className="text-xs text-[color:var(--ew-text-muted)] mt-0.5">AI Director follows the Everywear shell entitlement state.</p>
+              <p className="text-xs text-[color:var(--ew-text-muted)] mt-0.5">AI Director follows the Everywear shell entitlement state and routes planner reasoning through SAPI.</p>
             </div>
           </div>
         )}
@@ -168,6 +172,7 @@ export default function AIDirectorView() {
                 ['Track', selectedSong?.title || 'No track selected'],
                 ['Duration', String(selectedSong?.duration || '0:00')],
                 ['Visual Aim', selectedSong?.style || 'Music-led video'],
+                ['Planner', `SAPI: ${plannerProviders}`],
                 ['Export', canUseDirector ? 'Storyboard ready' : 'Locked'],
               ].map(([label, value]) => (
                 <div key={label}>

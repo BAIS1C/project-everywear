@@ -66,6 +66,7 @@ export interface EverywearUser {
   isPaid: boolean;
   isPro: boolean;
   tiers: Record<string, boolean>;
+  entitlements: Record<string, boolean>;
   subscription?: SubscriptionSummary | null;
 }
 
@@ -92,6 +93,7 @@ interface AccountIdentity {
   profile: ProfileRow | null;
   subscription: SubscriptionSummary | null;
   activeTier: LicenceTier | null;
+  entitlementFlags: Record<string, boolean>;
 }
 
 interface AuthContextValue {
@@ -152,30 +154,71 @@ function normalizeTier(tier: unknown): LicenceTier | null {
 function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
   const flags: Record<string, boolean> = {
     gener8_base: false,
+    gener8: false,
+    'gener8.audio': false,
+    '1magen': false,
+    '1magen.image': false,
+    '3nvizen': false,
+    '3nvizen.video': false,
     gener8_pro: false,
     creator_studio: false,
     vid_pro: false,
     daw_pro: false,
     ai_director: false,
+    'ai_director.planner': false,
     creator_pro: false,
+    loom: true,
+    'loom.teacher_agent': true,
+    mymaits_lite_runtime: true,
+    mymaits_full: false,
+    'mymaits.microtransactions': false,
   };
   if (tier === 'demo' || tier === 'gener8') {
     flags.gener8_base = true;
   }
+  if (tier === 'gener8') {
+    flags.gener8 = true;
+    flags['gener8.audio'] = true;
+    flags['1magen'] = true;
+    flags['1magen.image'] = true;
+  }
   if (tier === 'gener8_pro') {
     flags.gener8_base = true;
+    flags.gener8 = true;
+    flags['gener8.audio'] = true;
+    flags['1magen'] = true;
+    flags['1magen.image'] = true;
+    flags['3nvizen'] = true;
+    flags['3nvizen.video'] = true;
     flags.gener8_pro = true;
   }
   if (tier === 'creator_studio') {
     flags.gener8_base = true;
+    flags.gener8 = true;
+    flags['gener8.audio'] = true;
+    flags['1magen'] = true;
+    flags['1magen.image'] = true;
+    flags['3nvizen'] = true;
+    flags['3nvizen.video'] = true;
     flags.gener8_pro = true;
     flags.creator_studio = true;
     flags.vid_pro = true;
     flags.daw_pro = true;
     flags.ai_director = true;
+    flags['ai_director.planner'] = true;
     flags.creator_pro = true;
   }
   return flags;
+}
+
+function mergeEntitlementFlags(
+  tier: LicenceTier | null,
+  serverFlags?: Record<string, boolean> | null,
+): Record<string, boolean> {
+  return {
+    ...expandTierToFlags(tier),
+    ...(serverFlags ?? {}),
+  };
 }
 
 async function fetchActiveTier(userId: string): Promise<LicenceTier | null> {
@@ -201,9 +244,37 @@ async function fetchActiveTier(userId: string): Promise<LicenceTier | null> {
   }
 }
 
+async function fetchEntitlementFlags(userId: string): Promise<Record<string, boolean>> {
+  try {
+    const result = await Promise.race([
+      supabase.rpc('entitlement_flags', { p_user: userId }),
+      new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({
+          data: null,
+          error: { message: 'entitlement_flags() timed out after 5s' },
+        }), 5000),
+      ),
+    ]);
+    const { data, error } = result;
+    if (error) {
+      console.warn('entitlement_flags() RPC failed:', error.message);
+      return {};
+    }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
+    return Object.fromEntries(
+      Object.entries(data as Record<string, unknown>)
+        .filter(([, value]) => value === true)
+        .map(([key]) => [key, true]),
+    );
+  } catch (e) {
+    console.warn('entitlement_flags() RPC failed:', e);
+    return {};
+  }
+}
+
 async function fetchAccountIdentity(userId: string): Promise<AccountIdentity> {
   try {
-    const [profileResult, tierResult, subscriptionResult] = await Promise.all([
+    const [profileResult, tierResult, subscriptionResult, entitlementResult] = await Promise.all([
       Promise.race([
         supabase
           .from('profiles')
@@ -233,6 +304,7 @@ async function fetchAccountIdentity(userId: string): Promise<AccountIdentity> {
           }), 3000),
         ),
       ]),
+      fetchEntitlementFlags(userId),
     ]);
 
     if ('error' in profileResult && profileResult.error) {
@@ -246,9 +318,10 @@ async function fetchAccountIdentity(userId: string): Promise<AccountIdentity> {
       profile: (profileResult.data as ProfileRow | null) ?? null,
       subscription: (subscriptionResult.data as SubscriptionSummary | null) ?? null,
       activeTier: tierResult,
+      entitlementFlags: entitlementResult,
     };
   } catch {
-    return { profile: null, subscription: null, activeTier: null };
+    return { profile: null, subscription: null, activeTier: null, entitlementFlags: {} };
   }
 }
 
@@ -373,6 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isPaid: false,
       isPro: false,
       tiers: expandTierToFlags('demo'),
+      entitlements: mergeEntitlementFlags('demo'),
       subscription: null,
     });
 
@@ -395,6 +469,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: supaUser.email || undefined,
     });
     const effectiveTier = (report?.tier as LicenceTier) || tierStr;
+    const effectiveEntitlements = mergeEntitlementFlags(effectiveTier, account.entitlementFlags);
 
     setUser({
       id: supaUser.id,
@@ -407,7 +482,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tier: effectiveTier,
       isPaid: report?.is_paid ?? (effectiveTier !== 'demo'),
       isPro: report?.is_pro ?? (effectiveTier === 'gener8_pro' || effectiveTier === 'creator_studio'),
-      tiers: expandTierToFlags(effectiveTier),
+      tiers: effectiveEntitlements,
+      entitlements: effectiveEntitlements,
       subscription: account.subscription,
     });
   }, []);
@@ -428,6 +504,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isPaid: true,
         isPro: true,
         tiers: expandTierToFlags('creator_studio'),
+        entitlements: mergeEntitlementFlags('creator_studio'),
         subscription: {
           tier: 'creator_studio',
           status: 'active',

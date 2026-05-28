@@ -30,6 +30,13 @@ pub struct AppletEntry {
     pub tags: Vec<String>,
     pub launch_url: Option<String>,
     pub launch_binary: Option<String>,
+    /// Minimum compatibility tier required before shell launch. The neutral
+    /// entitlement flags remain the durable authority, while this keeps the
+    /// existing tier bridge from bypassing bundle-included applets.
+    #[serde(default)]
+    pub required_tier: Option<String>,
+    #[serde(default)]
+    pub required_entitlements: Vec<String>,
     /// Port for the applet's web frontend. Shell spawns a WebviewWindow at
     /// http://127.0.0.1:{frontend_port} after the headless backend starts.
     pub frontend_port: Option<u16>,
@@ -96,6 +103,8 @@ impl AppletRegistry {
                 tags: vec!["image".into(), "generation".into(), "editing".into()],
                 launch_url: None,
                 launch_binary: Some("onemagen".into()),
+                required_tier: Some("gener8".into()),
+                required_entitlements: vec!["1magen".into(), "1magen.image".into()],
                 frontend_port: Some(3002),
                 frontend_route: None,
                 shares_backend: None,
@@ -119,6 +128,8 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: None,
+                required_tier: Some("gener8".into()),
+                required_entitlements: vec!["gener8".into(), "gener8.audio".into()],
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
@@ -138,6 +149,8 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "visualiser".into(), "music".into()],
                 launch_url: None,
                 launch_binary: None,
+                required_tier: Some("creator_studio".into()),
+                required_entitlements: vec!["vid_pro".into()],
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: Some("gener8".into()),
@@ -155,6 +168,11 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "director".into(), "creator-studio".into()],
                 launch_url: None,
                 launch_binary: None,
+                required_tier: Some("creator_studio".into()),
+                required_entitlements: vec![
+                    "ai_director".into(),
+                    "ai_director.planner".into(),
+                ],
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: Some("gener8".into()),
@@ -177,6 +195,8 @@ impl AppletRegistry {
                 ],
                 launch_url: Some("https://s3studio.xyz".into()),
                 launch_binary: None,
+                required_tier: None,
+                required_entitlements: vec!["loom".into(), "loom.teacher_agent".into()],
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
@@ -194,6 +214,8 @@ impl AppletRegistry {
                 tags: vec!["game".into(), "social".into(), "world".into()],
                 launch_url: Some("https://game.strandsnation.xyz".into()),
                 launch_binary: None,
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
@@ -217,6 +239,8 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: Some("everywear-kasai".into()),
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: Some(3003),
                 frontend_route: None,
                 shares_backend: None,
@@ -240,6 +264,8 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: None,
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
@@ -257,6 +283,8 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "generation".into()],
                 launch_url: None,
                 launch_binary: Some("everywear-3nvizen".into()),
+                required_tier: Some("gener8_pro".into()),
+                required_entitlements: vec!["3nvizen".into(), "3nvizen.video".into()],
                 frontend_port: Some(3004),
                 frontend_route: None,
                 shares_backend: None,
@@ -279,6 +307,8 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: None, // frontend-only: no backend process
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: Some(3007),
                 frontend_route: None,
                 shares_backend: None,
@@ -301,6 +331,8 @@ impl AppletRegistry {
                 ],
                 launch_url: None,
                 launch_binary: None,
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: Some(3008),
                 frontend_route: None,
                 shares_backend: None,
@@ -318,6 +350,8 @@ impl AppletRegistry {
                 tags: vec!["knowledge".into(), "memory".into(), "rag".into()],
                 launch_url: None,
                 launch_binary: Some("mymories".into()),
+                required_tier: None,
+                required_entitlements: Vec::new(),
                 frontend_port: Some(3005),
                 frontend_route: None,
                 shares_backend: None,
@@ -400,6 +434,13 @@ impl AppletRegistry {
             .collect()
     }
 
+    pub fn launchable_for_tier(&self, tier: model_manager::LicenceTier) -> Vec<AppletEntry> {
+        self.launchable()
+            .into_iter()
+            .map(|entry| apply_tier_gate(entry, tier))
+            .collect()
+    }
+
     /// Get all applets including NotBuilt (admin view).
     pub fn all(&self) -> Vec<AppletEntry> {
         self.applets.clone()
@@ -409,6 +450,34 @@ impl AppletRegistry {
     pub fn get(&self, id: &str) -> Option<&AppletEntry> {
         self.applets.iter().find(|a| a.id == id)
     }
+}
+
+pub fn applet_entitlement_error(
+    applet: &AppletEntry,
+    tier: model_manager::LicenceTier,
+) -> Option<String> {
+    if applet.status == AppletStatus::NotBuilt {
+        return Some("Applet is not yet available.".into());
+    }
+    let required = applet
+        .required_tier
+        .as_deref()
+        .and_then(model_manager::LicenceTier::from_tier_str)?;
+    if tier.satisfies(required) {
+        return None;
+    }
+    Some(format!(
+        "{} requires {} or newer.",
+        applet.name,
+        required.as_str()
+    ))
+}
+
+fn apply_tier_gate(mut entry: AppletEntry, tier: model_manager::LicenceTier) -> AppletEntry {
+    if entry.status == AppletStatus::Active && applet_entitlement_error(&entry, tier).is_some() {
+        entry.status = AppletStatus::Locked;
+    }
+    entry
 }
 
 pub fn binary_candidates(root: &std::path::Path, applet_id: &str, bin_name: &str) -> Vec<PathBuf> {

@@ -32,8 +32,8 @@ fn main() -> Result<()> {
 }
 
 fn build_audio_doc(path: &Path) -> Result<AudioDocument> {
-    let metadata = std::fs::metadata(path)
-        .with_context(|| format!("metadata {}", path.display()))?;
+    let metadata =
+        std::fs::metadata(path).with_context(|| format!("metadata {}", path.display()))?;
     let title = path
         .file_stem()
         .and_then(|stem| stem.to_str())
@@ -43,9 +43,7 @@ fn build_audio_doc(path: &Path) -> Result<AudioDocument> {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    let canonical = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     let path_string = canonical.to_string_lossy().to_string();
     let id = format!("audio:{}", stable_path_key(&path_string));
 
@@ -79,6 +77,7 @@ fn build_audio_doc(path: &Path) -> Result<AudioDocument> {
         lyrics_aligned: false,
         lyrics_text: None,
         asset_kind: Some("gener8_song".to_string()),
+        ..Default::default()
     })
 }
 

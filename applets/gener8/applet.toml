@@ -86,7 +86,7 @@ features = ["cover", "remix"]
 [entitlements.creator_studio]
 min_tier = "creator_studio"
 enforced_by = ["rust", "cloud"]
-features = ["daw_creator_studio", "ai_director", "local_video", "stems", "style_training"]
+features = ["daw_creator_studio", "ai_director", "ai_director.planner", "local_video", "stems", "style_training"]
 
 [engine]
 type = "audio"

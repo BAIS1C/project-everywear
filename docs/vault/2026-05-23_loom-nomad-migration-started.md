@@ -25,7 +25,7 @@ Started the Project NOMAD to Everywear Rust migration as a first visible applet 
 
 ## Current Migration Track
 
-1. `loom-kasai`: replace Ollama Docker and HTTP hops with Kasai Local runtime contracts.
+1. `loom-teacher-agent`: replace Ollama Docker and HTTP hops with My Maits Lite runtime contracts.
 2. `loom-db`: replace NOMAD MySQL/Knex with consolidated SQLite plus future migration tracking.
 3. `loom-vector`: replace Qdrant with usearch and SQLite chunk metadata.
 4. `loom-zim`: replace Kiwix server with native ZIM reading and Axum routes.

@@ -46,6 +46,18 @@ export type {
 export { getAuthContext } from './auth';
 export type { ShellAuthContext, LicenceTier } from './auth';
 
+// My Maits — shared product/runtime contracts
+export {
+  MY_MAITS_LITE_HOST_CONTRACTS,
+  MY_MAITS_LITE_RUNTIME_ENTITLEMENT,
+} from './mymaits';
+export type {
+  MyMaitsLiteHost,
+  MyMaitsLiteHostContract,
+} from './mymaits';
+export { AI_DIRECTOR_SAPI_PLANNER_CONTRACT } from './sapi';
+export type { AiDirectorSapiPlannerContract, SapiPlannerProvider } from './sapi';
+
 // Gener8 — shell-owned ACE bridge for the first-party music applet
 export {
   gener8UploadAudio,

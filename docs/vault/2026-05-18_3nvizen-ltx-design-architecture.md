@@ -109,7 +109,7 @@ Patch and control IC-LoRAs:
 
 Target Creator Studio sequence:
 
-1. Kasai / AI Director writes shot plan, timing, continuity notes, and init sources.
+1. AI Director writes a SAPI-routed shot plan, timing, continuity notes, and init sources.
 2. `1magen` creates anchor frames for cut shots.
 3. `3nvizen` generates timeline segments in order.
 4. Last frame extraction feeds continuation shots.
@@ -132,7 +132,7 @@ The multi-language LipDub note shows this should be a patch workflow, not a stan
 Pipeline:
 
 1. Whisper-align extracts source transcript and timing.
-2. Kasai translates and formats speaker lines.
+2. AI Director formats speaker lines through the active SAPI provider.
 3. `3nvizen` builds a patch request with source video, source audio, target language, translated script, speaker labels, and emotion cues.
 4. LTX LipDub IC-LoRA runs video and audio conditioning.
 5. Result is stored as a language variant Mait shard for the source scene.

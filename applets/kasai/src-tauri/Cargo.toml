@@ -1,6 +1,6 @@
 [package]
 name = "everywear-kasai"
-description = "Kasai local planning applet runtime"
+description = "My Maits local planning applet runtime"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

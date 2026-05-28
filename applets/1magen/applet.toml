@@ -15,6 +15,11 @@ type = "diffusion"
 backend = "ffi"
 server_binary = ""
 
+[entitlements.launch]
+min_tier = "gener8"
+enforced_by = ["everywear_shell", "1magen_runtime"]
+features = ["1magen", "1magen.image"]
+
 # Model groups: ordered by preference (first viable group wins).
 # Shell walks groups top-down, picks the first where ALL required
 # models fit within the VRAM budget.

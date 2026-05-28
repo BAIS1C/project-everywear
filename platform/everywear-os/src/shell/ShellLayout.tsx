@@ -48,7 +48,37 @@ type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
 const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', 'ai-director', '3nvizen']);
 const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', 'ai-director', '3nvizen'];
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
+const TIER_RANK: Record<string, number> = {
+  demo: 0,
+  gener8: 1,
+  gener8_pro: 2,
+  creator_studio: 3,
+};
 const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+function appletLaunchBlocked(
+  applet: AppletEntry,
+  tier: string,
+  entitlements?: Record<string, boolean>,
+): string | null {
+  if (applet.status === 'Locked') {
+    return 'Purchase or subscribe to unlock.';
+  }
+  if (applet.status === 'NotBuilt') {
+    return 'Applet is not yet available.';
+  }
+  if (applet.required_entitlements?.some((key) => entitlements?.[key])) {
+    return null;
+  }
+  if (applet.required_tier) {
+    const currentRank = TIER_RANK[tier] ?? 0;
+    const requiredRank = TIER_RANK[applet.required_tier] ?? Number.MAX_SAFE_INTEGER;
+    if (currentRank < requiredRank) {
+      return `${applet.name} requires ${applet.required_tier} or newer.`;
+    }
+  }
+  return null;
+}
 
 function VaultPanel() {
   const [section, setSection] = useState<VaultSection>('media');
@@ -1020,13 +1050,10 @@ export function ShellLayout() {
 
   // ── Applet launch handler (goes through the runtime bridge) ──
   const handleAppletLaunch = async (applet: AppletEntry, options?: { skipSwitchPrompt?: boolean }) => {
-    if (applet.status === 'Locked') {
-      // TODO: show upgrade gate
-      log.warn('ui', `Applet ${applet.id} is locked; needs purchase/subscription`);
-      return;
-    }
-    if (applet.status === 'NotBuilt') {
-      log.warn('ui', `Applet ${applet.id} is listed but not built yet`);
+    const blockedReason = appletLaunchBlocked(applet, tier, authUser?.entitlements ?? authUser?.tiers);
+    if (blockedReason) {
+      log.warn('ui', `Applet ${applet.id} blocked before launch: ${blockedReason}`);
+      markLaunchError();
       return;
     }
 

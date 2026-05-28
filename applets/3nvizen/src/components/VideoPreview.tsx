@@ -40,6 +40,9 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
         filePath: state.outputPath,
         durationSeconds: state.response.duration_seconds,
         tags: ['3nvizen', 'video'],
+        sourceAppId: '3nvizen',
+        appletScope: '3nvizen',
+        libraryScope: 'videos',
       });
       setVaultSaveState('saved');
       setTimeout(() => setVaultSaveState('idle'), 3000);

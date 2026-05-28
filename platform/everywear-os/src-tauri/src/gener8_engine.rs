@@ -306,10 +306,14 @@ pub async fn gener8_generation_status(
                 .unwrap_or_default();
             let vault_item = {
                 let dirs = crate::vault_commands::VaultDirs::default_paths()?;
+                let context = crate::vault_commands::RegistrationContext::new("gener8")
+                    .with_library("songs")
+                    .with_shell_state(state.inner());
                 let vault = state.vault.lock().await;
                 crate::vault_commands::register_audio_with_dirs(
                     &vault,
                     &dirs,
+                    &context,
                     title.clone().unwrap_or_else(|| "Gener8 output".to_string()),
                     path,
                     duration_seconds,

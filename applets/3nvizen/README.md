@@ -6,7 +6,7 @@
 
 - `3nvizen` owns local video generation.
 - `1magen` creates anchor keyframes.
-- `Kasai Lite` / AI Director owns shot planning and continuity state.
+- AI Director owns SAPI-routed shot planning and continuity state.
 - The baseline local workflow is sequential segment chaining.
 - Auto lip syncing is important enough to be treated as a first-class workflow patch.
 
@@ -131,4 +131,3 @@ We only borrow the useful principles:
 - lip-sync patches as specialized workflows
 
 The runtime and UX stay Everywear-native.
-

@@ -22,6 +22,10 @@ Root `WIKI.md` remains the legacy onboarding document. Pages here are the curren
 - `vid/modal.md`
 - `packages/video-modal.md`
 
+## Current Migration Maps
+
+- `../vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md` - neutral Everywear identity, entitlement, Steam-link, Vault bootstrap, and engine-port migration contract.
+
 ## Rule
 
 Before touching a module listed here, read its page and update the page in the same pass as the code change.

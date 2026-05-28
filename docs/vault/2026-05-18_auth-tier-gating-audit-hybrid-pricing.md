@@ -50,11 +50,11 @@ P0: Applet launch gating does not currently gate by paid tier, only by built/loc
 - `refresh_status()` only checks whether binaries exist; it does not apply account entitlements.
 - `request_applet_switch()` blocks `Locked` and `NotBuilt`, but no current code marks applets locked based on user entitlement.
 
-P0: Kasai is active in the Everywear launcher even though the new brief says it is standalone and not yet priced/gated.
+P0: My Maits is active in the Everywear launcher even though the new brief says it is standalone and not yet priced/gated.
 
 - `platform/everywear-os/src-tauri/src/registry.rs` registers `kasai` as `AppletStatus::Active`.
-- `applets/kasai/applet.toml` describes Kasai Lite/Local/Full model groups, but no product-tier gate exists.
-- Sprint decision needed: hide Kasai, mark locked/TBD, or keep dev-only while pricing is unresolved.
+- `applets/kasai/applet.toml` describes My Maits / My Maits Lite model groups, but no product-tier gate exists.
+- Sprint decision needed: hide My Maits, mark locked/TBD, or keep dev-only while pricing is unresolved.
 
 ## Auth Surfaces Touched
 
@@ -322,13 +322,13 @@ Files:
 
 Current UX:
 
-- Kasai appears as a built active applet when its binary is present.
-- Model groups are branded Kasai Lite/Local/Full, but no paid tier/product gate exists.
+- My Maits appears as a built active applet when its binary is present.
+- Model groups are branded My Maits / My Maits Lite, but no paid tier/product gate exists.
 
 Required change:
 
 - Mark as standalone TBD. Do not include in Gener8 4ever, Gener8 Pro, or Creator Studio entitlement checks.
-- Suggested temporary launcher state: hidden or locked with "Kasai / My Mait pricing TBD" until priced.
+- Suggested temporary launcher state: hidden or locked with "My Maits pricing TBD" until priced.
 
 ## Old Structure To Remove Or Quarantine
 

@@ -638,6 +638,7 @@ fn migrate_legacy_videos(
                     generation_mode: Some("gener8_visualizer".to_string()),
                     prompt: None,
                     has_audio: true,
+                    ..Default::default()
                 };
                 index.index_video(&doc).with_context(|| {
                     format!("index imported video in vault {}", target.display())
@@ -750,6 +751,7 @@ fn repair_generated_vault_audio_root(
             lyrics_aligned: false,
             lyrics_text: None,
             asset_kind: Some(asset_kind.to_string()),
+            ..Default::default()
         };
         docs_to_index.push(doc);
         receipt.operations.push(MigrationOperation {
@@ -1071,6 +1073,7 @@ fn audio_document_for_import(
             .filter(|lyrics| !lyrics.is_empty())
             .map(str::to_string),
         asset_kind: Some(asset_kind.to_string()),
+        ..Default::default()
     })
 }
 

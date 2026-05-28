@@ -168,8 +168,13 @@ export default function CreateView() {
                   filePath,
                   durationSeconds: duration,
                   bpm: params.bpm,
-                  assetKind: 'gener8_song',
-                  tags: ['gener8', 'music', audioMode],
+                  genre: params.prompt,
+                  lyricsText: '',
+                  assetKind: audioMode === 'cover' ? 'cover_output' : 'gener8_song',
+                  tags: ['gener8', 'music', audioMode, `task:${audioMode}`],
+                  sourceAppId: 'gener8',
+                  appletScope: 'gener8',
+                  libraryScope: audioMode === 'cover' ? 'covers' : 'songs',
                 });
                 setVaultSaveState('saved');
               } catch {
@@ -215,11 +220,22 @@ export default function CreateView() {
         contentType: file.type || 'application/octet-stream',
         dataBase64: await fileToBase64(file),
       });
+      const assetKind = audioMode === 'reference' ? 'reference' : 'cover_source';
+      const registered = await vaultRegisterAudio({
+        title: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
+        filePath: data.path,
+        durationSeconds: 0,
+        assetKind,
+        tags: ['gener8', assetKind],
+        sourceAppId: 'gener8',
+        appletScope: 'gener8',
+        libraryScope: audioMode === 'reference' ? 'references' : 'cover_sources',
+      });
       if (audioMode === 'reference') {
-        setReferenceAudioUrl(data.audioUrl || data.path);
+        setReferenceAudioUrl(registered.file_path || data.audioUrl || data.path);
         setReferenceLabel(file.name);
       } else {
-        setSourceAudioUrl(data.audioUrl || data.path);
+        setSourceAudioUrl(registered.file_path || data.audioUrl || data.path);
         setSourceLabel(file.name);
       }
     } catch (err) {
@@ -553,8 +569,13 @@ export default function CreateView() {
                       filePath: lastCompletedJob.filePath,
                       durationSeconds: lastCompletedJob.duration ?? 0,
                       bpm: params.bpm,
-                      assetKind: 'gener8_song',
-                      tags: ['gener8', 'music', audioMode],
+                      genre: params.prompt,
+                      lyricsText: '',
+                      assetKind: audioMode === 'cover' ? 'cover_output' : 'gener8_song',
+                      tags: ['gener8', 'music', audioMode, `task:${audioMode}`],
+                      sourceAppId: 'gener8',
+                      appletScope: 'gener8',
+                      libraryScope: audioMode === 'cover' ? 'covers' : 'songs',
                     });
                     setVaultSaveState('saved');
                     setTimeout(() => setVaultSaveState('idle'), 3000);

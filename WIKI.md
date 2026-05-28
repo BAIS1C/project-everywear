@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.4
-Last updated: 2026-05-27 (Track A folded into body; v1.1.5 overlay archived)
+Version: 1.1.9
+Last updated: 2026-05-28 (My Maits Lite and AI Director SAPI Contract)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -41,6 +41,122 @@ Maintainer: Sean Uddin / Somo Kasane
 > `KasaiCore.tsx` plus `agent-hub.css`. The old `kc-*` stylesheet was deleted
 > after verification because it was spurious dead code. Shell chrome, provider
 > state, applet lifecycle, and transport remain Everywear-owned.
+
+> Current-state note, 2026-05-28 v1.1.6: Identity, Vault, entitlement, Steam
+> linking, and engine-port migration contracts now have a neutral Everywear
+> Supabase migration and detailed design map. See
+> [docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md](./docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md)
+> and
+> [supabase/migrations/20260528112810_everywear_identity_entitlement_vault_contract.sql](./supabase/migrations/20260528112810_everywear_identity_entitlement_vault_contract.sql).
+
+> Current-state note, 2026-05-28 v1.1.7: Phase 2 runtime slice wires the S3 /
+> Gener8 family into owner-bound Everywear Vault records and shell-level
+> entitlement gates. Gener8 songs, cover outputs, reference audio, cover-source
+> audio, visualizer videos, 1magen images, and 3nvizen videos now register with
+> source app, library scope, vault id, original path, vault path, SHA-256,
+> storage mode, and shell-derived entitlement context where available. Shell
+> launch gates now lock 1magen below Gener8 4ever and 3nvizen below Gener8 Pro.
+
+> Current-state note, 2026-05-28 v1.1.8: Product-facing language is My Maits
+> and My Maits Lite. My Maits Lite is a hidden headless runtime used by Loom
+> as the free teacher agent. It is not a standalone launcher, SKU, or chat
+> surface. AI Director uses SAPI for LM Studio, Ollama, or external API planner
+> providers now; the internal My Maits link is planned but not plumbed.
+
+> Current-state note, 2026-05-28 v1.1.9: Phase 3 contract correction wired the
+> My Maits Lite and AI Director boundary through schema seed data, applet
+> manifests, shared transport contracts, shell entitlement expansion, and S3
+> family planner UI. `mymaits_lite_runtime` is a hidden Loom teacher-agent
+> entitlement. `ai_director.planner` is Creator Studio's SAPI-routed planning
+> entitlement. The internal My Maits provider is represented only as planned
+> future plumbing, not as a live gate or launch SKU.
+
+## Current State Addendum 2026-05-28: Identity, Vault, Entitlement, and Engine Migration Contract
+
+Project location: `C:\Users\MAG MSI\Project Everywear`.
+
+### Observe
+
+- The S3 Supabase donor root is
+  `C:\Users\MAG MSI\Project S3StudioGener8\S3 STUDIO\supabase`.
+- S3 donor migrations provide proven auth/profile, handle gate, subscription,
+  avatar storage, webhook dedupe, and Lemon Squeezy webhook patterns.
+- S3 donor `songs`, `playlists`, and `playlist_songs` are product-library
+  metadata and should become Everywear Vault asset records, not account-root
+  schema.
+- Current Everywear code still carries a linear compatibility tier ladder:
+  `demo < gener8 < gener8_pro < creator_studio`.
+- `engine_router.rs` has an entitlement manifest scaffold, but no real
+  `bundles/entitlements.toml` authority exists yet.
+- Inline applet launch paths still bypass parts of the binary applet
+  `request_applet_switch` / VRAM bridge, so the shell-owned VRAM doctrine is
+  aspirational for some current applets until contract wiring lands.
+
+### Decide
+
+- `everywear.id` remains the canonical user identity.
+- Steam is a linked external identity and commerce provider, never the root
+  account.
+- S3 Supabase auth/payment is the source pattern library and migration source,
+  not the final product root.
+- Entitlements are product-agnostic rows: `products`, `plans`,
+  `plan_entitlements`, `provider_subscriptions`, `user_entitlements`, and
+  provider event ledgers.
+- S3 Studio / Gener8 family is the first shippable paid production line.
+- `1magen` is included from Gener8 4ever onwards.
+- `3nvizen` is included from Gener8 Pro onwards.
+- Loom and Character Studio are free Everywear applets by the current product
+  canon.
+- My Maits Lite is a hidden headless runtime used by Loom as the free teacher
+  agent. It is not a standalone launcher or chat surface.
+- AI Director uses SAPI for planner reasoning through LM Studio, Ollama, or
+  external API providers. The internal My Maits link is planned but not
+  plumbed yet, so it must not be represented as a live runtime entitlement.
+- My Maits is the standalone agent hub/add-on with microtransaction support.
+- Strands the Game and MyMaiDs / My Maids are platform-launched games, not
+  near-term applet ports.
+- Everywear Vault bootstrap uses Project Mymory-compatible schema, taxonomy,
+  and default structure only. It must never seed Sean's live Project Mymory
+  dogfood entries into new user vaults.
+- Vault records bind to `owner_user_id` plus `vault_id`; SHA-256 is for content
+  identity, dedupe, and tamper evidence, not access control.
+
+### Implementation State
+
+| Area | Current State | Notes |
+|---|---|---|
+| Supabase local project | Added | `supabase/config.toml` and migration folder now exist in Project Everywear. |
+| Neutral schema | Added | `20260528112810_everywear_identity_entitlement_vault_contract.sql` creates identity, external identity, catalog, entitlement, device, Steam event, Vault, and Vault ACL tables. |
+| Entitlement catalog | Seeded | Catalog seed is product metadata only, not user data. |
+| Compatibility RPC | Added | `active_tier(uuid)` and `entitlement_flags(uuid)` preserve current shell bridge while capability wiring migrates. |
+| Vault bootstrap contract | Added | `vaults`, `vault_records`, and `vault_acl` enforce owner-bound records and schema-only bootstrap. |
+| Migration design doc | Added | `docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md` contains migration map, Steam flow, dependency graph, worker split, and verification commands. |
+| S3 / Gener8 Vault runtime | Wired | Shell-owned Gener8 output registration and applet save paths now attach source app id, library scope, vault id, original path, vault path, SHA-256, storage mode, and entitlement context. |
+| Reference / Cover assets | Wired | Gener8 reference uploads register as `reference`; cover source uploads register as `cover_source`; generated covers register as `cover_output`. |
+| 1magen launch gate | Wired | Shell registry and browser fallback require `gener8` / `1magen.image` before inline mount; applet manifest records shell/runtime enforcement. |
+| 3nvizen launch gate | Wired | Shell registry and browser fallback require `gener8_pro` / `3nvizen.video`; applet manifest records shell/runtime enforcement. |
+| My Maits / My Maits Lite contract | Wired for Phase 3 | My Maits Lite is embedded/headless for Loom Teacher Agent. AI Director uses SAPI planner routing now; internal My Maits link is planned but unplumbed. |
+
+### Verification State
+
+- Passed: `npm run build --workspace everywear-os`.
+- Passed: `npm run build --workspace onemagen`.
+- Passed: `npm run build --workspace @everywear/gener8-web`.
+- Passed: `npm run build --workspace @everywear/transport`.
+- Passed: `npm run build --workspace @everywear/loom`.
+- Passed: `npm run build --workspace kasai-applet`.
+- Passed: `cargo check -p ew-vault`.
+- Passed: `cargo check -p everywear-os`.
+- Passed: `cargo check -p everywear-kasai` (existing warnings only).
+- Passed: `cargo check -p onemagen`.
+- Passed: `cargo check -p everywear-3nvizen`.
+- Passed with existing warnings: `cargo check -p gener8`.
+- Passed: `git diff --check` (line-ending warnings only for existing CRLF/LF
+  normalization on two Gener8 web files).
+- Blocked: Supabase local checks, Docker CLI/engine is not available on this
+  host (`docker info` reports `docker` is not recognized).
+- Blocked by package metadata: `applets/3nvizen` has Rust and React source but
+  no applet-local `package.json`, so no npm applet build path exists to run.
 
 ## Current State Addendum 2026-05-28: My Mait Agent Hub Surface Port
 
@@ -1025,14 +1141,14 @@ This section defines how the shell manages GPU memory across applet switches. Th
 
 The shell is the single authority over GPU state, model cache, and VRAM budget. Applets never detect GPUs, download models, or manage VRAM directly. They declare what they need via `applet.toml`; the shell provisions it. The applet receives model paths and backend info, loads its own inference engine (diffusion-rs, llama-cpp-2, etc.), and runs inference. On close, the shell reclaims everything.
 
-### Kasai Concierge Subsystem (PLANNED, NOT IMPLEMENTED)
+### My Maits Concierge Subsystem (PLANNED, NOT IMPLEMENTED)
 
 > **WARNING: This entire subsection describes planned architecture. The file
 > `concierge.rs` does not exist on disk. No concierge code has been written.
 > The type definitions, commands, and asset structure below are design
 > specifications, not implemented code. Treat accordingly.**
 
-The shell will bundle a setup wizard (the Kasai concierge) that guides users through onboarding, applet selection, model downloads, and platform usage. This is NOT a separate applet; it's a first-class subsystem of the shell binary.
+The shell will bundle a setup wizard (the My Maits concierge) that guides users through onboarding, applet selection, model downloads, and platform usage. This is NOT a separate applet; it's a first-class subsystem of the shell binary.
 
 **The concierge will NOT use an LLM.** It is a scripted state machine with pre-recorded voice lines and Piper TTS for dynamic templated speech. Zero GPU memory cost.
 
@@ -1064,7 +1180,7 @@ Template strings live in a localisable resource file. Piper renders them at runt
 
 #### Concierge Scope: Setup Wizard, Not Permanent Companion
 
-The concierge is an onboarding assistant, not a persistent sidebar. It appears during initial setup to walk the user through their first experience, then disappears. The user gets the full Kasai AI assistant only when they install the Kasai Local applet (separate, full LLM, RAG-capable).
+The concierge is an onboarding assistant, not a persistent sidebar. It appears during initial setup to walk the user through their first experience, then disappears. The user gets the full My Maits assistant only through the standalone My Maits applet.
 
 This means:
 - Concierge loads ONCE: on first launch (or until setup is complete)
@@ -1079,7 +1195,7 @@ This means:
 
 This means the setup wizard works identically on every tier, including CpuFallback. No eviction logic, no cloud fallback, no degraded mode. The wizard is always fully functional.
 
-The full Kasai AI experience (persistent assistant, RAG, deep reasoning) requires installing the Kasai Local applet, which goes through normal VRAM gating like any other applet.
+The full My Maits experience (persistent assistant, RAG, deep reasoning) requires installing the standalone My Maits applet, which goes through normal VRAM gating like any other applet.
 
 #### Concierge Lifecycle
 
@@ -1092,14 +1208,14 @@ FIRST LAUNCH (setup wizard)
 4. If not complete: enter setup mode
 5. Initialize Piper TTS (CPU, always available)
 6. Concierge panel appears in sidebar
-7. Kasai greets user (pre-recorded), walks through:
+7. My Maits greets user (pre-recorded), walks through:
    a. GPU detection results (Piper TTS: "You have a {gpu} with {vram}GB")
    b. VramTier explanation (pre-recorded per tier)
    c. Skin selection (pre-recorded prompts)
    d. First applet selection (pre-recorded)
    e. Model download (Piper TTS: "{model} downloading, {size}MB")
    f. First generation/inference (pre-recorded celebration)
-8. Setup complete: Kasai says goodbye (pre-recorded)
+8. Setup complete: My Maits says goodbye (pre-recorded)
 9. Set setup_complete = true in preferences
 10. Concierge panel hides from sidebar
 11. No GPU cleanup needed (nothing was loaded)
@@ -1111,9 +1227,9 @@ RE-TRIGGER (from Settings)
 3. Run setup flow again (no model loading needed)
 4. Hides on completion
 
-KASAI LOCAL (separate applet, future)
+MY MAITS (separate applet, future)
 ======================================
-1. User installs Kasai Local applet from launcher
+1. User installs My Maits applet from launcher
 2. Goes through normal VRAM gating (needs ~8GB+ for full LLM)
 3. Full AI assistant: persistent, RAG-capable, long-context
 4. This is NOT the concierge; this is the power-user AI agent
@@ -2854,13 +2970,13 @@ Rules:
 
 Confirmed from AI Director's existing implementation (`shot_planner.rs` + `director_lm/`):
 
-1. Kasai Lite (LLM) generates the full execution graph as a `ShotPlan` (JSON manifest)
-2. LLM purges from VRAM immediately after plan generation
-3. Kasai Concierge (scripted state machine, zero GPU) picks up the manifest
+1. AI Director SAPI planner generates the full execution graph as a `ShotPlan` (JSON manifest)
+2. Planner provider releases VRAM/session resources immediately after plan generation
+3. AI Director coordinator (scripted state machine, zero GPU) picks up the manifest
 4. Concierge dispatches jobs sequentially to inference applets (1magen, 3nvizen)
 5. Inter-stage data references are filesystem paths injected into subsequent job parameters
 
-Kasai Lite NEVER cohabits with diffusion/video models. The entire orchestration flow is resolved before any inference applet loads. This works on ALL VRAM tiers.
+The planner LLM never cohabits with diffusion/video models. The entire orchestration flow is resolved before any inference applet loads. Today the planner routes through SAPI providers such as LM Studio, Ollama, or external APIs. The internal My Maits provider link is planned but not plumbed.
 
 AI Director ShotPlan schema (from `s-gener8/src-tauri/src/ai_director/mod.rs`):
 ```rust
@@ -2942,7 +3058,7 @@ Key components to migrate:
 | Style Forge | applets/style-forge/ | applet-ipc TCP |
 | Album Cover (new) | applets/1magen/ (cover_art command) | existing 1magen IPC |
 | 3nvizen (LTX/Wan sidecar) | applets/3nvizen/ (already scaffolded) | uv Python sidecar |
-| Kasai Lite | applets/kasai/ | llama-cpp-2 gated build |
+| AI Director SAPI planner | SAPI provider bridge | LM Studio, Ollama, external API now; internal My Maits provider planned |
 
 Pricing model filed separately (vault: strands wing, decision category, 2026-05-17). Not reflected in wiki or marketing until financial modelling complete.
 
@@ -2964,7 +3080,7 @@ Location: C:\Users\MAG MSI\Project Everywear
 | DAW Engine | applets/gener8/src/daw_engine/ (internal module) | NOT separate binary. |
 | Tier Reconciler | applets/gener8/src/tier_reconciler/ (per-applet) | Stays per-applet. Shell syncs, applet enforces. |
 | Dependency Bootstrap | applets/gener8/src/dependency_bootstrap.rs | Stays per-applet. Zendit replaces later. |
-| Kasai Local | applets/kasai/ (full orchestrator from Project Claude) | Full binary. Kasai Lite = same binary, tier-gated. |
+| My Maits | applets/kasai/ (legacy internal id) | Full agent hub. My Maits Lite is a headless Loom teacher runtime, not a launcher or chat surface. |
 | 1magen | applets/1magen/ (already exists) | Adds runtime discovery + warmup. |
 | 3nvizen | applets/3nvizen/ (already scaffolded) | Adds sandboxed Python sidecar. |
 | Album Cover | applets/1magen/ (cover_art capability) | Existing 1magen, no change. |
@@ -3042,8 +3158,9 @@ Initial entitlement map:
 - 1magen: included from the Gener8 4ever bundle onwards, not a separate launch SKU.
 - 3nvizen: included from the Gener8 Pro bundle onwards, not a separate launch SKU.
 - Loom: free Everywear applet.
-- MyMaits Light: free Everywear companion/operator surface.
-- MyMaits Full: paid add-on with microtransaction support.
+- My Maits Lite: hidden headless runtime used by Loom as a free teacher agent; not a standalone launcher or chat surface.
+- AI Director planner: SAPI-routed through LM Studio, Ollama, or external API providers now. Internal My Maits provider link is planned but unplumbed.
+- My Maits: standalone agent hub/add-on with microtransaction support.
 - Character Studio: free Everywear applet.
 - Strands the Game: platform-launched game, not a near-term applet entitlement.
 - MyMaiDs / My Maids game: platform-launched game distinct from the MyMaits companion surface; final spelling/naming must be locked before public product metadata.
@@ -3151,7 +3268,7 @@ Safetensors remains the canonical Python sidecar path because it maps to `ltx-co
 
 Baseline Creator Studio render sequence:
 
-1. Kasai / AI Director produces a shot plan with segment prompts, timing, continuity notes, and init sources.
+1. AI Director produces a SAPI-routed shot plan with segment prompts, timing, continuity notes, and init sources.
 2. `1magen` generates cut-shot anchor frames where needed.
 3. `3nvizen` generates video segments in timeline order.
 4. The last frame of each segment becomes the next continuation init frame.
@@ -3172,7 +3289,7 @@ LipDub is a first-class patch workflow, not a separate applet and not a mouth-ma
 Pipeline:
 
 1. Whisper-align extracts transcript and timing from the source video/audio.
-2. Kasai translates and formats target-language speaker lines.
+2. AI Director formats target-language speaker lines through the active SAPI provider.
 3. `3nvizen` builds a patch request with source video, source/reference audio, target language, translated script, speaker cues, and emotion cues.
 4. LTX LipDub IC-LoRA regenerates lower-face movement and matching expression while preserving identity and scene continuity.
 5. The result is stored as a language variant Mait shard for the same source scene.

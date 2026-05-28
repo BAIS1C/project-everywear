@@ -134,7 +134,7 @@ class TauriTransport implements KasaiTransport {
 const MOCK_RESPONSES: Record<string, unknown> = {
   get_engine_status: {
     gpu: { name: 'RTX 5090', vram_mb: 32768 },
-    tier: 'Kasai Local Ultra 32GB',
+    tier: 'My Maits Local Ultra 32GB',
     loaded_slots: [
       { slot: 'Primary', model_name: 'Qwen3.6 35B-A3B Q4' },
       { slot: 'Encoder', model_name: 'Qwen3.5 9B Q8' },
@@ -235,7 +235,7 @@ class MockTransport implements KasaiTransport {
   private generateMockResponse(message: string): string {
     const lower = message.toLowerCase();
     if (lower.includes('hello') || lower.includes('hi')) {
-      return 'Hello. Kasai Local is running on your home node with the Qwen3.6 35B-A3B orchestrator loaded. VRAM allocation is nominal. What would you like to work on?';
+      return 'Hello. My Maits is running on your home node with the Qwen3.6 35B-A3B orchestrator loaded. VRAM allocation is nominal. What would you like to work on?';
     }
     if (lower.includes('status') || lower.includes('model')) {
       return 'Engine status: Qwen3.6 35B-A3B Q4 (Primary, 20.5 GB) and Qwen3.5 9B Q8 (Agent, 9.2 GB) are loaded. Total VRAM usage: 29.7 / 32 GB. Inference is ready on both slots.';
@@ -243,7 +243,7 @@ class MockTransport implements KasaiTransport {
     if (lower.includes('skill')) {
       return 'I have 4 skills loaded: MyMory Recall (vault retrieval), MyMory Remember (decision capture), Code Review (wiki-referenced review), and File Organizer (structure analysis). Select one from the sidebar to see details, or mention it by name and I will prepare a run.';
     }
-    return `Acknowledged. I am processing your request locally on the RTX 5090. The orchestrator is reasoning through your query now.\n\nYour message: "${message.slice(0, 80)}${message.length > 80 ? '...' : ''}"\n\nThis is a mock response; the full inference pipeline will be active once the Kasai engine binary is compiled and the IPC bridge is live.`;
+    return `Acknowledged. I am processing your request locally on the RTX 5090. The orchestrator is reasoning through your query now.\n\nYour message: "${message.slice(0, 80)}${message.length > 80 ? '...' : ''}"\n\nThis is a mock response; the full inference pipeline will be active once the My Maits engine binary is compiled and the IPC bridge is live.`;
   }
 
   destroy(): void {

@@ -34,6 +34,16 @@ export interface VaultItem {
   mime_type: string;
   favorite: boolean;
   asset_kind?: VaultAssetKind;
+  owner_user_id?: string;
+  vault_id?: string;
+  source_app_id?: string;
+  storage_mode?: VaultStorageMode;
+  original_path?: string;
+  vault_path?: string;
+  sha256?: string;
+  entitlement_context?: Record<string, unknown>;
+  applet_scope?: string;
+  library_scope?: string;
   // Image-specific (present when media_type === "image")
   width?: number;
   height?: number;
@@ -72,6 +82,14 @@ export type VaultAssetKind =
   | 'conversation'
   | 'context'
   | 'log';
+
+export type VaultStorageMode =
+  | 'linked_original'
+  | 'symlink'
+  | 'junction'
+  | 'vault_copy'
+  | 'vault_move'
+  | 'remote_reference';
 
 export interface VaultSearchResponse {
   items: VaultItem[];
@@ -172,6 +190,11 @@ export interface RegisterImageParams {
   prompt?: string;
   generationParams?: Record<string, unknown>;
   tags?: string[];
+  sourceAppId?: string;
+  vaultId?: string;
+  storageMode?: VaultStorageMode;
+  appletScope?: string;
+  libraryScope?: string;
 }
 
 export async function vaultRegisterImage(params: RegisterImageParams): Promise<VaultItem> {
@@ -184,6 +207,11 @@ export async function vaultRegisterImage(params: RegisterImageParams): Promise<V
     prompt: params.prompt,
     generationParams: params.generationParams,
     tags: params.tags,
+    sourceAppId: params.sourceAppId,
+    vaultId: params.vaultId,
+    storageMode: params.storageMode,
+    appletScope: params.appletScope,
+    libraryScope: params.libraryScope,
   });
 }
 
@@ -200,6 +228,11 @@ export interface RegisterAudioParams {
   lyricsText?: string;
   assetKind?: VaultAssetKind;
   tags?: string[];
+  sourceAppId?: string;
+  vaultId?: string;
+  storageMode?: VaultStorageMode;
+  appletScope?: string;
+  libraryScope?: string;
 }
 
 export async function vaultRegisterAudio(params: RegisterAudioParams): Promise<VaultItem> {
@@ -216,6 +249,11 @@ export async function vaultRegisterAudio(params: RegisterAudioParams): Promise<V
     lyricsText: params.lyricsText,
     assetKind: params.assetKind,
     tags: params.tags,
+    sourceAppId: params.sourceAppId,
+    vaultId: params.vaultId,
+    storageMode: params.storageMode,
+    appletScope: params.appletScope,
+    libraryScope: params.libraryScope,
   });
 }
 
@@ -231,6 +269,11 @@ export interface RegisterVideoParams {
   prompt?: string;
   hasAudio?: boolean;
   tags?: string[];
+  sourceAppId?: string;
+  vaultId?: string;
+  storageMode?: VaultStorageMode;
+  appletScope?: string;
+  libraryScope?: string;
 }
 
 export async function vaultRegisterVideo(params: RegisterVideoParams): Promise<VaultItem> {
@@ -246,6 +289,11 @@ export async function vaultRegisterVideo(params: RegisterVideoParams): Promise<V
     prompt: params.prompt,
     hasAudio: params.hasAudio,
     tags: params.tags,
+    sourceAppId: params.sourceAppId,
+    vaultId: params.vaultId,
+    storageMode: params.storageMode,
+    appletScope: params.appletScope,
+    libraryScope: params.libraryScope,
   });
 }
 
