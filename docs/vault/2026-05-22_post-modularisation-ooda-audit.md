@@ -102,7 +102,7 @@ These are not blockers. The gate items are done. They are the medium-priority ba
 
 ## What Codex got right
 
-The structural execution is clean. The four files that were 4x and 1.75x over the code ceiling now all fit. Build verification was run after each pass and recorded. The vault note at `vault/2026-05-22_context-bounded-migration-modularisation.md` is the right shape: six dated passes, each with files-touched plus verification commands. The skills got pulled into the repo so future agents have local protocol references. The Phase B hoist, modal to package, was the right call even though the doc proposed Phase A first; the two applet copies had already drifted at byte 756, and every day they lived apart was compounding.
+The structural execution is clean. The four files that were 4x and 1.75x over the code ceiling now all fit. Build verification was run after each pass and recorded. The vault note at `docs/vault/2026-05-22_context-bounded-migration-modularisation.md` is the right shape: six dated passes, each with files-touched plus verification commands. The skills got pulled into the repo so future agents have local protocol references. The Phase B hoist, modal to package, was the right call even though the doc proposed Phase A first; the two applet copies had already drifted at byte 756, and every day they lived apart was compounding.
 
 If we strip the noise, the only real footguns Codex left are the wiki not moving with the code, four orphan files, and the lockfile deletion. These are quick fixes, not architectural problems.
 
@@ -141,4 +141,4 @@ Verification:
 - `CONTEXT.md` - workspace state and Pass 1-6 log
 - `ARCHITECTURE_MODULES_2026-05-21.md` - modularisation plan Codex worked from
 - `OODA_AUDIT_2026-05-19.md` - prior baseline
-- `vault/2026-05-22_context-bounded-migration-modularisation.md` - Codex pass log
+- `docs/vault/2026-05-22_context-bounded-migration-modularisation.md` - Codex pass log

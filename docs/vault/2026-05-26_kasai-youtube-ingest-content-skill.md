@@ -87,7 +87,7 @@ Backend:
 
 This connects directly to the local live transcription design captured in:
 
-`vault/2026-05-26_kasai-local-live-transcription-skill.md`
+`docs/vault/2026-05-26_kasai-local-live-transcription-skill.md`
 
 ## Integration Points
 

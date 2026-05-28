@@ -13,7 +13,7 @@ References checked:
 - Chrome Web Store payments deprecation:
   https://github.com/GoogleChrome/developer.chrome.com/blob/main/site/en/docs/webstore/cws-payments-deprecation/index.md
 - Existing local entitlement note:
-  `vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md`
+  `docs/vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md`
 
 ## Summary
 

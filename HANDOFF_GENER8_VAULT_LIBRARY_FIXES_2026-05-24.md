@@ -111,6 +111,6 @@ Do not assume the temporary `!is_stem` filter is the final architecture. It is a
 
 ## Related Notes
 
-- Repo note: `vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md`
+- Repo note: `docs/vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md`
 - MKV note: `C:\Users\MAG MSI\Project Mymory\strands\2026-05-24_everywear_vault_cross_applet_ai_repository_canon.md`
 

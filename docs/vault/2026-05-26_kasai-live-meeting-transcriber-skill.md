@@ -7,8 +7,8 @@ https://github.com/aviz85/claude-skills-library/tree/main/plugins/zoom-meeting/s
 
 Related local notes:
 
-- `vault/2026-05-26_kasai-local-live-transcription-skill.md`
-- `vault/2026-05-26_kasai-youtube-ingest-content-skill.md`
+- `docs/vault/2026-05-26_kasai-local-live-transcription-skill.md`
+- `docs/vault/2026-05-26_kasai-youtube-ingest-content-skill.md`
 
 ## Summary
 

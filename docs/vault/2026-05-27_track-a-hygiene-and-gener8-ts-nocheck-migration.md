@@ -9,7 +9,7 @@ Owner: Sean / Codex / Claude Cowork
 
 `CONTEXT.md` referenced this receipt at:
 
-`vault/2026-05-27_track-a-hygiene-and-gener8-ts-nocheck-migration.md`
+`docs/vault/2026-05-27_track-a-hygiene-and-gener8-ts-nocheck-migration.md`
 
 The file was not present in the Everywear repo when Task 36 started on
 2026-05-28. Repo search, `git log --all --name-only`, and current disk search

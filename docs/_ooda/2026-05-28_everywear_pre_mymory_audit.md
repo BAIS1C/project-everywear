@@ -71,9 +71,9 @@ Untracked files:
 | `eslint.config.mjs` | Commit with Track A lint scaffold after dependency/install verification. |
 | `packages/ewds/tailwind-preset.mjs` | Commit with removal of `tailwind-preset.js`. |
 | `platform/everywear-os/src-tauri/examples/vault_register_audio_files.rs` | Commit if this remains the accepted local Vault registration utility; otherwise move to docs/examples later. |
-| `vault/2026-05-27_gener8-overnight-acceptance.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
-| `vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
-| `vault/2026-05-27_kasai-sports-picks-browser-mcp.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
+| `docs/vault/2026-05-27_gener8-overnight-acceptance.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
+| `docs/vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
+| `docs/vault/2026-05-27_kasai-sports-picks-browser-mcp.md` | Migrate to `docs/vault/` before task 30 or commit in place with explicit follow-up. |
 
 ### Stashes and in-flight ops
 
@@ -227,7 +227,7 @@ Broad gaps that need module docs:
 
 | Area | Evidence | Impact | Recommendation |
 |---|---|---|---|
-| `CONTEXT.md` references missing Track A receipt | `CONTEXT.md` points to `vault/2026-05-27_track-a-hygiene-and-gener8-ts-nocheck-migration.md`, but no matching file exists on disk. | High | Recover or recreate that receipt before moving `vault/` docs, or update the context pointer to the real note if renamed. |
+| `CONTEXT.md` references missing Track A receipt | `CONTEXT.md` points to `docs/vault/2026-05-27_track-a-hygiene-and-gener8-ts-nocheck-migration.md`, but no matching file exists on disk. | High | Recover or recreate that receipt before moving `vault/` docs, or update the context pointer to the real note if renamed. |
 | Root `WIKI.md` says shell and 1magen still have local `ThemeContext.tsx` forks | `WIKI.md` file map lines still list local `ThemeContext.tsx`; current addenda say EWDS owns `ThemeProvider` and local forks were removed. | Medium | Update old body sections or mark them historical. |
 | Root `WIKI.md` still lists Vid and Kasai build failures | Older body says Vid malformed JSX and Kasai missing `ToolCallCard`; `CONTEXT.md` 2026-05-26 says Vid, Gener8 web, and Kasai frontend were green. | Medium | Replace stale implementation status table with "last verified" links to current context. |
 | `ARCHITECTURE.md` main layout still describes `applets/s3studio/engines/*` | Disk has `applets/s3studio` as placeholder only; Gener8 lives at `applets/gener8`. | Medium | Add a current-state correction near the monorepo layout or move old S3 structure to historical migration notes. |
@@ -251,7 +251,7 @@ The detailed receipt referenced by `CONTEXT.md` is missing from `vault/`.
 
 ### Track B, EWDS provider migration and Kasai short planner
 
-`vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` records:
+`docs/vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` records:
 
 - Kasai short planning is deterministic and lives in `applets/kasai/src-tauri/src/short_creator.rs`.
 - Compatible aliases include `keyword_short_creation`, `keyword_short_plan`, `short_creation`, `narrated_short`, and `kasai.short.create`.
@@ -273,7 +273,7 @@ Adding a new package does not disrupt this work mechanically, but running lint a
 
 ### Gener8 overnight acceptance
 
-`vault/2026-05-27_gener8-overnight-acceptance.md` records:
+`docs/vault/2026-05-27_gener8-overnight-acceptance.md` records:
 
 - Debug app path: `target/debug/everywear-os.exe`.
 - Plain, Reference, and Cover jobs completed.
@@ -356,31 +356,31 @@ Move these files one-for-one into `docs/vault/` unless a per-applet location is 
 
 | Current path | Proposed path | Notes |
 |---|---|---|
-| `vault/2026-05-17_kasai-model-inventory-first.md` | `docs/applets/kasai/2026-05-17_kasai-model-inventory-first.md` | Kasai applet note. |
-| `vault/2026-05-18_3nvizen-ltx-design-architecture.md` | `docs/applets/3nvizen/2026-05-18_3nvizen-ltx-design-architecture.md` | 3nvizen architecture note. |
-| `vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md` | `docs/vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md` | Cross-product entitlement and Vault-related gating. |
-| `vault/2026-05-18_ooda-project-state.md` | `docs/_ooda/2026-05-18_ooda-project-state.md` | Historical OODA note. |
-| `vault/2026-05-19_shell-desktop-frontend-pass.md` | `docs/ewds/2026-05-19_shell-desktop-frontend-pass.md` | Shell/EWDS canon. |
-| `vault/2026-05-22_context-bounded-migration-modularisation.md` | `docs/migration/2026-05-22_context-bounded-migration-modularisation.md` | Modularisation receipt. |
-| `vault/2026-05-22_gener8-riff-daw-add-layer.md` | `docs/applets/gener8/2026-05-22_gener8-riff-daw-add-layer.md` | Gener8 DAW note. |
-| `vault/2026-05-22_post-modularisation-ooda-audit.md` | `docs/_ooda/2026-05-22_post-modularisation-ooda-audit.md` | Historical OODA report. |
-| `vault/2026-05-23_gener8-riff-daw-s3-test-sync.md` | `docs/applets/gener8/2026-05-23_gener8-riff-daw-s3-test-sync.md` | Gener8 S3 sync note. |
-| `vault/2026-05-23_gener8-s3-sync-before-riff-daw.md` | `docs/applets/gener8/2026-05-23_gener8-s3-sync-before-riff-daw.md` | Gener8 migration note. |
-| `vault/2026-05-23_layer-u-osint-widgetization-canon.md` | `docs/applets/kasai/2026-05-23_layer-u-osint-widgetization-canon.md` | Kasai/Layer U product direction. |
-| `vault/2026-05-23_loom-nomad-migration-started.md` | `docs/applets/loom/2026-05-23_loom-nomad-migration-started.md` | Loom note. |
-| `vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md` | `docs/vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md` | Core Vault product canon. |
-| `vault/2026-05-24_gener8-vault-typed-section-fixes.md` | `docs/vault/2026-05-24_gener8-vault-typed-section-fixes.md` | Vault taxonomy and Gener8 sections. |
-| `vault/2026-05-24_mymory-kasai-compatibility.md` | `docs/vault/2026-05-24_mymory-kasai-compatibility.md` | MyMory/Kasai compatibility and namespace distinction. |
-| `vault/2026-05-26_full-codebase-review.md` | `docs/_ooda/2026-05-26_full-codebase-review.md` | Historical codebase review. |
-| `vault/2026-05-26_gener8-vault-library-repair.md` | `docs/vault/2026-05-26_gener8-vault-library-repair.md` | Vault library repair receipt. |
-| `vault/2026-05-26_kasai-1magen-local-image-generation-skill.md` | `docs/applets/kasai/2026-05-26_kasai-1magen-local-image-generation-skill.md` | Kasai skill design. |
-| `vault/2026-05-26_kasai-chrome-companion-extension-manager.md` | `docs/applets/kasai/2026-05-26_kasai-chrome-companion-extension-manager.md` | Kasai Chrome companion direction. |
-| `vault/2026-05-26_kasai-live-meeting-transcriber-skill.md` | `docs/applets/kasai/2026-05-26_kasai-live-meeting-transcriber-skill.md` | Kasai skill design. |
-| `vault/2026-05-26_kasai-local-live-transcription-skill.md` | `docs/applets/kasai/2026-05-26_kasai-local-live-transcription-skill.md` | Kasai skill design. |
-| `vault/2026-05-26_kasai-youtube-ingest-content-skill.md` | `docs/applets/kasai/2026-05-26_kasai-youtube-ingest-content-skill.md` | Kasai skill design. |
-| `vault/2026-05-27_gener8-overnight-acceptance.md` | `docs/applets/gener8/2026-05-27_gener8-overnight-acceptance.md` | Gener8 acceptance receipt. |
-| `vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | `docs/applets/kasai/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | Kasai plus EWDS receipt; cross-link from `docs/ewds/`. |
-| `vault/2026-05-27_kasai-sports-picks-browser-mcp.md` | `docs/applets/kasai/2026-05-27_kasai-sports-picks-browser-mcp.md` | Kasai skill/product direction. |
+| `docs/vault/2026-05-17_kasai-model-inventory-first.md` | `docs/applets/kasai/2026-05-17_kasai-model-inventory-first.md` | Kasai applet note. |
+| `docs/vault/2026-05-18_3nvizen-ltx-design-architecture.md` | `docs/applets/3nvizen/2026-05-18_3nvizen-ltx-design-architecture.md` | 3nvizen architecture note. |
+| `docs/vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md` | `docs/vault/2026-05-18_auth-tier-gating-audit-hybrid-pricing.md` | Cross-product entitlement and Vault-related gating. |
+| `docs/vault/2026-05-18_ooda-project-state.md` | `docs/_ooda/2026-05-18_ooda-project-state.md` | Historical OODA note. |
+| `docs/vault/2026-05-19_shell-desktop-frontend-pass.md` | `docs/ewds/2026-05-19_shell-desktop-frontend-pass.md` | Shell/EWDS canon. |
+| `docs/vault/2026-05-22_context-bounded-migration-modularisation.md` | `docs/migration/2026-05-22_context-bounded-migration-modularisation.md` | Modularisation receipt. |
+| `docs/vault/2026-05-22_gener8-riff-daw-add-layer.md` | `docs/applets/gener8/2026-05-22_gener8-riff-daw-add-layer.md` | Gener8 DAW note. |
+| `docs/vault/2026-05-22_post-modularisation-ooda-audit.md` | `docs/_ooda/2026-05-22_post-modularisation-ooda-audit.md` | Historical OODA report. |
+| `docs/vault/2026-05-23_gener8-riff-daw-s3-test-sync.md` | `docs/applets/gener8/2026-05-23_gener8-riff-daw-s3-test-sync.md` | Gener8 S3 sync note. |
+| `docs/vault/2026-05-23_gener8-s3-sync-before-riff-daw.md` | `docs/applets/gener8/2026-05-23_gener8-s3-sync-before-riff-daw.md` | Gener8 migration note. |
+| `docs/vault/2026-05-23_layer-u-osint-widgetization-canon.md` | `docs/applets/kasai/2026-05-23_layer-u-osint-widgetization-canon.md` | Kasai/Layer U product direction. |
+| `docs/vault/2026-05-23_loom-nomad-migration-started.md` | `docs/applets/loom/2026-05-23_loom-nomad-migration-started.md` | Loom note. |
+| `docs/vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md` | `docs/vault/2026-05-24_everywear-vault-cross-applet-ai-repository-canon.md` | Core Vault product canon. |
+| `docs/vault/2026-05-24_gener8-vault-typed-section-fixes.md` | `docs/vault/2026-05-24_gener8-vault-typed-section-fixes.md` | Vault taxonomy and Gener8 sections. |
+| `docs/vault/2026-05-24_mymory-kasai-compatibility.md` | `docs/vault/2026-05-24_mymory-kasai-compatibility.md` | MyMory/Kasai compatibility and namespace distinction. |
+| `docs/vault/2026-05-26_full-codebase-review.md` | `docs/_ooda/2026-05-26_full-codebase-review.md` | Historical codebase review. |
+| `docs/vault/2026-05-26_gener8-vault-library-repair.md` | `docs/vault/2026-05-26_gener8-vault-library-repair.md` | Vault library repair receipt. |
+| `docs/vault/2026-05-26_kasai-1magen-local-image-generation-skill.md` | `docs/applets/kasai/2026-05-26_kasai-1magen-local-image-generation-skill.md` | Kasai skill design. |
+| `docs/vault/2026-05-26_kasai-chrome-companion-extension-manager.md` | `docs/applets/kasai/2026-05-26_kasai-chrome-companion-extension-manager.md` | Kasai Chrome companion direction. |
+| `docs/vault/2026-05-26_kasai-live-meeting-transcriber-skill.md` | `docs/applets/kasai/2026-05-26_kasai-live-meeting-transcriber-skill.md` | Kasai skill design. |
+| `docs/vault/2026-05-26_kasai-local-live-transcription-skill.md` | `docs/applets/kasai/2026-05-26_kasai-local-live-transcription-skill.md` | Kasai skill design. |
+| `docs/vault/2026-05-26_kasai-youtube-ingest-content-skill.md` | `docs/applets/kasai/2026-05-26_kasai-youtube-ingest-content-skill.md` | Kasai skill design. |
+| `docs/vault/2026-05-27_gener8-overnight-acceptance.md` | `docs/applets/gener8/2026-05-27_gener8-overnight-acceptance.md` | Gener8 acceptance receipt. |
+| `docs/vault/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | `docs/applets/kasai/2026-05-27_kasai-keyword-short-and-ewds-provider-migration.md` | Kasai plus EWDS receipt; cross-link from `docs/ewds/`. |
+| `docs/vault/2026-05-27_kasai-sports-picks-browser-mcp.md` | `docs/applets/kasai/2026-05-27_kasai-sports-picks-browser-mcp.md` | Kasai skill/product direction. |
 
 ### Other reshuffles
 
