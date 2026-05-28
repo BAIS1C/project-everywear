@@ -45,12 +45,21 @@ Everywear OS is a desktop OS surface, not a landing page and not a web dashboard
 
 ## Themes
 
-The shell has four user-facing themes:
+The shell keeps the original four user-facing themes:
 
 - Light: off-cream daytime desktop, plain high-contrast SVG icon tiles.
 - Classic: dark cyan S3-style particle jewel desktop.
 - Refined: dark cyan/steel-blue holographic desktop with calmer surfaces.
 - Terminal: dark amber terminal desktop with sharp industrial treatment.
+
+EWDS-v2 adds three additive dark surface skins from
+`C:\Users\MAG MSI\Project Everywear\DESIGN WORK DONT GIT\Everywear\design_handoff_everywear_ewds_v2`:
+
+- Graphite: honed graphite cyberpunk, deep stacked bevels, recessed wells, cyan-white HUD default.
+- Anodized: flatter machined surface, lower top highlight, finer micro-noise.
+- Carbon: darker woven substrate pattern using the same component shapes.
+
+Full theme selection belongs in Settings. Desktop taskbar chrome exposes only a compact Light/Dark mode toggle, preserving the currently selected dark skin.
 
 Desktop icon treatments change by theme, but the app identity, grid footprint, label behavior, and launch/status states remain consistent.
 
@@ -64,6 +73,9 @@ The desktop icon geometry is locked in EWDS. Typography is under active review a
 - Classic uses the S3 particle jewel language with oversized center monograms, matching the S3 Studio `S3` scale.
 - Refined uses a cyan holographic projection from an oval plinth.
 - Terminal uses the same projected-plinth construction in amber.
+- Graphite, Anodized, and Carbon use the EWDS-v2 holographic projection anatomy:
+  bevelled physical plinth, recessed projector aperture, volumetric cone, projection
+  hairlines, glowing glyph, readable label, and chrome serial.
 - Light uses a plain high-contrast SVG tile.
 - System and folder icons use the same themed renderer as applets.
 - Monograms should be treated as icon glyphs, not product names. If a monogram fights the product label, revise the monogram.

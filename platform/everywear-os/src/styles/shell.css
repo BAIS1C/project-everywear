@@ -62,6 +62,20 @@ html, body, #root {
   text-transform: uppercase;
 }
 
+body[data-skin="graphite"] .ew-titlebar,
+body[data-skin="anodized"] .ew-titlebar,
+body[data-skin="carbon"] .ew-titlebar,
+body[data-skin="graphite"] .ew-taskbar,
+body[data-skin="anodized"] .ew-taskbar,
+body[data-skin="carbon"] .ew-taskbar {
+  background: linear-gradient(180deg, #1c2025 0%, #14171b 100%);
+  border-color: rgba(0,0,0,0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 16px rgba(0,0,0,0.4);
+}
+
 /* ── Traffic lights (macOS dots, top-left) ────────── */
 .ew-traffic-lights {
   display: flex;
@@ -134,6 +148,35 @@ body[data-skin="terminal"] .ew-desktop::before {
     linear-gradient(90deg, rgba(255,136,0,0.05) 1px, transparent 1px),
     linear-gradient(0deg, rgba(255,136,0,0.04) 1px, transparent 1px);
   background-size: 42px 42px;
+}
+body[data-skin="graphite"] .ew-desktop::before,
+body[data-skin="anodized"] .ew-desktop::before,
+body[data-skin="carbon"] .ew-desktop::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 30% 20%, rgba(255,255,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 90%, rgba(0,0,0,0.65) 0%, transparent 60%),
+    linear-gradient(135deg, var(--ew-v2-bg-1) 0%, var(--ew-v2-bg-0) 50%, var(--ew-v2-bg-1) 100%);
+}
+body[data-skin="graphite"] .ew-desktop::after,
+body[data-skin="anodized"] .ew-desktop::after {
+  opacity: calc(0.5 + 0.5 * var(--ew-wallpaper-intensity, 0.65));
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+    repeating-linear-gradient(135deg, transparent 0 22px, rgba(255,255,255,0.022) 22px 23px),
+    repeating-linear-gradient(45deg, transparent 0 60px, rgba(0,0,0,0.22) 60px 61px);
+  background-size: 80px 80px, 80px 80px, auto, auto;
+}
+body[data-skin="anodized"] .ew-desktop::after {
+  opacity: calc(0.22 + 0.18 * var(--ew-wallpaper-intensity, 0.65));
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,0.014) 3px 4px);
+}
+body[data-skin="carbon"] .ew-desktop::after {
+  opacity: calc(0.34 + 0.32 * var(--ew-wallpaper-intensity, 0.65));
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 4px, rgba(0,0,0,0.30) 4px 6px, transparent 6px 8px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,0.020) 0 2px, transparent 2px 4px, rgba(0,0,0,0.25) 4px 6px, transparent 6px 8px);
 }
 body[data-mode="light"] .ew-desktop::before {
   background:
@@ -460,6 +503,23 @@ body[data-mode="light"] .ew-folder-tray {
     0 calc(100% - var(--ew-cut-win, 14px))
   );
 }
+body[data-skin="graphite"] .ew-window,
+body[data-skin="anodized"] .ew-window,
+body[data-skin="carbon"] .ew-window {
+  background: var(--ew-v2-surface-2);
+  border: 1px solid var(--ew-v2-hairline-strong);
+  border-radius: var(--ew-v2-radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 2px 1px var(--ew-v2-bevel-top),
+    inset 0 -2px 1px rgba(0,0,0,0.7),
+    inset 0 -10px 18px rgba(0,0,0,0.45),
+    inset 2px 0 4px rgba(0,0,0,0.4),
+    inset -2px 0 4px rgba(0,0,0,0.4),
+    0 2px 0 rgba(0,0,0,0.6),
+    0 14px 36px rgba(0,0,0,0.75),
+    0 32px 80px rgba(0,0,0,0.5);
+}
 .ew-window--maximized {
   inset: 0;
   width: auto;
@@ -482,6 +542,15 @@ body[data-mode="light"] .ew-folder-tray {
   user-select: none;
   cursor: grab;
   flex-shrink: 0;
+}
+body[data-skin="graphite"] .ew-window__titlebar,
+body[data-skin="anodized"] .ew-window__titlebar,
+body[data-skin="carbon"] .ew-window__titlebar {
+  background: linear-gradient(180deg, #262b32 0%, #181c21 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 -1px 0 rgba(0,0,0,0.7);
+  border-bottom-color: rgba(0,0,0,0.6);
 }
 .ew-window--maximized .ew-window__titlebar {
   cursor: default;
@@ -579,7 +648,8 @@ body[data-mode="light"] .ew-folder-tray {
 .ew-canvas--terminal,
 .ew-canvas--light,
 .ew-canvas--classic-home,
-.ew-canvas--refined-home {
+.ew-canvas--refined-home,
+.ew-canvas--v2-home {
   justify-content: center;
   align-items: center;
   gap: var(--ew-space-6);
@@ -601,6 +671,21 @@ body[data-mode="light"] .ew-folder-tray {
 .ew-canvas--classic-home .ew-canvas__status-card,
 .ew-canvas--refined-home .ew-canvas__status-card {
   background: color-mix(in oklab, var(--ew-surface) 74%, transparent);
+}
+.ew-canvas--v2-home .ew-canvas__status-card,
+body[data-skin="graphite"] .ew-weather,
+body[data-skin="anodized"] .ew-weather,
+body[data-skin="carbon"] .ew-weather {
+  background: var(--ew-v2-surface-1);
+  border-color: var(--ew-v2-hairline-strong);
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.6),
+    0 24px 48px rgba(0,0,0,0.4);
 }
 .ew-canvas__subtitle {
   font-family: var(--ew-font-mono);
@@ -1086,16 +1171,20 @@ body[data-mode="light"] .ew-desktop-clock__time {
   white-space: nowrap;
 }
 
-/* Skin switcher chips */
-.ew-skin-switcher {
+/* Desktop mode toggle. Full skin selection lives in Settings. */
+.ew-mode-toggle {
   display: flex;
   gap: 2px;
   background: var(--ew-surface-sunken);
   border-radius: var(--ew-radius);
   padding: 2px;
+  border: 1px solid color-mix(in oklab, var(--ew-border) 78%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ew-text) 8%, transparent);
 }
-.ew-skin-chip {
-  padding: var(--ew-space-1) var(--ew-space-3);
+.ew-mode-toggle__option {
+  min-width: 58px;
+  height: 26px;
+  padding: 0 var(--ew-space-3);
   font-family: var(--ew-font-mono);
   font-size: 10px;
   font-weight: 600;
@@ -1106,12 +1195,13 @@ body[data-mode="light"] .ew-desktop-clock__time {
   border: none;
   border-radius: var(--ew-radius-xs);
   cursor: pointer;
+  flex: 0 0 auto;
   transition: all var(--ew-t-fast) var(--ew-ease);
 }
-.ew-skin-chip:hover {
+.ew-mode-toggle__option:hover {
   color: var(--ew-text);
 }
-.ew-skin-chip--active {
+.ew-mode-toggle__option--active {
   color: var(--ew-primary);
   background: var(--ew-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -1205,7 +1295,8 @@ body[data-mode="light"] .ew-desktop-clock__time {
   .ew-taskbar__profile-name {
     display: none;
   }
-  .ew-skin-chip {
+  .ew-mode-toggle__option {
+    min-width: 48px;
     padding-inline: var(--ew-space-2);
   }
 }
@@ -1414,6 +1505,26 @@ body[data-mode="light"] .ew-desktop-clock__time {
 .ew-field__input:focus {
   border-color: var(--ew-primary);
 }
+body[data-skin="graphite"] .ew-field__input,
+body[data-skin="anodized"] .ew-field__input,
+body[data-skin="carbon"] .ew-field__input {
+  background: var(--ew-v2-surface-recessed);
+  border-color: rgba(0,0,0,0.6);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.85),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(0,0,0,0.9);
+}
+body[data-skin="graphite"] .ew-field__input:focus,
+body[data-skin="anodized"] .ew-field__input:focus,
+body[data-skin="carbon"] .ew-field__input:focus {
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.85),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(0,0,0,0.9),
+    0 0 0 1px var(--ew-v2-accent),
+    0 0 8px var(--ew-v2-accent-glow-color);
+}
 
 /* ── Section card (reusable) ──────────────────────── */
 .ew-section {
@@ -1423,6 +1534,20 @@ body[data-mode="light"] .ew-desktop-clock__time {
   padding: var(--ew-space-6);
   margin-bottom: var(--ew-space-5);
   clip-path: var(--ew-clip-card);
+}
+body[data-skin="graphite"] .ew-section,
+body[data-skin="anodized"] .ew-section,
+body[data-skin="carbon"] .ew-section {
+  background: var(--ew-v2-surface-1);
+  border-color: var(--ew-v2-hairline-strong);
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4),
+    0 8px 24px rgba(0,0,0,0.6);
 }
 .ew-section__title {
   font-family: var(--ew-font-display);
@@ -1585,6 +1710,52 @@ body[data-mode="light"] .ew-desktop-clock__time {
   grid-template-columns: repeat(3, minmax(120px, 1fr));
   gap: var(--ew-space-3);
 }
+.ew-settings__accent-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(84px, 1fr));
+  gap: var(--ew-space-2);
+}
+.ew-settings__accent-option {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ew-space-2);
+  padding: var(--ew-space-2);
+  background: var(--ew-surface);
+  border: 2px solid var(--ew-border);
+  color: var(--ew-text);
+  border-radius: var(--ew-radius-md);
+  cursor: pointer;
+  transition: border-color var(--ew-t-fast) var(--ew-ease), background var(--ew-t-fast) var(--ew-ease);
+}
+.ew-settings__accent-option:hover {
+  border-color: var(--ew-text-muted);
+}
+.ew-settings__accent-option--active {
+  border-color: var(--ew-primary);
+  background: color-mix(in oklab, var(--ew-primary) 10%, var(--ew-surface));
+}
+.ew-settings__accent-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.34),
+    inset 0 -1px 0 rgba(0,0,0,0.55),
+    0 0 8px color-mix(in oklab, currentColor 40%, transparent);
+}
+.ew-settings__slider-row {
+  display: grid;
+  grid-template-columns: 76px minmax(140px, 1fr) 42px;
+  align-items: center;
+  gap: var(--ew-space-3);
+  margin-bottom: var(--ew-space-2);
+}
+.ew-settings__slider-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--ew-primary);
+}
 .ew-settings__surface-option {
   min-height: 74px;
   display: flex;
@@ -1621,7 +1792,8 @@ body[data-mode="light"] .ew-desktop-clock__time {
 }
 @media (max-width: 860px) {
   .ew-settings__skin-grid,
-  .ew-settings__surface-grid {
+  .ew-settings__surface-grid,
+  .ew-settings__accent-grid {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }

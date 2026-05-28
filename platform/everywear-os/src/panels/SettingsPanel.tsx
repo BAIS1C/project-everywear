@@ -1,11 +1,10 @@
-import { useTheme, type Theme, type WidgetSurface } from '@everywear/ewds';
+import { useTheme, type Accent, type Theme, type WidgetSurface } from '@everywear/ewds';
 
-const THEMES: { id: Theme; name: string; desc: string }[] = [
-  { id: 'light', name: 'Light', desc: 'Off-cream daytime desktop' },
-  { id: 'classic', name: 'Classic', desc: 'Default cyan dark desktop' },
-  { id: 'refined', name: 'Refined', desc: 'Calmer steel-blue geometry' },
-  { id: 'terminal', name: 'Terminal', desc: 'Monospace industrial console' },
-];
+const LIGHT_THEME: { id: Theme; name: string; desc: string } = {
+  id: 'light',
+  name: 'Light',
+  desc: 'Off-cream daytime desktop',
+};
 
 const WIDGET_SURFACES: { id: WidgetSurface; name: string; desc: string }[] = [
   { id: 'cut', name: 'Cut', desc: 'EWDS angled corners' },
@@ -14,7 +13,25 @@ const WIDGET_SURFACES: { id: WidgetSurface; name: string; desc: string }[] = [
 ];
 
 export function SettingsPanel() {
-  const { theme, setTheme, widgetSurface, setWidgetSurface } = useTheme();
+  const {
+    theme,
+    setTheme,
+    skins,
+    accent,
+    setAccent,
+    accents,
+    widgetSurface,
+    setWidgetSurface,
+    chromeDensity,
+    setChromeDensity,
+    wallpaperIntensity,
+    setWallpaperIntensity,
+  } = useTheme();
+  const themes = [
+    LIGHT_THEME,
+    ...skins.map((skin) => ({ id: skin.id as Theme, name: skin.label, desc: skin.description })),
+  ];
+  const visibleAccents = accents.filter((item) => item.id !== 'signal' && item.id !== 'plasma');
 
   return (
     <div className="ew-settings">
@@ -28,7 +45,7 @@ export function SettingsPanel() {
         <div style={{ marginBottom: 20 }}>
           <label className="ew-field__label">Theme</label>
           <div className="ew-settings__skin-grid">
-            {THEMES.map((s) => (
+            {themes.map((s) => (
               <div
                 key={s.id}
                 className={`ew-settings__skin-option ${theme === s.id ? 'ew-settings__skin-option--active' : ''}`}
@@ -40,6 +57,51 @@ export function SettingsPanel() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label className="ew-field__label">Accent</label>
+          <div className="ew-settings__accent-grid">
+            {visibleAccents.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`ew-settings__accent-option ${accent === item.id ? 'ew-settings__accent-option--active' : ''}`}
+                onClick={() => setAccent(item.id as Accent)}
+              >
+                <span className="ew-settings__accent-swatch" style={{ background: item.preview }} />
+                <span className="ew-settings__surface-name">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label className="ew-field__label">EWDS-v2 density</label>
+          <div className="ew-settings__slider-row">
+            <span className="ew-settings__surface-desc">Chrome</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={chromeDensity}
+              onChange={(event) => setChromeDensity(Number(event.target.value))}
+            />
+            <span className="ew-settings__surface-desc">{chromeDensity.toFixed(2)}</span>
+          </div>
+          <div className="ew-settings__slider-row">
+            <span className="ew-settings__surface-desc">Wallpaper</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={wallpaperIntensity}
+              onChange={(event) => setWallpaperIntensity(Number(event.target.value))}
+            />
+            <span className="ew-settings__surface-desc">{wallpaperIntensity.toFixed(2)}</span>
           </div>
         </div>
 

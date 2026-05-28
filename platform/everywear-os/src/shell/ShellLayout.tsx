@@ -45,7 +45,6 @@ const SYSTEM_ICONS: SystemIcon[] = [
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
 type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
-const THEME_OPTIONS = ['light', 'classic', 'refined', 'terminal'] as const;
 const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', 'ai-director', '3nvizen']);
 const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', 'ai-director', '3nvizen'];
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
@@ -548,6 +547,7 @@ function DesktopCanvas({
 }) {
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
+  const isV2 = theme === 'graphite' || theme === 'anodized' || theme === 'carbon';
   const inferenceReadout = buildInferenceReadout({
     gpu,
     assessments,
@@ -556,7 +556,7 @@ function DesktopCanvas({
     phase: inferencePhase,
   });
 
-  if (isLight || isTerminal || theme === 'classic' || theme === 'refined') {
+  if (isLight || isTerminal || theme === 'classic' || theme === 'refined' || isV2) {
     return (
       <div
         className={`ew-canvas ${
@@ -566,6 +566,8 @@ function DesktopCanvas({
               ? 'ew-canvas--terminal'
               : theme === 'refined'
                 ? 'ew-canvas--refined-home'
+                : isV2
+                  ? 'ew-canvas--v2-home'
                 : 'ew-canvas--classic-home'
         }`}
       >
@@ -679,7 +681,7 @@ export function ShellLayout() {
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [s3FolderOpen, setS3FolderOpen] = useState(false);
   const { user: authUser, tier } = useAuth();
-  const { skin, mode, theme, setTheme } = useTheme();
+  const { skin, mode, theme, setMode } = useTheme();
   const effectiveSkin = theme === 'light' ? 'classic' : skin;
 
   // Bug report + error badge
@@ -1335,17 +1337,25 @@ export function ShellLayout() {
           </div>
         </div>
         <div className="ew-taskbar__center">
-          {/* Four shell themes: Light, Classic, Refined, Terminal */}
-          <div className="ew-skin-switcher">
-            {THEME_OPTIONS.map((t) => (
-              <button
-                key={t}
-                className={`ew-skin-chip ${theme === t ? 'ew-skin-chip--active' : ''}`}
-                onClick={() => setTheme(t)}
-              >
-                {t.toUpperCase()}
-              </button>
-            ))}
+          <div className="ew-mode-toggle" aria-label="Light or dark desktop mode">
+            <button
+              type="button"
+              className={`ew-mode-toggle__option ${mode === 'light' ? 'ew-mode-toggle__option--active' : ''}`}
+              aria-pressed={mode === 'light'}
+              onClick={() => setMode('light')}
+              title="Light mode"
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              className={`ew-mode-toggle__option ${mode === 'dark' ? 'ew-mode-toggle__option--active' : ''}`}
+              aria-pressed={mode === 'dark'}
+              onClick={() => setMode('dark')}
+              title="Dark mode"
+            >
+              Dark
+            </button>
           </div>
         </div>
         <div className="ew-taskbar__right">

@@ -66,11 +66,45 @@
 
   /* Chroma multiplier — per-skin override lets us dial saturation */
   --ew-chroma-mult: 1;
+  --ew-chrome-density: 0.65;
+  --ew-wallpaper-intensity: 0.65;
 
   /* Primary-hue decomposed for live rotation (OKLCH) */
   --ew-primary-h: 215;
   --ew-primary-l: 0.72;
   --ew-primary-c: 0.12;
+
+  /* EWDS-v2 graphite family aliases. These intentionally preserve the
+     reference handoff names so shell/app applet CSS can consume the v2
+     vocabulary without abandoning the existing --ew-* contract. */
+  --ew-v2-bg-0: #0b0d10;
+  --ew-v2-bg-1: #14171b;
+  --ew-v2-bg-2: #1a1e23;
+  --ew-v2-bg-3: #22272d;
+  --ew-v2-surface-1: linear-gradient(180deg, #232830 0%, #1a1e23 50%, #14181d 100%);
+  --ew-v2-surface-2: linear-gradient(180deg, #2b3038 0%, #1f2329 60%, #181c21 100%);
+  --ew-v2-surface-3: linear-gradient(180deg, #353b44 0%, #252a31 100%);
+  --ew-v2-surface-recessed: linear-gradient(180deg, #0e1115 0%, #15191e 100%);
+  --ew-v2-bevel-top: rgba(255,255,255,0.09);
+  --ew-v2-bevel-top-bright: rgba(255,255,255,0.16);
+  --ew-v2-bevel-bot: rgba(0,0,0,0.65);
+  --ew-v2-bevel-bot-deep: rgba(0,0,0,0.85);
+  --ew-v2-hairline: rgba(255,255,255,0.06);
+  --ew-v2-hairline-strong: rgba(255,255,255,0.12);
+  --ew-v2-hairline-dark: rgba(0,0,0,0.55);
+  --ew-v2-ink-1: #e9ecef;
+  --ew-v2-ink-2: #b6bcc4;
+  --ew-v2-ink-3: #7d848d;
+  --ew-v2-ink-4: #4a5159;
+  --ew-v2-accent: #6fd9e8;
+  --ew-v2-accent-strong: #a8ecf5;
+  --ew-v2-accent-glow-color: rgba(111,217,232,0.55);
+  --ew-v2-warn: #e8a26f;
+  --ew-v2-crit: #e85f55;
+  --ew-v2-ok: #6fe89a;
+  --ew-v2-radius-sm: 3px;
+  --ew-v2-radius: 6px;
+  --ew-v2-radius-lg: 10px;
 
   /* LED / traffic-light status colors (window controls, indicators) */
   --ew-status-green: #28C840;
@@ -333,6 +367,136 @@ body[data-skin="terminal"][data-mode="dark"],
   --ew-shadow-glow: none;
   --ew-shadow-float: 0 2px 0 rgba(0, 0, 0, 0.9);
   --ew-shadow-inset: none;
+
+  color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════
+   EWDS-v2: GRAPHITE / ANODIZED / CARBON
+   Additive dark skins from the 2026-05-28 design handoff.
+   They share component geometry and differ by substrate, bevel intensity,
+   and grain pattern.
+   ═══════════════════════════════════════════════════ */
+
+body[data-skin="graphite"],
+.ew[data-skin="graphite"],
+body[data-skin="anodized"],
+.ew[data-skin="anodized"],
+body[data-skin="carbon"],
+.ew[data-skin="carbon"] {
+  --ew-font-display: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --ew-font-body: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
+  --ew-font-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  --ew-chroma-mult: 0.92;
+
+  --ew-corner-tl: 0;
+  --ew-corner-tr: var(--ew-bevel-md);
+  --ew-corner-br: 0;
+  --ew-corner-bl: var(--ew-bevel-md);
+  --ew-cut-win: 16px;
+  --ew-cut-md: 10px;
+  --ew-cut-sm: 8px;
+
+  --ew-radius-xs: var(--ew-v2-radius-sm);
+  --ew-radius: var(--ew-v2-radius);
+  --ew-radius-md: var(--ew-v2-radius);
+  --ew-radius-lg: var(--ew-v2-radius-lg);
+  --ew-radius-xl: 12px;
+}
+
+body[data-skin="graphite"][data-mode="dark"],
+.ew[data-skin="graphite"][data-mode="dark"] {
+  --ew-v2-bg-0: #0b0d10;
+  --ew-v2-bg-1: #14171b;
+  --ew-v2-bg-2: #1a1e23;
+  --ew-v2-bg-3: #22272d;
+  --ew-v2-surface-1: linear-gradient(180deg, #232830 0%, #1a1e23 50%, #14181d 100%);
+  --ew-v2-surface-2: linear-gradient(180deg, #2b3038 0%, #1f2329 60%, #181c21 100%);
+  --ew-v2-surface-3: linear-gradient(180deg, #353b44 0%, #252a31 100%);
+  --ew-v2-surface-recessed: linear-gradient(180deg, #0e1115 0%, #15191e 100%);
+  --ew-v2-bevel-top: rgba(255,255,255,0.09);
+  --ew-v2-bevel-top-bright: rgba(255,255,255,0.16);
+}
+
+body[data-skin="anodized"][data-mode="dark"],
+.ew[data-skin="anodized"][data-mode="dark"] {
+  --ew-v2-bg-0: #0e0f11;
+  --ew-v2-bg-1: #16181a;
+  --ew-v2-bg-2: #1c1f22;
+  --ew-v2-bg-3: #22262a;
+  --ew-v2-surface-1: linear-gradient(180deg, #1f2225 0%, #181a1d 100%);
+  --ew-v2-surface-2: linear-gradient(180deg, #25282c 0%, #1c1f22 100%);
+  --ew-v2-surface-3: linear-gradient(180deg, #2c3034 0%, #20242a 100%);
+  --ew-v2-surface-recessed: linear-gradient(180deg, #0d0f12 0%, #15181b 100%);
+  --ew-v2-bevel-top: rgba(255,255,255,0.06);
+  --ew-v2-bevel-top-bright: rgba(255,255,255,0.10);
+}
+
+body[data-skin="carbon"][data-mode="dark"],
+.ew[data-skin="carbon"][data-mode="dark"] {
+  --ew-v2-bg-0: #0a0b0c;
+  --ew-v2-bg-1: #121315;
+  --ew-v2-bg-2: #181a1d;
+  --ew-v2-bg-3: #202328;
+  --ew-v2-surface-1: linear-gradient(180deg, #1d2024 0%, #15181b 100%);
+  --ew-v2-surface-2: linear-gradient(180deg, #24272c 0%, #181b1f 100%);
+  --ew-v2-surface-3: linear-gradient(180deg, #30353c 0%, #20242a 100%);
+  --ew-v2-surface-recessed: linear-gradient(180deg, #0b0d0f 0%, #121518 100%);
+  --ew-v2-bevel-top: rgba(255,255,255,0.075);
+  --ew-v2-bevel-top-bright: rgba(255,255,255,0.13);
+}
+
+body[data-skin="graphite"][data-mode="dark"],
+.ew[data-skin="graphite"][data-mode="dark"],
+body[data-skin="anodized"][data-mode="dark"],
+.ew[data-skin="anodized"][data-mode="dark"],
+body[data-skin="carbon"][data-mode="dark"],
+.ew[data-skin="carbon"][data-mode="dark"] {
+  --ew-bg: var(--ew-v2-bg-0);
+  --ew-sunken: #0e1115;
+  --ew-surface: var(--ew-v2-surface-1);
+  --ew-surface-raised: var(--ew-v2-surface-2);
+  --ew-surface-overlay: var(--ew-v2-surface-3);
+  --ew-surface-sunken: var(--ew-v2-surface-recessed);
+  --ew-chrome-bg: linear-gradient(180deg, #1c2025 0%, #14171b 100%);
+  --ew-chrome-border: rgba(0,0,0,0.7);
+
+  --ew-border: var(--ew-v2-hairline);
+  --ew-border-strong: var(--ew-v2-hairline-strong);
+
+  --ew-text: var(--ew-v2-ink-1);
+  --ew-text-muted: var(--ew-v2-ink-2);
+  --ew-text-faint: var(--ew-v2-ink-3);
+  --ew-text-inverse: var(--ew-v2-bg-0);
+
+  --ew-primary: var(--ew-v2-accent);
+  --ew-primary-hover: var(--ew-v2-accent-strong);
+  --ew-primary-press: color-mix(in oklab, var(--ew-v2-accent) 82%, black);
+  --ew-primary-soft: color-mix(in oklab, var(--ew-v2-accent) 12%, transparent);
+  --ew-primary-fg: var(--ew-v2-bg-0);
+
+  --ew-expressive: var(--ew-v2-crit);
+  --ew-premium: color-mix(in oklab, var(--ew-v2-accent) 55%, #8b5cf6);
+  --ew-warm: var(--ew-v2-warn);
+  --ew-warm-soft: color-mix(in oklab, var(--ew-v2-warn) 12%, transparent);
+
+  --ew-success: var(--ew-v2-ok);
+  --ew-warning: var(--ew-v2-warn);
+  --ew-danger: var(--ew-v2-crit);
+
+  --ew-shadow-glow: 0 0 12px var(--ew-v2-accent-glow-color);
+  --ew-shadow-float:
+    0 2px 0 rgba(0,0,0,0.6),
+    0 14px 36px rgba(0,0,0,0.75),
+    0 32px 80px rgba(0,0,0,0.5);
+  --ew-shadow-inset:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4);
 
   color-scheme: dark;
 }

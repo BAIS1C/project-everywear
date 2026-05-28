@@ -1,0 +1,307 @@
+/* ============================================================
+   EWDS-v2 — Everywear Design System, second pass
+   Honed graphite, deep bevels, controlled cyberpunk chrome.
+   The parent Everywear shell ships these tokens to all applets.
+   ============================================================ */
+
+:root {
+  /* THEME: GRAPHITE (default) — honed, photoreal recession */
+  --bg-0: #0b0d10;
+  --bg-1: #14171b;
+  --bg-2: #1a1e23;
+  --bg-3: #22272d;
+
+  --surface-1: linear-gradient(180deg, #232830 0%, #1a1e23 50%, #14181d 100%);
+  --surface-2: linear-gradient(180deg, #2b3038 0%, #1f2329 60%, #181c21 100%);
+  --surface-3: linear-gradient(180deg, #353b44 0%, #252a31 100%);
+  --surface-recessed: linear-gradient(180deg, #0e1115 0%, #15191e 100%);
+
+  --bevel-top: rgba(255,255,255,0.09);
+  --bevel-top-bright: rgba(255,255,255,0.16);
+  --bevel-bot: rgba(0,0,0,0.65);
+  --bevel-bot-deep: rgba(0,0,0,0.85);
+
+  --hairline: rgba(255,255,255,0.06);
+  --hairline-strong: rgba(255,255,255,0.12);
+  --hairline-dark: rgba(0,0,0,0.55);
+
+  --ink-1: #e9ecef;     /* bone */
+  --ink-2: #b6bcc4;     /* muted */
+  --ink-3: #7d848d;     /* meta */
+  --ink-4: #4a5159;     /* faint */
+
+  /* Accent — default cyan-white HUD */
+  --accent: #6fd9e8;
+  --accent-strong: #a8ecf5;
+  --accent-glow: 0 0 12px rgba(111,217,232,0.55);
+
+  --warn: #e8a26f;
+  --crit: #e85f55;
+  --ok:   #6fe89a;
+
+  --radius-sm: 3px;
+  --radius:    6px;
+  --radius-lg: 10px;
+
+  --font-display: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+  --font-ui:      "Geist", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono:    "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+  --font-cjk:     "Noto Sans JP", "Hiragino Sans", sans-serif;
+
+  --chrome-density: 0.65;
+}
+
+/* THEME VARIANTS */
+[data-theme="anodized"] {
+  --bg-0: #0e0f11;
+  --bg-1: #16181a;
+  --bg-2: #1c1f22;
+  --surface-1: linear-gradient(180deg, #1f2225 0%, #181a1d 100%);
+  --surface-2: linear-gradient(180deg, #25282c 0%, #1c1f22 100%);
+  --surface-3: linear-gradient(180deg, #2c3034 0%, #20242a 100%);
+  --bevel-top: rgba(255,255,255,0.06);
+  --bevel-top-bright: rgba(255,255,255,0.10);
+}
+
+[data-theme="carbon"] {
+  --bg-0: #0a0b0c;
+  --bg-1: #121315;
+  --bg-2: #181a1d;
+  --surface-1: linear-gradient(180deg, #1d2024 0%, #15181b 100%);
+  --surface-2: linear-gradient(180deg, #24272c 0%, #181b1f 100%);
+}
+
+[data-accent="cyan"]    { --accent:#6fd9e8; --accent-strong:#a8ecf5; --accent-glow:0 0 12px rgba(111,217,232,.55); }
+[data-accent="amber"]   { --accent:#e8a26f; --accent-strong:#f4c79a; --accent-glow:0 0 14px rgba(232,162,111,.55); }
+[data-accent="acid"]    { --accent:#9bf06a; --accent-strong:#c3ff96; --accent-glow:0 0 14px rgba(155,240,106,.55); }
+[data-accent="crimson"] { --accent:#e85f55; --accent-strong:#ff8e85; --accent-glow:0 0 14px rgba(232,95,85,.55); }
+[data-accent="bone"]    { --accent:#e9ecef; --accent-strong:#ffffff; --accent-glow:0 0 10px rgba(233,236,239,.35); }
+
+/* ============================================================
+   BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--ink-1);
+  background: var(--bg-0);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* ============================================================
+   WALLPAPER — graphite plate with grain + diagonal hairlines
+   ============================================================ */
+.ew-wallpaper {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 90% 60% at 30% 20%, rgba(255,255,255,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 90%, rgba(0,0,0,0.65) 0%, transparent 60%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-0) 50%, var(--bg-1) 100%);
+}
+.ew-wallpaper::before {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    /* faint blueprint grid */
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+    /* diagonal etched hairlines */
+    repeating-linear-gradient( 135deg,
+      transparent 0 22px,
+      rgba(255,255,255,0.022) 22px 23px),
+    repeating-linear-gradient( 45deg,
+      transparent 0 60px,
+      rgba(0,0,0,0.22) 60px 61px);
+  background-size: 80px 80px, 80px 80px, auto, auto;
+  opacity: calc(0.5 + 0.5 * var(--wallpaper-intensity, 0.65));
+  pointer-events: none;
+}
+.ew-wallpaper::after {
+  /* heavy grain via SVG noise — scales with wallpaper-intensity */
+  content: ""; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: calc(0.55 * var(--wallpaper-intensity, 0.65));
+  mix-blend-mode: overlay; pointer-events: none;
+}
+
+[data-theme="carbon"] .ew-wallpaper::before {
+  background-image:
+    repeating-linear-gradient( 45deg,
+      rgba(255,255,255,0.025) 0 2px,
+      transparent 2px 4px,
+      rgba(0,0,0,0.30) 4px 6px,
+      transparent 6px 8px),
+    repeating-linear-gradient( -45deg,
+      rgba(255,255,255,0.020) 0 2px,
+      transparent 2px 4px,
+      rgba(0,0,0,0.25) 4px 6px,
+      transparent 6px 8px);
+}
+
+[data-theme="anodized"] .ew-wallpaper::before {
+  background-image:
+    repeating-linear-gradient( 90deg,
+      transparent 0 3px,
+      rgba(255,255,255,0.014) 3px 4px);
+}
+[data-theme="anodized"] .ew-wallpaper::after { opacity: 0.18; }
+
+/* ============================================================
+   BEVELLED SURFACE — the workhorse class
+   Multi-layer inset highlights/shadows for honed-metal feel.
+   ============================================================ */
+.bevel {
+  background: var(--surface-1);
+  box-shadow:
+    inset 0 1px 0 var(--bevel-top-bright),
+    inset 0 2px 0 var(--bevel-top),
+    inset 0 -1px 0 var(--bevel-bot),
+    inset 0 -2px 4px var(--bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.6),
+    0 24px 48px rgba(0,0,0,0.4);
+  border: 1px solid var(--hairline-strong);
+}
+
+.bevel-strong {
+  background: var(--surface-2);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 2px 1px var(--bevel-top),
+    inset 0 -2px 1px rgba(0,0,0,0.7),
+    inset 0 -10px 18px rgba(0,0,0,0.45),
+    inset 2px 0 4px rgba(0,0,0,0.4),
+    inset -2px 0 4px rgba(0,0,0,0.4),
+    0 2px 0 rgba(0,0,0,0.6),
+    0 14px 36px rgba(0,0,0,0.75),
+    0 32px 80px rgba(0,0,0,0.5);
+  border: 1px solid var(--hairline-strong);
+}
+
+.recessed {
+  background: var(--surface-recessed);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.9);
+  border: 1px solid rgba(0,0,0,0.6);
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.t-label   { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+.t-meta    { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--ink-3); }
+.t-mono    { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); }
+.t-data    { font-family: var(--font-mono); font-size: 12px; color: var(--ink-1); }
+.t-display { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.02em; }
+.t-cjk     { font-family: var(--font-cjk); }
+
+/* Barcode bar */
+.barcode {
+  display: flex; align-items: stretch; gap: 1px;
+  height: 16px;
+}
+.barcode > i {
+  background: var(--ink-2);
+  display: block; height: 100%;
+}
+
+/* ============================================================
+   SHARDS — the geometric vocabulary
+   ============================================================ */
+.shard {
+  position: relative;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.6)) drop-shadow(0 24px 48px rgba(0,0,0,0.4));
+}
+.shard-hex   { clip-path: polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); }
+.shard-oblq  { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+.shard-tomb  { clip-path: polygon(0 12px, 12px 0, calc(100% - 28px) 0, 100% 28px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 28px 100%, 0 calc(100% - 28px)); }
+.shard-tri   { clip-path: polygon(8% 0, 92% 0, 100% 50%, 92% 100%, 8% 100%, 0 50%); }
+
+/* ============================================================
+   TRAFFIC LIGHTS
+   ============================================================ */
+.tl { display: inline-flex; gap: 8px; align-items: center; }
+.tl-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8e85 0%, #c84438 60%, #6b1f18 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -1px 0 rgba(0,0,0,0.5),
+    0 1px 1px rgba(0,0,0,0.7);
+  cursor: pointer;
+}
+.tl-dot.amber { background: radial-gradient(circle at 35% 30%, #ffcd8a 0%, #c98e36 60%, #6b4a17 100%); }
+.tl-dot.green { background: radial-gradient(circle at 35% 30%, #b8f08a 0%, #4ea63e 60%, #235017 100%); }
+
+/* ============================================================
+   BARCODES + SERIALS — chrome-density-aware (opacity)
+   ============================================================ */
+.chrome { opacity: calc(var(--chrome-density) * 1); transition: opacity .25s; }
+.chrome-low { opacity: calc(var(--chrome-density) * 0.5); }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes pulse-accent {
+  0%, 100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+  50% { box-shadow: var(--accent-glow); }
+}
+@keyframes tick {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+@keyframes toast-in-right {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes toast-in-bottom {
+  from { transform: translateY(120%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+input::placeholder { color: var(--ink-3); opacity: 1; }
+
+/* Text inputs and editable fields get the recessed treatment by default */
+input[type="text"], input[type="search"], input[type="email"], input[type="number"],
+input:not([type]), textarea, select.ew-input {
+  background: linear-gradient(180deg, #0d1014 0%, #15191e 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.85),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(0,0,0,0.9);
+  border: 1px solid rgba(0,0,0,0.6);
+  border-radius: 4px;
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  padding: 6px 10px;
+  outline: none;
+  caret-color: var(--accent);
+  transition: box-shadow .15s;
+}
+input:focus, textarea:focus {
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.85),
+    inset 0 -1px 0 rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(0,0,0,0.9),
+    0 0 0 1px var(--accent),
+    0 0 8px rgba(111,217,232,0.4);
+}
+/* unstyle the composer's bare-input child — keep wrapper as the recess */
+.ew-input-bare {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* Scanline shimmer overlay used on screens */
+.scanlines::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,0.025) 2px 3px);
+}

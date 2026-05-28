@@ -4,8 +4,8 @@
 
 // ── Core IDs ──────────────────────────────────────────────────────
 
-export type Skin = 'classic' | 'refined' | 'terminal';
-export type Accent = 'signal' | 'amber' | 'plasma';
+export type Skin = 'classic' | 'refined' | 'terminal' | 'graphite' | 'anodized' | 'carbon';
+export type Accent = 'signal' | 'cyan' | 'amber' | 'acid' | 'crimson' | 'bone' | 'plasma';
 export type Mode = 'dark' | 'light';
 export type Theme = 'light' | Skin;
 export type WidgetSurface = 'cut' | 'rounded' | 'square';
@@ -42,11 +42,15 @@ export interface ThemeState {
   mode: Mode;
   theme: Theme;
   widgetSurface: WidgetSurface;
+  chromeDensity: number;
+  wallpaperIntensity: number;
   setSkin: (id: Skin) => void;
   setAccent: (id: Accent) => void;
   setMode: (id: Mode) => void;
   setTheme: (id: Theme) => void;
   setWidgetSurface: (surface: WidgetSurface) => void;
+  setChromeDensity: (density: number) => void;
+  setWallpaperIntensity: (intensity: number) => void;
   toggleMode: () => void;
 }
 

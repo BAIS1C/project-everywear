@@ -57,11 +57,12 @@ const MONOGRAM: Record<string, string> = {
   'vault':            'VA',
 };
 
-type IconVariant = 'plain' | 'classic' | 'holograph' | 'terminal';
+type IconVariant = 'plain' | 'classic' | 'holograph' | 'terminal' | 'v2-holograph';
 
 function resolveIconVariant(): IconVariant {
   if (typeof document === 'undefined') return 'classic';
   if (document.body.dataset.mode === 'light') return 'plain';
+  if (['graphite', 'anodized', 'carbon'].includes(document.body.dataset.skin || '')) return 'v2-holograph';
   if (document.body.dataset.skin === 'refined') return 'holograph';
   if (document.body.dataset.skin === 'terminal') return 'terminal';
   return 'classic';
@@ -203,10 +204,49 @@ function TerminalSvgIcon({ appletId }: { appletId: string }) {
   );
 }
 
+function V2HolographicIcon({ appletId }: { appletId: string }) {
+  const monogram = MONOGRAM[appletId] || appletId.slice(0, 2).toUpperCase();
+
+  return (
+    <svg className="ew-icon-svg ew-icon-svg--v2-holograph" viewBox="0 0 72 78" role="img" aria-hidden="true">
+      <defs>
+        <radialGradient id="ew-v2-icon-cone" cx="50%" cy="100%" r="78%" fx="50%" fy="100%">
+          <stop offset="0%" stopColor="var(--ew-v2-accent)" stopOpacity="0.35" />
+          <stop offset="35%" stopColor="var(--ew-v2-accent)" stopOpacity="0.12" />
+          <stop offset="70%" stopColor="var(--ew-v2-accent)" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="ew-v2-icon-plinth" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#353b44" />
+          <stop offset="45%" stopColor="#1f242a" />
+          <stop offset="100%" stopColor="#14181d" />
+        </linearGradient>
+        <linearGradient id="ew-v2-icon-aperture" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="transparent" />
+          <stop offset="50%" stopColor="var(--ew-v2-accent)" />
+          <stop offset="100%" stopColor="transparent" />
+        </linearGradient>
+      </defs>
+      <ellipse className="ew-icon-svg__v2-cone" cx="36" cy="43" rx="23" ry="36" />
+      <line className="ew-icon-svg__v2-line" x1="24" y1="65" x2="14" y2="14" />
+      <line className="ew-icon-svg__v2-line" x1="48" y1="65" x2="58" y2="14" />
+      <line className="ew-icon-svg__v2-scan" x1="22" y1="32" x2="50" y2="32" />
+      <text className="ew-icon-svg__v2-text" x="36" y="27">{monogram}</text>
+      <path
+        className="ew-icon-svg__v2-plinth"
+        d="M14 61 L23 53 L49 53 L58 61 L49 69 L23 69 Z"
+      />
+      <rect className="ew-icon-svg__v2-aperture" x="22" y="60" width="28" height="3" rx="1" />
+      <circle className="ew-icon-svg__v2-vent" cx="19" cy="61.5" r="1" />
+      <circle className="ew-icon-svg__v2-vent" cx="53" cy="61.5" r="1" />
+    </svg>
+  );
+}
+
 export function ThemedIconGlyph({ appletId }: { appletId: string }) {
   const variant = useIconVariant();
 
   if (variant === 'plain') return <PlainSvgIcon appletId={appletId} />;
+  if (variant === 'v2-holograph') return <V2HolographicIcon appletId={appletId} />;
   if (variant === 'holograph') return <HolographIcon appletId={appletId} />;
   if (variant === 'terminal') return <TerminalSvgIcon appletId={appletId} />;
   return <ParticleIcon appletId={appletId} />;

@@ -1923,10 +1923,41 @@ fonts, icons, global, window-frame), and an ESM Tailwind preset
 **Adoption status:**
 - Gener8 web: correctly imports from `@everywear/ewds` (reference implementation)
 - Kasai (applets/kasai): imports from `@everywear/ewds`
-- Shell and 1magen: still carry local duplicate copies in `src/styles/everywear/tokens.css` (migration pending)
+- Shell and 1magen: import shared `ThemeProvider`/`useTheme` from `@everywear/ewds`
 - Vid: has `@everywear/ewds` as package.json dep, partial token usage, ~15 raw white/opacity values remaining
 - Kasai-Local (standalone repo): local duplicate tokens, fully tokenised after 2026-05-18 EWDS pass
 - CharacterStudio-Strands: references `/ewds/` static files that don't exist on disk, 170 `var(--ew-*)` usages unresolved
+
+### EWDS-v2 Additive Theme Family
+
+Source handoff: `C:\Users\MAG MSI\Project Everywear\DESIGN WORK DONT GIT\Everywear\design_handoff_everywear_ewds_v2`.
+
+EWDS-v2 adds a honed graphite cyberpunk theme family without replacing the
+existing Light, Classic, Refined, or Terminal skins. The v2 skins are:
+
+- `graphite`: default v2 surface, deep honed-metal bevels, photoreal recessed wells.
+- `anodized`: flatter machined surface, lower top highlight, finer micro-noise.
+- `carbon`: darker woven substrate texture using the same component shapes.
+
+The shared provider remains the source of truth. `@everywear/ewds` owns the skin,
+accent, mode, widget surface, v2 chrome density, and wallpaper grain settings;
+the shell and applets consume these as CSS custom properties from
+`body[data-skin][data-mode][data-accent]`.
+
+Theme selection belongs in Settings. Desktop chrome may expose a compact
+Light/Dark mode toggle, but it must not show the full seven-theme strip.
+
+EWDS-v2 token contract:
+
+- Raised surfaces use stacked bevel shadows, not a single shadow.
+- Editable fields and received/transcript regions use recessed wells.
+- Clip-path shards require a drop-shadow wrapper because clip-path crops box-shadow.
+- Chrome details such as barcodes, serials, JP labels, and registration marks are
+  brand voice. Density is user-controllable, but the chrome vocabulary remains present.
+- V2 accents are `cyan`, `amber`, `acid`, `crimson`, and `bone`; one accent controls
+  the shell at a time. Status colors remain `warn`, `crit`, and `ok`.
+- Holographic desktop icons require a physical graphite plinth, projector aperture,
+  volumetric cone, projection hairlines, glowing glyph, label, and serial code.
 
 ### Desktop Icon Canon
 
