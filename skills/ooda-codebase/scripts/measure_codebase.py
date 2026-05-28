@@ -174,4 +174,18 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     args = parser.parse_args()
 
-    root = Path(args.path).resolv
+    root = Path(args.path).expanduser().resolve()
+    if not root.exists():
+        parser.error(f"path does not exist: {root}")
+    if not root.is_dir():
+        parser.error(f"path is not a directory: {root}")
+
+    report = generate_report(root, args.budget)
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print_report(report)
+
+
+if __name__ == "__main__":
+    main()
