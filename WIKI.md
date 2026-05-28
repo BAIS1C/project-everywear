@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.3
-Last updated: 2026-05-27 (Gener8 vault live-read/picker repair)
+Version: 1.1.4
+Last updated: 2026-05-27 (Track A folded into body; v1.1.5 overlay archived)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -27,6 +27,48 @@ Maintainer: Sean Uddin / Somo Kasane
 > index directly on workspace/Vault open. The live providers no longer trigger
 > `run_gener8_vault_audio_import`, and the Reference/Cover picker no longer
 > calls stale `/api/reference-tracks` web routes that return app HTML.
+
+> Current-state note, 2026-05-27 v1.1.4: Overnight Gener8 acceptance produced
+> Codex-marked plain, Reference, and Cover test outputs from the supplied
+> "Moving To The Sun" source. The ACE server accepted all three paths. The
+> three outputs are registered and searchable in Vault as `gener8_song` assets.
+> UI shell navigation still needs repair: Vault/Vid Studio window controls can
+> trap the user away from Home, so the overnight audio acceptance used the local
+> engine API after native UI interaction became blocked.
+
+## Current State Addendum 2026-05-27: Crate Inventory Sync + ew-vault → vault Rename
+
+### Observe
+
+- Workspace has 8 crates in `Cargo.toml` members; previous WIKI sections 2.4 and 7 only documented 4 (`applet-ipc`, `model-manager`, `vault`, `mait`).
+- Three populated, real-code crates were undocumented: `beats-engine`, `data-migration`, `video-encoder`.
+- Applet `loom` (Vite frontend at port 3008, Project NOMAD migration cockpit) was missing from the Section 2.3 applets inventory table.
+- Vault crate naming is inconsistent across docs: WIKI uses `vault`, ARCHITECTURE.md still uses the older `ew-vault` in 4 places. Disk and `Cargo.toml` say `vault`.
+
+### Decide
+
+- Document all three undocumented crates with their current, real scope:
+  - `beats-engine` is the shared beat-detection crate extracted from Gener8. Open modularisation decision from 2026-05-21 still hanging: fold `applets/gener8/src-tauri/src/beats/` into the crate, or leave the applet's `beats/` as a thin wrapper.
+  - `data-migration` is a **local-only** Phase 5 importer for legacy standalone `S3-Gener8` user data into Everywear paths. Declared in workspace, intentionally NOT wired into any shell or applet runtime deps. Not a ship-path feature; do not graduate it.
+  - `video-encoder` is the Vid Studio sidecar process manager (default port 9877), ported in from standalone Gener8. Real Rust API for locate/boot/probe/stop of the bundled Node+FFmpeg encoder. Used by Gener8 today; planned shared use across video-producing applets (`vid`, `3nvizen`, potentially `loom`).
+- Canonical name for the Everywear Vault crate is `vault`, not `ew-vault`. Rename in ARCHITECTURE.md to match WIKI and disk.
+- `vault` crate stays a **detailed stub** for now: Tantivy real, LanceDB pending, typed Vault sections per the 2026-05-24T22:04 canon (Songs, Stems, Riffs, Samples, References, Cover Sources, Local Audio, Style Patches, Visual Patches, Trait Shards, Skill Shards, conversations, logs, contexts). Replaces Gener8's local library and is cross-applet by design.
+- Add `loom` row to Section 2.3 applets table.
+
+### Verification State
+
+- No code changes in this addendum; only documentation. No new `cargo`/`npm` runs required.
+- Crate facts verified by reading `crates/beats-engine/src/lib.rs`, `crates/data-migration/src/lib.rs`, `crates/video-encoder/src/lib.rs`, and `Cargo.toml` workspace members on 2026-05-27.
+
+### Updated Implementation Status
+
+| Area | Current State | Notes |
+|---|---|---|
+| beats-engine | Real shared crate | Extracted from Gener8. Used by `applets/gener8/src-tauri`. Open: fold gener8 `beats/` in or keep wrapper. |
+| data-migration | Local-only importer | Phase 5 legacy S3-Gener8 → Everywear paths. Not wired into shell/applet runtimes. |
+| video-encoder | Real sidecar manager | Default port 9877, used by Gener8. Vid Studio port-in target. |
+| vault crate | Detailed stub | Cross-applet Everywear Vault. Tantivy real; LanceDB pending. Replaces Gener8 local library. |
+| loom applet | Scaffolded | The Loom: Everywear Knowledge Engine, Project NOMAD Rust migration cockpit. React frontend on port 3008. |
 
 ## Current State Addendum 2026-05-27: Kasai Short Creation + EWDS Provider
 
@@ -143,6 +185,23 @@ Maintainer: Sean Uddin / Somo Kasane
   `cargo tauri build --debug` passed. Debug exe:
   `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`
   timestamp `2026-05-27 00:19:20`.
+- Overnight acceptance on 2026-05-27 generated three Codex-marked test files
+  using the local ACE server: plain text-to-music, Reference with
+  `G:\Studio Spaceman\Imael Angel - I'm Moving To The Sun (Dj Kenzo Remix).mp3`,
+  and Cover with the same source. The files were copied into
+  `C:\Users\MAG MSI\Documents\Everywear Vault\Audio` and indexed with
+  `platform/everywear-os/src-tauri/examples/vault_register_audio_files.rs`.
+  `cargo run -p everywear-os --example vault_stats` now reports `all=626`,
+  `audio=615`, `gener8_song=93`, `reference=105`, `cover_source=66`,
+  `stem=96`, and `video=11`, with the three Codex files appearing at the top
+  of `gener8_song`.
+- Finding from the same pass: copying MP3 files directly into the Vault audio
+  root is not enough to make them searchable. The existing legacy importer did
+  not register those root files, so a direct registration example was added for
+  one-off local recovery.
+- Finding from the same pass: the Cover engine path completed, but ignored the
+  requested short test duration and emitted a full-length output matching the
+  source-length cover workflow.
 
 ## Current State Addendum 2026-05-18: OODA Refresh
 
@@ -434,6 +493,7 @@ applets/1magen/
 | `applets/mymories/` | `LICENCE.md` only | Placeholder |
 | `applets/strands-game/` | `LICENCE.md` only | Placeholder |
 | `applets/s3studio/` | `LICENCE.md` only | Placeholder |
+| `applets/loom/` | 5 source files. React/Vite frontend-only applet at port 3008. The Loom: Everywear Knowledge Engine, Project NOMAD migration cockpit. `applet.toml` registered; engine type `none`. | **Scaffolded** |
 
 ### crates/ (Shared Rust)
 
@@ -465,6 +525,20 @@ crates/
     Cargo.toml                  deps: dirs
     src/
       lib.rs                    root(), models_dir(), data_dir(), staging_dir(), bin_dir(), config_dir(), logs_dir(), migration_dir(), ensure_dirs()
+  beats-engine/
+    Cargo.toml                  deps: anyhow, aubio-rs, lru, serde, serde_json, sha2, symphonia
+    src/
+      lib.rs                    Re-exports BeatsCache, analyse, BeatMap. UI-agnostic public surface.
+      engine.rs                 REAL: aubio-rs + symphonia beat detection (`analyse` → `BeatMap`).
+      cache.rs                  REAL: LRU-backed BeatsCache for repeated analyse calls on the same audio.
+  data-migration/
+    Cargo.toml                  deps: everywear-paths, sha2, serde, serde_json, tokio (fs), anyhow, tracing, chrono
+    src/
+      lib.rs                    LOCAL-ONLY: Phase 5 importer. Hardcoded APPLET_ID="gener8", LEGACY_APP_DIR="S3-Gener8". Migrates legacy S3-Gener8 user data into Everywear paths. NOT wired into shell or applet runtime deps; do not graduate to ship-path.
+  video-encoder/
+    Cargo.toml                  deps: anyhow, reqwest, serde, serde_json, tokio, tracing, which
+    src/
+      lib.rs                    REAL: VideoEncoderManager (default port 9877). Boot/probe/stop the bundled Node+FFmpeg encoder sidecar. Used by Gener8; planned cross-applet (vid, 3nvizen, loom).
 ```
 
 ### packages/ (Shared TypeScript)
@@ -477,6 +551,7 @@ packages/
       index.ts                  Exports ThemeProvider, useTheme, Skin, Accent, Mode types
   shared/
     package.json                @everywear/shared v0.1.0
+    tsconfig.json               lib includes ES2021, DOM, DOM.Iterable
     src/
       index.ts                  Exports types, constants, LockedFeatureCard, logger
       constants.ts              Shared constants
@@ -492,11 +567,14 @@ packages/
       logging.ts                Logging types and helpers
 ```
 
-Note (updated 2026-05-18): shared and transport are no longer pure stubs. shared
-exports a logger, constants, types, and a LockedFeatureCard component. transport
-exports a typed Transport interface, factory, vault IPC bridge (11 functions),
-and logging types. Per-app `lib/transport.ts` files still carry app-specific
-invoke wrappers; the shared transport package provides the cross-cutting layer.
+Note (updated 2026-05-27): shared and transport are no longer pure stubs. shared
+exports a logger, constants, types, and a LockedFeatureCard component, with DOM
+libs declared in tsconfig because the logger and component legitimately use
+browser APIs. transport exports a typed Transport interface, factory, vault IPC
+bridge (11 functions), and logging types. ewds tailwind preset is now `.mjs`
+served through the exports map. Per-app `lib/transport.ts` files still carry
+app-specific invoke wrappers; the shared transport package provides the
+cross-cutting layer.
 
 ### engines/ (Native Binaries)
 
@@ -1784,13 +1862,63 @@ Consumers: Kasai (agent personality), Character Studio (avatar export bridge), S
 
 **Still pending:** Deeper runtime integration with Kasai/Character Studio. Character Studio exports `strands-avatar-v1` sidecar manifests that mait can import, but the receiving end in Kasai is not yet wired.
 
+### beats-engine (crates/beats-engine/)
+
+Beat detection engine extracted from Gener8. UI-agnostic: callers invoke `analyse` directly and decide whether to expose it through Tauri, HTTP, or another transport.
+
+**Modules (implemented):**
+- `engine` : aubio-rs + symphonia-driven beat detection. Public `analyse(...)` returns a `BeatMap` (per-beat timings + tempo metadata).
+- `cache` : LRU-backed `BeatsCache` so repeated calls on the same audio asset (by content hash) skip recomputation.
+
+**Public surface:**
+- `pub use cache::BeatsCache;`
+- `pub use engine::{analyse, BeatMap};`
+
+Dependencies: anyhow, aubio-rs, lru, serde, serde_json, sha2, symphonia.
+
+Consumers: `applets/gener8/src-tauri` (current); planned cross-use by any audio-aware applet.
+
+**Open modularisation question (from `ARCHITECTURE_MODULES_2026-05-21.md` §6.4):** `applets/gener8/src-tauri/src/beats/` is currently parallel to this crate. Two paths — (a) fold all Gener8 beats logic into `crates/beats-engine` directly, or (b) leave the applet's `beats/` as a thin wrapper. Decision pending.
+
+### data-migration (crates/data-migration/)
+
+**LOCAL-ONLY** Phase 5 importer for legacy standalone `S3-Gener8` user data into Everywear paths. Intentionally isolated so high-risk filesystem moves can be tested and audited independently of the shell and applet binaries.
+
+**Constants:**
+- `APPLET_ID = "gener8"`
+- `LEGACY_APP_DIR = "S3-Gener8"`
+
+**Public surface:**
+- `MigrationReceipt` (serde Serialize/Deserialize) — records `source`, `target`, `files_moved`, `dry_run`, `timestamp`, `skipped`, `phase`, `warnings`, `operations`.
+- `MigrationOperation` — atomic per-file record for receipt audit.
+
+Dependencies: everywear-paths, sha2, serde, serde_json, tokio (fs), anyhow, tracing, chrono.
+
+**Consumers:** None at runtime. Declared in workspace `Cargo.toml` so it builds in the dev tree; deliberately NOT pulled into any applet or shell `Cargo.toml`. Run as a standalone binary or test target when migrating a local installation.
+
+**Do not graduate this crate to a runtime dep.** If standalone S3-Gener8 data import becomes a shipped feature, it must be re-scoped as a proper applet/command, not by wiring this crate into a release build.
+
+### video-encoder (crates/video-encoder/)
+
+Video encoder sidecar process management ported in from standalone Gener8 (Vid Studio lineage). Applets bundle their own Node/FFmpeg resources; this crate only provides the Rust API for locating, booting, stopping, and probing the encoder.
+
+**Public surface:**
+- `pub const DEFAULT_VIDEO_ENCODER_PORT: u16 = 9877;`
+- `VideoEncoderManager` — holds an optional child process and port. Methods include `new()`, `with_port(port)`, `is_running()`, `port()`, `stop()`, and start/probe helpers wired via tokio + reqwest.
+
+Dependencies: anyhow, reqwest, serde, serde_json, tokio, tracing, which.
+
+Consumers: `applets/gener8/src-tauri` (current). Planned cross-applet use across `vid`, `3nvizen`, and any other video-producing applet that needs to drive the bundled encoder sidecar.
+
 ---
 
 ## 8. EWDS Design System Reference
 
 EWDS (Everywear Design System) v1.0. The canonical source is `packages/ewds/`
-which exports ThemeProvider, useTheme, types, and full CSS (tokens, components,
-fonts, icons, global, window-frame). The package is built and working.
+which exports ThemeProvider, useTheme, types, full CSS (tokens, components,
+fonts, icons, global, window-frame), and an ESM Tailwind preset
+(`tailwind-preset.mjs`, served via the subpath export
+`@everywear/ewds/tailwind-preset`). The package is built and working.
 
 **Adoption status:**
 - Gener8 web: correctly imports from `@everywear/ewds` (reference implementation)
@@ -2246,7 +2374,14 @@ Root scripts:
 - `dev:shell` : starts shell dev server
 - `dev:1magen` : starts 1magen dev server
 - `build:ewds` : builds the EWDS package
-- `lint` : ESLint across all workspaces
+- `lint` : ESLint 9 flat-config run via `eslint.config.mjs` at repo
+  root (added 2026-05-27). Uses `@typescript-eslint` recommended
+  rules. `ban-ts-comment` is `error` with NO carve-out for the
+  Gener8 web @ts-nocheck port debt: the red lint output IS the
+  visible migration tracker. `no-explicit-any` is `warn`.
+  `ts-ignore`/`ts-expect-error` are allowed with description
+  length >= 10 chars. devDeps: `@typescript-eslint/parser ^8.0.0`,
+  `@typescript-eslint/eslint-plugin ^8.0.0`.
 - `clean` : removes dist, target, node_modules
 
 ---
@@ -2355,6 +2490,38 @@ Root scripts:
 4. **model_manager.rs** : RESOLVED. 1magen imports from crates/model-manager/. Z-Image manifest lives in z_image_manifest.rs.
 5. **Google Fonts import** : in imagen.css. Should be in a shared location or loaded by EWDS.
 6. **VideoGeneratorModal** : large component copied between Vid and Gener8. Fix once, then decide whether to de-duplicate into shared package.
+
+### Gener8 Web @ts-nocheck Migration Debt (Track C, multi-session)
+
+Status: in progress as of 2026-05-27. Seeded.
+
+Context: 70 components in `applets/gener8/web/src/components/` carry
+file-wide `// @ts-nocheck` as a port-time blanket pragma from the
+S3 Studio -> Everywear migration, not because every file has real
+type errors. Inspection of LoadingSpinner.tsx (15 lines, zero typed
+surface) and EmptyState.tsx (full typed CTA/EmptyStateProps already
+in place) suggests many of the 70 will be one-line pragma removals
+with no follow-up type work; the rest are the real port debt.
+
+Triage pattern (one file per confirmed step):
+1. Remove the `// @ts-nocheck` line.
+2. Run `npm run build --workspace @everywear/gener8-web` (or a
+   targeted `tsc --noEmit`).
+3. If clean, leave pragma removed and add a one-line migration
+   note in the header comment.
+4. If errors, STOP. Document the error class. Defer the
+   type-bridge work to a deliberate pass; do NOT bulk-fix.
+
+Lint surface: while migration is in progress `npm run lint`
+reports approximately one `ban-ts-comment` error per remaining
+`@ts-nocheck` file. That red count is the migration tracker.
+
+Seeded files (2026-05-27):
+- applets/gener8/web/src/components/LoadingSpinner.tsx (clean removal)
+- applets/gener8/web/src/components/EmptyState.tsx (clean removal)
+
+Remaining: 68 files. Batch size and next-file selection are
+determined per session.
 
 ---
 

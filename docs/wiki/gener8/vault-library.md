@@ -41,6 +41,10 @@
 - Placeholder legacy names are display-only corrected in UI when the indexed title is synthetic.
 - The local S3-to-Everywear bridge is a one-time repair for this user's
   existing S3 body of work, not a required workflow for new users.
+- One-off local registration can use
+  `platform/everywear-os/src-tauri/examples/vault_register_audio_files.rs`
+  when files already exist on disk and need to be inserted into the Vault index
+  without running the whole legacy import pipeline.
 
 **Rules**:
 
@@ -65,6 +69,9 @@
 - Opening Vault should not force a full legacy import every time. One-time
   repair imports must be version-keyed, user-triggered, or run offline before
   app launch.
+- Copying audio into the Vault root is not sufficient by itself. New files must
+  be registered with typed metadata, either through app commands such as
+  `vault_register_audio` or through an explicit maintenance tool.
 - Reference/Cover source picking must use Vault IPC (`vault_search`) rather
   than stale web routes such as `/api/reference-tracks`; those routes can
   return shell HTML in Tauri and break JSON parsing.
@@ -79,4 +86,4 @@
 
 **Tests**: Re-run `npm run build --workspace applets/gener8/web` and `cargo check -p everywear-os` after edits that touch this contract.
 
-**Last verified**: 2026-05-27, Codex Gener8/Vault repair pass. Verified with `npm run build --workspace applets/gener8/web`, `cargo run -p everywear-os --example vault_stats`, and `cargo tauri build --debug`. The debug app was rebuilt at `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`.
+**Last verified**: 2026-05-27, Codex Gener8/Vault overnight acceptance. Verified with `npm run build --workspace applets/gener8/web`, `cargo run -p everywear-os --example vault_stats`, and `cargo tauri build --debug`. The debug app was rebuilt at `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe`. The latest stats after registering the overnight outputs are `all=626`, `audio=615`, `gener8_song=93`, `reference=105`, `cover_source=66`, `stem=96`, and `video=11`.
