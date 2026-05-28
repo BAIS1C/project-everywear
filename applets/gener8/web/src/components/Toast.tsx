@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Toast — backwards-compatible adapter on top of EWDS ToastHost.
  *
@@ -18,6 +17,10 @@
  *
  * Both APIs render through the same .ew-toast styling driven by tokens,
  * so chamfer in classic/refined and sharp 0px in terminal both work.
+ *
+ * Migrated out of @ts-nocheck on 2026-05-27 (Track C Gener8
+ * web type-bridge migration, batch 1). Inspection found no
+ * real type errors; the pragma was port-time blanket noise.
  */
 import { useEffect, useRef } from 'react';
 import { showToast as showToastImperative, type ToastKind } from './ToastHost';

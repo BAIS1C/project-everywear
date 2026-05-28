@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * ConfirmDialog — portal-level confirmation dialog (EWDS).
  *
@@ -8,6 +7,10 @@
  *
  * Pass `destructive` for delete/remove actions — the confirm button
  * picks up .ew-btn--danger which reads --ew-danger across all skins.
+ *
+ * Migrated out of @ts-nocheck on 2026-05-27 (Track C Gener8
+ * web type-bridge migration, batch 1). Inspection found no
+ * real type errors; the pragma was port-time blanket noise.
  */
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';

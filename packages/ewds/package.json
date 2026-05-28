@@ -14,7 +14,7 @@
     "./css/icons.css": "./src/css/icons.css",
     "./css/window-frame.css": "./src/css/window-frame.css",
     "./css/window-frame-component.css": "./src/css/window-frame-component.css",
-    "./tailwind-preset": "./tailwind-preset.js"
+    "./tailwind-preset": "./tailwind-preset.mjs"
   },
   "scripts": {
     "build": "tsc",

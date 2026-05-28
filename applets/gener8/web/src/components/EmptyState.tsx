@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * EmptyState — token-driven empty surface with primary/secondary CTAs.
  *
@@ -12,6 +11,10 @@
  *
  * All styling reads from EWDS tokens — works in classic, refined, and
  * terminal without conditional CSS.
+ *
+ * Migrated out of @ts-nocheck on 2026-05-27 (seed file for Track C
+ * Gener8 web type-bridge migration). Local types (CTA, EmptyStateProps)
+ * already covered the surface; the pragma was port-time blanket noise.
  */
 import React from 'react';
 

@@ -1,6 +1,9 @@
-// @ts-nocheck
 /**
  * EWDS-styled loading spinner for Suspense boundaries.
+ *
+ * Migrated out of @ts-nocheck on 2026-05-27 (seed file for Track C
+ * Gener8 web type-bridge migration). This component has no typed
+ * surface; the pragma was a blanket port artefact, not a real shield.
  */
 import React from 'react';
 

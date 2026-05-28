@@ -23,11 +23,13 @@
     "dev:shell": "cd platform/everywear-os && npm run dev",
     "dev:1magen": "cd applets/1magen && npm run tauri dev",
     "build:ewds": "cd packages/ewds && npm run build",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "clean": "rm -rf node_modules packages/*/node_modules applets/*/node_modules"
   },
   "devDependencies": {
     "typescript": "^5.5",
-    "eslint": "^9"
+    "eslint": "^9",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0"
   }
 }

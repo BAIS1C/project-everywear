@@ -1,4 +1,8 @@
-// @ts-nocheck
+/**
+ * Migrated out of @ts-nocheck on 2026-05-27 (Track C Gener8
+ * web type-bridge migration, batch 1). Inspection found no
+ * real type errors; the pragma was port-time blanket noise.
+ */
 import React, { useState } from 'react';
 import { FileDown } from 'lucide-react';
 import { lrcToSrt } from '../lib/lrcParser';
