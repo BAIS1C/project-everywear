@@ -1,0 +1,902 @@
+[
+  {
+    "i": 0,
+    "tag": "HTML",
+    "cls": "dark",
+    "text": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n",
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 960
+  },
+  {
+    "i": 8,
+    "tag": "BODY",
+    "cls": "ew dark",
+    "text": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n",
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 960
+  },
+  {
+    "i": 9,
+    "tag": "DIV",
+    "cls": "",
+    "text": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n",
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 960
+  },
+  {
+    "i": 10,
+    "tag": "DIV",
+    "cls": "ew-titlebar",
+    "text": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0",
+    "x": 0,
+    "y": 0,
+    "w": 1440,
+    "h": 36
+  },
+  {
+    "i": 11,
+    "tag": "DIV",
+    "cls": "ew-titlebar__left",
+    "text": "\u25c7",
+    "x": 12,
+    "y": 9.600000381469727,
+    "w": 73.375,
+    "h": 16
+  },
+  {
+    "i": 13,
+    "tag": "BUTTON",
+    "cls": "ew-traffic-light ew-traffic-light--close",
+    "text": "Quit Everywear",
+    "x": 12,
+    "y": 11.600000381469727,
+    "w": 12,
+    "h": 12
+  },
+  {
+    "i": 14,
+    "tag": "BUTTON",
+    "cls": "ew-traffic-light ew-traffic-light--minimize",
+    "text": "Minimize",
+    "x": 32,
+    "y": 11.600000381469727,
+    "w": 12,
+    "h": 12
+  },
+  {
+    "i": 15,
+    "tag": "BUTTON",
+    "cls": "ew-traffic-light ew-traffic-light--maximize",
+    "text": "Maximize",
+    "x": 52,
+    "y": 11.600000381469727,
+    "w": 12,
+    "h": 12
+  },
+  {
+    "i": 16,
+    "tag": "SPAN",
+    "cls": "ew-titlebar__sigil",
+    "text": "\u25c7",
+    "x": 72,
+    "y": 9.600000381469727,
+    "w": 13.375,
+    "h": 16
+  },
+  {
+    "i": 17,
+    "tag": "DIV",
+    "cls": "ew-titlebar__center",
+    "text": "EVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0",
+    "x": 85.375,
+    "y": 5.599999904632568,
+    "w": 1262.625,
+    "h": 24
+  },
+  {
+    "i": 18,
+    "tag": "SPAN",
+    "cls": "ew-titlebar__version",
+    "text": "EVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0",
+    "x": 579.25,
+    "y": 13.600000381469727,
+    "w": 274.875,
+    "h": 12.800000190734863
+  },
+  {
+    "i": 20,
+    "tag": "DIV",
+    "cls": "ew-desktop",
+    "text": "01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFE",
+    "x": 0,
+    "y": 36,
+    "w": 1440,
+    "h": 880
+  },
+  {
+    "i": 21,
+    "tag": "DIV",
+    "cls": "ew-canvas ew-canvas--v2-home",
+    "text": "01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFE",
+    "x": 0,
+    "y": 36,
+    "w": 1440,
+    "h": 880
+  },
+  {
+    "i": 22,
+    "tag": "DIV",
+    "cls": "ew-canvas__center-hud",
+    "text": "01:02\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFE",
+    "x": 453.20001220703125,
+    "y": 281.6000061035156,
+    "w": 620,
+    "h": 388.8000183105469
+  },
+  {
+    "i": 23,
+    "tag": "DIV",
+    "cls": "ew-desktop-clock",
+    "text": "01:02",
+    "x": 654.2250366210938,
+    "y": 281.6000061035156,
+    "w": 217.9375,
+    "h": 72
+  },
+  {
+    "i": 24,
+    "tag": "SPAN",
+    "cls": "ew-desktop-clock__time",
+    "text": "01:02",
+    "x": 654.2250366210938,
+    "y": 275.20001220703125,
+    "w": 217.9375,
+    "h": 84.80000305175781
+  },
+  {
+    "i": 25,
+    "tag": "DIV",
+    "cls": "ew-canvas__subtitle",
+    "text": "LOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0",
+    "x": 638.4500122070312,
+    "y": 373.6000061035156,
+    "w": 249.4875030517578,
+    "h": 16.5
+  },
+  {
+    "i": 26,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-row",
+    "text": "NODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-tu",
+    "x": 453.20001220703125,
+    "y": 410.1000061035156,
+    "w": 620,
+    "h": 108.30000305175781
+  },
+  {
+    "i": 27,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-card",
+    "text": "NODE\nhome.strands.local\nstatus: awake",
+    "x": 453.20001220703125,
+    "y": 410.1000061035156,
+    "w": 193.3249969482422,
+    "h": 108.30000305175781
+  },
+  {
+    "i": 28,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-label",
+    "text": "NODE",
+    "x": 474,
+    "y": 434.32501220703125,
+    "w": 151.72500610351562,
+    "h": 13.5
+  },
+  {
+    "i": 29,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-value",
+    "text": "home.strands.local",
+    "x": 474,
+    "y": 455.82501220703125,
+    "w": 151.72500610351562,
+    "h": 19.5
+  },
+  {
+    "i": 30,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-detail",
+    "text": "status: awake",
+    "x": 474,
+    "y": 479.32501220703125,
+    "w": 151.72500610351562,
+    "h": 14.850000381469727
+  },
+  {
+    "i": 31,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-card",
+    "text": "INFERENCE\nstandby\nready target: z-image-turbo-q8",
+    "x": 666.5250244140625,
+    "y": 410.1000061035156,
+    "w": 193.33750915527344,
+    "h": 108.30000305175781
+  },
+  {
+    "i": 32,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-label",
+    "text": "INFERENCE",
+    "x": 687.3250122070312,
+    "y": 426.8999938964844,
+    "w": 151.7375030517578,
+    "h": 13.5
+  },
+  {
+    "i": 33,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-value",
+    "text": "standby",
+    "x": 687.3250122070312,
+    "y": 448.3999938964844,
+    "w": 151.7375030517578,
+    "h": 19.5
+  },
+  {
+    "i": 34,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-detail",
+    "text": "ready target: z-image-turbo-q8",
+    "x": 687.3250122070312,
+    "y": 471.8999938964844,
+    "w": 151.7375030517578,
+    "h": 29.700000762939453
+  },
+  {
+    "i": 35,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-card",
+    "text": "NETWORK\npeers: 0 online\nfriends: 0 present",
+    "x": 879.8624877929688,
+    "y": 410.1000061035156,
+    "w": 193.33750915527344,
+    "h": 108.30000305175781
+  },
+  {
+    "i": 36,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-label",
+    "text": "NETWORK",
+    "x": 900.6625366210938,
+    "y": 434.32501220703125,
+    "w": 151.7375030517578,
+    "h": 13.5
+  },
+  {
+    "i": 37,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-value",
+    "text": "peers: 0 online",
+    "x": 900.6625366210938,
+    "y": 455.82501220703125,
+    "w": 151.7375030517578,
+    "h": 19.5
+  },
+  {
+    "i": 38,
+    "tag": "DIV",
+    "cls": "ew-canvas__status-detail",
+    "text": "friends: 0 present",
+    "x": 900.6625366210938,
+    "y": 479.32501220703125,
+    "w": 151.7375030517578,
+    "h": 14.850000381469727
+  },
+  {
+    "i": 39,
+    "tag": "SECTION",
+    "cls": "ew-weather ew-weather--idle",
+    "text": "--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOC",
+    "x": 453.20001220703125,
+    "y": 538.4000244140625,
+    "w": 620,
+    "h": 132
+  },
+  {
+    "i": 40,
+    "tag": "DIV",
+    "cls": "ew-weather__main",
+    "text": "--\nAwaiting signal",
+    "x": 474,
+    "y": 556.7625122070312,
+    "w": 396.9125061035156,
+    "h": 50
+  },
+  {
+    "i": 43,
+    "tag": "DIV",
+    "cls": "ew-weather__readout",
+    "text": "--\nAwaiting signal",
+    "x": 534,
+    "y": 556.7625122070312,
+    "w": 98.9749984741211,
+    "h": 50
+  },
+  {
+    "i": 44,
+    "tag": "DIV",
+    "cls": "ew-weather__temp",
+    "text": "--",
+    "x": 534,
+    "y": 556.7625122070312,
+    "w": 98.9749984741211,
+    "h": 28
+  },
+  {
+    "i": 45,
+    "tag": "DIV",
+    "cls": "ew-weather__condition",
+    "text": "Awaiting signal",
+    "x": 534,
+    "y": 588.7625122070312,
+    "w": 98.9749984741211,
+    "h": 18
+  },
+  {
+    "i": 46,
+    "tag": "DIV",
+    "cls": "ew-weather__meta",
+    "text": "Makassar\nLocation not set",
+    "x": 474,
+    "y": 621.8875122070312,
+    "w": 396.9125061035156,
+    "h": 15
+  },
+  {
+    "i": 47,
+    "tag": "SPAN",
+    "cls": "",
+    "text": "Makassar",
+    "x": 474,
+    "y": 621.8875122070312,
+    "w": 43.98749923706055,
+    "h": 15
+  },
+  {
+    "i": 48,
+    "tag": "SPAN",
+    "cls": "",
+    "text": "Location not set",
+    "x": 529.9874877929688,
+    "y": 621.8875122070312,
+    "w": 87.9749984741211,
+    "h": 15
+  },
+  {
+    "i": 49,
+    "tag": "DIV",
+    "cls": "ew-weather__metrics",
+    "text": "Wind --\nRain --\nHumidity --",
+    "x": 890.9125366210938,
+    "y": 621.8875122070312,
+    "w": 161.4875030517578,
+    "h": 15
+  },
+  {
+    "i": 50,
+    "tag": "SPAN",
+    "cls": "",
+    "text": "Wind --",
+    "x": 890.9125366210938,
+    "y": 621.8875122070312,
+    "w": 38.5,
+    "h": 15
+  },
+  {
+    "i": 51,
+    "tag": "SPAN",
+    "cls": "",
+    "text": "Rain --",
+    "x": 941.4125366210938,
+    "y": 621.8875122070312,
+    "w": 38.5,
+    "h": 15
+  },
+  {
+    "i": 52,
+    "tag": "SPAN",
+    "cls": "",
+    "text": "Humidity --",
+    "x": 991.9125366210938,
+    "y": 621.8875122070312,
+    "w": 60.48749923706055,
+    "h": 15
+  },
+  {
+    "i": 53,
+    "tag": "BUTTON",
+    "cls": "ew-weather__locate",
+    "text": "USE LOCATION",
+    "x": 948.8125,
+    "y": 566.7625122070312,
+    "w": 103.5875015258789,
+    "h": 30
+  },
+  {
+    "i": 54,
+    "tag": "DIV",
+    "cls": "ew-icon-grid",
+    "text": "S3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM",
+    "x": 0,
+    "y": 36,
+    "w": 400,
+    "h": 880
+  },
+  {
+    "i": 55,
+    "tag": "DIV",
+    "cls": "ew-desktop-folder ",
+    "text": "S3\n5\nS3 Studio",
+    "x": 16,
+    "y": 60,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 56,
+    "tag": "BUTTON",
+    "cls": "ew-desktop-icon ew-desktop-icon--folder",
+    "text": "S3\n5\nS3 Studio",
+    "x": 16,
+    "y": 60,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 57,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon__glyph-wrap",
+    "text": "S3\n5",
+    "x": 32,
+    "y": 68,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 81,
+    "tag": "SPAN",
+    "cls": "ew-folder-icon__count",
+    "text": "5",
+    "x": 67,
+    "y": 104,
+    "w": 14,
+    "h": 14
+  },
+  {
+    "i": 82,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "S3 Studio",
+    "x": 34.212501525878906,
+    "y": 131,
+    "w": 51.5625,
+    "h": 13.4375
+  },
+  {
+    "i": 83,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon",
+    "text": "SN\nStrands Nation",
+    "x": 16,
+    "y": 160,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 84,
+    "tag": "DIV",
+    "cls": "",
+    "text": "SN",
+    "x": 32,
+    "y": 168,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 85,
+    "tag": "DIV",
+    "cls": "",
+    "text": "SN",
+    "x": 32,
+    "y": 168,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 112,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "Strands Nation",
+    "x": 19.475000381469727,
+    "y": 231,
+    "w": 81.05000305175781,
+    "h": 13.4375
+  },
+  {
+    "i": 114,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon",
+    "text": "MM\nMy Mait",
+    "x": 16,
+    "y": 260,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 115,
+    "tag": "DIV",
+    "cls": "",
+    "text": "MM",
+    "x": 32,
+    "y": 268,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 116,
+    "tag": "DIV",
+    "cls": "",
+    "text": "MM",
+    "x": 32,
+    "y": 268,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 142,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "My Mait",
+    "x": 37.337501525878906,
+    "y": 331,
+    "w": 45.32500076293945,
+    "h": 13.4375
+  },
+  {
+    "i": 144,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon",
+    "text": "LU\nLayer U OSINT",
+    "x": 16,
+    "y": 360,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 145,
+    "tag": "DIV",
+    "cls": "",
+    "text": "LU",
+    "x": 32,
+    "y": 368,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 146,
+    "tag": "DIV",
+    "cls": "",
+    "text": "LU",
+    "x": 32,
+    "y": 368,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 173,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "Layer U OSINT",
+    "x": 20.537500381469727,
+    "y": 431,
+    "w": 78.92500305175781,
+    "h": 13.4375
+  },
+  {
+    "i": 175,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon",
+    "text": "CS\nAvatar Studio",
+    "x": 16,
+    "y": 460,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 176,
+    "tag": "DIV",
+    "cls": "",
+    "text": "CS",
+    "x": 32,
+    "y": 468,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 177,
+    "tag": "DIV",
+    "cls": "",
+    "text": "CS",
+    "x": 32,
+    "y": 468,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 203,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "Avatar Studio",
+    "x": 23.325000762939453,
+    "y": 531,
+    "w": 73.3499984741211,
+    "h": 13.4375
+  },
+  {
+    "i": 205,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon",
+    "text": "LM\nThe Loom",
+    "x": 16,
+    "y": 560,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 206,
+    "tag": "DIV",
+    "cls": "",
+    "text": "LM",
+    "x": 32,
+    "y": 568,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 207,
+    "tag": "DIV",
+    "cls": "",
+    "text": "LM",
+    "x": 32,
+    "y": 568,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 233,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "The Loom",
+    "x": 32.9375,
+    "y": 631,
+    "w": 54.11249923706055,
+    "h": 13.4375
+  },
+  {
+    "i": 235,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon ew-desktop-icon--system",
+    "text": "ST\nSettings",
+    "x": 16,
+    "y": 660,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 236,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon__glyph-wrap",
+    "text": "ST",
+    "x": 32,
+    "y": 668,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 260,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "Settings",
+    "x": 37.9375,
+    "y": 731,
+    "w": 44.125,
+    "h": 13.4375
+  },
+  {
+    "i": 261,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon ew-desktop-icon--system",
+    "text": "VA\nVault",
+    "x": 16,
+    "y": 760,
+    "w": 88,
+    "h": 96
+  },
+  {
+    "i": 262,
+    "tag": "DIV",
+    "cls": "ew-desktop-icon__glyph-wrap",
+    "text": "VA",
+    "x": 32,
+    "y": 768,
+    "w": 56,
+    "h": 56
+  },
+  {
+    "i": 286,
+    "tag": "SPAN",
+    "cls": "ew-desktop-icon__label",
+    "text": "Vault",
+    "x": 46.212501525878906,
+    "y": 831,
+    "w": 27.5625,
+    "h": 13.4375
+  },
+  {
+    "i": 288,
+    "tag": "DIV",
+    "cls": "ew-taskbar",
+    "text": "\u25c7\nRTX 5090 \u00b7 27,559 MB\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:02 AM",
+    "x": 0,
+    "y": 916,
+    "w": 1440,
+    "h": 44
+  },
+  {
+    "i": 289,
+    "tag": "DIV",
+    "cls": "ew-taskbar__left",
+    "text": "\u25c7\nRTX 5090 \u00b7 27,559 MB",
+    "x": 16,
+    "y": 923.4000244140625,
+    "w": 630.2000122070312,
+    "h": 30
+  },
+  {
+    "i": 290,
+    "tag": "BUTTON",
+    "cls": "ew-taskbar__start",
+    "text": "\u25c7",
+    "x": 16,
+    "y": 923.4000244140625,
+    "w": 30,
+    "h": 30
+  },
+  {
+    "i": 291,
+    "tag": "SPAN",
+    "cls": "ew-taskbar__start-glyph",
+    "text": "\u25c7",
+    "x": 23.475000381469727,
+    "y": 929.4000244140625,
+    "w": 15.050000190734863,
+    "h": 18
+  },
+  {
+    "i": 294,
+    "tag": "SPAN",
+    "cls": "ew-taskbar__gpu-label",
+    "text": "RTX 5090 \u00b7 27,559 MB",
+    "x": 93,
+    "y": 930.1500244140625,
+    "w": 130.96250915527344,
+    "h": 16.5
+  },
+  {
+    "i": 296,
+    "tag": "DIV",
+    "cls": "ew-taskbar__center",
+    "text": "LIGHT\nDARK",
+    "x": 658.2000122070312,
+    "y": 922.6000366210938,
+    "w": 123.5999984741211,
+    "h": 31.600000381469727
+  },
+  {
+    "i": 297,
+    "tag": "DIV",
+    "cls": "ew-mode-toggle",
+    "text": "LIGHT\nDARK",
+    "x": 658.2000122070312,
+    "y": 922.6000366210938,
+    "w": 123.5999984741211,
+    "h": 31.600000381469727
+  },
+  {
+    "i": 298,
+    "tag": "BUTTON",
+    "cls": "ew-mode-toggle__option ",
+    "text": "LIGHT",
+    "x": 661,
+    "y": 925.4000244140625,
+    "w": 58,
+    "h": 26
+  },
+  {
+    "i": 299,
+    "tag": "BUTTON",
+    "cls": "ew-mode-toggle__option ew-mode-toggle__option--active",
+    "text": "DARK",
+    "x": 721,
+    "y": 925.4000244140625,
+    "w": 58,
+    "h": 26
+  },
+  {
+    "i": 300,
+    "tag": "DIV",
+    "cls": "ew-taskbar__right",
+    "text": "S\nseanie.sean@ever...\n\ud83d\udd14\n1:02 AM",
+    "x": 793.7999877929688,
+    "y": 921.6000366210938,
+    "w": 630.2000122070312,
+    "h": 33.60000228881836
+  },
+  {
+    "i": 301,
+    "tag": "BUTTON",
+    "cls": "ew-taskbar__profile",
+    "text": "S\nseanie.sean@ever...",
+    "x": 1119.5125732421875,
+    "y": 921.6000366210938,
+    "w": 172.5124969482422,
+    "h": 33.60000228881836
+  },
+  {
+    "i": 302,
+    "tag": "SPAN",
+    "cls": "ew-taskbar__profile-avatar",
+    "text": "S",
+    "x": 1132.3125,
+    "y": 926.4000244140625,
+    "w": 24,
+    "h": 24
+  },
+  {
+    "i": 303,
+    "tag": "SPAN",
+    "cls": "ew-taskbar__profile-name",
+    "text": "seanie.sean@ever...",
+    "x": 1164.3125,
+    "y": 930.1500244140625,
+    "w": 114.9124984741211,
+    "h": 16.5
+  },
+  {
+    "i": 304,
+    "tag": "BUTTON",
+    "cls": "ew-taskbar__bell",
+    "text": "\ud83d\udd14",
+    "x": 1308.0250244140625,
+    "y": 926.4000244140625,
+    "w": 29.975000381469727,
+    "h": 24
+  },
+  {
+    "i": 305,
+    "tag": "SPAN",
+    "cls": "ew-taskbar__clock",
+    "text": "1:02 AM",
+    "x": 1354,
+    "y": 929.4000244140625,
+    "w": 70,
+    "h": 18
+  }
+]

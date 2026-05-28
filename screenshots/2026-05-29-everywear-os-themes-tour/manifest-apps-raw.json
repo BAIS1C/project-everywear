@@ -1,0 +1,146 @@
+[
+  {
+    "file": "app-strands-nation-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-strands-nation-graphite.png",
+    "action": "Click Strands Nation",
+    "expected": "Internal iframe/browser applet should open strandsnation.xyz or show a blocker",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,565 MB\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:06 AM\nLaunching Strands Nation...",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-my-mait-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-my-mait-graphite.png",
+    "action": "Click My Mait",
+    "expected": "My Mait applet/window should open or show runtime launch state",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,532 MB\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:07 AM\nLaunching My Mait...",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-layer-u-osint-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-layer-u-osint-graphite.png",
+    "action": "Click Layer U OSINT",
+    "expected": "Layer U OSINT screen should open or show placeholder state",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nLoading Layer U OSINT...\n\u25c7\nRTX 5090 \u00b7 27,463 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-avatar-studio-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-avatar-studio-graphite.png",
+    "action": "Click Avatar Studio",
+    "expected": "Avatar/Character Studio placeholder should open without NFT/crypto copy",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nAVATAR STUDIO\n3D AVATAR CREATION AND CUSTOMIZATION FOR STRANDS BLANKS\n!\nCHARACTER STUDIO\n\u2715\nLoading Character Studio...\n\u25c7\nRTX 5090 \u00b7 27,504 MB\nAvatar Studio\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-loom-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-loom-graphite.png",
+    "action": "Click The Loom",
+    "expected": "The Loom public education surface should open",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nTHE LOOM\nTHE LOOM: WEAVING AGENTIC EDUCATION INTO YOUR HOME.\n!\nTHE LOOM\n\u2715\nLoading The Loom...\n\u25c7\nRTX 5090 \u00b7 27,470 MB\nThe Loom\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-settings-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-settings-graphite.png",
+    "action": "Click Settings",
+    "expected": "Settings appearance controls should open",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:07\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nSETTINGS\nEVERYWEAR OS\n!\nSettings\nAPPEARANCE\nTHEME\nLIGHT\nOff-cream daytime desktop\nCLASSIC\nCyberpunk glass. Max saturation cyan, TR+BL 16px bevel. Default Strands voice.\nREFINED\nCalmer steel-blue. Lower chroma, Chakra Petch display, 12px bevel. Long-session pick.\nTERMINAL\nIndustrial studio. Amber primary, IBM Plex Mono, sharp 0px corners, 2px borders.\nGRAPHITE\nEWDS-v2 honed graphite. Deep stacked bevels, recessed wells, cyan-white HUD chrome.\nANODIZED\nEWDS-v2 machined-flat surface. Lower t",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-vault-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-vault-graphite.png",
+    "action": "Click Vault",
+    "expected": "Vault panel/library should open",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:07\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nVAULT\nEVERYWEAR OS\n!\nMEDIA\nLOGS\nLoading vault...\n\u25c7\nRTX 5090 \u00b7 27,505 MB\nVault\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-taskbar-start-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-taskbar-start-graphite.png",
+    "action": "Click Start button",
+    "expected": "Start/menu or launcher action should be visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:07\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,486 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-taskbar-profile-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-taskbar-profile-graphite.png",
+    "action": "Click Profile taskbar",
+    "expected": "Profile/account surface should open",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:07\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nPROFILE\nEVERYWEAR OS\n!\nLoading profile...\n\u25c7\nRTX 5090 \u00b7 27,542 MB\nProfile\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-taskbar-bell-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-taskbar-bell-graphite.png",
+    "action": "Click Notification bell",
+    "expected": "Notifications surface should open",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:07\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,482 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:07 AM\nReport a Problem\n\u00d7\nWhat went wrong?\nInclude in report:\nSystem logs (Startup, GPU, VRAM)\n1 entries\nApplet logs (Generation, errors)\n0 entries\nGeneration logs (Image, audio, video requests)\n0 entries\nModel resolution logs (Load, unload, download)\n0 entries\nSidecar logs (Health, crashes)\n0 entries\nVault operations (Search, register, delete)\n0 entries\nUI state changes (Navigation, errors)\n1 entries\nDisk operations (File I/O, mi",
+    "tutorial_notes": "Candidate tutorial target: highlight this launcher/control before click, then explain the opened surface or blocker.",
+    "defects": ""
+  },
+  {
+    "file": "app-s3-folder-graphite.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-folder-graphite.png",
+    "action": "Open S3 Studio app folder",
+    "expected": "S3 grouped applets visible in folder popover",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Folder itself needs tutorial treatment as an app group.",
+    "defects": ""
+  },
+  {
+    "file": "app-s3-1magen-locked-click.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-1magen-locked-click.png",
+    "action": "Click S3 child 1magen",
+    "expected": "If locked, show clear entitlement/admin-bypass copy; if unlocked, open applet",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nlaunch error\nengine handoff failed\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Tutorial should explain gated applets and what unlocks them.",
+    "defects": "Visible folder state still marks S3 family child launchers LOCKED under owner account."
+  },
+  {
+    "file": "app-s3-gener8-locked-click.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-gener8-locked-click.png",
+    "action": "Click S3 child gener8",
+    "expected": "If locked, show clear entitlement/admin-bypass copy; if unlocked, open applet",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Tutorial should explain gated applets and what unlocks them.",
+    "defects": "Visible folder state still marks S3 family child launchers LOCKED under owner account."
+  },
+  {
+    "file": "app-s3-vid-studio-locked-click.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-vid-studio-locked-click.png",
+    "action": "Click S3 child vid-studio",
+    "expected": "If locked, show clear entitlement/admin-bypass copy; if unlocked, open applet",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nlaunch error\nengine handoff failed\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Tutorial should explain gated applets and what unlocks them.",
+    "defects": "Visible folder state still marks S3 family child launchers LOCKED under owner account."
+  },
+  {
+    "file": "app-s3-ai-director-locked-click.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-ai-director-locked-click.png",
+    "action": "Click S3 child ai-director",
+    "expected": "If locked, show clear entitlement/admin-bypass copy; if unlocked, open applet",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Tutorial should explain gated applets and what unlocks them.",
+    "defects": "Visible folder state still marks S3 family child launchers LOCKED under owner account."
+  },
+  {
+    "file": "app-s3-3nvizen-locked-click.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\app-s3-3nvizen-locked-click.png",
+    "action": "Click S3 child 3nvizen",
+    "expected": "If locked, show clear entitlement/admin-bypass copy; if unlocked, open applet",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:08\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nlaunch error\nengine handoff failed\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,474 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:08 AM",
+    "tutorial_notes": "Tutorial should explain gated applets and what unlocks them.",
+    "defects": "Visible folder state still marks S3 family child launchers LOCKED under owner account."
+  }
+]

@@ -1,0 +1,136 @@
+{
+  "title": "Everywear OS",
+  "bodyText": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:01\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,559 MB\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:01 AM",
+  "buttons": [
+    {
+      "i": 0,
+      "tag": "BUTTON",
+      "text": "Quit Everywear",
+      "cls": "ew-traffic-light ew-traffic-light--close",
+      "id": "",
+      "rect": {
+        "x": 12,
+        "y": 11.600000381469727,
+        "w": 12,
+        "h": 12
+      }
+    },
+    {
+      "i": 1,
+      "tag": "BUTTON",
+      "text": "Minimize",
+      "cls": "ew-traffic-light ew-traffic-light--minimize",
+      "id": "",
+      "rect": {
+        "x": 32,
+        "y": 11.600000381469727,
+        "w": 12,
+        "h": 12
+      }
+    },
+    {
+      "i": 2,
+      "tag": "BUTTON",
+      "text": "Maximize",
+      "cls": "ew-traffic-light ew-traffic-light--maximize",
+      "id": "",
+      "rect": {
+        "x": 52,
+        "y": 11.600000381469727,
+        "w": 12,
+        "h": 12
+      }
+    },
+    {
+      "i": 3,
+      "tag": "BUTTON",
+      "text": "USE LOCATION",
+      "cls": "ew-weather__locate",
+      "id": "",
+      "rect": {
+        "x": 948.8125,
+        "y": 566.7625122070312,
+        "w": 103.5875015258789,
+        "h": 30
+      }
+    },
+    {
+      "i": 4,
+      "tag": "BUTTON",
+      "text": "S3\n5\nS3 Studio",
+      "cls": "ew-desktop-icon ew-desktop-icon--folder",
+      "id": "",
+      "rect": {
+        "x": 16,
+        "y": 60,
+        "w": 88,
+        "h": 96
+      }
+    },
+    {
+      "i": 5,
+      "tag": "BUTTON",
+      "text": "\u25c7",
+      "cls": "ew-taskbar__start",
+      "id": "",
+      "rect": {
+        "x": 16,
+        "y": 923.4000244140625,
+        "w": 30,
+        "h": 30
+      }
+    },
+    {
+      "i": 6,
+      "tag": "BUTTON",
+      "text": "LIGHT",
+      "cls": "ew-mode-toggle__option ",
+      "id": "",
+      "rect": {
+        "x": 661,
+        "y": 925.4000244140625,
+        "w": 58,
+        "h": 26
+      }
+    },
+    {
+      "i": 7,
+      "tag": "BUTTON",
+      "text": "DARK",
+      "cls": "ew-mode-toggle__option ew-mode-toggle__option--active",
+      "id": "",
+      "rect": {
+        "x": 721,
+        "y": 925.4000244140625,
+        "w": 58,
+        "h": 26
+      }
+    },
+    {
+      "i": 8,
+      "tag": "BUTTON",
+      "text": "S\nseanie.sean@ever...",
+      "cls": "ew-taskbar__profile",
+      "id": "",
+      "rect": {
+        "x": 1119.5125732421875,
+        "y": 921.6000366210938,
+        "w": 172.5124969482422,
+        "h": 33.60000228881836
+      }
+    },
+    {
+      "i": 9,
+      "tag": "BUTTON",
+      "text": "\ud83d\udd14",
+      "cls": "ew-taskbar__bell",
+      "id": "",
+      "rect": {
+        "x": 1308.0250244140625,
+        "y": 926.4000244140625,
+        "w": 29.975000381469727,
+        "h": 24
+      }
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+[
+  {
+    "file": "theme-light-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-light-01-desktop.png",
+    "action": "Set theme light, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:04\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,591 MB\nLIGHT\nDARK\nS\nseanie.sean@ever...\n\ud83d\udd14\n1:04 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-light-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-light-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme light",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:04\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVaul",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-classic-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-classic-01-desktop.png",
+    "action": "Set theme classic, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:04\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\n5\nS3 Studio\nStrands Nation\nMy Mait\nLayer U OSINT\nAvatar Studio\nThe Loom\nSettings\nVault\n\u25c7\nRTX 5090 \u00b7 27,627 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:04 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-classic-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-classic-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme classic",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:04\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\n5\nS3 Studio\nLOCKED\n1magen\nLOCKED\nGener8\nLOCKED\nVid Studio\nLOCKED\nAI Director\nLOCKED\n3nvizen\nStrands Nation\nMy Mait\nLayer U OSINT\nAvatar Studio\nThe Loom\nSettings\nVault\n\u25c7\nRTX 5090 \u00b7 27,627 MB\nLIGHT\nDARK\nS\ns",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-refined-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-refined-01-desktop.png",
+    "action": "Set theme refined, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,597 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-refined-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-refined-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme refined",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nSettings\nVA\nVault\n\u25c7",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-terminal-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-terminal-01-desktop.png",
+    "action": "Set theme terminal, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,597 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-terminal-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-terminal-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme terminal",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nSettings\nVA\nVault\n\u25c7",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-graphite-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-graphite-01-desktop.png",
+    "action": "Set theme graphite, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,580 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-graphite-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-graphite-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme graphite",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVaul",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-anodized-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-anodized-01-desktop.png",
+    "action": "Set theme anodized, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,586 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-anodized-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-anodized-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme anodized",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVaul",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "theme-carbon-01-desktop.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-carbon-01-desktop.png",
+    "action": "Set theme carbon, desktop collapsed",
+    "expected": "Desktop icon renderer and center HUD visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,592 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "",
+    "defects": ""
+  },
+  {
+    "file": "theme-carbon-02-s3-folder-open.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\theme-carbon-02-s3-folder-open.png",
+    "action": "Open S3 Studio folder in theme carbon",
+    "expected": "S3 child applet icons/folder popover visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\n1M\nLOCKED\n1magen\nG8\nLOCKED\nGener8\nVD\nLOCKED\nVid Studio\nAD\nLOCKED\nAI Director\n3N\nLOCKED\n3nvizen\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVaul",
+    "tutorial_notes": "Use as tutorial proof for folder/app group behavior.",
+    "defects": ""
+  },
+  {
+    "file": "icon-combo-graphite-cut-left.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\icon-combo-graphite-cut-left.png",
+    "action": "Set graphite, cut, traffic left, bevel 0.25",
+    "expected": "Desktop icons, titlebar traffic lights, and bevel controls visibly change",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,594 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "Tutorial should call out that Settings controls affect shell chrome and app windows, not only wallpaper.",
+    "defects": ""
+  },
+  {
+    "file": "icon-combo-graphite-rounded-right.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\icon-combo-graphite-rounded-right.png",
+    "action": "Set graphite, rounded, traffic right, bevel 0.65",
+    "expected": "Desktop icons, titlebar traffic lights, and bevel controls visibly change",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,563 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "Tutorial should call out that Settings controls affect shell chrome and app windows, not only wallpaper.",
+    "defects": ""
+  },
+  {
+    "file": "icon-combo-graphite-square-left.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\icon-combo-graphite-square-left.png",
+    "action": "Set graphite, square, traffic left, bevel 1.0",
+    "expected": "Desktop icons, titlebar traffic lights, and bevel controls visibly change",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,603 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "Tutorial should call out that Settings controls affect shell chrome and app windows, not only wallpaper.",
+    "defects": ""
+  },
+  {
+    "file": "icon-combo-anodized-rounded-right.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\icon-combo-anodized-rounded-right.png",
+    "action": "Set anodized, rounded, traffic right, bevel 0.65",
+    "expected": "Desktop icons, titlebar traffic lights, and bevel controls visibly change",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:05\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,561 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:05 AM",
+    "tutorial_notes": "Tutorial should call out that Settings controls affect shell chrome and app windows, not only wallpaper.",
+    "defects": ""
+  },
+  {
+    "file": "icon-combo-carbon-square-right.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\icon-combo-carbon-square-right.png",
+    "action": "Set carbon, square, traffic right, bevel 1.0",
+    "expected": "Desktop icons, titlebar traffic lights, and bevel controls visibly change",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:06\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,606 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:06 AM",
+    "tutorial_notes": "Tutorial should call out that Settings controls affect shell chrome and app windows, not only wallpaper.",
+    "defects": ""
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "file": "vault-01-media-all.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\vault-01-media-all.png",
+    "action": "Vault opens on Media / All",
+    "expected": "Vault media list and filters are visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:10\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nVAULT\nEVERYWEAR OS\n!\nMEDIA\nLOGS\n626 items\n|\n0 images\n|\n615 audio\n|\n11 videos\n|\n96 stems\n|\n2.9 GB\nEverywear Vault\nNewest\nAll\nGener8 Songs\nStems\nRiffs\nSamples\nReferences\nCover Sources\nLocal Audio\nImages\nVideos\nFavorites\nCodex - Moving to the Sun - reference test\nGener8 song\ngener8\nASSET:GENER8_SONG\nCODEX-OVERNIGHT\n281.3 KB\nMay 27, 2026\nCodex - Moving to the Sun - cover remix test\nGener8 song\ngener8\nASSET:GENER8_SONG\nCODEX-OVERNIGHT\n3.4 MB\nMay 27, 2026\nCodex - Moving to the Sun - plain text2",
+    "tutorial_notes": "Tutorial should explain counts, search, filters, sort, pagination, and item row actions.",
+    "defects": ""
+  },
+  {
+    "file": "vault-02-videos-filter.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\vault-02-videos-filter.png",
+    "action": "Click Vault Videos filter",
+    "expected": "Videos filter shows video assets; expected larger tiled gallery per latest visual handoff",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:10\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nVAULT\nEVERYWEAR OS\n!\nMEDIA\nLOGS\n626 items\n|\n0 images\n|\n615 audio\n|\n11 videos\n|\n96 stems\n|\n2.9 GB\nEverywear Vault\nNewest\nAll\nGener8 Songs\nStems\nRiffs\nSamples\nReferences\nCover Sources\nLocal Audio\nImages\nVideos\nFavorites\nThe Nack\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n147.6 MB\nMay 26, 2026\nTake My Breath - XG _Spacemans ReGener8 Mix_\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n92.0 MB\nMay 26, 2026\nSleep Circuit _Codex_\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n30.5 MB\nMay 26, 2026\nOut of Chains\nvideo\ngener8\nGENER8",
+    "tutorial_notes": "Tutorial should explain media type filters and video gallery behavior.",
+    "defects": "Videos filter still appears as dense list rows if cards are not visible."
+  },
+  {
+    "file": "vault-03-search-codex.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\vault-03-search-codex.png",
+    "action": "Type Codex in Vault search",
+    "expected": "Vault search narrows results or visibly accepts query",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:10\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nVAULT\nEVERYWEAR OS\n!\nMEDIA\nLOGS\n626 items\n|\n0 images\n|\n615 audio\n|\n11 videos\n|\n96 stems\n|\n2.9 GB\nEverywear Vault\nNewest\nAll\nGener8 Songs\nStems\nRiffs\nSamples\nReferences\nCover Sources\nLocal Audio\nImages\nVideos\nFavorites\nSleep Circuit _Codex_\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n30.5 MB\nMay 26, 2026\nMoonlit Packet Loss _Codex_\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n88.0 MB\nMay 26, 2026\nHarbour of Static _Codex_\nvideo\ngener8\nGENER8\nLEGACY-IMPORT\n29.9 MB\nMay 26, 2026\n\u25c7\nRTX 5090 \u00b7 27,523 MB\nVault\nLIGHT",
+    "tutorial_notes": "Tutorial should explain search scope and when indexed assets appear.",
+    "defects": ""
+  },
+  {
+    "file": "vault-04-logs-tab.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\vault-04-logs-tab.png",
+    "action": "Click Vault Logs tab",
+    "expected": "Vault logs/activity view visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\n01:10\nLOCAL \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nNODE\nhome.strands.local\nstatus: awake\nINFERENCE\nstandby\nready target: z-image-turbo-q8\nNETWORK\npeers: 0 online\nfriends: 0 present\n--\nAwaiting signal\nMakassar\nLocation not set\nWind --\nRain --\nHumidity --\nUSE LOCATION\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nVAULT\nEVERYWEAR OS\n!\nMEDIA\nLOGS\nSession Logs\nExport\nClear\nAll Sources\nshell\n1magen\ngener8\nkasai\n3nvizen\nvid\nai-director\nAll Levels\nTRACE\nDEBUG\nINFO\nWARN\nERROR\nFATAL\n01:10:29.743 AM\nINFO\nshell\nShell started\n01:10:34.767 AM\nINFO\nshell\nRegistry loaded: 11 applets\nShowing 2 of 2 entries\nAuto-scroll ON\n\u25c7\nRTX 5090 \u00b7 27,523 MB\nVault\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM",
+    "tutorial_notes": "Tutorial should explain logs as asset activity and debugging receipts.",
+    "defects": ""
+  },
+  {
+    "file": "layeru-01-map-offline.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\layeru-01-map-offline.png",
+    "action": "Layer U opens on Map",
+    "expected": "Layer U map/offline state visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nWORLDVIEW\n\nFlights, maritime, GPS interference, event overlays, and Layer U map state stay inside this window.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,513 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM",
+    "tutorial_notes": "Tutorial should explain offline Project SON service requirement.",
+    "defects": ""
+  },
+  {
+    "file": "layeru-02-feeds-tab.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\layeru-02-feeds-tab.png",
+    "action": "Click Layer U Feeds tab",
+    "expected": "Feeds tab visible or selected",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nRSS + VIDEO\n\nNo served feeds yet.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,513 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM",
+    "tutorial_notes": "Tutorial should explain feed lane and offline behavior.",
+    "defects": ""
+  },
+  {
+    "file": "layeru-03-sources-tab.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\layeru-03-sources-tab.png",
+    "action": "Click Layer U Sources tab",
+    "expected": "Sources tab visible or selected",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nSOURCES\n0 ok\n0 failed\n0 total\n\nLast sweep pending.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,513 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM",
+    "tutorial_notes": "Tutorial should explain source posture and trust checks.",
+    "defects": ""
+  },
+  {
+    "file": "layeru-04-reload-map.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\layeru-04-reload-map.png",
+    "action": "Click Reload Map",
+    "expected": "Map reload action shows same offline boundary or refreshes",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nSOURCES\n0 ok\n0 failed\n0 total\n\nLast sweep pending.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,513 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM",
+    "tutorial_notes": "Tutorial should explain why this button exists and what server must be running.",
+    "defects": ""
+  },
+  {
+    "file": "mymait-01-ready.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\mymait-01-ready.png",
+    "action": "My Mait opens",
+    "expected": "Agent hub ready state visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\n\u25c7\nRTX 5090 \u00b7 27,517 MB\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:10 AM\nLaunching My Mait...",
+    "tutorial_notes": "Tutorial should explain skill rail, chat composer, local boundary, slot state, safety rails.",
+    "defects": ""
+  },
+  {
+    "file": "mymait-02-code-review-skill-selected.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\mymait-02-code-review-skill-selected.png",
+    "action": "Click Code Review skill",
+    "expected": "Skill row becomes selected or prompt context updates",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nWORLDVIEW\n\nFlights, maritime, GPS interference, event overlays, and Layer U map state stay inside this window.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,517 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:11 AM",
+    "tutorial_notes": "Tutorial should explain selecting a skill before asking My Mait.",
+    "defects": ""
+  },
+  {
+    "file": "mymait-03-chat-draft.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\mymait-03-chat-draft.png",
+    "action": "Type in My Mait composer",
+    "expected": "Composer accepts prompt without sending",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nLAYER U OSINT\nCOMPACT OSINT WORLDVIEW WITH FLIGHTS, MAP LAYERS, RSS, VIDEO, AND SOURCE POSTURE\n!\nLAYER U OSINT\n\u2715\nOFFLINE\nLayer U OSINT\n\nWorldview, flights, map layers, feeds, and sweep posture.\n\nMAP\nFEEDS\nSOURCES\nPOSTURE\nSTANDBY\n-- changes\n0 critical\nVIX --\nWTI --\nBrent --\nWORLDVIEW\n\nFlights, maritime, GPS interference, event overlays, and Layer U map state stay inside this window.\n\nREFRESH\nPULL LIVE\nRELOAD MAP\nProject SON service offline\n\nStart the local SON server on port 3117 to serve the worldview and live OSINT panes.\n\n\u25c7\nRTX 5090 \u00b7 27,517 MB\nLayer U OSINT\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:11 AM",
+    "tutorial_notes": "Tutorial should explain composer, skill/vault chips, and send button.",
+    "defects": ""
+  },
+  {
+    "file": "loom-01-public-surface.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\loom-01-public-surface.png",
+    "action": "The Loom opens",
+    "expected": "Public education surface visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nTHE LOOM\nTHE LOOM: WEAVING AGENTIC EDUCATION INTO YOUR HOME.\n!\nTHE LOOM\n\u2715\n\nPROJECT NOMAD TO EVERYWEAR RUST\n\nThe Loom\n2\nactive\n4\nqueued\n1\nblocked\n01\nActive\nMy Maits Lite teacher bridge\nFROM\nOllama Docker, OpenAI-compatible chat, embeddings\nTO\nloom-teacher over the shared My Maits Lite headless runtime\n\nBind lesson planning, model scan, embeddings, and benchmark contracts.\n\n02\nActive\nSQLite foundation\nFROM\nNOMAD MySQL models and Knex migrations\nTO\nloom-db with consolidated schema and future migrations\n\nCreate schema module for chats, resources, chunks, notes, and jobs.\n\n03\nQueued\nVector retrieval\nFROM\nQdrant service and payload indexes\nTO\nusearch vectors plus SQLite chunk metadata\n\nBuild the vector index wrapper after loom-db lands.\n\n04\nQu",
+    "tutorial_notes": "Tutorial should explain learning modules and acquisition state.",
+    "defects": "Top copy still leaks PROJECT NOMAD TO EVERYWEAR RUST."
+  },
+  {
+    "file": "loom-02-scrolled-modules.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\loom-02-scrolled-modules.png",
+    "action": "Scroll The Loom modules",
+    "expected": "Additional module cards visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nTHE LOOM\nTHE LOOM: WEAVING AGENTIC EDUCATION INTO YOUR HOME.\n!\nTHE LOOM\n\u2715\n\nPROJECT NOMAD TO EVERYWEAR RUST\n\nThe Loom\n2\nactive\n4\nqueued\n1\nblocked\n01\nActive\nMy Maits Lite teacher bridge\nFROM\nOllama Docker, OpenAI-compatible chat, embeddings\nTO\nloom-teacher over the shared My Maits Lite headless runtime\n\nBind lesson planning, model scan, embeddings, and benchmark contracts.\n\n02\nActive\nSQLite foundation\nFROM\nNOMAD MySQL models and Knex migrations\nTO\nloom-db with consolidated schema and future migrations\n\nCreate schema module for chats, resources, chunks, notes, and jobs.\n\n03\nQueued\nVector retrieval\nFROM\nQdrant service and payload indexes\nTO\nusearch vectors plus SQLite chunk metadata\n\nBuild the vector index wrapper after loom-db lands.\n\n04\nQu",
+    "tutorial_notes": "Tutorial should explain queued/active/blocked states and download/accept flow once implemented.",
+    "defects": ""
+  },
+  {
+    "file": "character-01-placeholder.png",
+    "path": "C:\\Users\\MAG MSI\\Project Everywear\\screenshots\\2026-05-29-everywear-os-themes-tour\\character-01-placeholder.png",
+    "action": "Avatar Studio opens",
+    "expected": "Character Studio placeholder visible",
+    "actual_text_start": "\u25c7\nEVERYWEAR/1.0 \u00b7 HOME NODE \u00b7 BUILD 1.0.0\nS3\n5\nS3 Studio\nSN\nStrands Nation\nMM\nMy Mait\nLU\nLayer U OSINT\nCS\nAvatar Studio\nLM\nThe Loom\nST\nSettings\nVA\nVault\nAVATAR STUDIO\n3D AVATAR CREATION AND CUSTOMIZATION FOR STRANDS BLANKS\n!\nCHARACTER STUDIO\n\u2715\n\ud83e\uddd1\nCharacter Studio\n\nBlank avatar creation and customization.\nComing soon to Everywear OS.\n\nPORT SCAFFOLD\n\ud83e\uddd1\nBlank Customizer\nFull-body avatar editor with procedural mesh generation.\n\ud83c\udfa8\nSkin & Texture\nAI-assisted texture painting with style transfer.\n\ud83d\udca0\nAnimation Rig\nAuto-rigging with Mixamo-compatible skeleton export.\n\ud83d\udc8e\nNFT Mint\nOn-chain Blank minting to Strands Nation TON collection.\n\u25c7\nRTX 5090 \u00b7 27,516 MB\nAvatar Studio\nLIGHT\nDARK\nS\nseanie@everywear.id\n\ud83d\udd14\n1:11 AM",
+    "tutorial_notes": "Tutorial should explain placeholder status and future Blank tooling.",
+    "defects": "Visible card still includes NFT Mint/on-chain copy, forbidden by latest QA canon."
+  }
+]
