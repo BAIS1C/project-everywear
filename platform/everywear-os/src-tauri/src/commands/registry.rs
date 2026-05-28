@@ -9,7 +9,8 @@ pub async fn list_applets(
 ) -> Result<Vec<registry::AppletEntry>, String> {
     let reg = state.registry.lock().await;
     let tier = *state.licence_tier.lock().await;
-    Ok(reg.launchable_for_tier(tier))
+    let entitlements = state.entitlement_flags.lock().await;
+    Ok(reg.launchable_for_tier(tier, &entitlements))
 }
 
 #[tauri::command]
@@ -19,8 +20,9 @@ pub async fn get_applet(
 ) -> Result<Option<registry::AppletEntry>, String> {
     let reg = state.registry.lock().await;
     let tier = *state.licence_tier.lock().await;
+    let entitlements = state.entitlement_flags.lock().await;
     Ok(reg.get(&id).cloned().map(|entry| {
-        if registry::applet_entitlement_error(&entry, tier).is_some()
+        if registry::applet_entitlement_error(&entry, tier, &entitlements).is_some()
             && entry.status == registry::AppletStatus::Active
         {
             registry::AppletEntry {

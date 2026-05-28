@@ -131,7 +131,7 @@ export default function AIDirectorView() {
             <Lock size={16} className="text-accent-300" />
             <div>
               <p className="text-sm font-semibold text-[color:var(--ew-text)]">Creator Studio required</p>
-              <p className="text-xs text-[color:var(--ew-text-muted)] mt-0.5">AI Director follows the Everywear shell entitlement state and routes planner reasoning through SAPI.</p>
+              <p className="text-xs text-[color:var(--ew-text-muted)] mt-0.5">AI Director follows the Everywear shell entitlement state. Provider-routed SAPI is used when reachable; fallback planning stays local.</p>
             </div>
           </div>
         )}
@@ -172,7 +172,7 @@ export default function AIDirectorView() {
                 ['Track', selectedSong?.title || 'No track selected'],
                 ['Duration', String(selectedSong?.duration || '0:00')],
                 ['Visual Aim', selectedSong?.style || 'Music-led video'],
-                ['Planner', `SAPI: ${plannerProviders}`],
+                ['Planner Route', `SAPI: ${plannerProviders}`],
                 ['Export', canUseDirector ? 'Storyboard ready' : 'Locked'],
               ].map(([label, value]) => (
                 <div key={label}>

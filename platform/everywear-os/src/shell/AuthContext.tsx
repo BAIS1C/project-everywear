@@ -169,6 +169,7 @@ function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
     creator_pro: false,
     loom: true,
     'loom.teacher_agent': true,
+    character_studio: true,
     mymaits_lite_runtime: true,
     mymaits_full: false,
     'mymaits.microtransactions': false,
@@ -218,6 +219,37 @@ function mergeEntitlementFlags(
   return {
     ...expandTierToFlags(tier),
     ...(serverFlags ?? {}),
+  };
+}
+
+function isAdminOrOwnerAccount(
+  profile: ProfileRow | null,
+  authEmail: string | undefined,
+  fallbackHandle: string,
+): boolean {
+  const role = profile?.role?.toLowerCase();
+  if (role === 'admin' || role === 'support') return true;
+
+  const handle = (profile?.handle || fallbackHandle || '').trim().toLowerCase();
+  const email = (authEmail || '').trim().toLowerCase();
+  return handle === 'seanie'
+    || handle === 'somo'
+    || handle === 'somokasane'
+    || email === 'seanie@everywear.id'
+    || email === 'somo@metafintek.xyz';
+}
+
+function applyAdminTestBypass(
+  tier: LicenceTier,
+  flags: Record<string, boolean>,
+): { tier: LicenceTier; flags: Record<string, boolean> } {
+  return {
+    tier: 'creator_studio',
+    flags: {
+      ...flags,
+      ...expandTierToFlags('creator_studio'),
+      admin_override: true,
+    },
   };
 }
 
@@ -334,6 +366,7 @@ async function syncToShell(
   session: Session | null,
   tier: string,
   identity?: { handle?: string; displayName?: string; email?: string },
+  entitlements?: Record<string, boolean>,
 ): Promise<AuthReport | null> {
   if (!session) return null;
   try {
@@ -345,6 +378,7 @@ async function syncToShell(
         handle: identity?.handle,
         display_name: identity?.displayName,
         email: identity?.email,
+        entitlements,
       }),
       new Promise<null>((resolve) => setTimeout(() => {
         console.warn('push_auth_state timed out after 3s; continuing with Supabase session.');
@@ -452,7 +486,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const account = await fetchAccountIdentity(session.user.id);
     const subscriptionTier = normalizeTier(account.subscription?.tier);
-    const tierStr = account.activeTier || subscriptionTier || 'demo';
+    let tierStr = account.activeTier || subscriptionTier || 'demo';
     const profileHandle = account.profile?.handle?.trim() || fallbackHandle;
     const handle = profileHandle.includes('@')
       ? profileHandle.split('@')[0]
@@ -463,13 +497,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       || handle
       || supaUser.email?.split('@')[0]
       || 'Everywear User';
+    let shellEntitlements = mergeEntitlementFlags(tierStr, account.entitlementFlags);
+    if (isAdminOrOwnerAccount(account.profile, supaUser.email || undefined, fallbackHandle)) {
+      const bypass = applyAdminTestBypass(tierStr, shellEntitlements);
+      tierStr = bypass.tier;
+      shellEntitlements = bypass.flags;
+    }
     const report = await syncToShell(session, tierStr, {
       handle,
       displayName,
       email: supaUser.email || undefined,
-    });
+    }, shellEntitlements);
     const effectiveTier = (report?.tier as LicenceTier) || tierStr;
-    const effectiveEntitlements = mergeEntitlementFlags(effectiveTier, account.entitlementFlags);
+    let effectiveEntitlements = mergeEntitlementFlags(effectiveTier, account.entitlementFlags);
+    if (isAdminOrOwnerAccount(account.profile, supaUser.email || undefined, fallbackHandle)) {
+      effectiveEntitlements = {
+        ...effectiveEntitlements,
+        ...shellEntitlements,
+      };
+    }
 
     setUser({
       id: supaUser.id,

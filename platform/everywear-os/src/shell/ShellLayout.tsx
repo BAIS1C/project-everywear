@@ -56,19 +56,59 @@ const TIER_RANK: Record<string, number> = {
 };
 const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+function ChromeBarcode({ seed = 42, width = 72, height = 12 }: { seed?: number; width?: number; height?: number }) {
+  let next = seed;
+  const bars = Array.from({ length: 24 }, (_, index) => {
+    next = (next * 9301 + 49297) % 233280;
+    return { width: 1 + (next % 4), dim: index % 5 === 0 };
+  });
+
+  return (
+    <span className="ew-chrome ew-barcode" style={{ width, height }} aria-hidden="true">
+      {bars.map((bar, index) => (
+        <i key={index} style={{ width: bar.width, opacity: bar.dim ? 0.42 : 1 }} />
+      ))}
+    </span>
+  );
+}
+
+function ChromeSerial({ prefix = 'EW', code = '2204/00' }: { prefix?: string; code?: string }) {
+  return <span className="ew-chrome ew-serial">{prefix}-{code}</span>;
+}
+
+function TrafficLights({
+  onClose,
+  onMinimize,
+  onMaximize,
+  className = '',
+}: {
+  onClose: () => void;
+  onMinimize: () => void;
+  onMaximize: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={`ew-traffic-lights ${className}`}>
+      <button className="ew-traffic-light ew-traffic-light--close" onClick={(e) => { e.stopPropagation(); onClose(); }} title="Close" />
+      <button className="ew-traffic-light ew-traffic-light--minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }} title="Minimize" />
+      <button className="ew-traffic-light ew-traffic-light--maximize" onClick={(e) => { e.stopPropagation(); onMaximize(); }} title="Maximize" />
+    </div>
+  );
+}
+
 function appletLaunchBlocked(
   applet: AppletEntry,
   tier: string,
   entitlements?: Record<string, boolean>,
 ): string | null {
+  if (applet.required_entitlements?.some((key) => entitlements?.[key])) {
+    return null;
+  }
   if (applet.status === 'Locked') {
     return 'Purchase or subscribe to unlock.';
   }
   if (applet.status === 'NotBuilt') {
     return 'Applet is not yet available.';
-  }
-  if (applet.required_entitlements?.some((key) => entitlements?.[key])) {
-    return null;
   }
   if (applet.required_tier) {
     const currentRank = TIER_RANK[tier] ?? 0;
@@ -167,6 +207,7 @@ function panelLabel(panel: Exclude<PanelView, null>) {
 function ShellWindowFrame({
   win,
   isActive,
+  trafficSide,
   onFocus,
   onBugReport,
   onClose,
@@ -177,6 +218,7 @@ function ShellWindowFrame({
 }: {
   win: ShellWindowState;
   isActive: boolean;
+  trafficSide: 'left' | 'right';
   onFocus: () => void;
   onBugReport: () => void;
   onClose: () => void;
@@ -241,20 +283,38 @@ function ShellWindowFrame({
       onPointerDown={onFocus}
     >
       <div
-        className="ew-window__titlebar"
+        className={`ew-window__titlebar ew-window__titlebar--traffic-${trafficSide}`}
         onDoubleClick={onMaximize}
         onPointerDown={handleDragStart}
         onPointerMove={handleDragMove}
         onPointerUp={handleDragEnd}
         onPointerCancel={handleDragEnd}
       >
-        <div className="ew-window__controls">
-          <button className="ew-window__control ew-window__control--close" onClick={(e) => { e.stopPropagation(); onClose(); }} title="Close" />
-          <button className="ew-window__control ew-window__control--minimize" onClick={(e) => { e.stopPropagation(); onMinimize(); }} title="Minimize" />
-          <button className="ew-window__control ew-window__control--maximize" onClick={(e) => { e.stopPropagation(); onMaximize(); }} title="Maximize" />
+        {trafficSide === 'left' && (
+          <TrafficLights
+            className="ew-window__controls"
+            onClose={onClose}
+            onMinimize={onMinimize}
+            onMaximize={onMaximize}
+          />
+        )}
+        <div className="ew-window__title-block">
+          <span className="ew-window__title">{win.title}</span>
+          {win.sublabel && <span className="ew-window__subtitle">{win.sublabel}</span>}
         </div>
-        <span className="ew-window__title">{win.title}</span>
-        {win.sublabel && <span className="ew-window__subtitle">{win.sublabel}</span>}
+        <div className="ew-window__chrome-head">
+          <ChromeBarcode seed={win.title.length + win.id.length} width={62} height={10} />
+          <ChromeSerial prefix="APP" code="42715/96" />
+          <span className="ew-chrome ew-status-pill">● LIVE</span>
+        </div>
+        {trafficSide === 'right' && (
+          <TrafficLights
+            className="ew-window__controls"
+            onClose={onClose}
+            onMinimize={onMinimize}
+            onMaximize={onMaximize}
+          />
+        )}
         <div className="ew-window__actions">
           <button
             className="ew-window__report"
@@ -267,6 +327,11 @@ function ShellWindowFrame({
         </div>
       </div>
       <div className="ew-window__body">{children}</div>
+      <div className="ew-window__footer">
+        <span className="ew-window__footer-label">▣ EWDS</span>
+        <span className="ew-chrome ew-window__footer-protocol">PROTOCOL 2204·00A · DEEP DIVE WAVE REV 0.0</span>
+        <span className="ew-chrome ew-window__footer-serial">SR-4150 · ENC LOCAL</span>
+      </div>
     </div>
   );
 }
@@ -711,8 +776,16 @@ export function ShellLayout() {
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [s3FolderOpen, setS3FolderOpen] = useState(false);
   const { user: authUser, tier } = useAuth();
-  const { skin, mode, theme, setMode } = useTheme();
+  const { skin, mode, theme, setMode, trafficSide } = useTheme();
   const effectiveSkin = theme === 'light' ? 'classic' : skin;
+  const entitlementSignature = useMemo(
+    () => Object.entries(authUser?.entitlements ?? {})
+      .filter(([, value]) => value)
+      .map(([key]) => key)
+      .sort()
+      .join('|'),
+    [authUser?.entitlements],
+  );
 
   // Bug report + error badge
   const [bugReportOpen, setBugReportOpen] = useState(false);
@@ -970,6 +1043,18 @@ export function ShellLayout() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!authUser) return;
+    listApplets()
+      .then((applets) => {
+        log.info('ui', `Registry refreshed for auth state: ${applets.length} applets`);
+        setRegistryApplets(applets);
+      })
+      .catch((err) => {
+        console.error('Failed to refresh applet registry for auth state:', err);
+      });
+  }, [authUser?.id, tier, entitlementSignature]);
+
   // ── Health polling based on registry frontend_port ──
   const checkHealth = useCallback(async () => {
     const results: Record<string, 'online' | 'offline' | 'checking'> = {};
@@ -1074,14 +1159,8 @@ export function ShellLayout() {
     }
 
     if (applet.launch_kind === 'ExternalUrl' && applet.launch_url) {
-      log.info('ui', `Opening web applet: ${applet.id} at ${applet.launch_url}`);
-      // Use Tauri shell:open to launch in default browser
-      try {
-        const { open } = await import('@tauri-apps/plugin-shell');
-        await open(applet.launch_url);
-      } catch {
-        window.open(applet.launch_url, '_blank');
-      }
+      log.info('ui', `Opening web applet internally: ${applet.id} at ${applet.launch_url}`);
+      openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
       markAppletReady(applet);
       return;
     }
@@ -1246,20 +1325,32 @@ export function ShellLayout() {
   return (
     <>
       {/* ── Titlebar ── */}
-      <div className="ew-titlebar">
+      <div className={`ew-titlebar ew-titlebar--traffic-${trafficSide}`}>
         <div className="ew-titlebar__left">
-          {/* Traffic lights */}
-          <div className="ew-traffic-lights">
-            <button className="ew-traffic-light ew-traffic-light--close" onClick={quitEverywear} title="Quit Everywear" />
-            <button className="ew-traffic-light ew-traffic-light--minimize" onClick={() => getCurrentWindow().minimize()} title="Minimize" />
-            <button className="ew-traffic-light ew-traffic-light--maximize" onClick={() => getCurrentWindow().toggleMaximize()} title="Maximize" />
-          </div>
+          {trafficSide === 'left' && (
+            <TrafficLights
+              onClose={quitEverywear}
+              onMinimize={() => getCurrentWindow().minimize()}
+              onMaximize={() => getCurrentWindow().toggleMaximize()}
+            />
+          )}
           <span className="ew-titlebar__sigil">&#9671;</span>
+          <span className="ew-chrome ew-titlebar__jp">登録</span>
         </div>
         <div className="ew-titlebar__center" data-tauri-drag-region>
           <span className="ew-titlebar__version">EVERYWEAR/1.0 &middot; home node &middot; build 1.0.0</span>
         </div>
-        <div className="ew-titlebar__right" />
+        <div className="ew-titlebar__right">
+          <ChromeBarcode seed={2204} width={88} height={12} />
+          <ChromeSerial prefix="EW" code="2204/00A" />
+          {trafficSide === 'right' && (
+            <TrafficLights
+              onClose={quitEverywear}
+              onMinimize={() => getCurrentWindow().minimize()}
+              onMaximize={() => getCurrentWindow().toggleMaximize()}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Desktop OS surface ── */}
@@ -1317,6 +1408,7 @@ export function ShellLayout() {
               key={win.id}
               win={win}
               isActive={win.id === activeWindowId}
+              trafficSide={trafficSide}
               onFocus={() => focusWindow(win.id)}
               onBugReport={() => openBugReport({
                 source: win.title,

@@ -16,6 +16,7 @@ import type {
   Mode,
   Theme,
   WidgetSurface,
+  TrafficSide,
   ThemeState,
   SkinPreset,
   AccentPreset,
@@ -194,8 +195,10 @@ const LS_SKIN   = 'ew-skin';
 const LS_ACCENT = 'ew-accent';
 const LS_MODE   = 'ew-mode';
 const LS_WIDGET_SURFACE = 'ew-widget-surface';
+const LS_TRAFFIC_SIDE = 'ew-traffic-side';
 const LS_CHROME_DENSITY = 'ew-chrome-density';
 const LS_WALLPAPER_INTENSITY = 'ew-wallpaper-intensity';
+const LS_BEVEL_DEGREE = 'ew-bevel-degree';
 
 // ── Context shape ────────────────────────────────────────────────
 
@@ -216,12 +219,16 @@ const ThemeCtx = createContext<ThemeContextValue>({
   mode: 'dark', setMode: () => {}, modes: MODES,
   theme: 'classic',
   widgetSurface: 'cut',
+  trafficSide: 'left',
   chromeDensity: 0.65,
   wallpaperIntensity: 0.65,
+  bevelDegree: 0.65,
   setTheme: () => {},
   setWidgetSurface: () => {},
+  setTrafficSide: () => {},
   setChromeDensity: () => {},
   setWallpaperIntensity: () => {},
+  setBevelDegree: () => {},
   toggleMode: () => {},
   themeId: 'classic', presets: SKINS,
 });
@@ -237,6 +244,7 @@ const V2_SKINS = new Set<Skin>(['graphite', 'anodized', 'carbon']);
 const VALID_ACCENTS = new Set<Accent>(['signal', 'cyan', 'amber', 'acid', 'crimson', 'bone', 'plasma']);
 const VALID_MODES = new Set<Mode>(['dark', 'light']);
 const VALID_WIDGET_SURFACES = new Set<WidgetSurface>(['cut', 'rounded', 'square']);
+const VALID_TRAFFIC_SIDES = new Set<TrafficSide>(['left', 'right']);
 
 function readStorage<T extends string>(key: string, valid: Set<T>, fallback: T): T {
   try {
@@ -295,6 +303,24 @@ function applyDensity(chromeDensity: number, wallpaperIntensity: number) {
   }
 }
 
+function applySurfaceControls(trafficSide: TrafficSide, bevelDegree: number) {
+  if (typeof document === 'undefined') return;
+  const degree = clamp01(bevelDegree);
+  const top = 0.045 + degree * 0.07;
+  const topBright = 0.08 + degree * 0.16;
+  const bot = 0.45 + degree * 0.3;
+  const botDeep = 0.62 + degree * 0.3;
+  for (const el of [document.documentElement, document.body]) {
+    el.dataset.trafficSide = trafficSide;
+    el.style.setProperty('--ew-traffic-side', trafficSide);
+    el.style.setProperty('--ew-bevel-degree', String(degree));
+    el.style.setProperty('--ew-v2-bevel-top', `rgba(255,255,255,${top.toFixed(3)})`);
+    el.style.setProperty('--ew-v2-bevel-top-bright', `rgba(255,255,255,${topBright.toFixed(3)})`);
+    el.style.setProperty('--ew-v2-bevel-bot', `rgba(0,0,0,${bot.toFixed(3)})`);
+    el.style.setProperty('--ew-v2-bevel-bot-deep', `rgba(0,0,0,${botDeep.toFixed(3)})`);
+  }
+}
+
 function applyAccent(accent: Accent) {
   if (typeof document === 'undefined') return;
   const preset = ACCENTS.find((a) => a.id === accent);
@@ -341,11 +367,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if ((stored as string) === 'glass') stored = 'square';
     return stored;
   });
+  const [trafficSide, setTrafficSideState] = useState<TrafficSide>(() =>
+    readStorage<TrafficSide>(LS_TRAFFIC_SIDE, VALID_TRAFFIC_SIDES, 'left'),
+  );
   const [chromeDensity, setChromeDensityState] = useState<number>(() =>
     readNumberStorage(LS_CHROME_DENSITY, 0.65),
   );
   const [wallpaperIntensity, setWallpaperIntensityState] = useState<number>(() =>
     readNumberStorage(LS_WALLPAPER_INTENSITY, 0.65),
+  );
+  const [bevelDegree, setBevelDegreeState] = useState<number>(() =>
+    readNumberStorage(LS_BEVEL_DEGREE, 0.65),
   );
 
   const effectiveSkin: Skin = mode === 'light' ? 'classic' : skin;
@@ -356,6 +388,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { applyAccent(accent); }, [accent]);
   useEffect(() => { applyWidgetSurface(widgetSurface); }, [widgetSurface]);
   useEffect(() => { applyDensity(chromeDensity, wallpaperIntensity); }, [chromeDensity, wallpaperIntensity]);
+  useEffect(() => { applySurfaceControls(trafficSide, bevelDegree); }, [trafficSide, bevelDegree]);
 
   const setSkin = useCallback((id: Skin) => {
     if (!VALID_SKINS.has(id)) return;
@@ -399,6 +432,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem(LS_WIDGET_SURFACE, surface); } catch { /* noop */ }
   }, []);
 
+  const setTrafficSide = useCallback((side: TrafficSide) => {
+    if (!VALID_TRAFFIC_SIDES.has(side)) return;
+    setTrafficSideState(side);
+    try { localStorage.setItem(LS_TRAFFIC_SIDE, side); } catch { /* noop */ }
+  }, []);
+
   const setChromeDensity = useCallback((density: number) => {
     const next = clamp01(density);
     setChromeDensityState(next);
@@ -409,6 +448,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const next = clamp01(intensity);
     setWallpaperIntensityState(next);
     try { localStorage.setItem(LS_WALLPAPER_INTENSITY, String(next)); } catch { /* noop */ }
+  }, []);
+
+  const setBevelDegree = useCallback((degree: number) => {
+    const next = clamp01(degree);
+    setBevelDegreeState(next);
+    try { localStorage.setItem(LS_BEVEL_DEGREE, String(next)); } catch { /* noop */ }
   }, []);
 
   const toggleMode = useCallback(() => {
@@ -423,11 +468,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         mode, setMode, modes: MODES,
         theme,
         widgetSurface,
+        trafficSide,
         chromeDensity,
         wallpaperIntensity,
+        bevelDegree,
         setWidgetSurface,
+        setTrafficSide,
         setChromeDensity,
         setWallpaperIntensity,
+        setBevelDegree,
         toggleMode,
         themeId: skin,
         setTheme,

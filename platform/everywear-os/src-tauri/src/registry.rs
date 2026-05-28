@@ -13,7 +13,7 @@
 //! placeholder reserved for future work.
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,7 +212,7 @@ impl AppletRegistry {
                 engine_type: "none".into(),
                 min_vram_mb: 0,
                 tags: vec!["game".into(), "social".into(), "world".into()],
-                launch_url: Some("https://game.strandsnation.xyz".into()),
+                launch_url: Some("https://strandsnation.xyz".into()),
                 launch_binary: None,
                 required_tier: None,
                 required_entitlements: Vec::new(),
@@ -303,7 +303,7 @@ impl AppletRegistry {
                     "avatar".into(),
                     "3d".into(),
                     "character".into(),
-                    "nft".into(),
+                    "blanks".into(),
                 ],
                 launch_url: None,
                 launch_binary: None, // frontend-only: no backend process
@@ -316,7 +316,7 @@ impl AppletRegistry {
             AppletEntry {
                 id: "loom".into(),
                 name: "The Loom".into(),
-                description: "Everywear Knowledge Engine: the Project NOMAD Rust migration".into(),
+                description: "The Loom: Weaving Agentic Education into your Home.".into(),
                 version: "0.1.0".into(),
                 icon: "loom".into(),
                 status: AppletStatus::Active,
@@ -327,7 +327,7 @@ impl AppletRegistry {
                     "knowledge".into(),
                     "offline".into(),
                     "rag".into(),
-                    "migration".into(),
+                    "education".into(),
                 ],
                 launch_url: None,
                 launch_binary: None,
@@ -434,10 +434,14 @@ impl AppletRegistry {
             .collect()
     }
 
-    pub fn launchable_for_tier(&self, tier: model_manager::LicenceTier) -> Vec<AppletEntry> {
+    pub fn launchable_for_tier(
+        &self,
+        tier: model_manager::LicenceTier,
+        entitlements: &HashMap<String, bool>,
+    ) -> Vec<AppletEntry> {
         self.launchable()
             .into_iter()
-            .map(|entry| apply_tier_gate(entry, tier))
+            .map(|entry| apply_tier_gate(entry, tier, entitlements))
             .collect()
     }
 
@@ -455,14 +459,32 @@ impl AppletRegistry {
 pub fn applet_entitlement_error(
     applet: &AppletEntry,
     tier: model_manager::LicenceTier,
+    entitlements: &HashMap<String, bool>,
 ) -> Option<String> {
     if applet.status == AppletStatus::NotBuilt {
         return Some("Applet is not yet available.".into());
     }
-    let required = applet
+    if applet
+        .required_entitlements
+        .iter()
+        .any(|key| entitlements.get(key).copied().unwrap_or(false))
+    {
+        return None;
+    }
+    let Some(required) = applet
         .required_tier
         .as_deref()
-        .and_then(model_manager::LicenceTier::from_tier_str)?;
+        .and_then(model_manager::LicenceTier::from_tier_str)
+    else {
+        if applet.required_entitlements.is_empty() {
+            return None;
+        }
+        return Some(format!(
+            "{} requires one of: {}.",
+            applet.name,
+            applet.required_entitlements.join(", ")
+        ));
+    };
     if tier.satisfies(required) {
         return None;
     }
@@ -473,8 +495,14 @@ pub fn applet_entitlement_error(
     ))
 }
 
-fn apply_tier_gate(mut entry: AppletEntry, tier: model_manager::LicenceTier) -> AppletEntry {
-    if entry.status == AppletStatus::Active && applet_entitlement_error(&entry, tier).is_some() {
+fn apply_tier_gate(
+    mut entry: AppletEntry,
+    tier: model_manager::LicenceTier,
+    entitlements: &HashMap<String, bool>,
+) -> AppletEntry {
+    if entry.status == AppletStatus::Active
+        && applet_entitlement_error(&entry, tier, entitlements).is_some()
+    {
         entry.status = AppletStatus::Locked;
     }
     entry

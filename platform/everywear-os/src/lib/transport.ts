@@ -312,7 +312,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     engine_type: 'none',
     min_vram_mb: 0,
     tags: ['game', 'social', 'world'],
-    launch_url: 'https://game.strandsnation.xyz',
+    launch_url: 'https://strandsnation.xyz',
     launch_binary: null,
     required_tier: null,
     required_entitlements: [],
@@ -387,7 +387,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     launch_kind: 'FrontendInline',
     engine_type: 'none',
     min_vram_mb: 0,
-    tags: ['avatar', '3d', 'character', 'nft'],
+    tags: ['avatar', '3d', 'character', 'blanks'],
     launch_url: null,
     launch_binary: null,
     required_tier: null,
@@ -399,14 +399,14 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
   {
     id: 'loom',
     name: 'The Loom',
-    description: 'Everywear Knowledge Engine: the Project NOMAD Rust migration',
+    description: 'The Loom: Weaving Agentic Education into your Home.',
     version: '0.1.0',
     icon: 'loom',
     status: 'Active',
     launch_kind: 'FrontendInline',
     engine_type: 'none',
     min_vram_mb: 0,
-    tags: ['knowledge', 'offline', 'rag', 'migration'],
+    tags: ['knowledge', 'offline', 'rag', 'education'],
     launch_url: null,
     launch_binary: null,
     required_tier: null,
@@ -428,6 +428,7 @@ export interface AuthStateUpdate {
   handle?: string;
   display_name?: string;
   email?: string;
+  entitlements?: Record<string, boolean>;
 }
 
 export interface AuthReport {
@@ -437,6 +438,7 @@ export interface AuthReport {
   tier: string;
   is_paid: boolean;
   is_pro: boolean;
+  entitlements?: Record<string, boolean>;
 }
 
 export interface AuthContext {

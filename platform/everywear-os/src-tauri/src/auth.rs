@@ -194,6 +194,11 @@ pub struct AuthStateUpdate {
     /// Login email from Supabase Auth.
     #[serde(default)]
     pub email: Option<String>,
+    /// Neutral entitlement flags from `entitlement_flags()` plus local tier
+    /// compatibility expansion. These are the durable launch authority while
+    /// `tier` remains a compatibility bridge.
+    #[serde(default)]
+    pub entitlements: std::collections::HashMap<String, bool>,
 }
 
 /// Result of an auth state update.
@@ -277,6 +282,10 @@ pub async fn push_auth_state(
         *tier_lock = tier;
     }
     {
+        let mut entitlement_lock = state.entitlement_flags.lock().await;
+        *entitlement_lock = update.entitlements;
+    }
+    {
         let mut session_lock = state.user_session.lock().await;
         *session_lock = user_claim.clone();
     }
@@ -306,6 +315,7 @@ pub async fn get_auth_context(
 ) -> Result<Option<serde_json::Value>, String> {
     let session = state.user_session.lock().await;
     let tier = state.licence_tier.lock().await;
+    let entitlements = state.entitlement_flags.lock().await;
 
     match session.as_ref() {
         Some(claim) => Ok(Some(serde_json::json!({
@@ -315,6 +325,7 @@ pub async fn get_auth_context(
             "tier": tier.as_str(),
             "is_paid": tier.is_paid(),
             "is_pro": tier.is_pro(),
+            "entitlements": &*entitlements,
         }))),
         None => Ok(None),
     }
@@ -346,6 +357,10 @@ pub async fn clear_auth(state: tauri::State<'_, crate::AppState>) -> Result<(), 
     {
         let mut session_lock = state.user_session.lock().await;
         *session_lock = None;
+    }
+    {
+        let mut entitlement_lock = state.entitlement_flags.lock().await;
+        *entitlement_lock = crate::default_free_entitlements();
     }
     info!("Auth cleared, tier reset to Demo");
     Ok(())

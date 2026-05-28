@@ -14,7 +14,8 @@ Location: C:\Users\MAG MSI\Project Everywear
 
 Supabase implementation file:
 
-- `C:\Users\MAG MSI\Project Everywear\supabase\migrations\20260528112810_everywear_identity_entitlement_vault_contract.sql`
+- `C:\Users\MAG MSI\Project Everywear\supabase\migrations\20260528140643_everywear_identity_entitlement_vault_contract.sql`
+- Live remote project: `ykqdsihnzroglepoxwcj` (`Everywear`, Tokyo / `ap-northeast-1`).
 
 ## Neutral Supabase Schema
 
@@ -28,7 +29,7 @@ Core tables:
 - `plans`: billing plans, including free, one-time, subscription, add-on, microtransaction.
 - `plan_entitlements`: plan-to-capability map.
 - `provider_subscriptions`: provider commerce records from Lemon Squeezy, Xendit, Steam, demo, admin override.
-- `user_entitlements`: resolved grants used by shell/app/appet gates.
+- `user_entitlements`: resolved grants used by shell/app/applet gates.
 - `devices`: signed-in device records for local install binding and revocation.
 - `webhook_events`: provider event dedupe, ported from the S3 proven pattern.
 - `steam_link_events`: audit trail for Steam link, license, refund, revocation, and conflicts.
@@ -44,6 +45,9 @@ Security contract:
 - Authorization never depends on `raw_user_meta_data`.
 - SHA-256 never grants access. It is only dedupe, identity, and tamper evidence.
 - Webhooks and admin tools write entitlements through service-role paths, not user-mutable metadata.
+- Everywear's 30-day signed-in-device window is shell/client cookie policy
+  (`REMEMBER_AUTH_DAYS = 30`). Supabase stays responsible for auth, JWT
+  refresh, profiles, and entitlements.
 
 ## S3 Supabase Migration Map
 
@@ -65,14 +69,21 @@ Do not migrate directly:
 
 ## Entitlement Taxonomy
 
-Product catalog seeded by the migration:
+Product catalog seeded by the migration. Each row carries `tier_floor`,
+`runtime_class`, `sku_policy`, and `catalog_status` so applets, bundles,
+hidden runtimes, add-ons, and platform-launched games are classified
+explicitly rather than inferred from the old S3 tier ladder:
 
 - `everywear_base`: platform, free.
+- `gener8`: applet, included from Gener8 4ever onwards.
 - `gener8_4ever`: S3 family bundle, paid one-time.
 - `gener8_pro`: S3 family bundle, paid subscription.
 - `creator_studio`: S3 family bundle, deferred paid subscription.
 - `1magen`: applet, bundle-included, not a separate launch SKU.
 - `3nvizen`: applet, bundle-included, not a separate launch SKU.
+- `vid`: applet, included in Creator Studio, live visual parity still blocked.
+- `ai_director`: Creator Studio capability using provider-routed SAPI.
+- `daw_pro`: Creator Studio capability inside Gener8.
 - `loom`: free Everywear applet.
 - `character_studio`: free Everywear applet.
 - `mymaits_lite_runtime`: hidden internal runtime used by Loom Teacher Agent. It is not a standalone launcher, not a chat surface, and not a separate SKU.
@@ -83,24 +94,27 @@ Product catalog seeded by the migration:
 Naming correction, 2026-05-28 SGT: product-facing language is `My Maits` and
 `My Maits Lite`. Do not use `Kasai` in product copy. `My Maits Lite` is a
 headless thinking layer embedded by Loom as the free teacher agent. It cannot
-be launched or chatted with by itself. AI Director should use SAPI for planner
-reasoning through LM Studio, Ollama, or external API providers now; the
-internal My Maits link is a planned provider and must stay marked unplumbed
-until the runtime bridge exists.
+be launched or chatted with by itself. AI Director uses a provider-routed SAPI
+adapter for planner reasoning through LM Studio, Ollama, or external
+OpenAI-compatible API providers. The shim reports whether a plan came from
+`sapi` or `fallback`; fallback remains available when no provider is reachable.
+The internal My Maits link is a planned provider and must stay marked
+unplumbed until that runtime bridge exists.
 
 Plan grants:
 
 - `free_everywear`: grants Loom, Loom Teacher Agent, Character Studio, and the hidden My Maits Lite runtime needed by Loom.
 - `gener8_4ever`: grants Gener8 and 1magen.
 - `gener8_pro`: grants Gener8, Gener8 pro model pack, 1magen, 3nvizen.
-- `creator_studio`: grants AI Director, AI Director SAPI planner access, DAW Pro, and Vid Pro on top of lower S3 family grants once activated.
+- `creator_studio`: grants Gener8, Gener8 Pro model pack, 1magen, 3nvizen,
+  AI Director, the SAPI-targeted planner entitlement, DAW Pro, Vid, and Vid Pro.
 - `mymaits_full_addon`: grants the standalone My Maits hub and microtransaction support.
 
 Compatibility:
 
 - Existing shell/frontend can keep calling `active_tier(user_id)` temporarily.
 - New work should consume `user_entitlements` / `entitlement_flags()` and feature keys.
-- `LicenceTier` remains a compatibility ladder until shell/app/appet code is moved to capability checks.
+- `LicenceTier` remains a compatibility ladder until shell/app/applet code is moved to capability checks.
 
 ## Steam Link and Revocation Flow
 
@@ -194,18 +208,28 @@ Recommended lanes:
 
 Write boundaries for implementation:
 
-- Supabase schema: `supabase/`, docs only until local reset passes.
+- Supabase schema: `supabase/`, applied live to project `ykqdsihnzroglepoxwcj`
+  via the Supabase connector. Local Docker reset remains optional and blocked
+  on this host because Docker is unavailable.
 - Shell entitlement wiring: `platform/everywear-os/src/shell/AuthContext.tsx`, `platform/everywear-os/src-tauri/src/auth.rs`, `engine_router.rs`, `registry.rs`.
 - Vault wiring: `packages/transport/src/vault.ts`, `crates/vault/src/schema.rs`, `platform/everywear-os/src-tauri/src/vault_commands.rs`.
 - My Maits / My Maits Lite contract: `applets/kasai/applet.toml`, `platform/everywear-os/src-tauri/src/registry.rs`, My Maits UI files, Loom teacher-agent hooks, and shard display files.
-- AI Director planner contract: SAPI provider routing for LM Studio, Ollama, and external API providers now; internal My Maits provider link remains planned and unplumbed.
+- AI Director planner contract: SAPI provider routing for LM Studio, Ollama, and external API providers is wired in the Gener8 shim with explicit fallback reporting. Internal My Maits provider link remains planned and unplumbed.
 
 ## Verification Commands
 
 Supabase:
 
 ```powershell
-supabase db lint --workdir "C:\Users\MAG MSI\Project Everywear"
+supabase migration list --linked --workdir "C:\Users\MAG MSI\Project Everywear"
+supabase db lint --linked --workdir "C:\Users\MAG MSI\Project Everywear"
+supabase db push --dry-run --linked --workdir "C:\Users\MAG MSI\Project Everywear"
+supabase db lint --db-url "<percent-encoded-postgres-url>" --workdir "C:\Users\MAG MSI\Project Everywear"
+```
+
+Local Docker-only checks, optional on this host:
+
+```powershell
 supabase db reset --workdir "C:\Users\MAG MSI\Project Everywear"
 supabase migration list --local --workdir "C:\Users\MAG MSI\Project Everywear"
 ```
@@ -237,9 +261,24 @@ cargo check -p everywear-3nvizen
 cargo check -p everywear-kasai
 ```
 
-Blocked applet builds:
+Release binary build:
 
-- `applets/3nvizen`: Rust metadata exists, but no applet-local `package.json`.
+```powershell
+cargo build --release -p everywear-os -p gener8 -p onemagen -p everywear-3nvizen -p everywear-kasai
+```
+
+2026-05-28 SGT receipt: the release binary build passed with existing warning
+debt only. Outputs verified under
+`C:\Users\MAG MSI\Project Everywear\target\release`: `everywear-os.exe`,
+`gener8.exe`, `onemagen.exe`, `everywear-3nvizen.exe`, and
+`everywear-kasai.exe`. No installer bundle directory was produced by this
+command, and no live sidecar/model/visual QA was run.
+
+Known applet build gaps:
+
+- `applets/3nvizen`: frontend package metadata now exists and
+  `npm run build --workspace @everywear/3nvizen` passes. Live sidecar boot,
+  video generation, and Vault registration are still unproven.
 - `applets/s3studio`: placeholder, no package metadata.
 - `applets/mymories`: placeholder, no package metadata.
 - `applets/strands-game`: placeholder, no package metadata.

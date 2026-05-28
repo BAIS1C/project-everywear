@@ -22,6 +22,7 @@ pub struct AppState {
     pub vram_scheduler: Arc<Mutex<vram_scheduler::VramScheduler>>,
     pub kasai_tool_calls: Arc<Mutex<Vec<serde_json::Value>>>,
     pub licence_tier: Arc<Mutex<model_manager::LicenceTier>>,
+    pub entitlement_flags: Arc<Mutex<HashMap<String, bool>>>,
     pub user_session: Arc<Mutex<Option<auth::UserClaim>>>,
     pub video_encoder: Arc<Mutex<video_encoder::VideoEncoderService>>,
     pub gener8_engine: gener8_engine::Gener8Engine,

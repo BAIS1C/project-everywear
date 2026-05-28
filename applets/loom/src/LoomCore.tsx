@@ -7,7 +7,7 @@ export interface LoomCoreProps {
   mode?: string;
 }
 
-type PhaseState = 'active' | 'queued' | 'blocked';
+type PhaseState = 'active' | 'planned' | 'blocked';
 
 interface MigrationPhase {
   id: string;
@@ -31,14 +31,14 @@ const PHASES: MigrationPhase[] = [
     id: '02',
     title: 'SQLite foundation',
     state: 'active',
-    source: 'NOMAD MySQL models and Knex migrations',
-    target: 'loom-db with consolidated schema and future migrations',
+    source: 'Legacy learning database models and schema notes',
+    target: 'loom-db with consolidated schema and future schema updates',
     nextStep: 'Create schema module for chats, resources, chunks, notes, and jobs.',
   },
   {
     id: '03',
     title: 'Vector retrieval',
-    state: 'queued',
+    state: 'planned',
     source: 'Qdrant service and payload indexes',
     target: 'usearch vectors plus SQLite chunk metadata',
     nextStep: 'Build the vector index wrapper after loom-db lands.',
@@ -46,15 +46,15 @@ const PHASES: MigrationPhase[] = [
   {
     id: '04',
     title: 'Offline library',
-    state: 'queued',
+    state: 'planned',
     source: 'Kiwix server, ZIM catalog, educational packs',
     target: 'native ZIM reader, content manifests, Axum routes',
-    nextStep: 'Port ZIM listing and article serving once the server crate exists.',
+    nextStep: 'Show manifest, size, checksum, learner fit, and explicit accept controls before any download.',
   },
   {
     id: '05',
     title: 'Axum service surface',
-    state: 'queued',
+    state: 'planned',
     source: 'AdonisJS controllers and Inertia pages',
     target: 'loom-server handlers and Everywear-hosted applet UI',
     nextStep: 'Translate controller contracts into typed Axum handler modules.',
@@ -62,7 +62,7 @@ const PHASES: MigrationPhase[] = [
   {
     id: '06',
     title: 'Maps, tools, notes',
-    state: 'queued',
+    state: 'planned',
     source: 'PMTiles, CyberChef, FlatNotes containers',
     target: 'loom-maps, loom-datatools, loom-notes',
     nextStep: 'Keep each feature crate thin and file-backed where possible.',
@@ -71,27 +71,26 @@ const PHASES: MigrationPhase[] = [
     id: '07',
     title: 'Everywear integration',
     state: 'blocked',
-    source: 'Standalone NOMAD admin panel',
+    source: 'Legacy standalone admin panel',
     target: 'Everywear app registration, vault search, licence gate',
     nextStep: 'Unblock after backend contracts expose searchable documents.',
   },
 ];
 
 const DOCS = [
-  'NOMAD_Everywear_Rust_Port_Architecture_v1.md',
-  'Loom_Transfer_01_Ollama_to_MyMaitsLite.md',
-  'Loom_Transfer_02_MySQL_to_SQLite.md',
-  'Loom_Transfer_03_Qdrant_to_usearch.md',
-  'Loom_Transfer_04_Kiwix_to_zimrs.md',
-  'Loom_Transfer_05_AdonisJS_to_Axum.md',
-  'Loom_Transfer_06_Maps_to_loom_maps.md',
-  'Loom_Transfer_07_CyberChef_to_datatools.md',
-  'Loom_Transfer_08_FlatNotes_to_loom_notes.md',
+  'Loom_Architecture_v1.md',
+  'Loom_Transfer_01_MyMaitsLite_teacher_runtime.md',
+  'Loom_Transfer_02_learning_store_sqlite.md',
+  'Loom_Transfer_03_vectors_usearch.md',
+  'Loom_Transfer_04_content_packs_zim.md',
+  'Loom_Transfer_05_service_handlers_axum.md',
+  'Loom_Transfer_06_maps_content_tools.md',
+  'Loom_Transfer_07_notes_and_datatools.md',
 ];
 
 function stateLabel(state: PhaseState) {
   if (state === 'active') return 'Active';
-  if (state === 'queued') return 'Queued';
+  if (state === 'planned') return 'Plan first';
   return 'Blocked';
 }
 
@@ -102,8 +101,9 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
   );
   const [activeModuleId, setActiveModuleId] = React.useState(IGCSE_MODULES[0]?.id ?? '');
   const [setupMessage, setSetupMessage] = React.useState('Ready to build an offline IGCSE teacher pack.');
+  const [planAccepted, setPlanAccepted] = React.useState(false);
   const active = PHASES.filter((phase) => phase.state === 'active').length;
-  const queued = PHASES.filter((phase) => phase.state === 'queued').length;
+  const planned = PHASES.filter((phase) => phase.state === 'planned').length;
   const blocked = PHASES.filter((phase) => phase.state === 'blocked').length;
   const activeModule = IGCSE_MODULES.find((module) => module.id === activeModuleId) ?? IGCSE_MODULES[0];
   const activePackIds = new Set(activeModule?.packIds ?? []);
@@ -130,18 +130,28 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
     setSetupMessage(
       `Planned ${selected.length} item${selected.length === 1 ? '' : 's'}: resolve manifests, check disk, show sizes, then ask before downloading.`,
     );
+    setPlanAccepted(false);
+  }
+
+  function acceptPlan() {
+    const selected = CONTENT_PACKS.filter((pack) => selectedPacks.has(pack.id));
+    setPlanAccepted(true);
+    setSetupMessage(
+      `Accepted ${selected.length} item${selected.length === 1 ? '' : 's'} for manifest review. Downloads stay blocked until exact URLs, sizes, and checksums are visible.`,
+    );
   }
 
   return (
     <main className="loom-root" data-skin={skin} data-mode={mode}>
       <section className="loom-header">
         <div>
-          <p className="loom-kicker">Project NOMAD to Everywear Rust</p>
+          <p className="loom-kicker">Agentic education for the home</p>
           <h1>The Loom</h1>
+          <p className="loom-tagline">Weaving Agentic Education into your Home.</p>
         </div>
         <div className="loom-meter" aria-label="Migration status">
           <span><strong>{active}</strong> active</span>
-          <span><strong>{queued}</strong> queued</span>
+          <span><strong>{planned}</strong> planned</span>
           <span><strong>{blocked}</strong> blocked</span>
         </div>
       </section>
@@ -183,10 +193,19 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
           >
             Plan Downloads
           </button>
+          <button
+            type="button"
+            className="loom-action loom-action--secondary"
+            onClick={acceptPlan}
+            title="Accepts the visible plan for manifest review only. It does not download files yet."
+          >
+            Accept Plan
+          </button>
         </div>
 
         <div className="loom-notice" role="status">
           <strong>Loom says:</strong> {setupMessage}
+          {planAccepted && <span className="loom-plan-state"> Accepted for manifest review.</span>}
         </div>
 
         <div className="loom-module-tabs" role="tablist" aria-label="IGCSE subjects">

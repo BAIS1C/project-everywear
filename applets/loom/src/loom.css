@@ -63,6 +63,13 @@ body[data-skin="carbon"] .loom-syllabus__code {
   letter-spacing: 0;
 }
 
+.loom-tagline {
+  margin: 8px 0 0;
+  color: var(--ew-text-muted, rgba(247, 244, 236, 0.74));
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .loom-meter {
   display: flex;
   gap: 8px;
@@ -141,6 +148,7 @@ body[data-skin="carbon"] .loom-syllabus {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .loom-panel-head h2,
@@ -168,12 +176,20 @@ body[data-skin="carbon"] .loom-syllabus {
 body[data-skin="graphite"] .loom-action,
 body[data-skin="anodized"] .loom-action,
 body[data-skin="carbon"] .loom-action,
+body[data-skin="graphite"] .loom-action--secondary,
+body[data-skin="anodized"] .loom-action--secondary,
+body[data-skin="carbon"] .loom-action--secondary,
 body[data-skin="graphite"] .loom-module-tabs button.active,
 body[data-skin="anodized"] .loom-module-tabs button.active,
 body[data-skin="carbon"] .loom-module-tabs button.active {
   border-color: var(--ew-v2-accent);
   background: color-mix(in oklab, var(--ew-v2-accent) 12%, transparent);
   color: var(--ew-v2-accent-strong);
+}
+
+.loom-action--secondary {
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(247, 244, 236, 0.86);
 }
 
 .loom-action:hover {
@@ -188,6 +204,11 @@ body[data-skin="carbon"] .loom-module-tabs button.active {
   padding: 10px 12px;
   font-size: 13px;
   line-height: 1.4;
+}
+
+.loom-plan-state {
+  color: var(--ew-primary, #69d2c6);
+  font-weight: 700;
 }
 
 body[data-skin="graphite"] .loom-notice,
@@ -382,6 +403,10 @@ body[data-skin="carbon"] .loom-syllabus li {
   background: rgba(30, 115, 113, 0.18);
 }
 
+.loom-phase--planned {
+  border-color: rgba(242, 209, 107, 0.34);
+}
+
 .loom-phase--blocked {
   border-color: rgba(242, 139, 130, 0.44);
 }
@@ -409,6 +434,10 @@ body[data-skin="carbon"] .loom-syllabus li {
 
 .loom-phase--active .loom-phase__state {
   color: #69d2c6;
+}
+
+.loom-phase--planned .loom-phase__state {
+  color: #f2d16b;
 }
 
 .loom-phase--blocked .loom-phase__state {

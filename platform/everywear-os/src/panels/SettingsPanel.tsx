@@ -1,4 +1,4 @@
-import { useTheme, type Accent, type Theme, type WidgetSurface } from '@everywear/ewds';
+import { useTheme, type Accent, type Theme, type WidgetSurface, type TrafficSide } from '@everywear/ewds';
 
 const LIGHT_THEME: { id: Theme; name: string; desc: string } = {
   id: 'light',
@@ -12,6 +12,11 @@ const WIDGET_SURFACES: { id: WidgetSurface; name: string; desc: string }[] = [
   { id: 'square', name: 'Square', desc: 'Flat boxed panels' },
 ];
 
+const TRAFFIC_SIDES: { id: TrafficSide; name: string; desc: string }[] = [
+  { id: 'left', name: 'Left', desc: 'Classic shell controls' },
+  { id: 'right', name: 'Right', desc: 'Right-side window controls' },
+];
+
 export function SettingsPanel() {
   const {
     theme,
@@ -22,10 +27,14 @@ export function SettingsPanel() {
     accents,
     widgetSurface,
     setWidgetSurface,
+    trafficSide,
+    setTrafficSide,
     chromeDensity,
     setChromeDensity,
     wallpaperIntensity,
     setWallpaperIntensity,
+    bevelDegree,
+    setBevelDegree,
   } = useTheme();
   const themes = [
     LIGHT_THEME,
@@ -79,6 +88,11 @@ export function SettingsPanel() {
 
         <div style={{ marginBottom: 20 }}>
           <label className="ew-field__label">EWDS-v2 density</label>
+          <div className="ew-settings__chrome-sample" aria-hidden="true">
+            <span className="ew-settings__barcode ew-chrome" />
+            <span className="ew-settings__serial ew-chrome">EWDS-V2 · SR-4150 · 登録</span>
+            <span className="ew-settings__pill ew-chrome">● LIVE</span>
+          </div>
           <div className="ew-settings__slider-row">
             <span className="ew-settings__surface-desc">Chrome</span>
             <input
@@ -103,10 +117,44 @@ export function SettingsPanel() {
             />
             <span className="ew-settings__surface-desc">{wallpaperIntensity.toFixed(2)}</span>
           </div>
+          <div className="ew-settings__slider-row">
+            <span className="ew-settings__surface-desc">Bevel</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={bevelDegree}
+              onChange={(event) => setBevelDegree(Number(event.target.value))}
+            />
+            <span className="ew-settings__surface-desc">{bevelDegree.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <label className="ew-field__label">Traffic lights</label>
+          <div className="ew-settings__traffic-grid">
+            {TRAFFIC_SIDES.map((side) => (
+              <button
+                key={side.id}
+                type="button"
+                className={`ew-settings__traffic-option ${trafficSide === side.id ? 'ew-settings__traffic-option--active' : ''}`}
+                onClick={() => setTrafficSide(side.id)}
+              >
+                <span className="ew-settings__traffic-demo" data-side={side.id}>
+                  <span className="ew-traffic-light ew-traffic-light--close" />
+                  <span className="ew-traffic-light ew-traffic-light--minimize" />
+                  <span className="ew-traffic-light ew-traffic-light--maximize" />
+                </span>
+                <span className="ew-settings__surface-name">{side.name}</span>
+                <span className="ew-settings__surface-desc">{side.desc}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
-          <label className="ew-field__label">Desktop widgets</label>
+          <label className="ew-field__label">Surface treatment</label>
           <div className="ew-settings__surface-grid">
             {WIDGET_SURFACES.map((surface) => (
               <button

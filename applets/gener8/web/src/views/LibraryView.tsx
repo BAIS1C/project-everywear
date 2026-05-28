@@ -114,23 +114,36 @@ function VaultItemRow({
   onClick,
   onDelete,
   getThumbnailUrl,
+  variant = 'row',
 }: {
   item: VaultItem;
   onClick: () => void;
   onDelete: () => void;
   getThumbnailUrl: (id: string) => string;
+  variant?: 'row' | 'gallery';
 }) {
   const [thumbError, setThumbError] = useState(false);
   const showThumb = item.media_type === 'image' || item.media_type === 'video';
   const title = displayItemTitle(item);
+  const isGallery = variant === 'gallery';
 
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/5 cursor-pointer transition-colors group"
+      className={
+        isGallery
+          ? 'flex flex-col gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 hover:bg-white/[0.06] cursor-pointer transition-colors group'
+          : 'flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/5 cursor-pointer transition-colors group'
+      }
       onClick={onClick}
     >
       {/* Thumbnail / Icon */}
-      <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center relative">
+      <div
+        className={
+          isGallery
+            ? 'w-full aspect-video rounded-md overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center relative'
+            : 'w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center relative'
+        }
+      >
         {showThumb && !thumbError ? (
           <>
             <img
@@ -153,7 +166,7 @@ function VaultItemRow({
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0">
+      <div className={isGallery ? 'w-full min-w-0' : 'flex-1 min-w-0'}>
         <div className="text-sm font-medium text-s3-text-primary truncate flex items-center gap-1.5">
           {item.favorite && <Star size={10} className="text-amber-400 fill-amber-400 flex-shrink-0" />}
           {title}
@@ -165,7 +178,7 @@ function VaultItemRow({
       </div>
 
       {/* Tags */}
-      <div className="hidden md:flex gap-1">
+      <div className={isGallery ? 'flex flex-wrap gap-1' : 'hidden md:flex gap-1'}>
         {item.tags.slice(0, 2).map((tag) => (
           <span
             key={tag}
@@ -177,19 +190,19 @@ function VaultItemRow({
       </div>
 
       {/* Duration (audio/video) */}
-      {item.duration_seconds != null && (
+      {item.duration_seconds != null && !isGallery && (
         <span className="text-xs text-s3-text-muted tabular-nums w-12 text-right">
           {formatDuration(item.duration_seconds)}
         </span>
       )}
 
       {/* Size */}
-      <span className="text-xs text-s3-text-muted tabular-nums w-16 text-right hidden lg:block">
+      <span className={isGallery ? 'text-xs text-s3-text-muted tabular-nums' : 'text-xs text-s3-text-muted tabular-nums w-16 text-right hidden lg:block'}>
         {formatBytes(item.file_size_bytes)}
       </span>
 
       {/* Date */}
-      <span className="text-xs text-s3-text-muted w-20 text-right hidden lg:block">
+      <span className={isGallery ? 'text-xs text-s3-text-muted' : 'text-xs text-s3-text-muted w-20 text-right hidden lg:block'}>
         {formatDate(item.created_at)}
       </span>
 
@@ -346,6 +359,7 @@ export default function LibraryView() {
   const totalPages = Math.max(1, Math.ceil(vault.total / vault.pageSize));
   const showingFrom = vault.total > 0 ? vault.page * vault.pageSize + 1 : 0;
   const showingTo = Math.min((vault.page + 1) * vault.pageSize, vault.total);
+  const isVideoGallery = vault.filter === 'video';
 
   const handleItemClick = useCallback((item: VaultItem) => {
     vault.setSelectedItem(item);
@@ -477,11 +491,12 @@ export default function LibraryView() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className={isVideoGallery ? 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4' : 'flex flex-col'}>
             {vault.items.map((item) => (
               <VaultItemRow
                 key={item.id}
                 item={item}
+                variant={isVideoGallery ? 'gallery' : 'row'}
                 onClick={() => handleItemClick(item)}
                 onDelete={() => requestDeleteItem(item)}
                 getThumbnailUrl={vault.getThumbnailUrl}

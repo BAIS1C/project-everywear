@@ -23,12 +23,21 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
 
   const port = applet.frontend_port;
   const route = applet.frontend_route || '';
-  const url = port ? `http://127.0.0.1:${port}${route}` : null;
+  const url = port ? `http://127.0.0.1:${port}${route}` : applet.launch_url ?? null;
+  const isRemoteUrl = !!url
+    && /^https?:\/\//i.test(url)
+    && !url.startsWith('http://127.0.0.1')
+    && !url.startsWith('http://localhost');
 
   useEffect(() => {
     if (!url) {
       setError('No frontend port configured for this applet');
       setLoading(false);
+      return;
+    }
+    if (isRemoteUrl) {
+      setLoading(false);
+      setError(null);
       return;
     }
 
@@ -59,7 +68,7 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
 
     check();
     return () => { cancelled = true; };
-  }, [url, port]);
+  }, [url, port, isRemoteUrl]);
 
   const handleReload = () => {
     if (iframeRef.current) {
@@ -117,6 +126,7 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
             className="hav-iframe"
             title={applet.name}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            referrerPolicy="strict-origin-when-cross-origin"
           />
         )}
       </div>

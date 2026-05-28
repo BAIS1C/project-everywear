@@ -9,6 +9,7 @@ export type Accent = 'signal' | 'cyan' | 'amber' | 'acid' | 'crimson' | 'bone' |
 export type Mode = 'dark' | 'light';
 export type Theme = 'light' | Skin;
 export type WidgetSurface = 'cut' | 'rounded' | 'square';
+export type TrafficSide = 'left' | 'right';
 
 // ── Preset shapes ─────────────────────────────────────────────────
 
@@ -42,15 +43,19 @@ export interface ThemeState {
   mode: Mode;
   theme: Theme;
   widgetSurface: WidgetSurface;
+  trafficSide: TrafficSide;
   chromeDensity: number;
   wallpaperIntensity: number;
+  bevelDegree: number;
   setSkin: (id: Skin) => void;
   setAccent: (id: Accent) => void;
   setMode: (id: Mode) => void;
   setTheme: (id: Theme) => void;
   setWidgetSurface: (surface: WidgetSurface) => void;
+  setTrafficSide: (side: TrafficSide) => void;
   setChromeDensity: (density: number) => void;
   setWallpaperIntensity: (intensity: number) => void;
+  setBevelDegree: (degree: number) => void;
   toggleMode: () => void;
 }
 

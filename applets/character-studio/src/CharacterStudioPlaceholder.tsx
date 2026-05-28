@@ -32,9 +32,9 @@ const PLANNED_FEATURES = [
     desc: 'Auto-rigging with Mixamo-compatible skeleton export.',
   },
   {
-    icon: '\u{1F48E}',
-    title: 'NFT Mint',
-    desc: 'On-chain Blank minting to Strands Nation TON collection.',
+    icon: '\u{1F9E9}',
+    title: 'Blank Export Kit',
+    desc: 'Export-ready Blank manifests, Look Shards, and runtime-safe avatar files.',
   },
 ];
 

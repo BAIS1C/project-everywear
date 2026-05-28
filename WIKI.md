@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.9
-Last updated: 2026-05-28 (My Maits Lite and AI Director SAPI Contract)
+Version: 1.1.16
+Last updated: 2026-05-29 (Live QA S3 Gate and EWDS Chrome Split)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -47,7 +47,7 @@ Maintainer: Sean Uddin / Somo Kasane
 > Supabase migration and detailed design map. See
 > [docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md](./docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md)
 > and
-> [supabase/migrations/20260528112810_everywear_identity_entitlement_vault_contract.sql](./supabase/migrations/20260528112810_everywear_identity_entitlement_vault_contract.sql).
+> [supabase/migrations/20260528140643_everywear_identity_entitlement_vault_contract.sql](./supabase/migrations/20260528140643_everywear_identity_entitlement_vault_contract.sql).
 
 > Current-state note, 2026-05-28 v1.1.7: Phase 2 runtime slice wires the S3 /
 > Gener8 family into owner-bound Everywear Vault records and shell-level
@@ -60,16 +60,108 @@ Maintainer: Sean Uddin / Somo Kasane
 > Current-state note, 2026-05-28 v1.1.8: Product-facing language is My Maits
 > and My Maits Lite. My Maits Lite is a hidden headless runtime used by Loom
 > as the free teacher agent. It is not a standalone launcher, SKU, or chat
-> surface. AI Director uses SAPI for LM Studio, Ollama, or external API planner
-> providers now; the internal My Maits link is planned but not plumbed.
+> surface. AI Director's planner contract targets SAPI for LM Studio, Ollama,
+> or external API providers. This checkpoint was superseded by v1.1.11, where
+> the provider-routed SAPI adapter landed. The internal My Maits link is still
+> planned but not plumbed.
 
 > Current-state note, 2026-05-28 v1.1.9: Phase 3 contract correction wired the
 > My Maits Lite and AI Director boundary through schema seed data, applet
 > manifests, shared transport contracts, shell entitlement expansion, and S3
 > family planner UI. `mymaits_lite_runtime` is a hidden Loom teacher-agent
-> entitlement. `ai_director.planner` is Creator Studio's SAPI-routed planning
-> entitlement. The internal My Maits provider is represented only as planned
-> future plumbing, not as a live gate or launch SKU.
+> entitlement. `ai_director.planner` is Creator Studio's SAPI-targeted planning
+> entitlement. This checkpoint was superseded by v1.1.11, where the Gener8
+> shim gained provider-routed SAPI planning with explicit fallback reporting.
+> The internal My Maits provider is represented only as planned future
+> plumbing, not as a live gate or launch SKU.
+
+> Current-state note, 2026-05-28 v1.1.10: Phase 3.5 headless audit found and
+> fixed shifted shell registry gates. Gener8 is gated at `gener8` /
+> `gener8.audio`; Vid Studio is gated at Creator Studio / `vid_pro`; AI
+> Director is gated at Creator Studio / `ai_director.planner`; Loom remains
+> free with `loom` / `loom.teacher_agent`. The audit also confirmed that the
+> frontend can consume entitlement flags, but Tauri-side launch checks still
+> reason primarily over the compatibility tier ladder. Neutral native
+> entitlement enforcement remains a follow-up before provider-specific add-ons
+> can bypass tier rank cleanly.
+
+> Current-state note, 2026-05-28 v1.1.11: Open blocker repair pass converted
+> 3nvizen from package-missing to frontend-buildable by adding workspace npm
+> metadata, TS config, Vite config, and a standalone dev entry. This proves
+> only that the frontend source builds; 3nvizen remains live-runtime unproven
+> until the LTX sidecar boots and produces a video. AI Director now has a real
+> provider-routed SAPI adapter for LM Studio, Ollama, and external
+> OpenAI-compatible APIs; the shim reports `planner.mode = sapi` when a
+> provider succeeds and `planner.mode = fallback` when no provider is available.
+> Tauri native launch gating now stores neutral entitlement flags from the
+> frontend and checks those before tier rank. Supabase CLI is available and the
+> Everywear workdir links to project `ykqdsihnzroglepoxwcj`; Docker is only a
+> blocker for local `db reset`, not linked remote verification. Everywear's
+> 30-day signed-in-device rule is shell/client cookie policy only. Gener8's
+> local `VideoGeneratorModal` remains a large
+> unverified fork; Vid uses `@everywear/video-modal`, so visual parity must be
+> proven in the live QA pass before making Vid claims.
+>
+> Current-state note, 2026-05-28 v1.1.12: Everywear Supabase workdir is linked
+> to live project `ykqdsihnzroglepoxwcj`. The neutral identity, entitlement,
+> and Vault contract migration was applied remotely as
+> `20260528140643_everywear_identity_entitlement_vault_contract.sql` through the
+> Supabase connector and verified against remote catalog/plan/Vault tables.
+> The old S3 donor migration history has been copied into Everywear, with
+> explicit no-op placeholders for six remote-only May 6 history entries that
+> were present in Supabase but missing from local donor files. The 30-day
+> signed-in-device rule remains shell/client cookie policy only.
+>
+> Current-state note, 2026-05-28 v1.1.13: Headless release binary build passed
+> for the active Rust/Tauri executables: `everywear-os.exe`, `gener8.exe`,
+> `onemagen.exe`, `everywear-3nvizen.exe`, and `everywear-kasai.exe` now exist
+> under `C:\Users\MAG MSI\Project Everywear\target\release`. This is a binary
+> build receipt only; no installer bundle directory was produced and no live UI,
+> sidecar, model-load, or visual QA was run.
+>
+> Current-state note, 2026-05-28 v1.1.14: Sean manually click-launched the
+> release `onemagen.exe` from `target\release` and reported that it spun up.
+> Later process enumeration found no active Everywear applet process, so this is
+> recorded as operator-observed launch proof, not a sustained runtime/process
+> health check. `everywear-3nvizen.exe`, `everywear-kasai.exe`, and `gener8.exe`
+> still need equivalent click-launch/runtime receipts.
+>
+> Current-state note, 2026-05-28 v1.1.15: Live Everywear release QA showed the
+> user remained signed in as `seanie@everywear.id`, but S3-family launch gates
+> blocked `1magen`, `gener8`, `vid`, `ai-director`, and `3nvizen`. Root cause is
+> likely entitlement bridge drift: the neutral `active_tier()` /
+> `entitlement_flags()` path reads `user_entitlements`, while Sean's admin
+> bypass appears to live in the older S3-style subscription/admin override path.
+> A local owner/admin test bypass was added in shell auth so Sean can run the
+> bedtime marketing/QA pass. This bypass is a release blocker and must be
+> replaced by a real Supabase entitlement backfill/admin override bridge before
+> any external release.
+>
+> Live QA notes from 2026-05-28 SGT: My Mait launched and looked/behaved good.
+> S3 family gates were locked despite admin bypass. EWDS-v2 cyberpunk/barcode
+> settings treatment was not visible enough in the settings slider. Loom still
+> presents Project NOMAD migration wording and queued items with no download,
+> accept, or ZIM modularisation flow; desired title direction is "The Loom,
+> Weaving Agentic Education into your Home." Character Studio is still a
+> placeholder, not ported. Minting/NFT/crypto language must not be visible in
+> Character Studio or public Everywear surfaces. Vault media player failed on
+> playback and video library should use larger tiled cards. Strands Nation must
+> open inside an Everywear iframe/internal browser at `strandsnation.xyz`, not
+> launch external Chrome. Base Everywear should eventually expose first-class
+> desktop Music Player and Browser apps so users can leave Everywear running as
+> their home OS layer.
+>
+> Current-state note, 2026-05-29 v1.1.16: S3-family lock root cause refined:
+> the shell can receive registry entries as presentation `Locked` while auth is
+> still hydrating, then reject launch before checking owner entitlement flags.
+> `ShellLayout.tsx` now refreshes the applet registry after auth/entitlement
+> state changes and checks entitlement flags before treating `Locked` as a hard
+> block. Source patch only; rebuild/relaunch remains pending Sean go-ahead.
+> The EWDS-v2 visual issue is tracked separately as a design-contract miss from
+> `DESIGN WORK DONT GIT\design_handoff_everywear_ewds_v2`: industrial chrome
+> barcodes, serials, JP labels, registration marks, traffic-light side,
+> chrome-density, bevel degree, and rounded/cut-corner controls must visibly
+> survive into Settings and applet chrome.
 
 ## Current State Addendum 2026-05-28: Identity, Vault, Entitlement, and Engine Migration Contract
 
@@ -109,9 +201,11 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
   canon.
 - My Maits Lite is a hidden headless runtime used by Loom as the free teacher
   agent. It is not a standalone launcher or chat surface.
-- AI Director uses SAPI for planner reasoning through LM Studio, Ollama, or
-  external API providers. The internal My Maits link is planned but not
-  plumbed yet, so it must not be represented as a live runtime entitlement.
+- AI Director must route planner reasoning through SAPI for LM Studio, Ollama,
+  or external API providers. Gener8 now has a provider-routed SAPI adapter
+  with deterministic fallback reporting. The internal My Maits link is still
+  planned but not plumbed, so that path must not be represented as a completed
+  runtime integration.
 - My Maits is the standalone agent hub/add-on with microtransaction support.
 - Strands the Game and MyMaiDs / My Maids are platform-launched games, not
   near-term applet ports.
@@ -125,9 +219,10 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
 
 | Area | Current State | Notes |
 |---|---|---|
-| Supabase local project | Added | `supabase/config.toml` and migration folder now exist in Project Everywear. |
-| Neutral schema | Added | `20260528112810_everywear_identity_entitlement_vault_contract.sql` creates identity, external identity, catalog, entitlement, device, Steam event, Vault, and Vault ACL tables. |
-| Entitlement catalog | Seeded | Catalog seed is product metadata only, not user data. |
+| Supabase project link | Live | `C:\Users\MAG MSI\Project Everywear` is linked to Supabase project `ykqdsihnzroglepoxwcj`. |
+| Supabase migration history | Reconciled | S3 donor `0001..0017` copied into Everywear; six remote-only May 6 versions are represented by documented no-op placeholders. |
+| Neutral schema | Applied live | `20260528140643_everywear_identity_entitlement_vault_contract.sql` creates identity, external identity, catalog, entitlement, device, Steam event, Vault, and Vault ACL tables. |
+| Entitlement catalog | Applied live | Catalog rows include `tier_floor`, `runtime_class`, `sku_policy`, and `catalog_status`; catalog seed is product metadata only, not user data. |
 | Compatibility RPC | Added | `active_tier(uuid)` and `entitlement_flags(uuid)` preserve current shell bridge while capability wiring migrates. |
 | Vault bootstrap contract | Added | `vaults`, `vault_records`, and `vault_acl` enforce owner-bound records and schema-only bootstrap. |
 | Migration design doc | Added | `docs/vault/2026-05-28_everywear-identity-vault-entitlement-migration-map.md` contains migration map, Steam flow, dependency graph, worker split, and verification commands. |
@@ -135,13 +230,19 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
 | Reference / Cover assets | Wired | Gener8 reference uploads register as `reference`; cover source uploads register as `cover_source`; generated covers register as `cover_output`. |
 | 1magen launch gate | Wired | Shell registry and browser fallback require `gener8` / `1magen.image` before inline mount; applet manifest records shell/runtime enforcement. |
 | 3nvizen launch gate | Wired | Shell registry and browser fallback require `gener8_pro` / `3nvizen.video`; applet manifest records shell/runtime enforcement. |
-| My Maits / My Maits Lite contract | Wired for Phase 3 | My Maits Lite is embedded/headless for Loom Teacher Agent. AI Director uses SAPI planner routing now; internal My Maits link is planned but unplumbed. |
+| 3nvizen frontend package | Added | `@everywear/3nvizen` now has npm workspace metadata and build config. Frontend build passes; live sidecar/generation remains unproven. |
+| Gener8 / Vid / AI Director / Loom gates | Corrected in Phase 3.5 | Headless audit fixed shifted registry entries: Gener8 no longer carries AI Director's gate, AI Director is no longer ungated, Vid no longer carries Loom's teacher gate, and Loom exposes free teacher-agent entitlements. |
+| Native entitlement flags | Wired | Tauri auth now stores neutral entitlement flags pushed from the frontend and launch checks use them before compatibility tier rank. |
+| My Maits / My Maits Lite contract | Wired for Phase 3 | My Maits Lite is embedded/headless for Loom Teacher Agent. AI Director has a provider-routed SAPI adapter with fallback mode when no provider is available. |
 
 ### Verification State
 
 - Passed: `npm run build --workspace everywear-os`.
 - Passed: `npm run build --workspace onemagen`.
 - Passed: `npm run build --workspace @everywear/gener8-web`.
+- Passed: `npm run build --workspace @everywear/3nvizen`.
+- Passed: `npm run build --workspace @everywear/video-modal`.
+- Passed: `npm run build --workspace @everywear/vid-web`.
 - Passed: `npm run build --workspace @everywear/transport`.
 - Passed: `npm run build --workspace @everywear/loom`.
 - Passed: `npm run build --workspace kasai-applet`.
@@ -151,12 +252,32 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
 - Passed: `cargo check -p onemagen`.
 - Passed: `cargo check -p everywear-3nvizen`.
 - Passed with existing warnings: `cargo check -p gener8`.
+- Passed after Phase 3.5 audit patches: `npm run build --workspace everywear-os`,
+  `npm run build --workspace @everywear/gener8-web`, and
+  `cargo check -p everywear-os`.
 - Passed: `git diff --check` (line-ending warnings only for existing CRLF/LF
   normalization on two Gener8 web files).
-- Blocked: Supabase local checks, Docker CLI/engine is not available on this
+- Passed: `supabase migration list --workdir . --linked`; local and remote
+  migration history now match through `20260528140643`.
+- Passed: live Supabase connector verification for `products`,
+  `plan_entitlements`, `vaults`, `vault_records`, `vault_acl`,
+  `active_tier()`, and `entitlement_flags()`.
+- Passed: `cargo build --release -p everywear-os -p gener8 -p onemagen -p
+  everywear-3nvizen -p everywear-kasai`; release `.exe` outputs exist for all
+  five active Rust/Tauri binary targets in `target\release`.
+- Operator-observed: Sean manually click-launched
+  `target\release\onemagen.exe` and reported that it spun up. This proves basic
+  click-launch only; sustained process health and generation remain unproven.
+- Blocked/unstable: `supabase db push --workdir . --dry-run` timed out after
+  migration history was reconciled. No pending migration remained after the
+  live connector apply.
+- Blocked for local reset only: Docker CLI/engine is not available on this
   host (`docker info` reports `docker` is not recognized).
-- Blocked by package metadata: `applets/3nvizen` has Rust and React source but
-  no applet-local `package.json`, so no npm applet build path exists to run.
+- Live-unproven: `applets/3nvizen` now has a frontend npm build path, but no
+  LTX sidecar boot/generation/Vault-registration proof has run yet.
+- Visual QA owed: Gener8's local `VideoGeneratorModal.tsx` and
+  `@everywear/video-modal` need a live parity pass before Vid production
+  claims.
 
 ## Current State Addendum 2026-05-28: My Mait Agent Hub Surface Port
 
@@ -2165,8 +2286,9 @@ Implementation status 2026-05-28 SGT:
 - Current applet classification map:
   - `1magen`: built in place, ready for live visual verification after EWDS-v2
     surface patch; applet frontend and `onemagen` Rust check passed.
-  - `3nvizen`: in-place React/Rust scaffold; Rust check passed, applet-local
-    npm build is blocked until `applets/3nvizen/package.json` exists.
+  - `3nvizen`: in-place React/Rust scaffold; Rust check and frontend npm build
+    pass after adding applet-local package metadata. Live LTX sidecar boot,
+    video generation, and Vault registration remain unproven.
   - `character-studio`: scaffold only. Canonical source remains
     `C:\Users\MAG MSI\Project Strands\CharacterStudio-Strands` with EWDS visual
     reference at `C:\Users\MAG MSI\Project Mymaits\Character Studio EWDS Design`.
@@ -2747,7 +2869,7 @@ Root scripts:
 | Gener8 | 51 source files: headless Rust binary (6500+ lines), React web frontend, shim, ACE sidecar, DAW, beats, cpal playback, tier reconciler | TS build fails (strict type errors, unused imports) | Fix VideoGeneratorModal types, unused imports |
 | Vid | 13 source files: frontend-only, applet.toml registered, large video visualizer/export | TS build fails (malformed JSX in VideoGeneratorModal.tsx) | Fix unclosed div tags |
 | Kasai | 15 source files: Rust inference/slot backend, React three-pane EWDS agent UI | TS build fails (missing ToolCallCard, message type discriminants) | Add ToolCallCard, fix message unions |
-| 3nvizen | 15 source files: Rust IPC backend, React workbench scaffold (ThreevizenCore, mode selector, params, preview, status) | Missing package.json, not build-tested | Add npm metadata, real LTX adapter |
+| 3nvizen | 15 source files: Rust IPC backend, React workbench scaffold (ThreevizenCore, mode selector, params, preview, status) | Frontend package metadata added; npm build passes | Prove live LTX sidecar boot, generation, and Vault registration |
 
 ### Placeholder Directories (No Source Code)
 
@@ -2970,13 +3092,13 @@ Rules:
 
 Confirmed from AI Director's existing implementation (`shot_planner.rs` + `director_lm/`):
 
-1. AI Director SAPI planner generates the full execution graph as a `ShotPlan` (JSON manifest)
-2. Planner provider releases VRAM/session resources immediately after plan generation
+1. AI Director SAPI planner should generate the full execution graph as a `ShotPlan` (JSON manifest)
+2. Planner provider should release VRAM/session resources immediately after plan generation
 3. AI Director coordinator (scripted state machine, zero GPU) picks up the manifest
 4. Concierge dispatches jobs sequentially to inference applets (1magen, 3nvizen)
 5. Inter-stage data references are filesystem paths injected into subsequent job parameters
 
-The planner LLM never cohabits with diffusion/video models. The entire orchestration flow is resolved before any inference applet loads. Today the planner routes through SAPI providers such as LM Studio, Ollama, or external APIs. The internal My Maits provider link is planned but not plumbed.
+The planner LLM must never cohabit with diffusion/video models. The entire orchestration flow should resolve before any inference applet loads. Current disk truth: Gener8's AI Director shim uses provider-routed SAPI planning through LM Studio, Ollama, or external OpenAI-compatible APIs when reachable, then falls back to deterministic local shot plans when no provider succeeds. The internal My Maits provider link is planned but not plumbed.
 
 AI Director ShotPlan schema (from `s-gener8/src-tauri/src/ai_director/mod.rs`):
 ```rust
@@ -3058,7 +3180,7 @@ Key components to migrate:
 | Style Forge | applets/style-forge/ | applet-ipc TCP |
 | Album Cover (new) | applets/1magen/ (cover_art command) | existing 1magen IPC |
 | 3nvizen (LTX/Wan sidecar) | applets/3nvizen/ (already scaffolded) | uv Python sidecar |
-| AI Director SAPI planner | SAPI provider bridge | LM Studio, Ollama, external API now; internal My Maits provider planned |
+| AI Director SAPI planner | SAPI provider bridge | Provider-routed runtime adapter exists for LM Studio, Ollama, and external OpenAI-compatible API. Internal My Maits provider planned, not plumbed. |
 
 Pricing model filed separately (vault: strands wing, decision category, 2026-05-17). Not reflected in wiki or marketing until financial modelling complete.
 
@@ -3159,7 +3281,7 @@ Initial entitlement map:
 - 3nvizen: included from the Gener8 Pro bundle onwards, not a separate launch SKU.
 - Loom: free Everywear applet.
 - My Maits Lite: hidden headless runtime used by Loom as a free teacher agent; not a standalone launcher or chat surface.
-- AI Director planner: SAPI-routed through LM Studio, Ollama, or external API providers now. Internal My Maits provider link is planned but unplumbed.
+- AI Director planner: SAPI-targeted through LM Studio, Ollama, or external API providers. Provider-routed adapter exists with fallback reporting. Internal My Maits provider link is planned but unplumbed.
 - My Maits: standalone agent hub/add-on with microtransaction support.
 - Character Studio: free Everywear applet.
 - Strands the Game: platform-launched game, not a near-term applet entitlement.
@@ -3268,7 +3390,7 @@ Safetensors remains the canonical Python sidecar path because it maps to `ltx-co
 
 Baseline Creator Studio render sequence:
 
-1. AI Director produces a SAPI-routed shot plan with segment prompts, timing, continuity notes, and init sources.
+1. AI Director should produce a SAPI-routed shot plan with segment prompts, timing, continuity notes, and init sources. Current Gener8 shim attempts provider-routed SAPI first and reports deterministic fallback when no provider is reachable.
 2. `1magen` generates cut-shot anchor frames where needed.
 3. `3nvizen` generates video segments in timeline order.
 4. The last frame of each segment becomes the next continuation init frame.

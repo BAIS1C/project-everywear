@@ -1758,16 +1758,40 @@ async fn director_plan(
     let target_duration_ms = params
         .target_duration_ms
         .unwrap_or(params.beat_map.duration_ms);
-    let shots = build_fallback_shots(&params.beat_map, &params.brief, target_duration_ms);
-    let plan = crate::ai_director::ShotPlan {
-        shots,
-        style_preset: params.style_preset,
-        brief: params.brief,
-        total_duration_ms: target_duration_ms,
+    let (plan, planner) = match crate::ai_director::sapi_planner::plan_shots_with_sapi(
+        &st.client,
+        &params,
+        target_duration_ms,
+    )
+    .await
+    {
+        Ok(result) => (
+            result.plan,
+            json!({
+                "mode": "sapi",
+                "provider": result.provider,
+                "model": result.model,
+            }),
+        ),
+        Err(error) => {
+            let shots = build_fallback_shots(&params.beat_map, &params.brief, target_duration_ms);
+            (
+                crate::ai_director::ShotPlan {
+                    shots,
+                    style_preset: params.style_preset,
+                    brief: params.brief,
+                    total_duration_ms: target_duration_ms,
+                },
+                json!({
+                    "mode": "fallback",
+                    "error": error,
+                }),
+            )
+        }
     };
     let render_sequence = crate::ai_director::render_sequence(&plan);
     Ok(Json(
-        json!({ "plan": plan, "renderSequence": render_sequence }),
+        json!({ "plan": plan, "renderSequence": render_sequence, "planner": planner }),
     ))
 }
 
@@ -1776,10 +1800,8 @@ async fn director_lm_load(State(st): State<Arc<ShimState>>) -> (StatusCode, Json
     if !tier_is_creator(tier) {
         return upgrade_required_with_actual("creator_studio", tier);
     }
-    (
-        StatusCode::NOT_IMPLEMENTED,
-        Json(json!({ "status": "not_implemented", "required_tier": "creator_studio" })),
-    )
+    let status = crate::ai_director::sapi_planner::planner_status();
+    (StatusCode::OK, Json(json!({ "status": "provider_routed", "planner": status })))
 }
 
 async fn director_lm_unload(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
@@ -1787,10 +1809,8 @@ async fn director_lm_unload(State(st): State<Arc<ShimState>>) -> (StatusCode, Js
     if !tier_is_creator(tier) {
         return upgrade_required_with_actual("creator_studio", tier);
     }
-    (
-        StatusCode::NOT_IMPLEMENTED,
-        Json(json!({ "status": "not_implemented", "required_tier": "creator_studio" })),
-    )
+    let status = crate::ai_director::sapi_planner::planner_status();
+    (StatusCode::OK, Json(json!({ "status": "provider_routed", "planner": status })))
 }
 
 async fn director_lm_status(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
@@ -1800,7 +1820,11 @@ async fn director_lm_status(State(st): State<Arc<ShimState>>) -> (StatusCode, Js
     }
     (
         StatusCode::OK,
-        Json(json!({ "loaded": false, "model": null })),
+        Json(json!({
+            "loaded": false,
+            "model": null,
+            "planner": crate::ai_director::sapi_planner::planner_status(),
+        })),
     )
 }
 

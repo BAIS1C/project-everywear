@@ -197,6 +197,27 @@ create table if not exists public.products (
   updated_at timestamptz not null default now()
 );
 
+alter table public.products
+  add column if not exists tier_floor text not null default 'free_everywear'
+    check (tier_floor in (
+      'free_everywear', 'gener8_4ever', 'gener8_pro', 'creator_studio',
+      'mymaits_full_addon', 'platform_launched', 'deferred'
+    )),
+  add column if not exists runtime_class text not null default 'platform'
+    check (runtime_class in (
+      'platform', 'bundle', 'web_applet', 'native_applet',
+      'headless_runtime', 'engine_capability', 'game', 'addon'
+    )),
+  add column if not exists sku_policy text not null default 'free_applet'
+    check (sku_policy in (
+      'root_platform', 'bundle_sku', 'bundle_included', 'free_applet',
+      'hidden_runtime', 'paid_addon', 'platform_game', 'deferred'
+    )),
+  add column if not exists catalog_status text not null default 'planned'
+    check (catalog_status in (
+      'live', 'beta', 'deferred', 'planned', 'hidden', 'blocked'
+    ));
+
 create table if not exists public.plans (
   id text primary key,
   product_id text not null references public.products(id) on delete restrict,
@@ -385,27 +406,84 @@ grant select, insert, update on public.devices to authenticated;
 grant select on public.steam_link_events to authenticated;
 
 -- Product and plan seed. This is catalog metadata only, not user data.
-insert into public.products (id, family, name, product_type, launch_policy, is_free)
+-- Every launcher/applet/capability gets an explicit tier floor and SKU policy
+-- so the S3 donor ladder cannot leak back in as the account root.
+insert into public.products (
+  id, family, name, product_type, launch_policy, is_free,
+  tier_floor, runtime_class, sku_policy, catalog_status, metadata
+)
 values
-  ('everywear_base', 'everywear', 'Everywear Base', 'platform', 'visible', true),
-  ('s3_gener8_family', 's3', 'S3 Studio / Gener8 Family', 'bundle', 'visible', false),
-  ('gener8_4ever', 's3', 'Gener8 4ever', 'bundle', 'visible', false),
-  ('gener8_pro', 's3', 'Gener8 Pro', 'bundle', 'visible', false),
-  ('creator_studio', 's3', 'Creator Studio', 'bundle', 'deferred', false),
-  ('1magen', 'everywear', '1magen', 'applet', 'bundle_included', false),
-  ('3nvizen', 'everywear', '3nvizen', 'applet', 'bundle_included', false),
-  ('loom', 'everywear', 'Loom', 'applet', 'visible', true),
-  ('character_studio', 'everywear', 'Character Studio', 'applet', 'visible', true),
-  ('mymaits_lite_runtime', 'mymaits', 'My Maits Lite Runtime', 'capability', 'hidden', true),
-  ('mymaits_full', 'mymaits', 'My Maits', 'addon', 'visible', false),
-  ('strands_game', 'strands', 'Strands the Game', 'game', 'platform_launched', false),
-  ('mymaids_game', 'strands', 'MyMaiDs / My Maids', 'game', 'platform_launched', false)
+  ('everywear_base', 'everywear', 'Everywear Base', 'platform', 'visible', true,
+    'free_everywear', 'platform', 'root_platform', 'live',
+    '{"owns":["identity","vault","library","auth","vram","launcher"]}'::jsonb),
+  ('s3_gener8_family', 's3', 'S3 Studio / Gener8 Family', 'bundle', 'visible', false,
+    'gener8_4ever', 'bundle', 'bundle_sku', 'beta',
+    '{"production_line":true,"first_paid_line":true}'::jsonb),
+  ('gener8', 's3', 'Gener8', 'applet', 'bundle_included', false,
+    'gener8_4ever', 'native_applet', 'bundle_included', 'beta',
+    '{"applet_id":"gener8","engines":["ace_step"],"source_app_id":"gener8"}'::jsonb),
+  ('gener8_4ever', 's3', 'Gener8 4ever', 'bundle', 'visible', false,
+    'gener8_4ever', 'bundle', 'bundle_sku', 'beta',
+    '{"includes":["gener8","1magen"],"commerce":"one_time"}'::jsonb),
+  ('gener8_pro', 's3', 'Gener8 Pro', 'bundle', 'visible', false,
+    'gener8_pro', 'bundle', 'bundle_sku', 'beta',
+    '{"includes":["gener8","1magen","3nvizen"],"commerce":"subscription"}'::jsonb),
+  ('creator_studio', 's3', 'Creator Studio', 'bundle', 'deferred', false,
+    'creator_studio', 'bundle', 'bundle_sku', 'deferred',
+    '{"inherits":["gener8_pro"],"includes":["ai_director","daw_pro","vid_pro"]}'::jsonb),
+  ('1magen', 'everywear', '1magen', 'applet', 'bundle_included', false,
+    'gener8_4ever', 'native_applet', 'bundle_included', 'beta',
+    '{"applet_id":"1magen","source_app_id":"1magen","engine":"image"}'::jsonb),
+  ('3nvizen', 'everywear', '3nvizen', 'applet', 'bundle_included', false,
+    'gener8_pro', 'native_applet', 'bundle_included', 'blocked',
+    '{"applet_id":"3nvizen","source_app_id":"3nvizen","engine":"video","blocker":"live_sidecar_generation_unproven"}'::jsonb),
+  ('vid', 's3', 'Vid Studio', 'applet', 'bundle_included', false,
+    'creator_studio', 'web_applet', 'bundle_included', 'blocked',
+    '{"applet_id":"vid","blocker":"video_modal_visual_parity"}'::jsonb),
+  ('ai_director', 's3', 'AI Director', 'capability', 'bundle_included', false,
+    'creator_studio', 'engine_capability', 'bundle_included', 'beta',
+    '{"provider_route":"sapi","providers":["lm_studio","ollama","external_api"],"internal_mymaits_provider":"planned"}'::jsonb),
+  ('daw_pro', 's3', 'DAW Pro', 'capability', 'bundle_included', false,
+    'creator_studio', 'engine_capability', 'bundle_included', 'beta',
+    '{"surface":"gener8_daw"}'::jsonb),
+  ('loom', 'everywear', 'Loom', 'applet', 'visible', true,
+    'free_everywear', 'web_applet', 'free_applet', 'beta',
+    '{"applet_id":"loom","uses":["mymaits_lite_runtime"],"teacher_agent":true}'::jsonb),
+  ('character_studio', 'everywear', 'Character Studio', 'applet', 'visible', true,
+    'free_everywear', 'web_applet', 'free_applet', 'beta',
+    '{"applet_id":"character-studio","exports":["strands-avatar-v1"]}'::jsonb),
+  ('mymaits_lite_runtime', 'mymaits', 'My Maits Lite Runtime', 'capability', 'hidden', true,
+    'free_everywear', 'headless_runtime', 'hidden_runtime', 'hidden',
+    '{"not_standalone":true,"not_chat_surface":true,"consumers":["loom","ai_director_future"]}'::jsonb),
+  ('mymaits_full', 'mymaits', 'My Maits', 'addon', 'visible', false,
+    'mymaits_full_addon', 'addon', 'paid_addon', 'planned',
+    '{"applet_id":"kasai","legacy_internal_id":"kasai","microtransactions":true}'::jsonb),
+  ('mymories', 'everywear', 'Mymories', 'applet', 'deferred', true,
+    'deferred', 'web_applet', 'deferred', 'planned',
+    '{"applet_id":"mymories","status":"placeholder"}'::jsonb),
+  ('layeru-osint', 'son', 'Layer U OSINT', 'applet', 'deferred', true,
+    'deferred', 'web_applet', 'deferred', 'planned',
+    '{"applet_id":"layeru-osint","status":"paused_project_son_surface"}'::jsonb),
+  ('s3studio', 's3', 'S3 Studio Legacy Placeholder', 'applet', 'deferred', false,
+    'deferred', 'web_applet', 'deferred', 'planned',
+    '{"applet_id":"s3studio","status":"placeholder_gener8_is_active_route"}'::jsonb),
+  ('strands_game', 'strands', 'Strands the Game', 'game', 'platform_launched', false,
+    'platform_launched', 'game', 'platform_game', 'planned',
+    '{"not_near_term_applet_port":true}'::jsonb),
+  ('mymaids_game', 'strands', 'MyMaiDs / My Maids', 'game', 'platform_launched', false,
+    'platform_launched', 'game', 'platform_game', 'planned',
+    '{"not_near_term_applet_port":true,"naming":"needs_public_lock"}'::jsonb)
 on conflict (id) do update set
   family = excluded.family,
   name = excluded.name,
   product_type = excluded.product_type,
   launch_policy = excluded.launch_policy,
   is_free = excluded.is_free,
+  tier_floor = excluded.tier_floor,
+  runtime_class = excluded.runtime_class,
+  sku_policy = excluded.sku_policy,
+  catalog_status = excluded.catalog_status,
+  metadata = excluded.metadata,
   updated_at = now();
 
 insert into public.plans (id, product_id, name, billing_model, provider_hint)
@@ -424,6 +502,7 @@ on conflict (id) do update set
 
 insert into public.plan_entitlements (plan_id, entitlement_key, entitlement_type, grant_policy)
 values
+  ('free_everywear', 'everywear_base', 'product', 'included'),
   ('free_everywear', 'loom', 'applet', 'included'),
   ('free_everywear', 'loom.teacher_agent', 'feature', 'included'),
   ('free_everywear', 'character_studio', 'applet', 'included'),
@@ -439,9 +518,17 @@ values
   ('gener8_pro', '1magen.image', 'engine', 'included'),
   ('gener8_pro', '3nvizen', 'applet', 'included'),
   ('gener8_pro', '3nvizen.video', 'engine', 'included'),
+  ('creator_studio', 'gener8', 'applet', 'included'),
+  ('creator_studio', 'gener8.audio', 'engine', 'included'),
+  ('creator_studio', 'gener8.pro_model_pack', 'asset_pack', 'included'),
+  ('creator_studio', '1magen', 'applet', 'included'),
+  ('creator_studio', '1magen.image', 'engine', 'included'),
+  ('creator_studio', '3nvizen', 'applet', 'included'),
+  ('creator_studio', '3nvizen.video', 'engine', 'included'),
   ('creator_studio', 'ai_director', 'feature', 'included'),
   ('creator_studio', 'ai_director.planner', 'feature', 'included'),
   ('creator_studio', 'daw_pro', 'feature', 'included'),
+  ('creator_studio', 'vid', 'applet', 'included'),
   ('creator_studio', 'vid_pro', 'feature', 'included'),
   ('mymaits_full_addon', 'mymaits_full', 'applet', 'included'),
   ('mymaits_full_addon', 'mymaits.microtransactions', 'feature', 'microtransaction_unlocked')
@@ -463,21 +550,21 @@ as $$
       select 1 from public.user_entitlements
       where user_id = p_user
         and status = 'active'
-        and entitlement_key = 'ai_director'
+        and entitlement_key in ('creator_studio', 'ai_director', 'ai_director.planner', 'daw_pro', 'vid_pro')
         and (ends_at is null or ends_at > now())
     ) then 'creator_studio'
     when exists (
       select 1 from public.user_entitlements
       where user_id = p_user
         and status = 'active'
-        and entitlement_key = '3nvizen'
+        and entitlement_key in ('gener8_pro', '3nvizen', '3nvizen.video', 'gener8.pro_model_pack')
         and (ends_at is null or ends_at > now())
     ) then 'gener8_pro'
     when exists (
       select 1 from public.user_entitlements
       where user_id = p_user
         and status = 'active'
-        and entitlement_key = 'gener8'
+        and entitlement_key in ('gener8', 'gener8.audio', '1magen', '1magen.image')
         and (ends_at is null or ends_at > now())
     ) then 'gener8'
     else 'demo'
@@ -489,12 +576,23 @@ returns jsonb
 language sql
 stable
 as $$
-  select coalesce(jsonb_object_agg(entitlement_key, true), '{}'::jsonb)
-  from public.user_entitlements
-  where user_id = p_user
-    and p_user = (select auth.uid())
-    and status = 'active'
-    and (ends_at is null or ends_at > now());
+  with grants as (
+    select entitlement_key
+    from public.plan_entitlements
+    where plan_id = 'free_everywear'
+    union
+    select entitlement_key
+    from public.user_entitlements
+    where user_id = p_user
+      and p_user = (select auth.uid())
+      and status = 'active'
+      and (ends_at is null or ends_at > now())
+  )
+  select case
+    when p_user is distinct from (select auth.uid()) then '{}'::jsonb
+    else coalesce(jsonb_object_agg(entitlement_key, true), '{}'::jsonb)
+  end
+  from grants;
 $$;
 
 grant execute on function public.active_tier(uuid) to authenticated;

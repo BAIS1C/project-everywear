@@ -46,7 +46,7 @@ export const CONTENT_PACKS: ContentPack[] = [
     status: 'required',
     size: '< 50 MB starter',
     source: '~/.everywear/data/loom/loom.db',
-    resolver: 'loom-db migration phase',
+    resolver: 'loom-db setup phase',
     tooltip: 'Stores learner profile, selected syllabus, progress, retrieval schedule, misconceptions, notes, and teacher feedback.',
   },
   {

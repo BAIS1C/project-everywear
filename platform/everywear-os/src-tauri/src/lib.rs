@@ -39,6 +39,15 @@ use std::sync::Arc;
 use tauri::{Emitter, Manager};
 use tokio::sync::{mpsc, Mutex};
 
+pub(crate) fn default_free_entitlements() -> HashMap<String, bool> {
+    HashMap::from([
+        ("loom".to_string(), true),
+        ("loom.teacher_agent".to_string(), true),
+        ("character_studio".to_string(), true),
+        ("mymaits_lite_runtime".to_string(), true),
+    ])
+}
+
 // ─── VRAM Budget Commands (NEW: Bridge) ─────────────────────────────────────
 
 #[tauri::command]
@@ -71,7 +80,8 @@ async fn check_applet_requirements(
         let reg = state.registry.lock().await;
         if let Some(applet) = reg.get(&applet_id) {
             let tier = *state.licence_tier.lock().await;
-            if let Some(reason) = registry::applet_entitlement_error(applet, tier) {
+            let entitlements = state.entitlement_flags.lock().await;
+            if let Some(reason) = registry::applet_entitlement_error(applet, tier, &entitlements) {
                 return Ok(budget::RequirementsCheck {
                     can_launch: false,
                     selected_group: None,
@@ -154,7 +164,8 @@ async fn request_applet_switch(
     }
     {
         let tier = *state.licence_tier.lock().await;
-        if let Some(reason) = registry::applet_entitlement_error(&applet, tier) {
+        let entitlements = state.entitlement_flags.lock().await;
+        if let Some(reason) = registry::applet_entitlement_error(&applet, tier, &entitlements) {
             return Err(reason);
         }
     }
@@ -1293,7 +1304,8 @@ async fn launch_applet(
     }
     {
         let tier = *state.licence_tier.lock().await;
-        if let Some(reason) = registry::applet_entitlement_error(&applet, tier) {
+        let entitlements = state.entitlement_flags.lock().await;
+        if let Some(reason) = registry::applet_entitlement_error(&applet, tier, &entitlements) {
             return Err(reason);
         }
     }
@@ -1432,6 +1444,7 @@ pub fn run() {
             vram_scheduler: Arc::new(Mutex::new(vram_scheduler)),
             kasai_tool_calls: Arc::new(Mutex::new(Vec::new())),
             licence_tier: Arc::new(Mutex::new(model_manager::LicenceTier::Demo)),
+            entitlement_flags: Arc::new(Mutex::new(default_free_entitlements())),
             user_session: Arc::new(Mutex::new(None)),
             video_encoder: Arc::new(Mutex::new(video_encoder::VideoEncoderService::new())),
             gener8_engine: Arc::new(Mutex::new(gener8_engine::Gener8EngineState::default())),
