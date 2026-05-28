@@ -33,9 +33,9 @@ export default function VidView() {
   }, [songs]);
 
   return (
-    <div className="flex h-full bg-s3 text-white">
+    <div className="s3-family-route flex h-full bg-s3 text-[color:var(--ew-text)]">
       {/* -- Song Browser Sidebar ----------------------------------------- */}
-      <div className="w-56 border-r border-[color:var(--ew-border)] flex flex-col shrink-0">
+      <div className="w-56 border-r border-[color:var(--ew-border)] ew-v2-bevel flex flex-col shrink-0">
         <div className="px-3 py-3 border-b border-[color:var(--ew-border)]">
           <h3 className="text-[10px] font-bold text-[color:var(--ew-text-muted)] uppercase tracking-wider">Your Songs</h3>
         </div>
@@ -77,12 +77,12 @@ export default function VidView() {
       {/* -- Main Content ------------------------------------------------- */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Tab bar */}
-        <div className="flex border-b border-[color:var(--ew-border)] px-4 shrink-0">
+        <div className="flex border-b border-[color:var(--ew-border)] px-4 shrink-0 bg-s3-panel ew-v2-bevel">
           <button
             onClick={() => setActiveTab('visualiser')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'visualiser'
-                ? 'text-white border-accent-500'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
                 : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
@@ -95,7 +95,7 @@ export default function VidView() {
             onClick={() => setActiveTab('ai-video')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'ai-video'
-                ? 'text-white border-accent-500'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
                 : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
@@ -109,7 +109,7 @@ export default function VidView() {
             onClick={() => setActiveTab('storyboard')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'storyboard'
-                ? 'text-white border-accent-500'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
                 : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
@@ -144,11 +144,11 @@ export default function VidView() {
 
           {activeTab === 'ai-video' && (
             <div className="flex items-center justify-center h-full px-8">
-              <div className="max-w-md text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-500/20 to-strands-pink/20 flex items-center justify-center mx-auto mb-4">
+              <div className="ew-card ew-v2-bevel max-w-md text-center">
+                <div className="w-16 h-16 ew-v2-recessed flex items-center justify-center mx-auto mb-4">
                   <Sparkles size={28} className="text-accent-400" />
                 </div>
-                <h2 className="text-lg font-bold text-white mb-2">AI Video Generation</h2>
+                <h2 className="text-lg font-bold text-[color:var(--ew-text)] mb-2">AI Video Generation</h2>
                 <p className="text-sm text-[color:var(--ew-text-muted)] leading-relaxed mb-4">
                   Coming with S3 Vid Pro. Generate beat-synced AI video from your tracks using
                   Wan 2.2, AnimateDiff, and CogVideoX, all running on your local GPU.
@@ -176,11 +176,11 @@ export default function VidView() {
 
           {activeTab === 'storyboard' && (
             <div className="flex items-center justify-center h-full px-8">
-              <div className="max-w-md text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-strands-pink/20 to-strands-purple/20 flex items-center justify-center mx-auto mb-4">
-                  <Sparkles size={28} className="text-strands-pink" />
+              <div className="ew-card ew-v2-bevel max-w-md text-center">
+                <div className="w-16 h-16 ew-v2-recessed flex items-center justify-center mx-auto mb-4">
+                  <Sparkles size={28} className="text-[color:var(--ew-primary)]" />
                 </div>
-                <h2 className="text-lg font-bold text-white mb-2">AI Storyboarding</h2>
+                <h2 className="text-lg font-bold text-[color:var(--ew-text)] mb-2">AI Storyboarding</h2>
                 <p className="text-sm text-[color:var(--ew-text-muted)] leading-relaxed mb-4">
                   Coming with S3 Vid Pro. Plan your music video scene-by-scene with AI-assisted
                   storyboarding, kanban workflow, and automated shot list generation.
@@ -194,12 +194,12 @@ export default function VidView() {
                     'Full S3 Vid visualiser integration',
                   ].map((f, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-strands-pink/50 mt-1.5 shrink-0" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-accent-500/50 mt-1.5 shrink-0" />
                       <span className="text-xs text-[color:var(--ew-text-muted)]">{f}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-strands-pink/60">
+                <p className="text-xs text-accent-400/60">
                   Coming soon to Everywear.
                 </p>
               </div>

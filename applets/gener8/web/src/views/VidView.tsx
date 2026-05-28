@@ -34,24 +34,24 @@ export default function VidView() {
   }, [songs]);
 
   return (
-    <div className="flex h-full bg-s3 text-white">
+    <div className="s3-family-route flex h-full bg-s3 text-[color:var(--ew-text)]">
       {/* -- Song Browser Sidebar ----------------------------------------- */}
-      <div className="w-56 border-r border-white/[0.06] flex flex-col shrink-0">
-        <div className="px-3 py-3 border-b border-white/[0.06]">
-          <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-wider">Your Songs</h3>
+      <div className="w-56 border-r border-[color:var(--ew-border)] ew-v2-bevel flex flex-col shrink-0">
+        <div className="px-3 py-3 border-b border-[color:var(--ew-border)]">
+          <h3 className="text-[10px] font-bold text-[color:var(--ew-text-muted)] uppercase tracking-wider">Your Songs</h3>
         </div>
         <div className="flex-1 overflow-y-auto">
           {songs.length === 0 ? (
             (isLoading || (!hasLoaded && hadSongsHintRef.current)) ? (
               <div className="px-3 py-6 text-center">
-                <Loader2 size={20} className="mx-auto mb-2 text-white/30 animate-spin" />
-                <p className="text-xs text-white/30">Loading your songs...</p>
+                <Loader2 size={20} className="mx-auto mb-2 text-[color:var(--ew-text-faint)] animate-spin" />
+                <p className="text-xs text-[color:var(--ew-text-faint)]">Loading your songs...</p>
               </div>
             ) : (
               <div className="px-3 py-6 text-center">
-                <Music size={20} className="mx-auto mb-2 text-white/20" />
-                <p className="text-xs text-white/30">No songs yet</p>
-                <p className="text-[10px] text-white/20 mt-1">Generate music in Gener8 first</p>
+                <Music size={20} className="mx-auto mb-2 text-[color:var(--ew-text-faint)]" />
+                <p className="text-xs text-[color:var(--ew-text-faint)]">No songs yet</p>
+                <p className="text-[10px] text-[color:var(--ew-text-faint)] mt-1">Generate music in Gener8 first</p>
               </div>
             )
           ) : (
@@ -59,14 +59,14 @@ export default function VidView() {
               <button
                 key={song.id}
                 onClick={() => setSelectedSong(song)}
-                className={`w-full text-left px-3 py-2.5 border-b border-white/[0.03] transition-colors ${
+                className={`w-full text-left px-3 py-2.5 border-b border-[color:var(--ew-border)] transition-colors ${
                   selectedSong?.id === song.id
                     ? 'bg-accent-500/10 border-l-2 border-l-accent-500'
-                    : 'hover:bg-white/[0.04]'
+                    : 'hover:bg-[color:var(--ew-primary-soft)]'
                 }`}
               >
-                <p className="text-xs font-medium text-white/80 truncate">{song.title}</p>
-                <p className="text-[10px] text-white/30 truncate mt-0.5">
+                <p className="text-xs font-medium text-[color:var(--ew-text)] truncate">{song.title}</p>
+                <p className="text-[10px] text-[color:var(--ew-text-faint)] truncate mt-0.5">
                   {song.style} {song.duration && `· ${song.duration}`}
                 </p>
               </button>
@@ -78,13 +78,13 @@ export default function VidView() {
       {/* -- Main Content ------------------------------------------------- */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Tab bar */}
-        <div className="flex border-b border-white/[0.06] px-4 shrink-0">
+        <div className="flex border-b border-[color:var(--ew-border)] px-4 shrink-0 bg-s3-panel ew-v2-bevel">
           <button
             onClick={() => setActiveTab('visualiser')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'visualiser'
-                ? 'text-white border-accent-500'
-                : 'text-white/40 border-transparent hover:text-white/60'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
+                : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -96,8 +96,8 @@ export default function VidView() {
             onClick={() => setActiveTab('ai-video')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'ai-video'
-                ? 'text-white border-accent-500'
-                : 'text-white/40 border-transparent hover:text-white/60'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
+                : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -110,8 +110,8 @@ export default function VidView() {
             onClick={() => setActiveTab('storyboard')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${
               activeTab === 'storyboard'
-                ? 'text-white border-accent-500'
-                : 'text-white/40 border-transparent hover:text-white/60'
+                ? 'text-[color:var(--ew-primary)] border-accent-500'
+                : 'text-[color:var(--ew-text-muted)] border-transparent hover:text-[color:var(--ew-text)]'
             }`}
           >
             <span className="flex items-center gap-1.5">
@@ -135,9 +135,9 @@ export default function VidView() {
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <Film size={40} className="mx-auto mb-3 text-white/10" />
-                  <p className="text-sm text-white/30 font-medium">Select a song to create a video</p>
-                  <p className="text-xs text-white/20 mt-1">Choose from your library on the left</p>
+                  <Film size={40} className="mx-auto mb-3 text-[color:var(--ew-text-faint)]" />
+                  <p className="text-sm text-[color:var(--ew-text-faint)] font-medium">Select a song to create a video</p>
+                  <p className="text-xs text-[color:var(--ew-text-faint)] mt-1">Choose from your library on the left</p>
                 </div>
               </div>
             )

@@ -303,7 +303,7 @@ export default function CreateView() {
   };
 
   return (
-    <div className="flex flex-col h-full p-6 gap-6 max-w-3xl mx-auto">
+    <div className="s3-family-route flex flex-col h-full p-6 gap-6 max-w-3xl mx-auto">
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl tracking-wide text-s3-text-primary">
@@ -377,7 +377,7 @@ export default function CreateView() {
       </button>
 
       {showAdvanced && (
-        <div className="flex gap-4 flex-wrap p-4 bg-s3-card border border-s3-border rounded-lg">
+        <div className="ew-card ew-v2-bevel flex gap-4 flex-wrap p-4">
           <div className="ew-field flex-1 min-w-[140px]">
             <label className="ew-field-label">Inference Steps</label>
             <input
@@ -414,10 +414,10 @@ export default function CreateView() {
       )}
 
       {/* Audio mode rail */}
-      <div className="flex flex-col gap-3 p-4 bg-s3-card border border-s3-border rounded-lg">
+      <div className="ew-card ew-v2-bevel flex flex-col gap-3 p-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <span className="text-xs font-bold uppercase tracking-wide text-s3-text-muted">Audio</span>
-          <div className="flex items-center gap-1 p-1 rounded-md bg-black/20 border border-s3-border">
+          <div className="ew-v2-recessed flex items-center gap-1 p-1">
             <button
               type="button"
               className={`ew-btn ew-btn--sm ${audioMode === 'song' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
@@ -527,7 +527,7 @@ export default function CreateView() {
 
       {/* Vault save controls */}
       {lastCompletedJob && (
-        <div className="flex flex-col gap-2 p-4 rounded-lg" style={{ background: 'color-mix(in oklab, var(--ew-text) 3%, transparent)', border: '1px solid var(--ew-border, rgba(255,255,255,0.06))' }}>
+        <div className="ew-card ew-v2-bevel flex flex-col gap-2 p-4">
           <div className="flex items-center gap-3">
             {vaultSaveState === 'saved' ? (
               <span className="text-xs font-medium" style={{ color: 'var(--ew-status-green, #4ade80)' }}>

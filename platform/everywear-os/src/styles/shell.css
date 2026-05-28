@@ -2079,6 +2079,19 @@ body[data-skin="carbon"] .ew-section {
   flex-shrink: 0;
 }
 
+body[data-skin="graphite"] .avr-toolbar,
+body[data-skin="anodized"] .avr-toolbar,
+body[data-skin="carbon"] .avr-toolbar {
+  background: var(--ew-v2-surface-1);
+  border-bottom-color: var(--ew-v2-hairline-strong);
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    0 1px 0 rgba(0,0,0,0.5);
+}
+
 .avr-toolbar__name {
   font-family: var(--ew-font-display);
   font-weight: var(--ew-fw-display);
@@ -2112,6 +2125,16 @@ body[data-skin="carbon"] .ew-section {
   flex: 1;
   overflow: hidden;
   position: relative;
+}
+
+body[data-skin="graphite"] .avr-viewport,
+body[data-skin="anodized"] .avr-viewport,
+body[data-skin="carbon"] .avr-viewport {
+  background: var(--ew-v2-surface-recessed);
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.86),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.92);
 }
 
 /* ── AppletViewRouter Error State ─────────────────── */

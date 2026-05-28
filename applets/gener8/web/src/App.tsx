@@ -10,7 +10,7 @@ const SettingsView = lazy(() => import('./views/SettingsView'));
 
 export function App() {
   return (
-    <div className="w-full h-full bg-s3 text-s3-text-primary overflow-hidden">
+    <div className="s3-family-root s3-family-gener8 w-full h-full bg-s3 text-[color:var(--ew-text)] overflow-hidden">
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<Gener8Core />} />

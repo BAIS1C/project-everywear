@@ -70,33 +70,33 @@ export default function AIDirectorView() {
   const shotPlan = useMemo(() => makeShotPlan(selectedSong), [selectedSong]);
 
   return (
-    <div className="h-full bg-s3 text-white overflow-hidden flex">
-      <aside className="w-64 shrink-0 border-r border-white/[0.06] flex flex-col">
-        <div className="px-3 py-3 border-b border-white/[0.06]">
+    <div className="s3-family-route h-full bg-s3 text-[color:var(--ew-text)] overflow-hidden flex">
+      <aside className="w-64 shrink-0 border-r border-[color:var(--ew-border)] ew-v2-bevel flex flex-col">
+        <div className="px-3 py-3 border-b border-[color:var(--ew-border)]">
           <div className="flex items-center gap-2">
             <Clapperboard size={15} className="text-accent-400" />
-            <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-wider">AI Director</h3>
+            <h3 className="text-[10px] font-bold text-[color:var(--ew-text-muted)] uppercase tracking-wider">AI Director</h3>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {songs.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Music size={22} className="mx-auto mb-3 text-white/20" />
-              <p className="text-xs text-white/35">No tracks in the vault yet</p>
+              <Music size={22} className="mx-auto mb-3 text-[color:var(--ew-text-faint)]" />
+              <p className="text-xs text-[color:var(--ew-text-faint)]">No tracks in the vault yet</p>
             </div>
           ) : (
             songs.map((song) => (
               <button
                 key={song.id}
                 onClick={() => setSelectedSongId(song.id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-white/[0.03] transition-colors ${
+                className={`w-full text-left px-3 py-2.5 border-b border-[color:var(--ew-border)] transition-colors ${
                   selectedSong?.id === song.id
                     ? 'bg-accent-500/10 border-l-2 border-l-accent-500'
-                    : 'hover:bg-white/[0.04]'
+                    : 'hover:bg-[color:var(--ew-primary-soft)]'
                 }`}
               >
-                <p className="text-xs font-medium text-white/80 truncate">{song.title}</p>
-                <p className="text-[10px] text-white/30 truncate mt-0.5">{song.style || 'Generated track'}</p>
+                <p className="text-xs font-medium text-[color:var(--ew-text)] truncate">{song.title}</p>
+                <p className="text-[10px] text-[color:var(--ew-text-faint)] truncate mt-0.5">{song.style || 'Generated track'}</p>
               </button>
             ))
           )}
@@ -104,17 +104,17 @@ export default function AIDirectorView() {
       </aside>
 
       <main className="flex-1 min-w-0 overflow-y-auto">
-        <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between gap-4">
+        <div className="px-6 py-5 border-b border-[color:var(--ew-border)] flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-white/35 font-bold">Creator Studio</p>
-            <h2 className="text-xl font-semibold text-white mt-1">AI Director</h2>
+            <p className="text-[10px] uppercase tracking-wider text-[color:var(--ew-text-faint)] font-bold">Creator Studio</p>
+            <h2 className="text-xl font-semibold text-[color:var(--ew-text)] mt-1">AI Director</h2>
           </div>
           <button
             disabled={!canUseDirector || !selectedSong}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded border text-xs font-semibold transition-colors ${
+            className={`ew-btn ew-btn--sm inline-flex items-center gap-2 text-xs font-semibold transition-colors ${
               canUseDirector && selectedSong
-                ? 'border-accent-500/40 bg-accent-500/10 text-accent-300 hover:bg-accent-500/20'
-                : 'border-white/[0.08] bg-white/[0.03] text-white/25'
+                ? 'ew-btn--primary'
+                : 'ew-btn--ghost opacity-50'
             }`}
           >
             {canUseDirector ? <Wand2 size={14} /> : <Lock size={14} />}
@@ -123,33 +123,33 @@ export default function AIDirectorView() {
         </div>
 
         {!canUseDirector && (
-          <div className="mx-6 mt-5 rounded border border-accent-500/20 bg-accent-500/[0.06] px-4 py-3 flex items-center gap-3">
+          <div className="ew-card mx-6 mt-5 px-4 py-3 flex items-center gap-3">
             <Lock size={16} className="text-accent-300" />
             <div>
-              <p className="text-sm font-semibold text-white/85">Creator Studio required</p>
-              <p className="text-xs text-white/45 mt-0.5">AI Director follows the Everywear shell entitlement state.</p>
+              <p className="text-sm font-semibold text-[color:var(--ew-text)]">Creator Studio required</p>
+              <p className="text-xs text-[color:var(--ew-text-muted)] mt-0.5">AI Director follows the Everywear shell entitlement state.</p>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-[minmax(0,1fr)_280px] gap-5 p-6">
-          <section className="min-w-0 rounded border border-white/[0.06] bg-white/[0.025]">
-            <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2">
+          <section className="ew-card ew-v2-bevel min-w-0 p-0 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[color:var(--ew-border)] flex items-center gap-2">
               <ListVideo size={15} className="text-accent-400" />
-              <h3 className="text-sm font-semibold text-white/85">
+              <h3 className="text-sm font-semibold text-[color:var(--ew-text)]">
                 {selectedSong?.title || 'Shot Plan'}
               </h3>
             </div>
-            <div className="divide-y divide-white/[0.04]">
+            <div className="divide-y divide-[color:var(--ew-border)]">
               {shotPlan.map((shot, index) => (
                 <div key={`${shot.time}-${shot.camera}`} className="grid grid-cols-[56px_1fr] gap-3 px-4 py-3">
-                  <div className="text-[11px] font-mono text-white/35 pt-0.5">{shot.time}</div>
+                  <div className="text-[11px] font-mono text-[color:var(--ew-text-faint)] pt-0.5">{shot.time}</div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-white/85">Shot {index + 1}</span>
+                      <span className="text-xs font-semibold text-[color:var(--ew-text)]">Shot {index + 1}</span>
                       <span className="text-[10px] uppercase tracking-wider text-accent-300/80">{shot.camera}</span>
                     </div>
-                    <p className="text-xs text-white/55 mt-1">
+                    <p className="text-xs text-[color:var(--ew-text-muted)] mt-1">
                       {shot.subject} with {shot.motion}, graded {shot.grade}.
                     </p>
                   </div>
@@ -158,10 +158,10 @@ export default function AIDirectorView() {
             </div>
           </section>
 
-          <aside className="rounded border border-white/[0.06] bg-white/[0.025] p-4 h-max">
+          <aside className="ew-card ew-v2-bevel p-4 h-max">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles size={15} className="text-accent-400" />
-              <h3 className="text-sm font-semibold text-white/85">Package</h3>
+              <h3 className="text-sm font-semibold text-[color:var(--ew-text)]">Package</h3>
             </div>
             <div className="space-y-3">
               {[
@@ -171,17 +171,17 @@ export default function AIDirectorView() {
                 ['Export', canUseDirector ? 'Storyboard ready' : 'Locked'],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <p className="text-[10px] uppercase tracking-wider text-white/30 font-bold">{label}</p>
-                  <p className="text-xs text-white/65 mt-1 break-words">{value}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-[color:var(--ew-text-faint)] font-bold">{label}</p>
+                  <p className="text-xs text-[color:var(--ew-text-muted)] mt-1 break-words">{value}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-5 rounded bg-black/20 border border-white/[0.05] p-3">
-              <div className="flex items-center gap-2 text-xs text-white/65">
+            <div className="ew-v2-recessed mt-5 p-3">
+              <div className="flex items-center gap-2 text-xs text-[color:var(--ew-text-muted)]">
                 <Film size={14} className="text-accent-400" />
                 Vid Studio handoff
               </div>
-              <p className="text-[11px] text-white/35 mt-2">
+              <p className="text-[11px] text-[color:var(--ew-text-faint)] mt-2">
                 Plans stay local until the shell video engine is connected.
               </p>
             </div>

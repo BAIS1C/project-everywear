@@ -1,35 +1,33 @@
 /**
- * KasaiCore — Portable three-pane agent hub.
+ * KasaiCore, Everywear-adapted Agent Hub surface.
  *
- * Layout: Sidebar (skills, chat history, node card) | Center (chat + composer) | Right (skill detail / project access)
- *
- * Designed as a portable Core component following the Everywear OS pattern.
- * Transport-agnostic via KasaiTransport (Tauri IPC or mock).
- * Consumes EWDS tokens for all styling.
+ * This ports the standalone My Mait AgentHubCore visual contract into the
+ * Everywear applet boundary. Everywear keeps ownership of shell chrome,
+ * provider state, applet lifecycle, and transport.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { getTransport } from '../lib/transport';
 import { ToolCallGroup, type ToolCallInfo, type ToolCallStatus, type AuditResult } from './ToolCallCard';
 import { SlotStatusPanel } from './SlotStatusPanel';
-import { getLogger } from '@everywear/shared';
-
-const log = getLogger('kasai');
-
-// ── Think-tag stripping ────────────────────────────────────────────���
+import '../styles/agent-hub.css';
 
 const HIDDEN_BLOCK_REGEX = /<(think|thinking|tool_code)>[\s\S]*?<\/\1>/gi;
 const HIDDEN_OPEN_REGEX = /<(think|thinking|tool_code)>[\s\S]*$/i;
 const HIDDEN_TAGS = ['think', 'thinking', 'tool_code'];
 
-interface ParsedResponse { visible: string; reasoning: string | null; }
+interface ParsedResponse {
+  visible: string;
+  reasoning: string | null;
+}
 
 function parseThinkTags(raw: string): ParsedResponse {
   if (!raw) return { visible: '', reasoning: null };
   const hiddenBlocks: string[] = [];
   const stripped = raw.replace(HIDDEN_BLOCK_REGEX, (match, tag) => {
-    const inner = match.replace(new RegExp(`</?${String(tag).toLowerCase()}>`, 'gi'), '').trim();
-    if (inner && String(tag).toLowerCase() !== 'tool_code') hiddenBlocks.push(inner);
+    const tagName = String(tag).toLowerCase();
+    const inner = match.replace(new RegExp(`</?${tagName}>`, 'gi'), '').trim();
+    if (inner && tagName !== 'tool_code') hiddenBlocks.push(inner);
     return '';
   });
   const cleaned = stripped.replace(HIDDEN_OPEN_REGEX, '').trim();
@@ -52,7 +50,10 @@ function stripThinkTags(text: string): string {
   let i = 0;
   while (i < text.length) {
     const open = findHiddenOpen(text, i);
-    if (!open) { result += text.slice(i); break; }
+    if (!open) {
+      result += text.slice(i);
+      break;
+    }
     result += text.slice(i, open.index);
     const closeToken = `</${open.tag}>`;
     const closeIdx = text.toLowerCase().indexOf(closeToken, open.index + open.tag.length + 2);
@@ -61,8 +62,6 @@ function stripThinkTags(text: string): string {
   }
   return result.trim();
 }
-
-// ── Types ───────────────────────────────────────────────────────────
 
 type Message =
   | {
@@ -90,15 +89,50 @@ type Message =
       initiatedCount: number;
     };
 
-// Legacy ToolCallCard shape (used by inline tool-call rendering in ChatMessage)
-interface LegacyToolCallCard {
+interface Skill {
+  id: string;
   name: string;
-  status: 'running' | 'done' | 'error';
-  result?: string;
-  duration?: number;
+  icon: string;
+  summary: string;
+  description: string;
+  status: 'live' | 'idle' | 'error';
+  tag: string;
+  token_cost: number;
 }
 
-// Event payload from Codex K1-K6 tool-call system
+interface Connection {
+  id: string;
+  name: string;
+  status: 'on' | 'off' | 'pending';
+  tone: 'primary' | 'warm' | 'premium' | 'expressive' | 'text';
+}
+
+interface NodeInfo {
+  models: { slot: string; name: string }[];
+  vramUsed: number;
+  vramTotal: string;
+  uptime: string;
+  gpu: string;
+  ram: string;
+}
+
+interface LoadedSlotInfo {
+  slot: string;
+  model_name: string;
+}
+
+interface AgentEvent {
+  type: string;
+  content?: string;
+  token?: string;
+  domain?: string;
+  query?: string;
+  confidence?: string;
+  best_score?: number;
+  gap?: { query?: string; sources_checked?: string[] };
+  turn?: { id?: string; assistant_response?: string; tokens_per_second?: number };
+}
+
 interface ToolCallEventPayload {
   index: number;
   session_id: string;
@@ -113,38 +147,17 @@ interface ToolCallEventPayload {
   audit_result?: AuditResult;
 }
 
-interface Skill {
-  id: string;
-  name: string;
-  icon: string;
-  summary: string;
-  description: string;
-  status: 'live' | 'idle' | 'error';
-  tag: string;
-  token_cost: number;
-}
+const CONNECTIONS: Connection[] = [
+  { id: 'mymory', name: 'MyMory', status: 'on', tone: 'primary' },
+  { id: 'files', name: 'Local Files', status: 'on', tone: 'text' },
+  { id: 'browser', name: 'Browser', status: 'pending', tone: 'warm' },
+];
 
-interface NodeInfo {
-  models: { slot: string; name: string }[];
-  vramUsed: number;
-  vramTotal: string;
-  uptime: string;
-  gpu: string;
-  ram: string;
-}
-
-interface LoadedSlotInfo { slot: string; model_name: string; }
-
-interface AgentEvent {
-  type: string;
-  content?: string;
-  domain?: string;
-  query?: string;
-  confidence?: string;
-  best_score?: number;
-}
-
-// ── Helpers ─────────────────────────────────────────────────────────
+const STATUS_LABEL: Record<Connection['status'], string> = {
+  on: 'CONNECTED',
+  off: 'NOT LINKED',
+  pending: 'READY',
+};
 
 function formatVram(mib: number): string {
   return `${Math.round(mib / 1024)} GB`;
@@ -154,66 +167,113 @@ function formatTokenCost(tokens: number): string {
   return tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k tok` : `${tokens} tok`;
 }
 
-// ── Sidebar ─────────────────────────────────────────────────────────
+function toneColor(tone: Connection['tone'], status: Connection['status']): string {
+  if (status === 'off') return 'var(--ew-text-faint)';
+  switch (tone) {
+    case 'warm': return 'var(--ew-warning, var(--ew-warm, #f9b960))';
+    case 'premium': return 'var(--ew-premium, var(--ew-accent, #c7b8ff))';
+    case 'expressive': return 'var(--ew-expressive, var(--ew-accent, #ff78c4))';
+    case 'text': return 'var(--ew-text)';
+    default: return 'var(--ew-primary)';
+  }
+}
+
+function safeInitial(value: string): string {
+  return value.trim().slice(0, 2).toUpperCase() || 'MM';
+}
 
 function Sidebar({
   skills,
+  chatCount,
+  connections,
   nodeInfo,
   activeSkillId,
   onSelectSkill,
 }: {
   skills: Skill[];
+  chatCount: number;
+  connections: Connection[];
   nodeInfo: NodeInfo | null;
   activeSkillId: string | null;
   onSelectSkill: (id: string | null) => void;
 }) {
   return (
-    <aside className="kc-side">
-      <div className="kc-section-head">
-        <span className="kc-section-title">Skills <span className="kc-count">{skills.length}</span></span>
+    <aside className="ah-side">
+      <div className="ah-section-head">
+        <span className="ah-section-title">Everywear Skills <span className="ah-count">{skills.length}</span></span>
       </div>
-      <div className="kc-skill-list">
-        {skills.map(s => (
+      <div className="ah-skill-list ah-split-list">
+        {skills.map(skill => (
           <button
-            key={s.id}
+            key={skill.id}
             type="button"
-            className={`kc-skill ${s.id === activeSkillId ? 'active' : ''}`}
-            onClick={() => onSelectSkill(s.id === activeSkillId ? null : s.id)}
-            title={`${s.name}\n${s.description}`}
+            className={`ah-skill ${skill.id === activeSkillId ? 'active' : ''}`}
+            onClick={() => onSelectSkill(skill.id === activeSkillId ? null : skill.id)}
+            title={`${skill.name}\n\n${skill.description}`}
           >
-            <span className="kc-skill-icon">{s.icon}</span>
-            <span className="kc-skill-info">
-              <span className="kc-skill-name">{s.name}</span>
-              <span className="kc-skill-desc">{s.summary}</span>
+            <span className="ah-skill-icon">{skill.icon || safeInitial(skill.name)}</span>
+            <span className="ah-skill-info">
+              <span className="ah-skill-name">{skill.name}</span>
+              <span className="ah-skill-desc">{skill.summary}</span>
             </span>
-            <span className="kc-skill-badges">
-              <span className={`kc-status-dot ${s.status}`} />
-              {s.token_cost > 0 && <span className="kc-token-badge">{formatTokenCost(s.token_cost)}</span>}
+            <span className="ah-skill-badges">
+              <span className={`ah-status-dot ${skill.status}`} />
+              {skill.token_cost > 0 && (
+                <span className="ah-token-badge">{formatTokenCost(skill.token_cost)}</span>
+              )}
             </span>
           </button>
         ))}
       </div>
 
-      <div className="kc-divider" />
+      <div className="ah-divider" />
 
-      {/* Node Card */}
+      <div className="ah-section-head">
+        <span className="ah-section-title">Chat History <span className="ah-count">{chatCount}</span></span>
+      </div>
+      <div className="ah-chat-session-list">
+        <button type="button" className="ah-chat-session active">
+          <span className="ah-session-title">Current session</span>
+          <span className="ah-session-preview">Everywear platform mount, local transport boundary.</span>
+          <span className="ah-session-meta">{chatCount} msgs</span>
+        </button>
+      </div>
+
+      <div className="ah-divider" />
+
+      <div className="ah-section-head">
+        <span className="ah-section-title">Connections <span className="ah-count">{connections.length}</span></span>
+      </div>
+      <div className="ah-conn-list">
+        {connections.map(connection => (
+          <div key={connection.id} className={`ah-conn ${connection.status}`}>
+            <div className="ah-conn-icon" style={{ color: toneColor(connection.tone, connection.status) }}>
+              {safeInitial(connection.name)}
+            </div>
+            <div className="ah-conn-name">{connection.name}</div>
+            <div className="ah-conn-status">{STATUS_LABEL[connection.status]}</div>
+          </div>
+        ))}
+      </div>
+
       {nodeInfo && (
-        <div className="kc-node-card">
-          <div className="kc-node-label">
-            <span className="kc-node-led" />
-            HOME-NODE
+        <div className="ah-node-card">
+          <div className="ah-node-label">
+            <span className="ah-node-led" />
+            HOME-NODE ONLINE
           </div>
-          <div className="kc-node-gpu">{nodeInfo.gpu} · {nodeInfo.ram}</div>
-          <div className="kc-node-slots">
-            {nodeInfo.models.map(m => (
-              <div key={m.slot} className="kc-node-slot">
-                <span className="kc-slot-role">{m.slot}</span>
-                <span className="kc-slot-model">{m.name}</span>
-              </div>
+          <div className="ah-node-machine">{nodeInfo.gpu} / {nodeInfo.ram}</div>
+          <div className="ah-node-stats">
+            {nodeInfo.models.map(model => (
+              <React.Fragment key={model.slot}>
+                <span>{model.slot}</span>
+                <b>{model.name}</b>
+              </React.Fragment>
             ))}
-          </div>
-          <div className="kc-node-vram">
-            VRAM: {nodeInfo.vramUsed} / {nodeInfo.vramTotal}
+            <span>VRAM</span>
+            <b>{nodeInfo.vramUsed} / {nodeInfo.vramTotal}</b>
+            <span>Uptime</span>
+            <b>{nodeInfo.uptime}</b>
           </div>
         </div>
       )}
@@ -221,19 +281,13 @@ function Sidebar({
   );
 }
 
-// ── Chat Message ────────────────────────────────────────────────────
-
 function ChatMessage({ msg, toolCalls }: { msg: Message; toolCalls?: Map<number, ToolCallInfo> }) {
-  // Tool-call group message: render the ToolCallGroup component
   if (msg.type === 'tool-calls') {
     return (
-      <div className="kc-msg">
-        <div className="kc-msg-avatar tool">{'>'}_</div>
-        <div className="kc-msg-body">
-          <ToolCallGroup
-            toolCalls={toolCalls ?? new Map()}
-            initiatedCount={msg.initiatedCount}
-          />
+      <div className="ah-msg">
+        <div className="ah-msg-avatar tool">{'>'}</div>
+        <div className="ah-msg-body">
+          <ToolCallGroup toolCalls={toolCalls ?? new Map()} initiatedCount={msg.initiatedCount} />
         </div>
       </div>
     );
@@ -246,167 +300,196 @@ function ChatMessage({ msg, toolCalls }: { msg: Message; toolCalls?: Map<number,
   const [showReasoning, setShowReasoning] = useState(false);
 
   return (
-    <div className="kc-msg">
-      <div className={`kc-msg-avatar ${msg.role}`}>
-        {msg.role === 'user' ? 'YOU' : 'K'}
-      </div>
-      <div className="kc-msg-body">
-        <div className="kc-msg-who">
-          {msg.role === 'user' ? <b>You</b> : <span className="kc-agent-name"><b>Kasai</b></span>}
-          <span className="kc-msg-ts">
+    <div className="ah-msg">
+      <div className={`ah-msg-avatar ${msg.role}`}>{msg.role === 'user' ? 'YOU' : 'MM'}</div>
+      <div className="ah-msg-body">
+        <div className="ah-msg-who">
+          {msg.role === 'user' ? <b>You</b> : <span className="ah-agent-name"><b>My Mait</b></span>}
+          <span className="ah-msg-ts">
             {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
           {confidence && confidence !== 'green' && (
-            <span className={`kc-confidence ${confidence}`}>{confidence.toUpperCase()}</span>
+            <span className={`ah-confidence ${confidence}`}>{confidence.toUpperCase()}</span>
           )}
         </div>
         {reasoning && (
-          <button type="button" className="kc-reasoning-toggle" onClick={() => setShowReasoning(p => !p)}>
-            {showReasoning ? '▾' : '▸'} Reasoning
+          <button type="button" className="ah-reasoning-toggle" onClick={() => setShowReasoning(prev => !prev)}>
+            {showReasoning ? 'Hide reasoning' : 'Show reasoning'}
           </button>
         )}
-        {reasoning && showReasoning && <div className="kc-reasoning-block">{reasoning}</div>}
-        <div className="kc-msg-text">{visibleContent}</div>
+        {reasoning && showReasoning && <div className="ah-reasoning-block">{reasoning}</div>}
+        <div className="ah-msg-text">{visibleContent}</div>
       </div>
     </div>
   );
 }
 
-// ── Composer ────────────────────────────────────────────────────────
-
-function Composer({ onSend, isGenerating, transportMode }: {
+function Composer({
+  onSend,
+  isGenerating,
+  transportMode,
+}: {
   onSend: (text: string) => void;
   isGenerating: boolean;
   transportMode: string;
 }) {
-  const [val, setVal] = useState('');
+  const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = useCallback(() => {
-    if (!val.trim() || isGenerating) return;
-    onSend(val.trim());
-    setVal('');
+    if (!value.trim() || isGenerating) return;
+    onSend(value.trim());
+    setValue('');
     textareaRef.current?.focus();
-  }, [val, isGenerating, onSend]);
+  }, [isGenerating, onSend, value]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
   }, [handleSend]);
 
   return (
-    <div className="kc-composer">
-      <div className="kc-composer-inner">
-        <div className="kc-composer-box">
+    <div className="ah-composer">
+      <div className="ah-composer-inner">
+        <div className="ah-composer-box">
           <textarea
             ref={textareaRef}
-            placeholder="Ask Kasai anything, or run a skill..."
-            value={val}
-            onChange={e => setVal(e.target.value)}
+            placeholder="Ask My Mait, invoke a skill, or hand off a local task..."
+            value={value}
+            onChange={event => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
-            rows={2}
+            rows={3}
             disabled={isGenerating}
           />
-          <div className="kc-composer-row">
-            <div className="kc-ctx-chips">
-              <button type="button" className="kc-ctx-chip" onClick={() => { setVal(p => p + '@'); textareaRef.current?.focus(); }}>@ SKILL</button>
+          <div className="ah-composer-row">
+            <div className="ah-ctx-chips">
+              <button type="button" className="ah-ctx-chip" onClick={() => { setValue(prev => `${prev}@skill `); textareaRef.current?.focus(); }}>@ SKILL</button>
+              <button type="button" className="ah-ctx-chip" onClick={() => { setValue(prev => `${prev}#vault `); textareaRef.current?.focus(); }}># VAULT</button>
             </div>
-            <button
-              className="kc-send"
-              onClick={handleSend}
-              disabled={!val.trim() || isGenerating}
-              aria-label="Send"
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            <button className="ah-send" onClick={handleSend} disabled={!value.trim() || isGenerating} aria-label="Send message">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 2L11 13" />
+                <path d="M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>
             </button>
           </div>
         </div>
-        <div className="kc-composer-foot">
-          <span><b>Enter</b> send · <b>Shift+Enter</b> new line</span>
-          <span>Running on <b>HOME-NODE</b> · {transportMode === 'tauri' ? 'LOCAL' : 'DEV'}</span>
+        <div className="ah-composer-foot">
+          <span><b>Enter</b> send / <b>Shift+Enter</b> new line</span>
+          <span>{transportMode === 'tauri' ? 'LOCAL IPC' : 'BROWSER PREVIEW'} / HOME-NODE</span>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Right Pane (Skill Detail) ───────────────────────────────────────
-
-function RightPane({ skill, onRunSkill, isGenerating }: {
+function RightPane({
+  skill,
+  isGenerating,
+  onRunSkill,
+}: {
   skill: Skill | null;
-  onRunSkill: (skill: Skill) => void;
   isGenerating: boolean;
+  onRunSkill: (skill: Skill) => void;
 }) {
   if (!skill) {
     return (
-      <aside className="kc-right">
-        <div className="kc-right-empty">
-          <div className="kc-right-empty-icon">K</div>
-          <p>Select a skill to view details</p>
-          <p className="kc-right-empty-sub">Or start chatting in the center pane</p>
+      <aside className="ah-right">
+        <div className="ah-right-head">
+          <div className="ah-right-kicker">NODE RUNTIME</div>
+          <h2 className="ah-right-title">My Mait Agent Hub</h2>
+          <div className="ah-right-desc">
+            Everywear-hosted My Mait surface. Shell chrome, provider state, applet lifecycle, and transport stay platform-owned.
+          </div>
         </div>
-        <SlotStatusPanel />
+        <div className="ah-right-body">
+          <div className="ah-r-section">SLOT STATE</div>
+          <SlotStatusPanel />
+          <div className="ah-r-section">SAFETY RAILS</div>
+          <div className="ah-toggle-row">
+            <div>
+              <div className="ah-toggle-label">Ask before acting</div>
+              <div className="ah-toggle-sub">Irreversible work remains approval-gated</div>
+            </div>
+            <div className="ah-toggle on" />
+          </div>
+          <div className="ah-toggle-row">
+            <div>
+              <div className="ah-toggle-label">Everywear boundary</div>
+              <div className="ah-toggle-sub">No standalone window commands in this mount</div>
+            </div>
+            <div className="ah-toggle on" />
+          </div>
+        </div>
       </aside>
     );
   }
 
   return (
-    <aside className="kc-right">
-      <div className="kc-right-head">
-        <div className="kc-right-kicker">
-          <span className="kc-skill-icon-lg">{skill.icon}</span> SKILL
+    <aside className="ah-right">
+      <div className="ah-right-head">
+        <div className="ah-right-kicker">
+          <span className="ah-skill-icon ah-skill-icon-inline">{skill.icon || safeInitial(skill.name)}</span>
+          SKILL
         </div>
-        <h2 className="kc-right-title">{skill.name}</h2>
-        <div className="kc-right-desc">{skill.description}</div>
+        <h2 className="ah-right-title">{skill.name}</h2>
+        <div className="ah-right-desc">{skill.description || skill.summary}</div>
         {skill.token_cost > 0 && (
-          <div className="kc-right-meta">Context cost: ~{skill.token_cost.toLocaleString()} tokens</div>
+          <div className="ah-right-token-info">Context cost: about {skill.token_cost.toLocaleString()} tokens</div>
         )}
-        <div className="kc-right-actions">
-          <button className="kc-btn primary" onClick={() => onRunSkill(skill)} disabled={isGenerating}>
+        <div className="ah-right-actions">
+          <button className="ah-btn primary" onClick={() => onRunSkill(skill)} disabled={isGenerating}>
             {isGenerating ? 'PREPARING' : 'PREPARE RUN'}
           </button>
         </div>
       </div>
-      <div className="kc-right-body">
-        <div className="kc-r-section">STATUS</div>
-        <div className="kc-right-status-row">
-          <span className={`kc-status-dot lg ${skill.status}`} />
-          <span>{skill.status === 'live' ? 'Loaded in context' : skill.status === 'idle' ? 'Available' : 'Error'}</span>
+      <div className="ah-right-body">
+        <div className="ah-r-section">WHAT IT DOES</div>
+        <div className="ah-fact-list">
+          <div className="ah-fact">
+            <div className="ah-fact-lbl">Summary</div>
+            <div className="ah-fact-val">{skill.summary}</div>
+          </div>
+          <div className="ah-fact">
+            <div className="ah-fact-lbl">Tag</div>
+            <div className="ah-fact-val">{skill.tag}</div>
+          </div>
+          <div className="ah-fact">
+            <div className="ah-fact-lbl">Status</div>
+            <div className="ah-fact-val">{skill.status === 'live' ? 'Loaded in context' : skill.status}</div>
+          </div>
         </div>
-        <div className="kc-r-section">TAG</div>
-        <span className="kc-tag">{skill.tag}</span>
+        <div className="ah-r-section">SLOT STATE</div>
+        <SlotStatusPanel />
       </div>
-      <SlotStatusPanel />
     </aside>
   );
 }
 
-// ── KasaiCore ───────────────────────────────────────────────────────
-
 export function KasaiCore() {
   const transport = getTransport();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [activeSkillId, setActiveSkillId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const [skills, setSkills] = useState<Skill[]>([]);
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
-
-  // ── Tool-call state (K1-K6 event system) ──
   const [toolCalls, setToolCalls] = useState<Map<number, ToolCallInfo>>(new Map());
+  const assistantResponseCommittedRef = useRef(false);
 
-  const activeSkill = skills.find(s => s.id === activeSkillId) || null;
+  const activeSkill = useMemo(
+    () => skills.find(skill => skill.id === activeSkillId) || null,
+    [activeSkillId, skills],
+  );
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, streamingContent]);
 
-  // Fetch engine status + skills on mount
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -418,8 +501,8 @@ export function KasaiCore() {
 
         if (status?.gpu) {
           const models = (status.loaded_slots || [])
-            .filter(s => s.slot !== 'Embedder')
-            .map(s => ({ slot: s.slot, name: s.model_name }));
+            .filter(slot => slot.slot !== 'Embedder')
+            .map(slot => ({ slot: slot.slot, name: slot.model_name }));
 
           setNodeInfo({
             models: models.length ? models : [{ slot: 'Model', name: 'Loading...' }],
@@ -430,25 +513,39 @@ export function KasaiCore() {
             ram: `${formatVram(status.gpu.vram_mb)} VRAM`,
           });
         }
-      } catch { /* backend not ready */ }
+      } catch {
+        setNodeInfo(null);
+      }
     };
 
     const fetchSkills = async () => {
       try {
         const installed = await transport.invoke<Array<{
-          id: string; name: string; icon: string; summary: string;
-          description?: string; status: string; tag: string; token_cost: number;
+          id: string;
+          name: string;
+          icon: string;
+          summary: string;
+          description?: string;
+          status: string;
+          tag: string;
+          token_cost: number;
         }>>('list_installed_skills');
+
         if (installed) {
-          setSkills(installed.map(s => ({
-            id: s.id, name: s.name, icon: s.icon,
-            summary: s.summary,
-            description: s.description || s.summary,
-            status: (s.status as 'live' | 'idle' | 'error') || 'idle',
-            tag: s.tag, token_cost: s.token_cost || 0,
+          setSkills(installed.map(skill => ({
+            id: skill.id,
+            name: skill.name,
+            icon: skill.icon,
+            summary: skill.summary,
+            description: skill.description || skill.summary,
+            status: (skill.status as 'live' | 'idle' | 'error') || 'idle',
+            tag: skill.tag,
+            token_cost: skill.token_cost || 0,
           })));
         }
-      } catch { /* skills not available yet */ }
+      } catch {
+        setSkills([]);
+      }
     };
 
     fetchStatus();
@@ -457,18 +554,38 @@ export function KasaiCore() {
     return () => clearInterval(interval);
   }, [transport]);
 
-  // Agent event listener
+  const ensureToolCallMessage = useCallback((initiatedCount: number) => {
+    setMessages(prev => {
+      if (prev.some(message => message.type === 'tool-calls')) {
+        return prev.map(message => (
+          message.type === 'tool-calls'
+            ? { ...message, initiatedCount: Math.max(message.initiatedCount, initiatedCount) }
+            : message
+        ));
+      }
+      return [...prev, {
+        type: 'tool-calls',
+        id: `tool-calls-${Date.now()}`,
+        role: 'tool',
+        content: 'Tool calls running',
+        timestamp: Date.now(),
+        initiatedCount,
+      }];
+    });
+  }, []);
+
   useEffect(() => {
-    const unlisten = transport.listen<AgentEvent>('agent-event', (data) => {
+    const unlistenAgent = transport.listen<AgentEvent>('agent-event', (data) => {
       switch (data.type) {
         case 'Token':
-          setStreamingContent(prev => prev + (data.content || ''));
+          setStreamingContent(prev => prev + (data.content || data.token || ''));
           break;
         case 'KnowledgeGap':
           setMessages(prev => [...prev, {
-            type: 'assistant' as const,
-            id: crypto.randomUUID(), role: 'agent' as const,
-            content: `Knowledge gap: "${data.domain}" — ${data.query} (confidence: ${data.confidence})`,
+            type: 'assistant',
+            id: crypto.randomUUID(),
+            role: 'agent',
+            content: `Knowledge gap: ${data.domain || 'unknown'} / ${data.query || data.gap?.query || 'No query supplied'} (confidence: ${data.confidence || 'red'})`,
             timestamp: Date.now(),
             confidence: (data.confidence?.toLowerCase() as 'green' | 'orange' | 'red') || 'red',
           }]);
@@ -476,91 +593,72 @@ export function KasaiCore() {
         case 'TurnComplete':
           setIsGenerating(false);
           setStreamingContent('');
+          if (data.turn?.assistant_response && !assistantResponseCommittedRef.current) {
+            const parsed = parseThinkTags(data.turn.assistant_response);
+            assistantResponseCommittedRef.current = true;
+            setMessages(prev => [...prev, {
+              type: 'assistant',
+              id: data.turn?.id || crypto.randomUUID(),
+              role: 'agent',
+              content: parsed.visible,
+              timestamp: Date.now(),
+              reasoning: parsed.reasoning || undefined,
+            }]);
+          }
           break;
       }
     });
-    return () => { unlisten(); };
-  }, [transport]);
 
-  // ── Tool-call event listeners (K1-K6 system) ──
-  useEffect(() => {
-    // kasai://tool-call/update — fired for each new or updated tool call
-    const unlistenUpdate = transport.listen<ToolCallEventPayload>(
-      'kasai://tool-call/update',
-      (payload) => {
-        log.info('applet', 'Tool call started', {
+    const unlistenUpdate = transport.listen<ToolCallEventPayload>('kasai://tool-call/update', (payload) => {
+      ensureToolCallMessage(payload.index + 1);
+      setToolCalls(prev => {
+        const next = new Map(prev);
+        next.set(payload.index, {
+          index: payload.index,
+          session_id: payload.session_id,
+          timestamp: payload.timestamp,
           tool_name: payload.tool_name,
           tool_args: payload.tool_args,
-          index: payload.index,
-        });
-        setToolCalls(prev => {
-          const next = new Map(prev);
-          next.set(payload.index, {
-            index: payload.index,
-            session_id: payload.session_id,
-            timestamp: payload.timestamp,
-            tool_name: payload.tool_name,
-            tool_args: payload.tool_args,
-            status: payload.status,
-            result: payload.result,
-            error: payload.error,
-            duration_ms: payload.duration_ms,
-            source_slot: payload.source_slot,
-            audit_result: payload.audit_result,
-          });
-          return next;
-        });
-      },
-    );
-
-    // kasai://tool-call/complete — fired when a tool call reaches terminal state
-    const unlistenComplete = transport.listen<ToolCallEventPayload>(
-      'kasai://tool-call/complete',
-      (payload) => {
-        log.info('applet', 'Tool call completed', {
-          tool_name: payload.tool_name,
           status: payload.status,
+          result: payload.result,
+          error: payload.error,
           duration_ms: payload.duration_ms,
+          source_slot: payload.source_slot,
+          audit_result: payload.audit_result,
         });
-        setToolCalls(prev => {
-          const next = new Map(prev);
-          const existing = next.get(payload.index);
-          if (existing) {
-            next.set(payload.index, {
-              ...existing,
-              status: payload.status,
-              result: payload.result,
-              error: payload.error,
-              duration_ms: payload.duration_ms,
-              audit_result: payload.audit_result,
-            });
-          } else {
-            next.set(payload.index, {
-              index: payload.index,
-              session_id: payload.session_id,
-              timestamp: payload.timestamp,
-              tool_name: payload.tool_name,
-              tool_args: payload.tool_args,
-              status: payload.status,
-              result: payload.result,
-              error: payload.error,
-              duration_ms: payload.duration_ms,
-              source_slot: payload.source_slot,
-              audit_result: payload.audit_result,
-            });
-          }
-          return next;
+        return next;
+      });
+    });
+
+    const unlistenComplete = transport.listen<ToolCallEventPayload>('kasai://tool-call/complete', (payload) => {
+      ensureToolCallMessage(payload.index + 1);
+      setToolCalls(prev => {
+        const next = new Map(prev);
+        const existing = next.get(payload.index);
+        next.set(payload.index, {
+          index: payload.index,
+          session_id: payload.session_id,
+          timestamp: payload.timestamp,
+          tool_name: payload.tool_name,
+          tool_args: payload.tool_args,
+          status: payload.status,
+          result: payload.result ?? existing?.result,
+          error: payload.error ?? existing?.error,
+          duration_ms: payload.duration_ms ?? existing?.duration_ms,
+          source_slot: payload.source_slot ?? existing?.source_slot,
+          audit_result: payload.audit_result ?? existing?.audit_result,
         });
-      },
-    );
+        return next;
+      });
+    });
 
     return () => {
+      unlistenAgent();
       unlistenUpdate();
       unlistenComplete();
     };
-  }, [transport]);
+  }, [ensureToolCallMessage, transport]);
 
-  // Send handler
   const handleSend = useCallback(async (text: string) => {
     const userMsg: Message = {
       type: 'user',
@@ -569,38 +667,37 @@ export function KasaiCore() {
       content: text,
       timestamp: Date.now(),
     };
-    setMessages(prev => [...prev, userMsg]);
+
+    setMessages(prev => [...prev.filter(message => message.type !== 'tool-calls'), userMsg]);
+    setToolCalls(new Map());
     setIsGenerating(true);
     setStreamingContent('');
-    log.info('generation', 'Chat message sent', { message_length: text.length });
-
-    // Reset tool-call map for new turn
-    setToolCalls(new Map());
+    assistantResponseCommittedRef.current = false;
 
     try {
       const raw = await transport.invoke<string>('send_message', { message: text });
       setIsGenerating(false);
       setStreamingContent('');
-      if (raw) {
+      if (raw && !assistantResponseCommittedRef.current) {
         const parsed = parseThinkTags(raw);
+        assistantResponseCommittedRef.current = true;
         setMessages(prev => [...prev, {
-          type: 'assistant' as const,
+          type: 'assistant',
           id: crypto.randomUUID(),
-          role: 'agent' as const,
+          role: 'agent',
           content: parsed.visible,
           timestamp: Date.now(),
           reasoning: parsed.reasoning || undefined,
         }]);
       }
-    } catch (e) {
+    } catch (error) {
       setIsGenerating(false);
       setStreamingContent('');
-      log.error('generation', 'Chat send failed', { error: String(e) });
       setMessages(prev => [...prev, {
-        type: 'assistant' as const,
+        type: 'assistant',
         id: crypto.randomUUID(),
-        role: 'agent' as const,
-        content: `Error: ${e}`,
+        role: 'agent',
+        content: `Error: ${error}`,
         timestamp: Date.now(),
       }]);
     }
@@ -611,57 +708,78 @@ export function KasaiCore() {
     handleSend(`Prepare the "${skill.name}" skill.\n\n${skill.description}`);
   }, [handleSend, isGenerating]);
 
+  const activeChatTitle = activeSkill ? activeSkill.name : 'Current session';
+
   return (
-    <div className="kc-root">
+    <div className="ah-root">
       <Sidebar
         skills={skills}
+        chatCount={messages.length}
+        connections={CONNECTIONS}
         nodeInfo={nodeInfo}
         activeSkillId={activeSkillId}
         onSelectSkill={setActiveSkillId}
       />
 
-      <main className="kc-center">
-        <div className="kc-chat-body">
-          <div className="kc-chat-scroll" ref={scrollRef}>
+      <main className="ah-center">
+        <header className="ah-center-head">
+          <div className="ah-crumbs">
+            HOME <span className="ah-sep">/</span>
+            {activeSkill
+              ? <>SKILLS <span className="ah-sep">/</span> <span className="ah-crumb-current">{activeChatTitle.toUpperCase()}</span></>
+              : <>CHAT <span className="ah-sep">/</span> <span className="ah-crumb-current">MY MAIT</span></>
+            }
+          </div>
+          <div className="ah-chat-tools">
+            <span className={`ah-history-state ${transport.mode === 'tauri' ? 'saved' : 'loading'}`}>
+              {transport.mode === 'tauri' ? 'Platform IPC' : 'Browser preview'}
+            </span>
+          </div>
+        </header>
+
+        <div className="ah-chat-body">
+          <div className="ah-chat-scroll" ref={scrollRef}>
             {messages.length === 0 && (
-              <div className="kc-empty">
-                <div className="kc-empty-icon">K</div>
-                <p className="kc-empty-title">Kasai is ready</p>
-                <p className="kc-empty-sub">Local AI, no cloud, no limits. Type anything to begin.</p>
+              <div className="ah-empty">
+                <div className="ah-empty-icon">MM</div>
+                <p className="ah-empty-title">My Mait is ready</p>
+                <p className="ah-empty-sub">Local agent surface, mounted inside Everywear.</p>
               </div>
             )}
-            {messages.map(msg => (
+
+            {messages.map(message => (
               <ChatMessage
-                key={msg.id}
-                msg={msg}
-                toolCalls={msg.type === 'tool-calls' ? toolCalls : undefined}
+                key={message.id}
+                msg={message}
+                toolCalls={message.type === 'tool-calls' ? toolCalls : undefined}
               />
             ))}
 
             {isGenerating && streamingContent && (
-              <div className="kc-msg">
-                <div className="kc-msg-avatar agent">K</div>
-                <div className="kc-msg-body">
-                  <div className="kc-msg-who"><span className="kc-agent-name"><b>Kasai</b></span></div>
-                  <div className="kc-msg-text streaming">{stripThinkTags(streamingContent)}</div>
+              <div className="ah-msg">
+                <div className="ah-msg-avatar agent">MM</div>
+                <div className="ah-msg-body">
+                  <div className="ah-msg-who"><span className="ah-agent-name"><b>My Mait</b></span></div>
+                  <div className="ah-msg-text streaming">{stripThinkTags(streamingContent) || 'Working...'}</div>
                 </div>
               </div>
             )}
 
             {isGenerating && !streamingContent && (
-              <div className="kc-msg">
-                <div className="kc-msg-avatar agent">K</div>
-                <div className="kc-msg-body">
-                  <div className="kc-thinking"><span /><span /><span /></div>
+              <div className="ah-msg">
+                <div className="ah-msg-avatar agent">MM</div>
+                <div className="ah-msg-body">
+                  <div className="ah-thinking"><span /><span /><span /></div>
                 </div>
               </div>
             )}
           </div>
+
           <Composer onSend={handleSend} isGenerating={isGenerating} transportMode={transport.mode} />
         </div>
       </main>
 
-      <RightPane skill={activeSkill} onRunSkill={handleRunSkill} isGenerating={isGenerating} />
+      <RightPane skill={activeSkill} isGenerating={isGenerating} onRunSkill={handleRunSkill} />
     </div>
   );
 }

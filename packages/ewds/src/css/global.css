@@ -110,3 +110,60 @@ body[data-skin="refined"] [class*="bg-s3-panel"].ew-no-clip,
 .ew[data-skin="refined"] [class*="bg-s3-panel"].ew-no-clip {
   clip-path: none;
 }
+
+/* ── EWDS-v2 applet inheritance bridge ─────────────────────────────
+   Tailwind-heavy applets such as Gener8 still use bg-s3-card/panel and
+   black translucent segmented controls. Under v2 skins these route to
+   stacked bevels and recessed wells instead of flat local panels. */
+body[data-skin="graphite"] [class*="bg-s3-card"],
+body[data-skin="graphite"] [class*="bg-s3-panel"],
+body[data-skin="anodized"] [class*="bg-s3-card"],
+body[data-skin="anodized"] [class*="bg-s3-panel"],
+body[data-skin="carbon"] [class*="bg-s3-card"],
+body[data-skin="carbon"] [class*="bg-s3-panel"],
+.ew[data-skin="graphite"] [class*="bg-s3-card"],
+.ew[data-skin="graphite"] [class*="bg-s3-panel"],
+.ew[data-skin="anodized"] [class*="bg-s3-card"],
+.ew[data-skin="anodized"] [class*="bg-s3-panel"],
+.ew[data-skin="carbon"] [class*="bg-s3-card"],
+.ew[data-skin="carbon"] [class*="bg-s3-panel"] {
+  background: var(--ew-v2-surface-1) !important;
+  border-color: var(--ew-v2-hairline-strong) !important;
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.6);
+}
+
+body[data-skin="graphite"] .bg-black\/20,
+body[data-skin="anodized"] .bg-black\/20,
+body[data-skin="carbon"] .bg-black\/20,
+.ew[data-skin="graphite"] .bg-black\/20,
+.ew[data-skin="anodized"] .bg-black\/20,
+.ew[data-skin="carbon"] .bg-black\/20 {
+  background: var(--ew-v2-surface-recessed) !important;
+  border-color: rgba(0,0,0,0.6) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.9);
+}
+
+body[data-skin="graphite"] .ew-progress,
+body[data-skin="anodized"] .ew-progress,
+body[data-skin="carbon"] .ew-progress,
+.ew[data-skin="graphite"] .ew-progress,
+.ew[data-skin="anodized"] .ew-progress,
+.ew[data-skin="carbon"] .ew-progress {
+  background: var(--ew-v2-surface-recessed);
+  border-color: rgba(0,0,0,0.6);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.9);
+}

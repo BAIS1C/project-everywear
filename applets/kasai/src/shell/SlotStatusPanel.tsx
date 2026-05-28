@@ -7,7 +7,7 @@
  * Big slot = Primary orchestrator (e.g. Qwen3.6 35B)
  * Small slot = Agent/Encoder (e.g. Qwen3.5 9B)
  *
- * Uses EWDS tokens via kasai.css class conventions.
+ * Uses EWDS tokens via the Agent Hub applet stylesheet.
  */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getTransport, type EngineStatus } from '../lib/transport';

@@ -4,5 +4,7 @@
  * Re-exports ThreevizenCore as the default export.
  * Shell's HeadlessAppletView mounts this component.
  */
+import './threevizen.css';
+
 export { default } from './ThreevizenCore';
 export type { ThreevizenCoreProps } from './ThreevizenCore';

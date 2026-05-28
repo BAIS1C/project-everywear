@@ -99,6 +99,28 @@ body {
   box-shadow: var(--ew-shadow-md);
 }
 
+body[data-skin="graphite"] .imagen-controls,
+body[data-skin="anodized"] .imagen-controls,
+body[data-skin="carbon"] .imagen-controls,
+body[data-skin="graphite"] .imagen-badge,
+body[data-skin="anodized"] .imagen-badge,
+body[data-skin="carbon"] .imagen-badge {
+  background: var(--ew-v2-surface-1);
+  border-color: var(--ew-v2-hairline-strong);
+  box-shadow: var(--ew-shadow-inset), var(--ew-shadow-float);
+}
+
+body[data-skin="graphite"] .imagen-output,
+body[data-skin="anodized"] .imagen-output,
+body[data-skin="carbon"] .imagen-output {
+  background: var(--ew-v2-surface-recessed);
+  border-color: var(--ew-v2-hairline-dark);
+  box-shadow:
+    inset 0 2px 5px var(--ew-v2-bevel-bot-deep),
+    inset 0 -1px 0 var(--ew-v2-hairline),
+    inset 0 1px 0 var(--ew-v2-hairline-dark);
+}
+
 .imagen-controls {
   border-radius: var(--ew-radius-xl);
   padding: var(--ew-space-4);
@@ -150,6 +172,26 @@ body {
   font: inherit;
   outline: none;
   transition: border-color var(--ew-t-fast) var(--ew-ease), box-shadow var(--ew-t-fast) var(--ew-ease);
+}
+
+body[data-skin="graphite"] .prompt-input,
+body[data-skin="graphite"] .imagen-input,
+body[data-skin="graphite"] .imagen-select,
+body[data-skin="anodized"] .prompt-input,
+body[data-skin="anodized"] .imagen-input,
+body[data-skin="anodized"] .imagen-select,
+body[data-skin="carbon"] .prompt-input,
+body[data-skin="carbon"] .imagen-input,
+body[data-skin="carbon"] .imagen-select,
+body[data-skin="graphite"] .imagen-dropzone,
+body[data-skin="anodized"] .imagen-dropzone,
+body[data-skin="carbon"] .imagen-dropzone {
+  background: var(--ew-v2-surface-recessed);
+  border-color: var(--ew-v2-hairline-dark);
+  box-shadow:
+    inset 0 2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 0 -1px 0 var(--ew-v2-hairline),
+    inset 0 1px 0 var(--ew-v2-hairline-dark);
 }
 
 .prompt-input {
@@ -212,6 +254,17 @@ body {
   border: none;
   cursor: pointer;
   transition: transform var(--ew-t-fast) var(--ew-ease), opacity var(--ew-t-fast) var(--ew-ease), background var(--ew-t-fast) var(--ew-ease);
+}
+
+body[data-skin="graphite"] .imagen-secondary-btn,
+body[data-skin="anodized"] .imagen-secondary-btn,
+body[data-skin="carbon"] .imagen-secondary-btn,
+body[data-skin="graphite"] .imagen-output__meta span,
+body[data-skin="anodized"] .imagen-output__meta span,
+body[data-skin="carbon"] .imagen-output__meta span {
+  background: var(--ew-v2-surface-1);
+  border-color: var(--ew-v2-hairline-strong);
+  box-shadow: var(--ew-shadow-inset);
 }
 
 .imagen-primary-btn {

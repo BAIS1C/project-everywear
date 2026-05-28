@@ -5,11 +5,11 @@ const VidView = lazy(() => import('./views/VidView'));
 
 export default function App() {
   return (
-    <div className="h-screen w-screen bg-black text-white overflow-hidden">
+    <div className="s3-family-root s3-family-vid h-screen w-screen bg-s3 text-[color:var(--ew-text)] overflow-hidden">
       <Suspense
         fallback={
           <div className="flex items-center justify-center h-full">
-            <p className="text-zinc-500 animate-pulse">Loading Vid Studio...</p>
+            <p className="text-[color:var(--ew-text-muted)] animate-pulse">Loading Vid Studio...</p>
           </div>
         }
       >

@@ -10,11 +10,12 @@
   align-items: center;
   justify-content: center;
   height: 100%;
+  min-height: 100%;
   padding: 48px 24px;
   gap: 32px;
   background: var(--ew-bg);
   color: var(--ew-text);
-  font-family: var(--ew-font-sans);
+  font-family: var(--ew-font-body);
 }
 
 /* ── Hero ─────────────────────────────────────────── */
@@ -22,6 +23,10 @@
 .csp-hero {
   text-align: center;
   max-width: 400px;
+}
+
+.csp-hero.ew-card {
+  padding: 28px;
 }
 
 .csp-hero__icon {
@@ -75,6 +80,57 @@
   border: 1px solid var(--ew-border);
   border-radius: var(--ew-radius);
   background: color-mix(in oklab, var(--ew-text) 2%, var(--ew-bg));
+}
+
+.csp-feature-card.ew-card {
+  padding: 12px 14px;
+}
+
+/* Shared EWDS utility classes are present in JSX. These rules are local
+   fallbacks for host surfaces that have not loaded the utility sheet yet. */
+body[data-skin="graphite"] .csp-root,
+body[data-skin="anodized"] .csp-root,
+body[data-skin="carbon"] .csp-root {
+  background:
+    radial-gradient(circle at 50% 20%, color-mix(in oklab, var(--ew-v2-accent) 8%, transparent), transparent 34%),
+    var(--ew-v2-bg-0);
+}
+
+body[data-skin="graphite"] .csp-hero,
+body[data-skin="anodized"] .csp-hero,
+body[data-skin="carbon"] .csp-hero,
+body[data-skin="graphite"] .csp-feature-card,
+body[data-skin="anodized"] .csp-feature-card,
+body[data-skin="carbon"] .csp-feature-card {
+  background: var(--ew-v2-surface-1);
+  border: 1px solid var(--ew-v2-hairline-strong);
+  border-radius: var(--ew-v2-radius-lg);
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4),
+    0 1px 0 rgba(0,0,0,0.5),
+    0 8px 24px rgba(0,0,0,0.6);
+}
+
+body[data-skin="graphite"] .csp-hero,
+body[data-skin="anodized"] .csp-hero,
+body[data-skin="carbon"] .csp-hero {
+  padding: 28px;
+}
+
+body[data-skin="graphite"] .csp-badge,
+body[data-skin="anodized"] .csp-badge,
+body[data-skin="carbon"] .csp-badge {
+  background: var(--ew-v2-surface-recessed);
+  border: 1px solid rgba(0,0,0,0.6);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.9);
 }
 
 .csp-feature-card__icon {

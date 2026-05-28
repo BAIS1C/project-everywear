@@ -1,12 +1,7 @@
-/* Gener8 applet-local styles.
-   EWDS global.css is imported in main.tsx; this file adds
-   Gener8-specific overrides and Tailwind directives. */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Applet body fills the WindowFrame body area ─── */
 #root {
   width: 100%;
   height: 100vh;
@@ -93,13 +88,4 @@ body[data-skin="carbon"] .s3-family-root [class*="bg-s3-card"] {
 
 .s3-family-root input[type="range"] {
   accent-color: var(--ew-primary);
-}
-
-.s3-family-root .s3-family-resize-handle {
-  background: color-mix(in srgb, var(--ew-primary) 12%, transparent);
-}
-
-.s3-family-root .s3-family-resize-handle:hover,
-.s3-family-root .s3-family-resize-handle[data-active="true"] {
-  background: color-mix(in srgb, var(--ew-primary) 34%, transparent);
 }

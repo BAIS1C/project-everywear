@@ -63,6 +63,8 @@ Full theme selection belongs in Settings. Desktop taskbar chrome exposes only a 
 
 Desktop icon treatments change by theme, but the app identity, grid footprint, label behavior, and launch/status states remain consistent.
 
+2026-05-28 SGT status: Graphite, Anodized, and Carbon are now wired into the shared EWDS provider and Everywear OS shell as additive skins, not replacements. Settings owns the seven-skin chooser, v2 accents, chrome density, and wallpaper grain. Desktop chrome only exposes Light/Dark mode. The next pass must verify and patch inheritance across My Maits and the ported S3 Studio creation tab, then widen the bevel/recessed utilities across applet cards, forms, chat regions, toasts, widgets, and side panels.
+
 ## Icon Canon
 
 The desktop icon geometry is locked in EWDS. Typography is under active review as of 2026-05-23.

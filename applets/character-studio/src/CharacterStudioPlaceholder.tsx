@@ -41,7 +41,7 @@ const PLANNED_FEATURES = [
 export default function CharacterStudioPlaceholder({ skin }: CharacterStudioPlaceholderProps) {
   return (
     <div className="csp-root" data-skin={skin}>
-      <div className="csp-hero">
+      <div className="csp-hero ew-card">
         <div className="csp-hero__icon">{'\u{1F9D1}'}</div>
         <h2 className="csp-hero__title">Character Studio</h2>
         <p className="csp-hero__sub">
@@ -49,12 +49,12 @@ export default function CharacterStudioPlaceholder({ skin }: CharacterStudioPlac
           <br />
           Coming soon to Everywear OS.
         </p>
-        <span className="csp-badge">Dependency Wall</span>
+        <span className="csp-badge ew-v2-recessed">Port Scaffold</span>
       </div>
 
       <div className="csp-features">
         {PLANNED_FEATURES.map((f) => (
-          <div key={f.title} className="csp-feature-card">
+          <div key={f.title} className="csp-feature-card ew-card">
             <span className="csp-feature-card__icon">{f.icon}</span>
             <div className="csp-feature-card__text">
               <div className="csp-feature-card__title">{f.title}</div>

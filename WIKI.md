@@ -36,6 +36,62 @@ Maintainer: Sean Uddin / Somo Kasane
 > trap the user away from Home, so the overnight audio acceptance used the local
 > engine API after native UI interaction became blocked.
 
+> Current-state note, 2026-05-28 v1.1.5: My Mait in Everywear now mounts the
+> standalone Agent Hub visual contract (`ah-*`) through an Everywear-adapted
+> `KasaiCore.tsx` plus `agent-hub.css`. The old `kc-*` stylesheet was deleted
+> after verification because it was spurious dead code. Shell chrome, provider
+> state, applet lifecycle, and transport remain Everywear-owned.
+
+## Current State Addendum 2026-05-28: My Mait Agent Hub Surface Port
+
+### Observe
+
+- Standalone source of truth is `C:\Users\MAG MSI\Project Mymaits\Kasai-Local`.
+- Standalone My Mait uses `src/shell/AgentHubCore.tsx` plus
+  `src/styles/agent-hub.css` as the live applet surface.
+- Standalone `src/styles/kasai.css` explicitly marks itself deleted dead code,
+  superseded by `agent-hub.css + tokens.css`.
+- Everywear had been mounting `applets/kasai/src/shell/KasaiCore.tsx` plus
+  `applets/kasai/src/styles/kasai.css`, so the applet was visually on the wrong
+  surface contract even after EWDS-v2 token work.
+
+### Decide
+
+- Everywear My Mait uses the Agent Hub `ah-*` layout contract adapted to the
+  Everywear platform boundary.
+- Do not copy standalone Tauri window controls, standalone dialog imports,
+  companion toggles, standalone settings chrome, or standalone-only commands
+  into the Everywear mount.
+- Keep Everywear's existing transport, K1-K6 tool-call card path, slot status
+  panel, applet lifecycle, and shell-owned provider state.
+- Delete the obsolete `kc-*` stylesheet once the `ah-*` path is verified.
+
+### Verification State
+
+- `npm run build --workspace applets/kasai` passed on 2026-05-28 SGT.
+- `npm run build --workspace everywear-os` passed on 2026-05-28 SGT.
+- No EWDS package files were touched in this port repair, so `npm run
+  build:ewds` was not required for this slice.
+- Everywear OS preview at `http://127.0.0.1:5173/?preview=1` opened My Mait
+  through the desktop icon under Graphite/Cyan, Anodized/Cyan, and Carbon/Cyan.
+- Browser policy blocked direct `localStorage.setItem(...)` injection, so the
+  same provider state was forced through Settings and verified through
+  `body[data-skin][data-mode][data-accent]`.
+- DOM verification confirmed `ah-root=true`, `kc-root=false`, side panel,
+  skill cards, node card, recessed chat well, message wells, composer,
+  textarea, right panel, and slot cards present under v2 skins.
+- Accent provider verification confirmed Cyan, Amber, Acid, Crimson, and Bone
+  update My Mait's send control and node LED through shared EWDS variables.
+
+### Updated Implementation Status
+
+| Area | Current State | Notes |
+|---|---|---|
+| My Mait frontend | Agent Hub surface ported | `applets/kasai/src/shell/KasaiCore.tsx` now renders `ah-*` Agent Hub structure adapted for Everywear. |
+| My Mait CSS | Correct import path | `applets/kasai/src/styles/agent-hub.css` is the live CSS import for standalone entry and platform lazy mount. |
+| Old `kc-*` path | Deleted | `applets/kasai/src/styles/kasai.css` was removed after the Agent Hub port verified cleanly. |
+| Platform boundary | Preserved | No standalone Tauri chrome, window controls, or standalone-only commands were imported. |
+
 ## Current State Addendum 2026-05-27: Crate Inventory Sync + ew-vault → vault Rename
 
 ### Observe
@@ -1848,6 +1904,30 @@ Consumers: Kasai (RAG retrieval), Mymories (knowledge search).
 
 **Still pending:** LanceDB/vector search layer, reciprocal rank fusion.
 
+#### Everywear Vault / Project Mymory / MyMaits Boundary (2026-05-28 SGT)
+
+Project location: `C:\Users\MAG MSI\Project Everywear`.
+
+The Everywear base app owns the user-facing Vault infrastructure. Do not bury this substrate inside the MyMaits applet. Everywear must provide the shared local vault, library registration, applet-scoped indexing, file import policy, auth boundary, and pre-launch runtime checks that every applet can consume.
+
+Default structure should be Project Mymory-compatible. `C:\Users\MAG MSI\Project Mymory` remains the canonical knowledge vault and taxonomy source; Everywear Vault should use compatible wings/rooms/metadata for user libraries and applet assets, while remaining a base-platform service rather than a MyMaits-only store.
+
+Virgin deployment rule: Everywear must not bundle, import, seed, or expose Sean's current Project Mymory dogfood entries in a new user vault. Project Mymory is the schema/taxonomy/reference source, not a data payload. A first-run vault starts empty except for required schemas, default folders, applet manifests, and optional sample data that is explicitly marked as sample content.
+
+Applet libraries managed by Everywear Vault include S3 Studio / Gener8, 1magen, 3nvizen, Vid, Character Studio, Loom packs, MyMaits shard assets, and arbitrary user files. Import must be user-selectable per file/folder/source:
+- linked/reference mode for symlink, junction, or original-path preservation when disk space matters;
+- physical copy/move mode for portable, offline, or cleanup-owned vault storage.
+
+Vault records must preserve provenance: original path, vault path, storage mode, applet scope, asset kind, source applet, content hash when available, and timestamps.
+
+Ownership/security rule: vault content is bound to the signed-in user. Each vault record should carry an owner identity derived from Everywear auth, an installation/vault id, and a content digest such as SHA-256 for stable identity and tamper evidence. SHA alone is not access control; authorization comes from the user session and vault ACL, with hashes used to verify content integrity, dedupe linked/copied files, and detect tampering.
+
+Identity and commerce rule: `everywear.id` is the canonical user identity for the whole product line. Existing S3 Studio Supabase auth/payment work should be mined for proven primitives, but the target model is neutral identity plus product entitlements, not an S3-owned auth root. Steam must be treated as a linked external identity and commerce provider, not the canonical account. Steam purchases, DLC, wallet/microtransaction flows, and license checks map into Everywear entitlements after linking or into a pending Steam-bound entitlement until the user links/creates an `everywear.id` account. Steam refunds, chargebacks, revocations, and region/store constraints must flow back into entitlement state.
+
+MyMaits is the privileged operator and presentation layer for Mait identity, shards, and RAG-backed recall. It should consume Project Mymory / Everywear Vault data, display shard inventory and skill state, and invoke retrieval or tool capabilities through the platform contract. It must not fork a separate vault substrate.
+
+Shard presentation belongs in MyMaits and Character Studio, with iconized hardware-module language from `C:\Users\MAG MSI\Project Mymory\mymaits\shards\2026-05-27_my_maits_look_shards_naming_canon.md`: Look Shards, Trait Shards, Skill Shards, Knowledge Shards, Voice Shards, Presence Shards, Style Patches, and Visual Patches. Service logos stay readable, but they sit inside recessed MyMaits hardware wells rather than generic app tiles.
+
 ### mait (crates/mait/)
 
 Trait-shard personality engine for composable AI agent identities.
@@ -1946,6 +2026,55 @@ the shell and applets consume these as CSS custom properties from
 
 Theme selection belongs in Settings. Desktop chrome may expose a compact
 Light/Dark mode toggle, but it must not show the full seven-theme strip.
+
+Implementation status 2026-05-28 SGT:
+
+- Shared `@everywear/ewds` now exposes `graphite`, `anodized`, and `carbon`
+  as additive skins with v2 accents, chrome density, wallpaper grain, bevel,
+  and recessed-surface tokens.
+- Everywear OS shell consumes the v2 skins through the shared provider, renders
+  EWDS-v2 holographic desktop icons with centered glyphs, and keeps the desktop
+  taskbar to a compact Light/Dark mode toggle.
+- Full skin selection, accent selection, chrome density, and wallpaper controls
+  live in Settings.
+- 2026-05-28 SGT port-fidelity correction: do not run generic theme passes
+  against lossy applet ports. For each applet, first identify canonical source,
+  classify port status, repair wrong/partial ports, then apply EWDS-v2 surface
+  inheritance.
+- My Mait was corrected separately from the generic applet pass. The live
+  Everywear path now uses the standalone Agent Hub surface contract through
+  `applets/kasai/src/styles/agent-hub.css`; obsolete `kasai.css` / `kc-*`
+  lineage was removed, and `npm run build --workspace applets/kasai` plus
+  `npm run build --workspace everywear-os` passed.
+- Current applet classification map:
+  - `1magen`: built in place, ready for live visual verification after EWDS-v2
+    surface patch; applet frontend and `onemagen` Rust check passed.
+  - `3nvizen`: in-place React/Rust scaffold; Rust check passed, applet-local
+    npm build is blocked until `applets/3nvizen/package.json` exists.
+  - `character-studio`: scaffold only. Canonical source remains
+    `C:\Users\MAG MSI\Project Strands\CharacterStudio-Strands` with EWDS visual
+    reference at `C:\Users\MAG MSI\Project Mymaits\Character Studio EWDS Design`.
+  - `gener8`: S3 family route, faithful enough to theme; scoped build passed.
+  - `vid`: S3 family route, faithful enough to theme after scoped pass; scoped
+    build passed.
+  - `ai-director`: S3 family scaffold/partial route, themeable but not full
+    Creator Studio orchestration yet.
+  - `creator-studio`: absent as a standalone Everywear route in this pass.
+  - `loom`: built in place, Project Nomad lineage, scoped build passed.
+  - `mymories`: placeholder/no canonical in-repo frontend surface.
+  - `strands-game`: paused by product state; external launcher only for now.
+  - `Project SON / Layer U`: paused until active Everywear applet integration is
+    stable; current Everywear Layer U surface is a compact bridge, not the final
+    widget foundation port.
+- Marketing screenshot capture is intentionally deferred. The existing
+  `marketing/capture-harness` is deterministic synthetic surface coverage, not a
+  real engine/runtime integration proof. Regenerate marketing-level images only
+  after real ports, runtime contracts, Everywear auth/VRAM assessment, and
+  applet-owned purge/switching are stable.
+- Next live verification pass: open Everywear platform surfaces under Graphite,
+  Anodized, and Carbon for 1magen, 3nvizen, Character Studio scaffold, S3 family
+  routes, Vid, AI Director, and Loom. Treat Mymories, Strands Game, and SON/Layer
+  U as paused/placeholder states, not visual failures.
 
 EWDS-v2 token contract:
 
@@ -2903,6 +3032,23 @@ Render sequence: all cut-shot keyframes batched on 1magen first (one load), then
 - Hub: source of truth (writes tier to user record)
 - Shell: sync broker + launch gate (bundle manifests map product tier -> applet entitlements; refuses to spawn unentitled applets)
 - Applet: module gates + reconciler (verifies signed TierSync, enforces internally)
+
+### Product Entitlement Launch Taxonomy (2026-05-28 SGT)
+
+Current production reality: the only near-term shippable paid products are the S3 Studio product family once the Everywear ports finish. The neutral Everywear identity schema must support the wider product line, but launch migration should prioritise S3 entitlements instead of overbuilding future game commerce first.
+
+Initial entitlement map:
+- S3 Studio / Gener8 product family: first production paid products; carry forward current Supabase buy/auth work into neutral Everywear identity and entitlement tables.
+- 1magen: included from the Gener8 4ever bundle onwards, not a separate launch SKU.
+- 3nvizen: included from the Gener8 Pro bundle onwards, not a separate launch SKU.
+- Loom: free Everywear applet.
+- MyMaits Light: free Everywear companion/operator surface.
+- MyMaits Full: paid add-on with microtransaction support.
+- Character Studio: free Everywear applet.
+- Strands the Game: platform-launched game, not a near-term applet entitlement.
+- MyMaiDs / My Maids game: platform-launched game distinct from the MyMaits companion surface; final spelling/naming must be locked before public product metadata.
+
+Entitlement schema implication: use product-agnostic tables (`products`, `plans`, `user_entitlements`, `external_identities`, `provider_subscriptions`, `devices`, `vaults`) but seed the first production migration from S3 Studio tiers and buyers. Future free applets should still have product records so shell launch, icons, store placement, and capability grants remain consistent.
 
 ### Python Sidecar Sandboxing
 

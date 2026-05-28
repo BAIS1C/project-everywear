@@ -12,6 +12,16 @@
   overflow: auto;
 }
 
+body[data-skin="graphite"] .loom-root,
+body[data-skin="anodized"] .loom-root,
+body[data-skin="carbon"] .loom-root {
+  color: var(--ew-text);
+  background:
+    radial-gradient(circle at top left, color-mix(in oklab, var(--ew-v2-accent) 8%, transparent), transparent 32%),
+    var(--ew-v2-bg-0);
+  font-family: var(--ew-font-body);
+}
+
 .loom-header {
   grid-column: 1 / -1;
   display: flex;
@@ -22,6 +32,12 @@
   padding-bottom: 16px;
 }
 
+body[data-skin="graphite"] .loom-header,
+body[data-skin="anodized"] .loom-header,
+body[data-skin="carbon"] .loom-header {
+  border-bottom-color: var(--ew-v2-hairline-strong);
+}
+
 .loom-kicker {
   margin: 0 0 6px;
   color: #69d2c6;
@@ -29,6 +45,15 @@
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+body[data-skin="graphite"] .loom-kicker,
+body[data-skin="anodized"] .loom-kicker,
+body[data-skin="carbon"] .loom-kicker,
+body[data-skin="graphite"] .loom-syllabus__code,
+body[data-skin="anodized"] .loom-syllabus__code,
+body[data-skin="carbon"] .loom-syllabus__code {
+  color: var(--ew-v2-accent);
 }
 
 .loom-header h1 {
@@ -55,6 +80,42 @@
   background: rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   font-size: 13px;
+}
+
+body[data-skin="graphite"] .loom-meter span,
+body[data-skin="anodized"] .loom-meter span,
+body[data-skin="carbon"] .loom-meter span,
+body[data-skin="graphite"] .loom-setup,
+body[data-skin="anodized"] .loom-setup,
+body[data-skin="carbon"] .loom-setup,
+body[data-skin="graphite"] .loom-teacher,
+body[data-skin="anodized"] .loom-teacher,
+body[data-skin="carbon"] .loom-teacher,
+body[data-skin="graphite"] .loom-phase,
+body[data-skin="anodized"] .loom-phase,
+body[data-skin="carbon"] .loom-phase,
+body[data-skin="graphite"] .loom-rail section,
+body[data-skin="anodized"] .loom-rail section,
+body[data-skin="carbon"] .loom-rail section,
+body[data-skin="graphite"] .loom-principle,
+body[data-skin="anodized"] .loom-principle,
+body[data-skin="carbon"] .loom-principle,
+body[data-skin="graphite"] .loom-pack,
+body[data-skin="anodized"] .loom-pack,
+body[data-skin="carbon"] .loom-pack,
+body[data-skin="graphite"] .loom-syllabus,
+body[data-skin="anodized"] .loom-syllabus,
+body[data-skin="carbon"] .loom-syllabus {
+  background: var(--ew-v2-surface-1);
+  border-color: var(--ew-v2-hairline-strong);
+  box-shadow:
+    inset 0 1px 0 var(--ew-v2-bevel-top-bright),
+    inset 0 2px 0 var(--ew-v2-bevel-top),
+    inset 0 -1px 0 var(--ew-v2-bevel-bot),
+    inset 0 -2px 4px var(--ew-v2-bevel-bot-deep),
+    inset 1px 0 0 rgba(255,255,255,0.04),
+    inset -1px 0 0 rgba(0,0,0,0.4),
+    0 1px 0 rgba(0,0,0,0.5);
 }
 
 .loom-grid {
@@ -104,6 +165,17 @@
   cursor: pointer;
 }
 
+body[data-skin="graphite"] .loom-action,
+body[data-skin="anodized"] .loom-action,
+body[data-skin="carbon"] .loom-action,
+body[data-skin="graphite"] .loom-module-tabs button.active,
+body[data-skin="anodized"] .loom-module-tabs button.active,
+body[data-skin="carbon"] .loom-module-tabs button.active {
+  border-color: var(--ew-v2-accent);
+  background: color-mix(in oklab, var(--ew-v2-accent) 12%, transparent);
+  color: var(--ew-v2-accent-strong);
+}
+
 .loom-action:hover {
   background: rgba(105, 210, 198, 0.22);
 }
@@ -116,6 +188,24 @@
   padding: 10px 12px;
   font-size: 13px;
   line-height: 1.4;
+}
+
+body[data-skin="graphite"] .loom-notice,
+body[data-skin="anodized"] .loom-notice,
+body[data-skin="carbon"] .loom-notice,
+body[data-skin="graphite"] .loom-module-tabs button,
+body[data-skin="anodized"] .loom-module-tabs button,
+body[data-skin="carbon"] .loom-module-tabs button,
+body[data-skin="graphite"] .loom-syllabus li,
+body[data-skin="anodized"] .loom-syllabus li,
+body[data-skin="carbon"] .loom-syllabus li {
+  background: var(--ew-v2-surface-recessed);
+  border-color: rgba(0,0,0,0.6);
+  color: var(--ew-text-muted);
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.8),
+    inset 0 -1px 0 rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(0,0,0,0.9);
 }
 
 .loom-module-tabs {
@@ -215,7 +305,7 @@
   width: 18px;
   height: 18px;
   margin: 2px 0 0;
-  accent-color: #69d2c6;
+  accent-color: var(--ew-primary);
   flex: 0 0 auto;
 }
 

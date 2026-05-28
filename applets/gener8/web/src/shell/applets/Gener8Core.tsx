@@ -950,11 +950,8 @@ export default function Gener8Core() {
               {/* Resize handle */}
               <div
                 onMouseDown={handleResizeStart}
-                className={`
-                  w-[5px] h-full cursor-col-resize flex-shrink-0 relative
-                  transition-colors duration-150
-                  ${isResizing ? 'bg-purple-500/40' : 'bg-white/5 hover:bg-purple-500/30'}
-                `}
+                className="s3-family-resize-handle w-[5px] h-full cursor-col-resize flex-shrink-0 relative transition-colors duration-150"
+                data-active={isResizing ? 'true' : 'false'}
                 title="Drag to resize"
               >
                 <div className="absolute inset-y-0 -left-1 -right-1" />
@@ -987,7 +984,7 @@ export default function Gener8Core() {
 
             {/* Right Sidebar */}
             {showRightSidebar && selectedSong && (
-              <div className="hidden xl:block w-[360px] flex-shrink-0 h-full bg-s3-panel relative z-10 border-l border-white/5">
+              <div className="hidden xl:block w-[360px] flex-shrink-0 h-full bg-s3-panel ew-v2-bevel relative z-10 border-l border-[color:var(--ew-border)]">
                 <RightSidebar
                   song={selectedSong}
                   onClose={() => setShowRightSidebar(false)}
@@ -1013,7 +1010,7 @@ export default function Gener8Core() {
               <div className="absolute top-4 right-4 z-50">
                 <button
                   onClick={() => setMobileShowList(!mobileShowList)}
-                  className="bg-zinc-800 text-white px-4 py-2 rounded-full shadow-lg border border-white/10 flex items-center gap-2 text-sm font-bold"
+                  className="ew-btn ew-btn--primary flex items-center gap-2 text-sm font-bold"
                 >
                   {mobileShowList ? 'Create Song' : 'View List'}
                   <List size={16} />
@@ -1026,7 +1023,7 @@ export default function Gener8Core() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-s3 text-white font-sans antialiased overflow-hidden">
+    <div className="s3-family-route flex flex-col h-full bg-s3 text-[color:var(--ew-text)] font-sans antialiased overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
         {/* Internal nav strip */}
         <Gener8Nav currentView={currentView} onNavigate={setCurrentView} />

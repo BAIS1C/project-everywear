@@ -1,0 +1,4 @@
+-- Intentionally empty.
+--
+-- Everywear bootstrap seeds only neutral catalog metadata inside migrations.
+-- User Vaults must stay virgin: do not seed Sean's Project Mymory dogfood data.
