@@ -9,6 +9,7 @@ export interface ShellAuthContext {
   tier: LicenceTier;
   is_paid?: boolean;
   is_pro?: boolean;
+  entitlements?: Record<string, boolean>;
 }
 
 export function getAuthContext(): Promise<ShellAuthContext | null> {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CreatePanel } from '@/components/CreatePanel';
 import { SongList } from '@/components/SongList';
 import { RightSidebar } from '@/components/RightSidebar';
-import { LibraryView } from '@/components/LibraryView';
+import { LibraryView as VaultLibraryView } from '@/views/LibraryView';
 import { PlaylistDetail } from '@/components/PlaylistDetail';
 import { UserProfile } from '@/components/UserProfile';
 import { SongProfile } from '@/components/SongProfile';
@@ -502,8 +502,8 @@ export default function Gener8Core() {
   };
 
   const handleCover = (song: Song) => {
-    const canUseReferenceCover = hasTier('gener8_pro');
-    if (!canUseReferenceCover) {
+    const hasGener8ProForCoverAction = hasTier('gener8_pro');
+    if (!hasGener8ProForCoverAction) {
       showToast('Reference and Cover require Gener8 Pro.', 'info');
       setShowUpgradeModal(true);
       return;
@@ -641,10 +641,10 @@ export default function Gener8Core() {
           if (status.status === 'succeeded' && status.result) {
             finishJob(job.jobId);
 
-            // Persist generation result into the local library (library.json).
-            // Shim already wrote audio to <music>/gener8/<id>.mp3 and returned
-            // audioUrls + audioKey in the status envelope. Without this POST the
-            // library stays empty and refreshSongsList has nothing to show.
+            // Persist generation result into Everywear Vault.
+            // Shim already wrote audio to the Vault-backed music path and
+            // returned audioUrls + audioKey in the status envelope. Without
+            // this POST the Vault-backed song list has nothing to show.
             let persisted = false;
             try {
               const audioRef =
@@ -862,15 +862,7 @@ export default function Gener8Core() {
   const renderContent = () => {
     switch (currentView) {
       case 'library':
-        return (
-          <LibraryView
-            likedSongs={songs.filter(s => likedSongIds.has(s.id))}
-            playlists={playlists}
-            onPlaySong={playSong}
-            onCreatePlaylist={() => { setSongToAddToPlaylist(null); setIsCreatePlaylistModalOpen(true); }}
-            onSelectPlaylist={(p) => handleNavigateToPlaylist(p.id)}
-          />
-        );
+        return <VaultLibraryView />;
 
       case 'profile':
         if (!viewingUsername) return null;

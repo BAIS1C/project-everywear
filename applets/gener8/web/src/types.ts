@@ -1,3 +1,5 @@
+import type { CreatePayload } from './pro/proPayloadBuilder';
+
 export interface Song {
   id: string;
   title: string;
@@ -75,83 +77,7 @@ export interface Comment {
   created_at?: string;
 }
 
-export interface GenerationParams {
-  // 2026-05-04 SGT (#36): Simple/Custom mode toggle killed. Custom is the
-  // only mode now; tier-gating governs panel surface (see CreatePanel
-  // header comment for spec). `customMode` and `songDescription` removed
-  // from the contract; legacy library entries with these fields are
-  // ignored by consumers.
-  prompt: string;
-  lyrics: string;
-  style: string;
-  title: string;
-  /** When Style Assist enhanced the style, this holds the raw user-authored
-   *  style text. `style` contains the AI-enhanced version that was actually
-   *  used for generation. Stored on Song.caption for the sidebar Copy button. */
-  rawStyle?: string;
-
-  // Common
-  instrumental: boolean;
-  vocalLanguage: string;
-
-  // Music Parameters
-  bpm: number;
-  keyScale: string;
-  timeSignature: string;
-  duration: number;
-
-  // 2026-05-04 SGT (engine-detected model swap): synth_model selects
-  // which DiT GGUF ace-server should use for this request. Empty/omitted
-  // = keep current; otherwise ace-server lazy-loads + swaps via
-  // ServerFields.synth_model parsing in tools/ace-server.cpp:443.
-  // Full filename per shim engine_models output, e.g.
-  // local engine model filename.
-  synth_model?: string;
-
-  // Generation Settings
-  inferenceSteps: number;
-  guidanceScale: number;
-  batchSize: number;
-  randomSeed: boolean;
-  seed: number;
-  thinking: boolean;
-  audioFormat: 'mp3' | 'flac';
-  inferMethod: 'ode' | 'sde';
-  shift: number;
-
-  // LM Parameters
-  lmTemperature: number;
-  lmCfgScale: number;
-  lmTopK: number;
-  lmTopP: number;
-  lmNegativePrompt: string;
-
-  // Expert Parameters
-  referenceAudioUrl?: string;
-  sourceAudioUrl?: string;
-  audioCodes?: string;
-  repaintingStart?: number;
-  repaintingEnd?: number;
-  instruction?: string;
-  audioCoverStrength?: number;
-  taskType?: string;
-  useAdg?: boolean;
-  cfgIntervalStart?: number;
-  cfgIntervalEnd?: number;
-  customTimesteps?: string;
-  useCotMetas?: boolean;
-  useCotCaption?: boolean;
-  useCotLanguage?: boolean;
-  autogen?: boolean;
-  constrainedDecodingDebug?: boolean;
-  allowLmBatch?: boolean;
-  getScores?: boolean;
-  getLrc?: boolean;
-  scoreScale?: number;
-  lmBatchChunkSize?: number;
-  trackName?: string;
-  completeTrackClasses?: string[];
-}
+export type GenerationParams = CreatePayload;
 
 export interface PlayerState {
   currentSong: Song | null;

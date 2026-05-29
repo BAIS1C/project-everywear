@@ -337,25 +337,10 @@ impl AppletRegistry {
                 frontend_route: None,
                 shares_backend: None,
             },
-            AppletEntry {
-                id: "mymories".into(),
-                name: "Mymories".into(),
-                description: "Personal knowledge and memory management".into(),
-                version: "0.1.0".into(),
-                icon: "mymories".into(),
-                status: AppletStatus::NotBuilt,
-                launch_kind: AppletLaunchKind::Placeholder,
-                engine_type: "llm".into(),
-                min_vram_mb: 4096,
-                tags: vec!["knowledge".into(), "memory".into(), "rag".into()],
-                launch_url: None,
-                launch_binary: Some("mymories".into()),
-                required_tier: None,
-                required_entitlements: Vec::new(),
-                frontend_port: Some(3005),
-                frontend_route: None,
-                shares_backend: None,
-            },
+            // Mymories applet removed 2026-05-29 per WIKI.md "Everywear Vault /
+            // Project Mymory / MyMaits Boundary" unification: Vault is the
+            // user-facing surface, MyMory is the backend, MyMaits is the
+            // presentation/operator layer. There is no separate Mymories applet.
         ]
     }
 

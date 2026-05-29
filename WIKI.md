@@ -783,9 +783,6 @@ applets/1magen/
 | `applets/3nvizen/` | 15 source files. Rust IPC backend + React workbench scaffold (ThreevizenCore, mode selector, params, preview, status). Missing `package.json`. | **Scaffolded** |
 | `applets/kasai/` | 15 source files. Rust inference/slot backend + React three-pane EWDS agent UI scaffold. | **Scaffolded (build failing: missing ToolCallCard, type discriminants)** |
 | `applets/character-studio/` | 4 source files. Minimal placeholder component. | **Stub** |
-| `applets/mymories/` | `LICENCE.md` only | Placeholder |
-| `applets/strands-game/` | `LICENCE.md` only | Placeholder |
-| `applets/s3studio/` | `LICENCE.md` only | Placeholder |
 | `applets/loom/` | 5 source files. React/Vite frontend-only applet at port 3008. The Loom: Everywear Knowledge Engine, Project NOMAD migration cockpit. `applet.toml` registered; engine type `none`. | **Scaffolded** |
 
 ### crates/ (Shared Rust)
@@ -1086,7 +1083,6 @@ Hardcoded inventory (6 applets):
 | strands-game | Active | none | 0 MB | URL: game.strandsnation.xyz |
 | kasai | NotBuilt | llm | 8192 MB | binary: "kasai" |
 | 3nvizen | NotBuilt | diffusion | 12288 MB | binary: "envizen" |
-| mymories | NotBuilt | llm | 4096 MB | binary: "mymories" |
 
 ### Platform Status Command
 
@@ -2137,7 +2133,7 @@ Text search engine with applet-scoped indexing. Vector layer planned.
 
 Dependencies: tantivy 0.22, chrono, uuid. LanceDB dependency commented out in workspace Cargo.toml (uncomment when vector layer ready).
 
-Consumers: Kasai (RAG retrieval), Mymories (knowledge search).
+Consumers: Kasai (RAG retrieval), Vault shell surface (media + knowledge browse and search), MyMaits (privileged operator/presentation layer).
 
 **Still pending:** LanceDB/vector search layer, reciprocal rank fusion.
 
@@ -2299,7 +2295,7 @@ Implementation status 2026-05-28 SGT:
     Creator Studio orchestration yet.
   - `creator-studio`: absent as a standalone Everywear route in this pass.
   - `loom`: built in place, Project Nomad lineage, scoped build passed.
-  - `mymories`: placeholder/no canonical in-repo frontend surface.
+  - `mymories`: REMOVED 2026-05-29. Was a placeholder applet slot conflating Vault (surface) and MyMory (backend). Per the "Everywear Vault / Project Mymory / MyMaits Boundary" unification, there is no separate Mymories applet; Vault is the user-facing surface, MyMory is the backend, MyMaits is the presentation/operator layer.
   - `strands-game`: paused by product state; external launcher only for now.
   - `Project SON / Layer U`: paused until active Everywear applet integration is
     stable; current Everywear Layer U surface is a compact bridge, not the final
@@ -2311,8 +2307,10 @@ Implementation status 2026-05-28 SGT:
   applet-owned purge/switching are stable.
 - Next live verification pass: open Everywear platform surfaces under Graphite,
   Anodized, and Carbon for 1magen, 3nvizen, Character Studio scaffold, S3 family
-  routes, Vid, AI Director, and Loom. Treat Mymories, Strands Game, and SON/Layer
-  U as paused/placeholder states, not visual failures.
+  routes, Vid, AI Director, and Loom. Treat Strands Game and SON/Layer U as
+  paused/placeholder states, not visual failures. Mymories has been removed as
+  a separate applet; Vault surface is exercised through any media-producing
+  applet (Gener8, 1magen, 3nvizen) and the shell Vault panels.
 
 EWDS-v2 token contract:
 
@@ -2749,7 +2747,7 @@ The workspace root `Cargo.toml` includes:
 - `applets/kasai/src-tauri`
 - `applets/gener8/src-tauri`
 
-Commented out: `applets/mymories/src-tauri`.
+Mymories crate slot removed 2026-05-29 per Vault/MyMory unification.
 
 The shell IS in the workspace (unified dependency management).
 
@@ -2759,14 +2757,17 @@ Root `package.json` declares workspaces:
 - `packages/*` (ewds, shared, transport)
 - `platform/everywear-os`
 - `applets/1magen`
-- `applets/s3studio`
 - `applets/3nvizen`
 - `applets/kasai`
 - `applets/character-studio`
 - `applets/gener8/web`
 - `applets/vid/web`
-- `applets/mymories`
-- `applets/strands-game`
+- `applets/loom`
+
+`applets/s3studio`, `applets/mymories`, and `applets/strands-game` workspace
+entries removed 2026-05-29. s3studio and strands-game retain registry entries
+as `ExternalUrl` launchers pointing to s3studio.xyz and game.strandsnation.xyz
+respectively. Mymories was removed entirely per the Vault/MyMory unification.
 
 Root scripts:
 - `dev:shell` : starts shell dev server
@@ -2876,9 +2877,11 @@ Root scripts:
 | Applet | Has | Needs |
 |--------|-----|-------|
 | character-studio | Minimal placeholder component (4 files) | Full port from CharacterStudio-Strands external repo |
-| mymories | LICENCE.md only | Full Tauri app (knowledge/memory with vault) |
-| strands-game | LICENCE.md only | Three.js web app (exists at game.strandsnation.xyz) |
-| s3studio | LICENCE.md only | Full integration (exists at s3studio.xyz) |
+
+`mymories`, `strands-game`, and `s3studio` placeholder applet dirs were removed
+2026-05-29. `mymories` is fully retired per the Vault/MyMory unification.
+`strands-game` and `s3studio` remain as `ExternalUrl` registry entries pointing
+to game.strandsnation.xyz and s3studio.xyz respectively; no local applet is needed.
 
 ### Known Duplication to Resolve
 
@@ -3306,6 +3309,103 @@ model-manager uses HTTP Range headers for resume. Partial `.part` files persist 
 ### Applet Self-Shutdown Safety Net
 
 Applets detect IPC disconnection from shell -> 10s timer -> unload models -> exit. Prevents orphaned VRAM consumption on shell crash or dev restart.
+
+---
+
+## Addendum 2026-05-29: Modularisation Gate Hoisted from ARCHITECTURE_MODULES_2026-05-21
+
+Source: `ARCHITECTURE_MODULES_2026-05-21.md` (now archived at `docs/_archive/`).
+Status: ACTIVE GATE. The directive below was hoisted into WIKI on 2026-05-29 during the
+P3 doc tidy so the gate survives the archive move. Full ledger, file-by-file split plans,
+pipe diagrams, and execution order remain in the archived source.
+
+### Budget Contract (canonical)
+
+Per `skills/context-protocol/SKILL.md`:
+
+| Slot              | Budget    |
+|-------------------|-----------|
+| System prompt     | ~4k       |
+| Wiki section      | ~2k       |
+| Pipe interfaces   | ~3k       |
+| **Code**          | **~16k**  |
+| Tests             | ~6k       |
+| Conversation      | ~34k      |
+| **Total**         | **~65k**  |
+
+Token estimates: code (Rust/TS/JS) `tokens ≈ bytes / 3`; CSS and Markdown prose
+`tokens ≈ bytes / 4`. Conservative ceilings, real tokenisers come in lower.
+
+### Directive — Modularise the Migration Path First
+
+Further S3 Studio / Gener8 / Studio Pro applet migration is blocked on a targeted
+modularisation gate. Do not migrate new S3 web surfaces into Everywear by copying
+large files first. Any agent continuing migration work must:
+
+1. Split the current migration-touch hard failures first:
+   - `applets/gener8/web/src/components/VideoGeneratorModal.tsx`
+   - `applets/vid/web/src/components/VideoGeneratorModal.tsx`
+   - `platform/everywear-os/src-tauri/src/lib.rs`
+   - `applets/gener8/src-tauri/src/shim.rs`
+2. Hoist shared Gener8/Vid/S3 web code into workspace packages before adding more
+   S3-derived features:
+   - `packages/video-modal/` for modal, render worker, render types, shared video UI
+   - `packages/visualizer/` for visualizer primitives
+   - `packages/lyrics/` or `packages/shared/` for lyrics utilities and shared event/types
+3. Keep the rest of the repo moving opportunistically. Files below the hard 16k-token
+   code ceiling do not block migration unless the next migration step touches them.
+4. Every migrated surface must update or create its `docs/wiki/...` Module Contract
+   page in the same pass.
+
+The working rule is **modularise the migration path now, then continue migration**.
+Do not freeze the whole repo for a grand cleanup, but do not add more S3 applet
+behaviour on top of known oversized files.
+
+### Execution Order (scaffold pass)
+
+1. WIKI.md split → `docs/wiki/*` skeletons created from existing wiki sections.
+2. `shell.css` split.
+3. `lib.rs` → `commands/` split. `cargo check -p everywear-os` after each command group.
+4. `launcher.rs` → `launcher/` split.
+5. `shim.rs` → `shim/` split. `cargo check -p gener8` after.
+6. `slot_manager.rs` → `slot_manager/` split.
+7. `local_discovery.rs` → `local_discovery/` split.
+8. `gpu.rs` → `gpu/` split.
+9. `ShellLayout.tsx` → multi-file split.
+10. `VideoGeneratorModal` Phase A both applets. Phase B held for Sean's call.
+11. `videoRenderWorker.ts` de-dup → `packages/video-modal/workers/` (Phase B).
+12. `MIGRATION_ARCHITECTURE.md` → `docs/_archive/` (DONE 2026-05-29).
+13. Module Contract Template skeletons populated for every unit.
+
+Each step ends with: vault append, wiki section update for affected modules, `cargo
+check` or `npm build` on touched workspaces.
+
+### Phase 2: Cratification (when Phase 1 splits are proven)
+
+Promote the larger Phase-1 module units into proper workspace **crates** under
+`crates/` rather than leaving them as `mod` submodules of an applet binary.
+Compile-time isolation, context budget isolation, physical pipe enforcement,
+dependency hygiene, replaceable surfaces. Full rationale in the archived source.
+
+### Acceptance Criteria
+
+- Every source file under `crates/`, `applets/*/src*`, `platform/*/src*`,
+  `packages/*/src` measures ≤ 16k tokens.
+- Every module unit has a wiki page under `docs/wiki/` filled per the Module
+  Contract Template, even if some fields are `TBD`.
+- Root `WIKI.md` ≤ 3k tokens (index + global pipe diagram only). Current state:
+  the WIKI.md split itself remains outstanding.
+- `cargo check` passes on every workspace member that was passing before this pass.
+- `npm run build` passes on every workspace that was passing before this pass.
+- A new agent loading any single module unit consumes ≤ 60k tokens.
+- The MyMory vault has a 2026-05-21 entry under `strands/` and the root vault
+  summarising this restructure.
+
+### What This Pass Does Not Do
+
+No semantic refactors. Code is moved, not rewritten. No new tests. No fixes for the
+open OODA P0/P1 items. No build-stabilisation work. No Phase B of the VideoGeneratorModal
+de-dup until Sean confirms.
 
 ### Repo Consolidation Target
 

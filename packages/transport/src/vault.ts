@@ -161,10 +161,6 @@ export async function vaultGetStats(): Promise<VaultStats> {
   return invoke('vault_get_stats');
 }
 
-export async function runGener8VaultAudioImport(dryRun = true): Promise<MigrationSummary> {
-  return invoke('run_gener8_vault_audio_import', { dryRun });
-}
-
 // ── Mutations ─────────────────────────────────────────────────────────
 
 export async function vaultSetFavorite(id: string, favorite: boolean): Promise<void> {

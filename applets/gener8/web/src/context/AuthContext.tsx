@@ -29,6 +29,7 @@ interface AuthContextValue {
   tier: Tier;
   isAuthenticated: boolean;
   isLoading: boolean;
+  entitlementResolved: boolean;
   isTrialActive: boolean;
   hasTier: (tier: 'gener8' | 'gener8_base' | 'gener8_pro' | 'creator_studio' | 'vid_pro' | 'daw_pro') => boolean;
   setupUser: () => Promise<void>;
@@ -43,6 +44,7 @@ const AuthCtx = createContext<AuthContextValue>({
   tier: 'demo',
   isAuthenticated: false,
   isLoading: true,
+  entitlementResolved: false,
   isTrialActive: true,
   hasTier: () => false,
   setupUser: async () => {},
@@ -59,6 +61,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [entitlementResolved, setEntitlementResolved] = useState(false);
 
   const refresh = async () => {
     try {
@@ -80,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } finally {
       setIsLoading(false);
+      setEntitlementResolved(true);
     }
   };
 
@@ -111,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tier,
         isAuthenticated: !!user,
         isLoading,
+        entitlementResolved,
         isTrialActive: tier === 'demo',
         hasTier,
         setupUser: refresh,

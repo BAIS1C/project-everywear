@@ -99,7 +99,7 @@ export default function CreateView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addSong, refetch } = useSongStore();
   const { hasTier } = useAuth();
-  const canUseReferenceCover = hasTier('gener8_pro');
+  const hasGener8ProForAudioModes = hasTier('gener8_pro');
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -207,7 +207,7 @@ export default function CreateView() {
   }, [stopPolling, refetch, autoSaveToVault, params.duration, params.bpm, params.prompt, audioMode]);
 
   const handleAudioFile = async (file: File) => {
-    if (!canUseReferenceCover || audioMode === 'song') return;
+    if (!hasGener8ProForAudioModes || audioMode === 'song') return;
     if (file.size > 15 * 1024 * 1024) {
       setUploadError('Audio uploads are limited to 15 MB.');
       return;
@@ -248,7 +248,7 @@ export default function CreateView() {
 
   const handleGenerate = async () => {
     if (!params.prompt.trim() || isGenerating) return;
-    if (audioMode !== 'song' && !canUseReferenceCover) {
+    if (audioMode !== 'song' && !hasGener8ProForAudioModes) {
       setError('Reference and Cover require Gener8 Pro or Creator Studio.');
       return;
     }
@@ -451,7 +451,7 @@ export default function CreateView() {
               type="button"
               className={`ew-btn ew-btn--sm ${audioMode === 'reference' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
               onClick={() => {
-                if (!canUseReferenceCover) {
+                if (!hasGener8ProForAudioModes) {
                   setError('Reference generation requires Gener8 Pro or Creator Studio.');
                   return;
                 }
@@ -467,7 +467,7 @@ export default function CreateView() {
               type="button"
               className={`ew-btn ew-btn--sm ${audioMode === 'cover' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
               onClick={() => {
-                if (!canUseReferenceCover) {
+                if (!hasGener8ProForAudioModes) {
                   setError('Cover generation requires Gener8 Pro or Creator Studio.');
                   return;
                 }

@@ -19,7 +19,6 @@ mod gpu;
 mod launcher;
 mod mait_bridge;
 mod manifest_parser;
-pub mod migration;
 mod model_commands;
 mod profile;
 mod registry;
@@ -1524,10 +1523,6 @@ pub fn run() {
             gener8_engine::gener8_generate,
             gener8_engine::gener8_generation_status,
             gener8_engine::gener8_engine_models,
-            // Migration
-            commands::migration::get_phase5_migration_plan,
-            commands::migration::run_phase5_migration,
-            commands::migration::run_gener8_vault_audio_import,
             // Vault
             vault_commands::vault_search,
             vault_commands::vault_get_item,

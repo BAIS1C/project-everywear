@@ -2,7 +2,6 @@
 pub mod discourse;
 pub mod gpu;
 pub mod kasai;
-pub mod migration;
 pub mod platform;
 pub mod profile;
 pub mod registry;

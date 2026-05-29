@@ -1,32 +1,14 @@
 // @ts-nocheck
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Upload, Play, Pause, Cpu, Zap, X, Disc3, AlertTriangle, Layers, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Cpu, Zap, AlertTriangle, Layers, Loader2 } from 'lucide-react';
 import { GenerationParams, Song } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { generateApi, engineApi, getAudioRequestPath, type ModelInfo, type PatchManifest } from '@/services/api';
-import {
-  vaultDeleteItem,
-  vaultFileUrl,
-  vaultSearch,
-  type VaultAssetKind,
-  type VaultItem,
-} from '@everywear/transport';
-import { AlbumCover } from './AlbumCover';
+import { generateApi, engineApi, type ModelInfo, type PatchManifest } from '@/services/api';
 import { PatchSelector } from './PatchSelector';
-import { BetterModelsBanner } from './BetterModelsBanner';
 import { showToast } from './ToastHost';
-
-interface ReferenceTrack {
-  id: string;
-  filename: string;
-  storage_key: string;
-  duration: number | null;
-  file_size_bytes: number | null;
-  tags: string[] | null;
-  created_at: string;
-  audio_url: string;
-  deletable?: boolean;
-}
+import { ProAudioModePanel } from '@/pro/ProAudioModePanel';
+import { shouldMountProAudioModule } from '@/pro/entitlementGate';
+import { buildSongPayload, type BaseCreateFields, type CreateMode } from '@/pro/proPayloadBuilder';
 
 interface CreatePanelProps {
   onGenerate: (params: GenerationParams) => void;
@@ -34,18 +16,6 @@ interface CreatePanelProps {
   initialData?: { song: Song, timestamp: number, mode?: 'reuse' | 'cover' } | null;
   onOpenUpgrade?: () => void;
 }
-
-// 2026-05-04 SGT: audio upload cap. Tightened to 15 MB per Sean's call.
-// 15 MB is plenty for everything users actually need: a 30-60 second
-// reference clip (~1 MB at 192 kbps) sits comfortably; a 3-5 minute
-// full-song cover (~4-8 MB at 192 kbps) fits with headroom. Long /
-// hi-bitrate uploads were costing render time without improving output
-// quality — the engine samples whatever you give it. Shim mirrors at
-// 15 MB (DefaultBodyLimit + handler reject). User-facing copy stays in
-// plain English: longer file = longer wait.
-const MAX_AUDIO_UPLOAD_BYTES = 15 * 1024 * 1024;
-const MAX_AUDIO_UPLOAD_LABEL = '15 MB';
-const AUDIO_FORMATS_LABEL = 'MP3, WAV, FLAC, OGG · up to 15 MB';
 
 type StudioModelKind = 'capability' | 'song' | 'fast-song' | 'unknown';
 type AudioPresetMode = 'song' | 'reference' | 'cover';
@@ -116,37 +86,6 @@ const generationPresetFor = (modelName: string, mode: AudioPresetMode): Generati
     customTimesteps: '',
   };
 };
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${bytes} B`;
-};
-
-const fileNameFromPath = (filePath?: string): string => {
-  const name = (filePath || '').replace(/\\/g, '/').split('/').pop();
-  return name || 'Audio';
-};
-
-const referenceTitle = (item: VaultItem): string => {
-  const title = (item.title || '').trim();
-  const synthetic = !title
-    || /^(untitled|gener8 output|legacy gener8 audio)$/i.test(title)
-    || /^track_\d+$/i.test(title);
-  return synthetic ? fileNameFromPath(item.file_path).replace(/\.[^.]+$/, '') : title;
-};
-
-const vaultItemToReferenceTrack = (item: VaultItem): ReferenceTrack => ({
-  id: item.id,
-  filename: referenceTitle(item),
-  storage_key: item.file_path,
-  duration: item.duration_seconds ?? null,
-  file_size_bytes: item.file_size_bytes ?? null,
-  tags: item.tags ?? [],
-  created_at: new Date(item.created_at || Date.now()).toISOString(),
-  audio_url: vaultFileUrl(item.file_path),
-  deletable: ['reference', 'cover_source'].includes(item.asset_kind || ''),
-});
 
 const KEY_SIGNATURES = [
   '',
@@ -321,7 +260,7 @@ const RepaintRangeSlider: React.FC<RepaintRangeSliderProps> = ({
 };
 
 export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerating, initialData, onOpenUpgrade }) => {
-  const { isAuthenticated, token, hasTier, isTrialActive } = useAuth();
+  const { isAuthenticated, token, hasTier, isTrialActive, entitlementResolved } = useAuth();
 
   // Generation UX feedback (LOCKED 2026-04-18 in CONTEXT, wired 2026-04-26 SGT).
   // While isGenerating, the Create button transforms into a non-clickable
@@ -356,10 +295,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   // Licence-gated controls must flow through AuthContext. Demo is an
   // authenticated base tier; Pro capability paths require paid Pro+ because
   // the native shim now enforces the same boundary.
-  const canUseGener8Pro = hasTier('gener8_pro');
-  const canUseProFeatures = canUseGener8Pro;
-  const canUseReferenceCover = canUseGener8Pro;
-  const canUseAdvancedControls = canUseGener8Pro;
+  const canUseAdvancedControls = hasTier('gener8_pro');
 
   // Model selector state
   const [ditModels, setDitModels] = useState<ModelInfo[]>([]);
@@ -439,9 +375,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     await applyModelSwitch(selectedModel);
 
     try {
-      const mode: AudioPresetMode =
-        taskType === 'cover' ? 'cover' : audioTab === 'reference' ? 'reference' : 'song';
-      const preset = generationPresetFor(selectedModel, mode);
+      const preset = generationPresetFor(selectedModel, 'song');
       setInferenceSteps(preset.inferenceSteps);
       setShift(preset.shift);
       setGuidanceScale(preset.guidanceScale);
@@ -451,7 +385,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
       setCfgIntervalStart(preset.cfgIntervalStart);
       setCfgIntervalEnd(preset.cfgIntervalEnd);
       setCustomTimesteps(preset.customTimesteps);
-      if (preset.audioCoverStrength != null) setAudioCoverStrength(preset.audioCoverStrength);
 
       // 2026-05-05 SGT: CoT auto-snap per model capability.
       // All current LMs (0.6B Qwen3) support CoT. Future models without
@@ -506,16 +439,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   const [lmNegativePrompt, setLmNegativePrompt] = useState('NO USER INPUT');
 
   // Expert Parameters (now in Advanced section)
-  const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
-  const [sourceAudioUrl, setSourceAudioUrl] = useState('');
-  const [referenceAudioLabel, setReferenceAudioLabel] = useState('');
-  const [sourceAudioLabel, setSourceAudioLabel] = useState('');
   const [audioCodes, setAudioCodes] = useState('');
   const [repaintingStart, setRepaintingStart] = useState(0);
   const [repaintingEnd, setRepaintingEnd] = useState(-1);
   const [instruction, setInstruction] = useState('Fill the audio semantic mask based on the given conditions:');
-  const [audioCoverStrength, setAudioCoverStrength] = useState(1.0);
-  const [taskType, setTaskType] = useState('text2music');
   const [useAdg, setUseAdg] = useState(false);
   const [cfgIntervalStart, setCfgIntervalStart] = useState(0.0);
   const [cfgIntervalEnd, setCfgIntervalEnd] = useState(1.0);
@@ -541,37 +468,9 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   // Vocal Gender
   const [vocalGender, setVocalGender] = useState<'auto' | 'male' | 'female'>('auto');
 
-  // Cover source track display
-  const [coverSong, setCoverSong] = useState<Song | null>(null);
-
   // Patch (Style) selection
   const [activePatchKeyword, setActivePatchKeyword] = useState<string | null>(null);
   const [activePatchName, setActivePatchName] = useState<string | null>(null);
-
-  const [isUploadingReference, setIsUploadingReference] = useState(false);
-  const [isUploadingSource, setIsUploadingSource] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const referenceInputRef = useRef<HTMLInputElement>(null);
-  const sourceInputRef = useRef<HTMLInputElement>(null);
-  const [showAudioModal, setShowAudioModal] = useState(false);
-  const [audioModalTarget, setAudioModalTarget] = useState<'reference' | 'source'>('reference');
-  const [tempAudioUrl, setTempAudioUrl] = useState('');
-  // Three-mode input rail (added 2026-05-01 SGT): 'song' = pure
-  // text-to-song, no audio reference; 'reference' = style inspiration
-  // from uploaded audio; 'source' = full Cover restyle. Default lands on
-  // 'song' so a fresh customMode panel opens with no audio chrome and
-  // the user has an explicit pill for the prompt-only path. Body
-  // content (explanation, drop zone, players, From-Library / Upload
-  // pair) is gated on audioTab !== 'song' below.
-  const [audioTab, setAudioTab] = useState<'song' | 'reference' | 'source'>('song');
-  const referenceAudioRef = useRef<HTMLAudioElement>(null);
-  const sourceAudioRef = useRef<HTMLAudioElement>(null);
-  const [referencePlaying, setReferencePlaying] = useState(false);
-  const [sourcePlaying, setSourcePlaying] = useState(false);
-  const [referenceTime, setReferenceTime] = useState(0);
-  const [sourceTime, setSourceTime] = useState(0);
-  const [referenceDuration, setReferenceDuration] = useState(0);
-  const [sourceDuration, setSourceDuration] = useState(0);
 
   const applyGenerationPreset = useCallback((preset: GenerationPreset, options?: { snapCoverStrength?: boolean }) => {
     setInferenceSteps(preset.inferenceSteps);
@@ -583,43 +482,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     setCfgIntervalStart(preset.cfgIntervalStart);
     setCfgIntervalEnd(preset.cfgIntervalEnd);
     setCustomTimesteps(preset.customTimesteps);
-    if (options?.snapCoverStrength && preset.audioCoverStrength != null) {
-      setAudioCoverStrength(preset.audioCoverStrength);
-    }
   }, []);
-
-  // Reference tracks modal state
-  const [referenceTracks, setReferenceTracks] = useState<ReferenceTrack[]>([]);
-  const [isLoadingTracks, setIsLoadingTracks] = useState(false);
-  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
-  const modalAudioRef = useRef<HTMLAudioElement>(null);
-  const [modalTrackTime, setModalTrackTime] = useState(0);
-  const [modalTrackDuration, setModalTrackDuration] = useState(0);
-
-  const uploadedAudioLabels = useMemo(
-    () => new Map([
-      [referenceAudioUrl, referenceAudioLabel],
-      [sourceAudioUrl, sourceAudioLabel],
-    ].filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1]))),
-    [referenceAudioUrl, referenceAudioLabel, sourceAudioUrl, sourceAudioLabel],
-  );
-
-  const filenameToTitle = (name: string) => {
-    const withoutExt = name.replace(/\.[^.]+$/, '');
-    return withoutExt.replace(/\s+/g, ' ').trim();
-  };
-
-  const getAudioLabel = (url: string) => {
-    const uploadedLabel = uploadedAudioLabels.get(url);
-    if (uploadedLabel) return uploadedLabel;
-    try {
-      const parsed = new URL(url);
-      return decodeURIComponent(parsed.pathname.split('/').pop() || parsed.hostname);
-    } catch {
-      const parts = url.split('/');
-      return decodeURIComponent(parts[parts.length - 1] || url);
-    }
-  };
 
   // Resize Logic
   const [lyricsHeight, setLyricsHeight] = useState(() => {
@@ -647,38 +510,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     setInstrumental((song.lyrics || '').length === 0);
 
     if (mode === 'cover') {
-      // Cover mode: set task to cover, load the source audio URL, store song for display.
-      // IMPORTANT: shim expects /audio/<key> format, NOT full http:// URLs.
-      // mapWireSong resolves /audio/ paths to full URLs for playback; normalize
-      // through the same request-path helper the generate API uses.
-      setTaskType('cover');
-      setAudioTab('source');
-      const rawAudioUrl =
-        (song as any).audio_key
-          ? `/audio/${(song as any).audio_key}`
-          : (song as any).audio_url || song.audioUrl || '';
-      const audioUrl = getAudioRequestPath(rawAudioUrl) || '';
-      setSourceAudioUrl(audioUrl);
-      setSourceAudioLabel(song.title || '');
-      setCoverSong(song);
       if (canUseAdvancedControls) setShowAdvanced(true);
       if (song.duration) {
         setDuration(Math.round(Number(song.duration)));
       }
-      applyGenerationPreset(
-        generationPresetFor(getCapabilityModel() || loadedModel || selectedModel, 'cover'),
-        { snapCoverStrength: true },
-      );
-    } else {
-      // Reuse mode: default text2music, clear source audio, land on
-      // Song pill so the input rail matches the empty-audio default.
-      setTaskType('text2music');
-      setAudioTab('song');
-      setSourceAudioUrl('');
-      setReferenceAudioUrl('');
-      setSourceAudioLabel('');
-      setReferenceAudioLabel('');
-      setCoverSong(null);
     }
 
     // 2026-05-04 SGT (Sean directive): Reuse Prompt scope is now strictly
@@ -699,10 +534,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     // settings stay tuned to whatever model is currently loaded. No
     // more "8 steps + CFG 1.0 sent to Base = noise" cross-pollution.
     //
-    // The Cover branch at L426 still bumps inferenceSteps to 32 if
-    // currently below 16 because Cover physically requires base-quality
-    // step count regardless of which model is loaded. That's a Cover-
-    // specific clamp, not a DNA reuse.
     if (song.generation_params) {
       // Intentionally not parsing or applying gp — see comment above.
       // Keep this block here as a marker so future contributors don't
@@ -802,61 +633,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   }, [loadedModel]);
 
   useEffect(() => {
-    const mode: AudioPresetMode =
-      taskType === 'cover' ? 'cover' : audioTab === 'reference' ? 'reference' : 'song';
-    const targetModel =
-      mode === 'song'
-        ? (loadedModel || selectedModel || getSongModel())
-        : (getCapabilityModel() || loadedModel || selectedModel);
-
+    const targetModel = loadedModel || selectedModel || getSongModel();
     if (!targetModel) return;
-    applyGenerationPreset(generationPresetFor(targetModel, mode), {
-      snapCoverStrength: mode === 'cover',
-    });
-  }, [
-    taskType,
-    audioTab,
-    loadedModel,
-    selectedModel,
-    getSongModel,
-    getCapabilityModel,
-    applyGenerationPreset,
-  ]);
-
-  useEffect(() => {
-    if (!ditModels.length || isSwitchingModel) return;
-    const wantsCapabilityModel =
-      canUseReferenceCover &&
-      (taskType === 'cover' || audioTab === 'reference');
-    const desired = wantsCapabilityModel ? getCapabilityModel() : getSongModel();
-    if (!desired) return;
-    setSelectedModel(desired);
-    if (wantsCapabilityModel && desired !== loadedModel) {
-      void applyModelSwitch(desired);
-    }
-  }, [
-    ditModels,
-    taskType,
-    audioTab,
-    canUseReferenceCover,
-    getCapabilityModel,
-    getSongModel,
-    loadedModel,
-    isSwitchingModel,
-    applyModelSwitch,
-  ]);
-
-  useEffect(() => {
-    if (canUseReferenceCover) return;
-    if (audioTab !== 'song' || taskType !== 'text2music') {
-      setAudioTab('song');
-      setTaskType('text2music');
-      setReferenceAudioUrl('');
-      setSourceAudioUrl('');
-      setCoverSong(null);
-      setShowAdvanced(false);
-    }
-  }, [canUseReferenceCover, audioTab, taskType]);
+    applyGenerationPreset(generationPresetFor(targetModel, 'song'));
+  }, [loadedModel, selectedModel, getSongModel, applyGenerationPreset]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -905,79 +685,9 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     };
   }, [isResizing]);
 
-  useEffect(() => {
-    if (taskType !== 'cover') return;
-    const sourceSeconds = Number(coverSong?.duration || sourceDuration || 0);
-    if (sourceSeconds > 0) {
-      setDuration(Math.round(sourceSeconds));
-    }
-  }, [taskType, coverSong?.duration, sourceDuration]);
-
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
-  };
-
-  const uploadAudio = async (file: File, target: 'reference' | 'source') => {
-    if (!token) {
-      setUploadError('Please sign in to upload audio.');
-      return;
-    }
-    // Client-side size reject. Skips the network round-trip for files
-    // we know the shim will reject, avoiding a multi-second upload
-    // progress and then a 413.
-    if (file.size > MAX_AUDIO_UPLOAD_BYTES) {
-      setUploadError(
-        `Your file is ${formatFileSize(file.size)}. The max is ${MAX_AUDIO_UPLOAD_LABEL}. ` +
-          `Try a shorter clip, or save your file at a smaller quality (a 5-minute song at 192 kbps mp3 is under 10 MB).`,
-      );
-      return;
-    }
-    setUploadError(null);
-    const setUploading = target === 'reference' ? setIsUploadingReference : setIsUploadingSource;
-    const setUrl = target === 'reference' ? setReferenceAudioUrl : setSourceAudioUrl;
-    const setLabel = target === 'reference' ? setReferenceAudioLabel : setSourceAudioLabel;
-    const setAudioDuration = target === 'reference' ? setReferenceDuration : setSourceDuration;
-    setUploading(true);
-    try {
-      const result = await generateApi.uploadAudio(
-        file,
-        token,
-        target === 'reference' ? 'reference' : 'cover_source',
-      );
-      const displayName = result.original_filename || result.filename || file.name;
-      setUrl(result.url);
-      setLabel(displayName);
-      if (target === 'source') {
-        setTitle(filenameToTitle(displayName));
-      }
-      // 2026-05-04 SGT (Bug E fix): consume server-probed duration if
-      // available. WebView2 returns Infinity for VBR / chunked MP3 so the
-      // browser fallback at <audio onLoadedMetadata> can't be trusted.
-      // Symphonia probe in shim's upload_audio handler is authoritative.
-      // Falls through to onLoadedMetadata if the server probe failed.
-      if (typeof result.duration_seconds === 'number' && result.duration_seconds > 0) {
-        setAudioDuration(result.duration_seconds);
-        if (target === 'source') {
-          setDuration(Math.round(result.duration_seconds));
-        }
-      }
-      setShowAudioModal(false);
-      setTempAudioUrl('');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
-      setUploadError(message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, target: 'reference' | 'source') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      void uploadAudio(file, target);
-    }
-    e.target.value = '';
   };
 
   // Style Assist: hit the local /lm endpoint via /api/generate/format to
@@ -1019,180 +729,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     }
   }, [token, style, lyrics, bpm, duration, keyScale, timeSignature, lmTemperature, lmTopK, lmTopP]);
 
-  const openAudioModal = (target: 'reference' | 'source') => {
-    setAudioModalTarget(target);
-    setTempAudioUrl('');
-    setShowAudioModal(true);
-    void fetchReferenceTracks();
-  };
-
-  const fetchReferenceTracks = useCallback(async () => {
-    if (!token) return;
-    setIsLoadingTracks(true);
-    setUploadError(null);
-    try {
-      const response = await vaultSearch('', 'audio', 'newest', 500, 0);
-      const tracks = response.items
-        .filter((item) => {
-          if (item.media_type !== 'audio') return false;
-          if (item.is_stem || item.asset_kind === 'stem') return false;
-          return ['gener8_song', 'reference', 'cover_source', 'local_audio'].includes(item.asset_kind || '');
-        })
-        .map(vaultItemToReferenceTrack);
-      setReferenceTracks(tracks);
-    } catch (err) {
-      console.error('Failed to fetch reference tracks:', err);
-      setUploadError(err instanceof Error ? err.message : 'Could not load Vault audio.');
-    } finally {
-      setIsLoadingTracks(false);
-    }
-  }, [token]);
-
   const handlePatchChange = useCallback((patch: PatchManifest | null, keyword: string | null) => {
     setActivePatchKeyword(keyword);
     setActivePatchName(patch?.name || null);
   }, []);
-
-  const uploadReferenceTrack = async (file: File) => {
-    if (!token) {
-      setUploadError('Please sign in to upload audio.');
-      return;
-    }
-    if (file.size > MAX_AUDIO_UPLOAD_BYTES) {
-      setUploadError(
-        `Your file is ${formatFileSize(file.size)}. The max is ${MAX_AUDIO_UPLOAD_LABEL}. ` +
-          `Try a shorter clip, or save your file at a smaller quality (a 5-minute song at 192 kbps mp3 is under 10 MB).`,
-      );
-      return;
-    }
-    setUploadError(null);
-    setIsUploadingReference(true);
-    try {
-      const assetKind: VaultAssetKind = audioModalTarget === 'reference' ? 'reference' : 'cover_source';
-      const uploaded = await generateApi.uploadAudio(file, token, assetKind);
-      const track: ReferenceTrack = {
-        id: uploaded.key,
-        filename: uploaded.original_filename || uploaded.filename || file.name,
-        storage_key: uploaded.url,
-        duration: uploaded.duration_seconds ?? null,
-        file_size_bytes: uploaded.size_bytes ?? file.size,
-        tags: ['gener8', assetKind],
-        created_at: new Date().toISOString(),
-        audio_url: vaultFileUrl(uploaded.url),
-        deletable: true,
-      };
-
-      setReferenceTracks(prev => [track, ...prev.filter(t => t.id !== track.id)]);
-
-      // Also set as current reference/source
-      if (audioModalTarget === 'reference') {
-        setReferenceAudioUrl(track.storage_key);
-        setReferenceAudioLabel(track.filename || file.name);
-      } else {
-        setSourceAudioUrl(track.storage_key);
-        setSourceAudioLabel(track.filename || file.name);
-        setTitle(filenameToTitle(track.filename || file.name));
-      }
-      setShowAudioModal(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
-      setUploadError(message);
-    } finally {
-      setIsUploadingReference(false);
-    }
-  };
-
-  const deleteReferenceTrack = async (trackId: string) => {
-    if (!token) return;
-    const track = referenceTracks.find(t => t.id === trackId);
-    if (track && !track.deletable) return;
-    try {
-      await vaultDeleteItem(trackId);
-      setReferenceTracks(prev => prev.filter(t => t.id !== trackId));
-      if (playingTrackId === trackId) {
-        setPlayingTrackId(null);
-        if (modalAudioRef.current) {
-          modalAudioRef.current.pause();
-        }
-      }
-    } catch (err) {
-      console.error('Failed to delete track:', err);
-    }
-  };
-
-  const useReferenceTrack = (track: ReferenceTrack) => {
-    if (audioModalTarget === 'reference') {
-      setReferenceAudioUrl(track.storage_key || track.audio_url);
-      setReferenceAudioLabel(track.filename);
-    } else {
-      setSourceAudioUrl(track.storage_key || track.audio_url);
-      setSourceAudioLabel(track.filename);
-      setTitle(filenameToTitle(track.filename));
-    }
-    setShowAudioModal(false);
-    setPlayingTrackId(null);
-  };
-
-  const toggleModalTrack = (track: ReferenceTrack) => {
-    if (playingTrackId === track.id) {
-      if (modalAudioRef.current) {
-        modalAudioRef.current.pause();
-      }
-      setPlayingTrackId(null);
-    } else {
-      setPlayingTrackId(track.id);
-      if (modalAudioRef.current) {
-        modalAudioRef.current.src = track.audio_url;
-        modalAudioRef.current.play().catch(() => undefined);
-      }
-    }
-  };
-
-  const applyAudioUrl = () => {
-    if (!tempAudioUrl.trim()) return;
-    if (audioModalTarget === 'reference') {
-      setReferenceAudioUrl(tempAudioUrl.trim());
-      setReferenceAudioLabel('');
-      setReferenceTime(0);
-      setReferenceDuration(0);
-    } else {
-      setSourceAudioUrl(tempAudioUrl.trim());
-      setSourceAudioLabel('');
-      setSourceTime(0);
-      setSourceDuration(0);
-    }
-    setShowAudioModal(false);
-    setTempAudioUrl('');
-  };
-
-  const formatTime = (time: number) => {
-    if (!Number.isFinite(time) || time <= 0) return '0:00';
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${String(seconds).padStart(2, '0')}`;
-  };
-
-  const toggleAudio = (target: 'reference' | 'source') => {
-    const audio = target === 'reference' ? referenceAudioRef.current : sourceAudioRef.current;
-    if (!audio) return;
-    if (audio.paused) {
-      audio.play().catch(() => undefined);
-    } else {
-      audio.pause();
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, target: 'reference' | 'source') => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      void uploadAudio(file, target);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
 
   // Auto-title: extract first chorus line, or first lyric line, when title is empty
   const deriveTitle = (lyricsText: string): string => {
@@ -1219,35 +759,24 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     return '';
   };
 
-  const handleGenerate = () => {
-    if ((taskType === 'cover' || audioTab === 'reference') && !canUseReferenceCover) {
-      showToast({ message: 'Reference and Cover require Gener8 Pro', kind: 'warning' });
-      return;
-    }
-    if (taskType === 'cover' && !sourceAudioUrl.trim()) {
-      showToast({ message: 'Choose a source track before creating an AI Cover', kind: 'warning' });
-      setAudioTab('source');
-      openAudioModal('source');
-      return;
-    }
-    if ((taskType === 'cover' || audioTab === 'reference') && !getCapabilityModel()) {
-      showToast({ message: 'Download Pro Model before using Reference or Cover', kind: 'warning' });
-      return;
-    }
-
-    // Auto-populate title field if empty
-    if (!title.trim() && lyrics.trim()) {
-      const derived = deriveTitle(lyrics);
-      if (derived) setTitle(derived);
-    }
-
-    // Bulk generation: loop bulkCount times
-    for (let i = 0; i < bulkCount; i++) {
+  const buildBaseCreateFields = useCallback(({
+    mode = 'song',
+    synthModel,
+    sourceTag,
+    index,
+    audioCoverStrength,
+  }: {
+    mode?: CreateMode;
+    synthModel?: string;
+    sourceTag?: 'reference' | 'cover';
+    index: number;
+    audioCoverStrength?: number;
+  }): BaseCreateFields => {
       // Seed handling: first job uses user's seed, rest get random seeds
       let jobSeed = -1;
-      if (!randomSeed && i === 0) {
+      if (!randomSeed && index === 0) {
         jobSeed = seed;
-      } else if (!randomSeed && i > 0) {
+      } else if (!randomSeed && index > 0) {
         // Subsequent jobs get random seeds for variety
         jobSeed = Math.floor(Math.random() * 4294967295);
       }
@@ -1260,14 +789,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         if (baseStyle.toLowerCase().includes(genderTag)) return baseStyle;
         return baseStyle.trim() ? `${baseStyle.trim()}, ${genderTag}` : genderTag;
       })();
-      const wantsCapabilityModel =
-        taskType === 'cover' || audioTab === 'reference';
-      const effectiveSynthModel = wantsCapabilityModel
-        ? getCapabilityModel()
-        : (selectedModel || loadedModel || getSongModel());
+      const wantsCapabilityModel = mode === 'reference' || mode === 'cover';
+      const effectiveSynthModel = synthModel || selectedModel || loadedModel || getSongModel();
       const effectivePreset = generationPresetFor(
         effectiveSynthModel || loadedModel || selectedModel,
-        taskType === 'cover' ? 'cover' : audioTab === 'reference' ? 'reference' : 'song',
+        mode,
       );
       const effectiveInferenceSteps =
         wantsCapabilityModel && inferenceSteps < 32 ? effectivePreset.inferenceSteps : inferenceSteps;
@@ -1276,7 +802,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
       const effectiveShift =
         wantsCapabilityModel && (shift < 1 || shift > 5) ? effectivePreset.shift : shift;
 
-      onGenerate({
+      return {
         // 2026-05-04 SGT (#36): customMode + songDescription dropped from
         // the contract. Custom is the only mode. Legacy state still
         // exists locally but is no longer sent.
@@ -1302,14 +828,9 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
             .trim();
           // Annotate the generation source so Reference and Cover renders
           // are distinguishable in the library and Generation DNA panel.
-          const sourceTag =
-            taskType === 'cover'
-              ? ' (cover)'
-              : audioTab === 'reference' && referenceAudioUrl.trim()
-              ? ' (reference)'
-              : '';
-          const bulkTag = bulkCount > 1 ? ` (${i + 1})` : '';
-          return `${effectiveTitle}${sourceTag}${bulkTag}`;
+          const labelTag = sourceTag ? ` (${sourceTag})` : '';
+          const bulkTag = bulkCount > 1 ? ` (${index + 1})` : '';
+          return `${effectiveTitle}${labelTag}${bulkTag}`;
         })(),
         instrumental,
         vocalLanguage,
@@ -1320,7 +841,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         inferenceSteps: effectiveInferenceSteps,
         guidanceScale: effectiveGuidanceScale,
         batchSize: 1, // task #57: single ace-server job per call; UI loop produces multiple tracks via bulkCount. See Variations control above.
-        randomSeed: randomSeed || i > 0, // Force random for subsequent bulk jobs
+        randomSeed: randomSeed || index > 0, // Force random for subsequent bulk jobs
         seed: jobSeed,
         thinking: wantsCapabilityModel ? effectivePreset.thinking : thinking,
         audioFormat,
@@ -1331,14 +852,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         lmTopK,
         lmTopP,
         lmNegativePrompt,
-        referenceAudioUrl: referenceAudioUrl.trim() || undefined,
-        sourceAudioUrl: sourceAudioUrl.trim() || undefined,
         audioCodes: audioCodes.trim() || undefined,
         repaintingStart,
         repaintingEnd,
         instruction,
         audioCoverStrength,
-        taskType,
         useAdg,
         cfgIntervalStart: wantsCapabilityModel ? effectivePreset.cfgIntervalStart : cfgIntervalStart,
         cfgIntervalEnd: wantsCapabilityModel ? effectivePreset.cfgIntervalEnd : cfgIntervalEnd,
@@ -1363,7 +881,70 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
             .filter(Boolean);
           return parsed.length ? parsed : undefined;
         })(),
-      });
+      };
+  }, [
+    randomSeed,
+    seed,
+    styleAssistEnabled,
+    enhancedStyle,
+    style,
+    vocalGender,
+    instrumental,
+    selectedModel,
+    loadedModel,
+    getSongModel,
+    inferenceSteps,
+    guidanceScale,
+    shift,
+    activePatchKeyword,
+    title,
+    lyrics,
+    bulkCount,
+    vocalLanguage,
+    bpm,
+    keyScale,
+    timeSignature,
+    duration,
+    thinking,
+    audioFormat,
+    inferMethod,
+    lmTemperature,
+    lmCfgScale,
+    lmTopK,
+    lmTopP,
+    lmNegativePrompt,
+    audioCodes,
+    repaintingStart,
+    repaintingEnd,
+    instruction,
+    useAdg,
+    cfgIntervalStart,
+    cfgIntervalEnd,
+    customTimesteps,
+    useCotMetas,
+    useCotCaption,
+    useCotLanguage,
+    autogen,
+    constrainedDecodingDebug,
+    allowLmBatch,
+    getScores,
+    getLrc,
+    scoreScale,
+    lmBatchChunkSize,
+    trackName,
+    completeTrackClasses,
+  ]);
+
+  const handleGenerate = () => {
+    // Auto-populate title field if empty
+    if (!title.trim() && lyrics.trim()) {
+      const derived = deriveTitle(lyrics);
+      if (derived) setTitle(derived);
+    }
+
+    // Bulk generation: loop bulkCount times
+    for (let i = 0; i < bulkCount; i++) {
+      onGenerate(buildSongPayload(buildBaseCreateFields({ mode: 'song', index: i })));
     }
 
     // Reset bulk count after generation
@@ -1378,39 +959,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
       data-tour="gener8-create-panel"
     >
       <div className="p-4 pt-14 md:pt-4 space-y-5">
-        <input
-          ref={referenceInputRef}
-          type="file"
-          accept="audio/*"
-          onChange={(e) => handleFileSelect(e, 'reference')}
-          className="hidden"
-        />
-        <input
-          ref={sourceInputRef}
-          type="file"
-          accept="audio/*"
-          onChange={(e) => handleFileSelect(e, 'source')}
-          className="hidden"
-        />
-        <audio
-          ref={referenceAudioRef}
-          src={referenceAudioUrl || undefined}
-          onPlay={() => setReferencePlaying(true)}
-          onPause={() => setReferencePlaying(false)}
-          onEnded={() => setReferencePlaying(false)}
-          onTimeUpdate={(e) => setReferenceTime(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => setReferenceDuration(e.currentTarget.duration || 0)}
-        />
-        <audio
-          ref={sourceAudioRef}
-          src={sourceAudioUrl || undefined}
-          onPlay={() => setSourcePlaying(true)}
-          onPause={() => setSourcePlaying(false)}
-          onEnded={() => setSourcePlaying(false)}
-          onTimeUpdate={(e) => setSourceTime(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => setSourceDuration(e.currentTarget.duration || 0)}
-        />
-
         {/* Header - Branding + Mode Toggle */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -1431,7 +979,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         </div>
 
         {/* Model Selector — compact inline */}
-        {canUseProFeatures && ditModels.length > 0 && (
+        {ditModels.length > 0 && (
           <div className="flex items-center gap-2 px-1">
             <Cpu size={12} className="text-zinc-400 flex-shrink-0" />
             <select
@@ -1468,592 +1016,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
           </div>
         )}
 
-        {/* Task Mode Banner — visible outside Creative Controls for non-text2music modes */}
-        {taskType !== 'text2music' && !coverSong && (
-          <div
-            className="ew-card flex items-center justify-between px-3 py-2.5"
-            style={{
-              background: 'var(--ew-primary-soft)',
-              borderColor: 'var(--ew-primary)',
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <Disc3 size={14} className="text-accent-500" />
-              <span className="text-xs font-bold text-accent-400 uppercase">
-                {taskType === 'cover' ? 'AI Cover' : taskType === 'repaint' ? 'Repaint' : taskType === 'extract' ? 'Extract Stems' : taskType === 'lego' ? 'Lego Remix' : taskType === 'complete' ? 'Auto-Complete' : taskType}
-              </span>
-              {!getCapabilityModel() && ['extract', 'lego', 'complete'].includes(taskType) && (
-                <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">Requires Pro Model</span>
-              )}
-            </div>
-            <button
-              onClick={() => { setTaskType('text2music'); setSourceAudioUrl(''); setSourceAudioLabel(''); setCoverSong(null); }}
-              className="p-1 text-zinc-400 hover:text-zinc-300"
-              title="Switch back to Text to Music"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-
-        {/* Cover Source Track Card */}
-        {coverSong && taskType === 'cover' && (
-          <div
-            className="ew-card overflow-hidden"
-            style={{
-              background: 'var(--ew-primary-soft)',
-              borderColor: 'var(--ew-primary)',
-            }}
-          >
-            <div className="px-3 py-2 flex items-center justify-between bg-accent-500/5 dark:bg-accent-500/5 border-b border-accent-500/10">
-              <div className="flex items-center gap-2">
-                <Disc3 size={14} className="text-accent-500" />
-                <span className="text-[11px] font-bold uppercase tracking-wide text-accent-600 dark:text-accent-400">Covering</span>
-              </div>
-              <button
-                onClick={() => {
-                  setCoverSong(null);
-                  setTaskType('text2music');
-                  setSourceAudioUrl('');
-                  setSourceAudioLabel('');
-                }}
-                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                title="Remove cover source"
-              >
-                <X size={14} />
-              </button>
-            </div>
-            <div className="px-3 py-3 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-200 dark:bg-zinc-800 shadow-sm">
-                {coverSong.coverUrl ? (
-                  <img src={coverSong.coverUrl} alt={coverSong.title} className="w-full h-full object-cover" />
-                ) : (
-                  <AlbumCover seed={coverSong.id || coverSong.title} size="full" className="w-full h-full" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{coverSong.title}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                  {coverSong.style ? (
-                    <>{coverSong.style.slice(0, 60)}{coverSong.style.length > 60 ? '...' : ''}</>
-                  ) : (
-                    'No style tags'
-                  )}
-                </div>
-                {coverSong.duration && (
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-                    {Math.floor(Number(coverSong.duration) / 60)}:{String(Math.floor(Number(coverSong.duration) % 60)).padStart(2, '0')} · Source Influence: {(audioCoverStrength * 100).toFixed(0)}%
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Inline Source Influence slider + Pro Model guidance */}
-            <div className="px-3 py-3 border-t border-accent-500/10 space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wide text-accent-600 dark:text-accent-400">Source Influence</label>
-                <span className="text-xs font-mono text-zinc-900 dark:text-white bg-zinc-100 dark:bg-black/20 px-2 py-0.5 rounded">{(audioCoverStrength * 100).toFixed(0)}%</span>
-              </div>
-              <input
-                type="range" min="0" max="1" step="0.05" value={audioCoverStrength}
-                onChange={(e) => setAudioCoverStrength(Number(e.target.value))}
-                className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
-              />
-              <p className="text-[10px] text-zinc-500">
-                {audioCoverStrength >= 0.85
-                  ? 'Very high: stays close to original, minimal style/lyric changes. Lower to 60-75% for restyling.'
-                  : audioCoverStrength >= 0.6
-                  ? 'Good balance: recognizable source with room for style and lyric changes.'
-                  : audioCoverStrength >= 0.3
-                  ? 'Loose inspiration: keeps structure hints, mostly regenerates from your text.'
-                  : 'Minimal influence: source audio nearly ignored.'}
-              </p>
-              {isFastTurboModel(loadedModel) && (
-                <div
-                  className="ew-card flex items-center gap-2 p-2"
-                  style={{
-                    background: 'color-mix(in srgb, var(--ew-warning) 12%, transparent)',
-                    borderColor: 'color-mix(in srgb, var(--ew-warning) 35%, transparent)',
-                  }}
-                >
-                  <AlertTriangle size={12} className="text-amber-500 shrink-0" />
-                  <p className="text-[10px] text-amber-400">
-                    Cover needs the Pro Model for full fidelity.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* 2026-05-04 SGT (#36): Simple Mode JSX killed. Custom is the
             only mode now; tier-gating handled inline at Reference/Cover
             pills and Show Advanced toggle. */}
         <div className="space-y-5">
-            {/* Audio Section */}
-            <div
-              onDrop={(e) => { if (audioTab !== 'song') handleDrop(e, audioTab); }}
-              onDragOver={handleDragOver}
-              className="ew-card overflow-hidden"
-            >
-              {/* Header with Audio label and tabs */}
-              <div className="px-3 py-2.5 border-b border-zinc-100 dark:border-white/5 bg-zinc-50 dark:bg-white/[0.02]">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Audio</span>
-                  {/* Reference / Cover mode toggle — ghost rail same as
-                      Simple/Custom above. Active state inverts to primary. */}
-                  <div
-                    className="flex items-center gap-0 p-0.5"
-                    style={{
-                      background: 'var(--ew-surface-raised)',
-                      border: '1px solid var(--ew-border)',
-                    }}
-                  >
-                    {/* Song pill (added 2026-05-01 SGT). Pure
-                        text-to-song: lyrics + style tags drive the
-                        output, no audio reference required. Selecting
-                        this pill clears any uploaded reference/source
-                        audio and any cover-reuse song so the payload
-                        cleanly omits referenceAudioUrl / sourceAudioUrl
-                        / coverSong on the next CREATE. */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAudioTab('song');
-                        setTaskType('text2music');
-                        setReferenceAudioUrl('');
-                        setSourceAudioUrl('');
-                        setReferenceAudioLabel('');
-                        setSourceAudioLabel('');
-                        setCoverSong(null);
-                        applyGenerationPreset(
-                          generationPresetFor(loadedModel || selectedModel || getSongModel(), 'song'),
-                        );
-                      }}
-                      className={`ew-btn ew-btn--sm ${audioTab === 'song' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
-                    >
-                      Song
-                    </button>
-                    {canUseReferenceCover && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAudioTab('reference');
-                            if (taskType === 'cover') {
-                              setTaskType('text2music');
-                            }
-                            applyGenerationPreset(
-                              generationPresetFor(getCapabilityModel() || loadedModel || selectedModel, 'reference'),
-                            );
-                          }}
-                          className={`ew-btn ew-btn--sm ${audioTab === 'reference' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
-                        >
-                          Reference
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAudioTab('source');
-                            setTaskType('cover');
-                            applyGenerationPreset(
-                              generationPresetFor(getCapabilityModel() || loadedModel || selectedModel, 'cover'),
-                              { snapCoverStrength: true },
-                            );
-                            if (canUseAdvancedControls) setShowAdvanced(true);
-                            if (!sourceAudioUrl.trim()) {
-                              openAudioModal('source');
-                            }
-                          }}
-                          className={`ew-btn ew-btn--sm ${audioTab === 'source' ? 'ew-btn--primary' : 'ew-btn--ghost'}`}
-                        >
-                          Cover
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Audio body (added gate 2026-05-01 SGT): everything from
-                  the explanation paragraph through the From-Library /
-                  Upload pair is hidden when audioTab === 'song'. The
-                  card collapses to header + pill rail in pure
-                  text-to-song mode so the user sees no audio chrome
-                  unless they explicitly opt in via the Reference or
-                  Cover pill. */}
-              {audioTab !== 'song' && (
-                <>
-              {/* Mode explanation. Both Reference and Cover ride better on
-                  the Pro capability model. Keep this copy product-facing;
-                  raw GGUF filenames and quant names belong in diagnostics,
-                  not the generation panel. */}
-              <div className="px-3 pt-2">
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                  {audioTab === 'reference'
-                    ? 'Style inspiration only. The AI listens to this track for vibe, genre, and energy, then generates something new. Reference needs the Pro Model for full fidelity.'
-                    : 'Full restyle. The AI reconstructs this track with your new style and lyrics painted over the original structure. Cover needs the Pro Model for quality results.'}
-                </p>
-              </div>
-
-              {/* Reference + Turbo warning — kept as fallback context for
-                  trial / base / anonymous tiers. Paid Pro users get a
-                  more actionable BetterModelsBanner just below with a
-                  Download Pro Model CTA wired to /api/engine/install-pack.
-                  2026-05-03 LATE NIGHT SGT (handover P3.3). */}
-              {audioTab === 'reference' && isFastTurboModel(loadedModel) && (
-                <div className="px-3 pt-2">
-                  <div
-                    className="ew-card flex items-center gap-2 p-2"
-                    style={{
-                      background: 'color-mix(in srgb, var(--ew-warning) 12%, transparent)',
-                      borderColor: 'color-mix(in srgb, var(--ew-warning) 35%, transparent)',
-                    }}
-                  >
-                    <AlertTriangle size={12} className="text-amber-500 shrink-0" />
-                    <p className="text-[10px] text-amber-400">
-                      Reference and Cover need the Pro Model for full fidelity.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* BetterModelsBanner — paid Pro / Creator Studio users see
-                  an actionable download CTA when the better_models pack
-                  isn't on disk. Internally checks /api/engine/pack-status
-                  on mount + tier change; renders nothing for trial users,
-                  base users, or when the pack is already present.
-                  2026-05-03 LATE NIGHT SGT (handover P3.3-P3.5).
-
-                  onInstalled: 2026-05-04 SGT — after the pack lands the
-                  engine still has Turbo loaded. Auto-fetch the refreshed
-                  model list, find the XL Base entry, and trigger a
-                  model switch to it. The existing auto-snap useEffect
-                  watches loadedModel, so once the switch completes the
-                  inference settings (steps / CFG / shift / thinking /
-                  batch) auto-set to Base defaults. User-friendly: one
-                  click "Download Pro Model" delivers a tuned capability
-                  setup without manual model-selector hunting. */}
-              <BetterModelsBanner
-                show={audioTab === 'reference' || audioTab === 'source'}
-                onInstalled={() => {
-                  if (!token) return;
-                  engineApi
-                    .models(token)
-                    .then((inv) => {
-                      setDitModels(inv.models || []);
-                      const baseEntry = inv.models?.find(
-                        (m) =>
-                          m.name.includes('base') ||
-                          !m.name.includes('turbo'),
-                      );
-                      if (baseEntry && baseEntry.name !== loadedModel) {
-                        setSelectedModel(baseEntry.name);
-                        // Trigger the same path the model-selector click uses,
-                        // but inline so we don't depend on selectedModel state
-                        // having committed before handleModelSwitch reads it.
-                        setIsSwitchingModel(true);
-                        engineApi
-                          .init({ model: baseEntry.name }, token)
-                          .then((result) => {
-                            setLoadedModel(result.loaded_model || baseEntry.name);
-                          })
-                          .catch((err) => {
-                            console.warn(
-                              '[CreatePanel] auto-switch to Base after install failed',
-                              err,
-                            );
-                          })
-                          .finally(() => setIsSwitchingModel(false));
-                      }
-                    })
-                    .catch((err) => {
-                      console.warn(
-                        '[CreatePanel] could not refresh model list after install',
-                        err,
-                      );
-                    });
-                }}
-              />
-
-              {/* Audio Content */}
-              <div className="p-3 space-y-2">
-                {/* Reference Audio Player. Reference uses --ew-primary
-                    so it tracks the active skin. Source (below) uses
-                    --ew-warm for visual distinction between the two
-                    audio inputs in Cover mode. EWDS retheme polish
-                    2026-04-25 SGT. */}
-                {audioTab === 'reference' && referenceAudioUrl && (
-                  <div
-                    className="flex items-center gap-3 p-2"
-                    style={{
-                      background: 'var(--ew-surface-sunken)',
-                      border: '1px solid var(--ew-border)',
-                      clipPath: 'var(--ew-clip-button-sm)',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleAudio('reference')}
-                      className="relative flex-shrink-0 w-10 h-10 flex items-center justify-center transition-transform hover:scale-105"
-                      style={{
-                        background: 'var(--ew-primary)',
-                        color: 'var(--ew-primary-fg)',
-                        clipPath: 'var(--ew-clip-button-sm)',
-                        boxShadow: 'var(--ew-shadow-glow)',
-                      }}
-                    >
-                      {referencePlaying ? (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                      ) : (
-                        <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                      )}
-                      <span
-                        className="absolute -bottom-1 -right-1 px-1 py-0.5 tabular-nums"
-                        style={{
-                          fontFamily: 'var(--ew-font-mono)',
-                          fontSize: 8,
-                          fontWeight: 600,
-                          background: 'var(--ew-bg)',
-                          color: 'var(--ew-text)',
-                          border: '1px solid var(--ew-border-strong)',
-                        }}
-                      >
-                        {formatTime(referenceDuration)}
-                      </span>
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="truncate mb-1.5"
-                        style={{ fontSize: 12, fontWeight: 500, color: 'var(--ew-text)' }}
-                      >
-                        {getAudioLabel(referenceAudioUrl)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="tabular-nums"
-                          style={{ fontSize: 10, color: 'var(--ew-text-faint)', fontFamily: 'var(--ew-font-mono)' }}
-                        >{formatTime(referenceTime)}</span>
-                        <div
-                          className="flex-1 h-1.5 cursor-pointer group/seek"
-                          style={{ background: 'var(--ew-surface-sunken)', border: '1px solid var(--ew-border)' }}
-                          onClick={(e) => {
-                            if (referenceAudioRef.current && referenceDuration > 0) {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              const percent = (e.clientX - rect.left) / rect.width;
-                              referenceAudioRef.current.currentTime = percent * referenceDuration;
-                            }
-                          }}
-                        >
-                          <div
-                            className="h-full transition-all relative"
-                            style={{
-                              width: referenceDuration ? `${Math.min(100, (referenceTime / referenceDuration) * 100)}%` : '0%',
-                              background: 'var(--ew-primary)',
-                            }}
-                          />
-                        </div>
-                        <span
-                          className="tabular-nums"
-                          style={{ fontSize: 10, color: 'var(--ew-text-faint)', fontFamily: 'var(--ew-font-mono)' }}
-                        >{formatTime(referenceDuration)}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setReferenceAudioUrl(''); setReferenceAudioLabel(''); setReferencePlaying(false); setReferenceTime(0); setReferenceDuration(0); }}
-                      className="p-1.5 transition-colors"
-                      style={{ color: 'var(--ew-text-faint)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ew-danger)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ew-text-faint)')}
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                )}
-
-                {/* Source/Cover Audio Player. Uses --ew-warm so it reads
-                    distinctly from the reference player above (which
-                    uses --ew-primary). Helps users tell at a glance
-                    which slot they are filling in Cover mode. */}
-                {audioTab === 'source' && sourceAudioUrl && (
-                  <div
-                    className="flex items-center gap-3 p-2"
-                    style={{
-                      background: 'var(--ew-surface-sunken)',
-                      border: '1px solid var(--ew-border)',
-                      clipPath: 'var(--ew-clip-button-sm)',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleAudio('source')}
-                      className="relative flex-shrink-0 w-10 h-10 flex items-center justify-center transition-transform hover:scale-105"
-                      style={{
-                        background: 'var(--ew-warm)',
-                        color: 'var(--ew-text-inverse)',
-                        clipPath: 'var(--ew-clip-button-sm)',
-                      }}
-                    >
-                      {sourcePlaying ? (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>
-                      ) : (
-                        <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                      )}
-                      <span
-                        className="absolute -bottom-1 -right-1 px-1 py-0.5 tabular-nums"
-                        style={{
-                          fontFamily: 'var(--ew-font-mono)',
-                          fontSize: 8,
-                          fontWeight: 600,
-                          background: 'var(--ew-bg)',
-                          color: 'var(--ew-text)',
-                          border: '1px solid var(--ew-border-strong)',
-                        }}
-                      >
-                        {formatTime(sourceDuration)}
-                      </span>
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="truncate mb-1.5"
-                        style={{ fontSize: 12, fontWeight: 500, color: 'var(--ew-text)' }}
-                      >
-                        {getAudioLabel(sourceAudioUrl)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="tabular-nums"
-                          style={{ fontSize: 10, color: 'var(--ew-text-faint)', fontFamily: 'var(--ew-font-mono)' }}
-                        >{formatTime(sourceTime)}</span>
-                        <div
-                          className="flex-1 h-1.5 cursor-pointer group/seek"
-                          style={{ background: 'var(--ew-surface-sunken)', border: '1px solid var(--ew-border)' }}
-                          onClick={(e) => {
-                            if (sourceAudioRef.current && sourceDuration > 0) {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              const percent = (e.clientX - rect.left) / rect.width;
-                              sourceAudioRef.current.currentTime = percent * sourceDuration;
-                            }
-                          }}
-                        >
-                          <div
-                            className="h-full transition-all relative"
-                            style={{
-                              width: sourceDuration ? `${Math.min(100, (sourceTime / sourceDuration) * 100)}%` : '0%',
-                              background: 'var(--ew-warm)',
-                            }}
-                          />
-                        </div>
-                        <span
-                          className="tabular-nums"
-                          style={{ fontSize: 10, color: 'var(--ew-text-faint)', fontFamily: 'var(--ew-font-mono)' }}
-                        >{formatTime(sourceDuration)}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setSourceAudioUrl(''); setSourceAudioLabel(''); setSourcePlaying(false); setSourceTime(0); setSourceDuration(0); }}
-                      className="p-1.5 transition-colors"
-                      style={{ color: 'var(--ew-text-faint)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ew-danger)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ew-text-faint)')}
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                )}
-
-                {/* Inline Source Influence — visible in Cover tab when source audio is loaded */}
-                {audioTab === 'source' && sourceAudioUrl && (
-                  <div
-                    className="ew-card p-2.5 space-y-1.5"
-                    style={{ background: 'var(--ew-surface-raised)' }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Source Influence</span>
-                      <span className="text-[11px] font-mono text-zinc-900 dark:text-white">{(audioCoverStrength * 100).toFixed(0)}%</span>
-                    </div>
-                    <input
-                      type="range" min="0" max="1" step="0.05" value={audioCoverStrength}
-                      onChange={(e) => setAudioCoverStrength(Number(e.target.value))}
-                      className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
-                    />
-                    <p className="text-[9px] text-zinc-400">
-                      {audioCoverStrength >= 0.85 ? 'Very faithful to original. Lower to 60-75% if lyrics/style should change.'
-                        : audioCoverStrength >= 0.6 ? 'Good balance: recognizable source + your style/lyric changes.'
-                        : audioCoverStrength >= 0.3 ? 'Loose inspiration. Keeps structure, mostly regenerates.'
-                        : 'Minimal. Source nearly ignored.'}
-                    </p>
-                    {isFastTurboModel(loadedModel) && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <AlertTriangle size={10} className="text-amber-500 shrink-0" />
-                        <span className="text-[9px] text-amber-400">Cover needs the Pro Model for full fidelity.</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action buttons. From-library + Upload pair routed
-                    through .ew-btn ghost so they pick up the chamfer per
-                    skin and the hover state shifts to --ew-primary.
-                    flex:1 + justifyContent:center kept inline since
-                    .ew-btn defaults to inline-flex without flex-grow. */}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openAudioModal(audioTab)}
-                    className="ew-btn ew-btn--ghost ew-btn--sm"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                    </svg>
-                    From library
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (audioTab === 'reference') {
-                        referenceInputRef.current?.click();
-                      } else {
-                        sourceInputRef.current?.click();
-                      }
-                    }}
-                    className="ew-btn ew-btn--ghost ew-btn--sm"
-                    style={{ flex: 1, justifyContent: 'center' }}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                    </svg>
-                    Upload
-                  </button>
-                </div>
-
-                {/* Upload size + speed guidance, plain-English. Sean's
-                    call 2026-05-04 SGT: dummies-language, no "VRAM" /
-                    "conditioning". The longer your audio, the longer
-                    you wait — that's the whole story the user needs. */}
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1.5">
-                  {AUDIO_FORMATS_LABEL}.{' '}
-                  {audioTab === 'reference'
-                    ? 'A 30 to 60 second clip works best. The longer your file, the longer your song takes to make.'
-                    : 'A 3 to 5 minute song works best. The longer your file, the longer your song takes to make.'}
-                </p>
-
-                {uploadError && (
-                  <div
-                    className="mt-2 text-[11px]"
-                    style={{ color: 'var(--ew-warning, #ef4444)' }}
-                  >
-                    {uploadError}
-                  </div>
-                )}
-              </div>
-                </>
-              )}
-            </div>
-
             {/* Title Input — first field in creation flow (2026-05-05 SGT).
                 Sits above Lyrics so users name their track before writing. */}
             <div>
@@ -2306,6 +1272,22 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               />
             )}
 
+            {shouldMountProAudioModule(entitlementResolved, hasTier('gener8_pro')) && (
+              <ProAudioModePanel
+                token={token}
+                isGenerating={isGenerating}
+                bulkCount={bulkCount}
+                initialData={initialData}
+                ditModels={ditModels}
+                loadedModel={loadedModel}
+                onModelsRefresh={setDitModels}
+                onUseCapabilityModel={applyModelSwitch}
+                buildBaseFields={buildBaseCreateFields}
+                onGenerate={onGenerate}
+                onBulkReset={() => setBulkCount(1)}
+              />
+            )}
+
           </div>
 
         {/* COMMON SETTINGS */}
@@ -2512,7 +1494,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Quality</label>
                 <span className="text-xs font-mono text-zinc-900 dark:text-white bg-zinc-100 dark:bg-black/20 px-2 py-0.5 rounded">
                   {(() => {
-                    const capabilityMode = taskType === 'cover' || audioTab === 'reference' || modelKind(loadedModel) === 'capability';
+                    const capabilityMode = modelKind(loadedModel) === 'capability';
                     if (isFastTurboModel(loadedModel) && !capabilityMode) {
                       return `${inferenceSteps <= 4 ? 'Draft' : inferenceSteps <= 8 ? 'Standard' : 'High'} (${inferenceSteps})`;
                     }
@@ -2524,7 +1506,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                 </span>
               </div>
               {(() => {
-                const capabilityMode = taskType === 'cover' || audioTab === 'reference' || modelKind(loadedModel) === 'capability';
+                const capabilityMode = modelKind(loadedModel) === 'capability';
                 const isTurbo = isFastTurboModel(loadedModel) && !capabilityMode;
 
                 const presets = capabilityMode
@@ -2572,13 +1554,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                         ? 'Turbo models are fast — 8 steps is the sweet spot. Going higher won\'t help.'
                         : '50 steps is the sweet spot for the Song Model. Fast is a preview; High spends more time exploring.'}
                     </p>
-                    {['cover', 'extract', 'lego', 'complete'].includes(taskType) && isTurbo && (
-                      <p className="text-[10px] text-amber-500 font-medium mt-0.5">
-                        {taskType === 'cover'
-                          ? 'Cover needs the Pro Model for faithful results.'
-                          : `${taskType.charAt(0).toUpperCase() + taskType.slice(1)} needs the Pro Model for clean results.`}
-                      </p>
-                    )}
                   </>
                 );
               })()}
@@ -2617,7 +1592,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
 
             {/* Style Influence — maps to guidance_scale, range is per-model */}
             {(() => {
-              const capabilityMode = taskType === 'cover' || audioTab === 'reference' || modelKind(loadedModel) === 'capability';
+              const capabilityMode = modelKind(loadedModel) === 'capability';
               const cfgMin = capabilityMode ? 1.0 : 0.5;
               const cfgMax = capabilityMode ? 15.0 : 1.5;
               const cfgStep = capabilityMode ? 0.5 : 0.1;
@@ -2646,7 +1621,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
 
             {/* Weirdness — maps to shift (noise schedule), range is per-model */}
             {(() => {
-              const capabilityMode = taskType === 'cover' || audioTab === 'reference' || modelKind(loadedModel) === 'capability';
+              const capabilityMode = modelKind(loadedModel) === 'capability';
               const isTurbo = isFastTurboModel(loadedModel) && !capabilityMode;
               const shiftMin = capabilityMode ? 1.0 : isTurbo ? 2.0 : 0.5;
               const shiftMax = capabilityMode ? 5.0 : isTurbo ? 4.0 : 2.5;
@@ -2784,10 +1759,10 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
             {/* Sync Lyrics — Pro tier. Generates time-synced LRC
                 data alongside audio for SRT/ASS subtitle export + Vid
                 Studio overlay. ON by default for Pro users. */}
-            <div className={`flex items-center justify-between py-1 ${!canUseGener8Pro ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`flex items-center justify-between py-1 ${!hasTier('gener8_pro') ? 'opacity-50 pointer-events-none' : ''}`}>
               <div className="flex-1">
                 <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Sync Lyrics</span>
-                {!canUseGener8Pro ? (
+                {!hasTier('gener8_pro') ? (
                   <p className="text-[10px] text-accent-500 font-medium">Upgrade to Gener8 Pro for time-synced lyrics</p>
                 ) : (
                   <p className="text-[10px] text-zinc-500">Time-synced lyrics for SRT subtitle export and Vid Studio overlay.</p>
@@ -2800,96 +1775,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                 <div className={`w-4 h-4 rounded-full bg-white transform transition-transform duration-200 shadow-sm ${getLrc ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
-
-            {/* Creation Mode — contextual, only show when relevant */}
-            {(taskType !== 'text2music' || coverSong) && (
-              <div className="border-t border-zinc-200 dark:border-white/10 pt-3">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mb-3">Source Audio Settings</p>
-              </div>
-            )}
-
-            {/* Creation Mode dropdown removed — text2music / cover /
-                reference are already reachable via the Reference/Cover
-                toggles at the top of the panel. Repaint / Extract / Lego
-                are Creator Studio tier features; Complete/Extend deserves
-                its own per-track "Extend this" affordance in the library
-                rather than a buried dropdown. */}
-
-            {/* Source Influence — only show for cover/repaint modes */}
-            {(taskType === 'cover' || taskType === 'repaint') && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Source Influence</label>
-                  <span className="text-xs font-mono text-zinc-900 dark:text-white bg-zinc-100 dark:bg-black/20 px-2 py-0.5 rounded">{(audioCoverStrength * 100).toFixed(0)}%</span>
-                </div>
-                <input
-                  type="range" min="0" max="1" step="0.05" value={audioCoverStrength}
-                  onChange={(e) => setAudioCoverStrength(Number(e.target.value))}
-                  className="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent-500"
-                />
-                <p className="text-[10px] text-zinc-500">
-                  {audioCoverStrength >= 0.85
-                    ? 'Very high: close to original but leaves little room for lyric/style changes. Try 60-75% if you want the AI to restyle.'
-                    : audioCoverStrength >= 0.6
-                    ? 'Good balance: recognizable source with room for your style and lyric changes to take effect.'
-                    : audioCoverStrength >= 0.3
-                    ? 'Loose inspiration: keeps structure hints but mostly regenerates from your text description.'
-                    : 'Minimal influence: the source audio is almost ignored. Essentially a new generation.'}
-                </p>
-                {taskType === 'cover' && isFastTurboModel(loadedModel) && (
-                  <p className="text-[10px] text-amber-500 font-medium mt-1">
-                    Cover needs the Pro Model for faithful results.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Repainting range — only for repaint mode */}
-            {taskType === 'repaint' && (
-              <div className="space-y-3">
-                {/* Visual range bar */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Select Range</label>
-                  <RepaintRangeSlider
-                    start={repaintingStart}
-                    end={repaintingEnd}
-                    duration={sourceAudioUrl ? duration : duration}
-                    onStartChange={setRepaintingStart}
-                    onEndChange={setRepaintingEnd}
-                  />
-                </div>
-
-                {/* Number inputs for precise entry */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Replace From (sec)</label>
-                    <input
-                      type="number" step="0.1" value={repaintingStart}
-                      onChange={(e) => setRepaintingStart(Math.max(0, Number(e.target.value)))}
-                      className="w-full ew-input px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Replace To (sec)</label>
-                    <input
-                      type="number" step="0.1" value={repaintingEnd}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        if (val === -1 || val > repaintingStart) {
-                          setRepaintingEnd(val);
-                        }
-                      }}
-                      className="w-full ew-input px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-none"
-                    />
-                    <p className="text-[10px] text-zinc-500">-1 = end of track</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {uploadError && (
-              <div className="text-[11px] text-rose-500">{uploadError}</div>
-            )}
 
             {/* LM Generation Settings — controls for the 5Hz LM during generation */}
             <div className="border-t border-zinc-200 dark:border-white/10 pt-3 space-y-1">
@@ -2904,8 +1789,8 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               <p className="text-[10px] text-zinc-500">Controls how the AI interprets your style and lyrics during generation</p>
             </div>
             {showLmParams && (
-              <div className={`space-y-3 pl-1 ${!canUseGener8Pro ? 'opacity-50 pointer-events-none' : ''}`}>
-                {!canUseGener8Pro && (
+              <div className={`space-y-3 pl-1 ${!hasTier('gener8_pro') ? 'opacity-50 pointer-events-none' : ''}`}>
+                {!hasTier('gener8_pro') && (
                   <p className="text-[10px] text-accent-500 font-medium">Upgrade to Gener8 Pro to customise AI enhancement settings</p>
                 )}
                 <div className="space-y-1.5">
@@ -3108,218 +1993,6 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
           </div>
         )}
       </div>
-
-      {showAudioModal && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => { setShowAudioModal(false); setPlayingTrackId(null); }}
-          />
-          <div className="relative w-[92%] max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="p-5 pb-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-semibold text-zinc-900 dark:text-white">
-                    {audioModalTarget === 'reference' ? 'Reference' : 'Cover'}
-                  </h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                    {audioModalTarget === 'reference'
-                      ? 'Create songs inspired by a reference track'
-                      : 'Transform an existing track into a new version'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => { setShowAudioModal(false); setPlayingTrackId(null); }}
-                  className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/10 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-                  </svg>
-                </button>
-              </div>
-
-              {/* Upload Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.mp3,.wav,.flac,audio/*';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) void uploadReferenceTrack(file);
-                  };
-                  input.click();
-                }}
-                disabled={isUploadingReference}
-                className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-300 dark:border-white/20 bg-zinc-50 dark:bg-white/5 px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/10 hover:border-zinc-400 dark:hover:border-white/30 transition-all"
-              >
-                {isUploadingReference ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload size={16} />
-                    Upload audio
-                    <span className="text-xs text-zinc-400 ml-1">{AUDIO_FORMATS_LABEL}</span>
-                  </>
-                )}
-              </button>
-
-              {uploadError && (
-                <div className="mt-2 text-xs text-rose-500">{uploadError}</div>
-              )}
-              {typeof window !== 'undefined' && (window.location.pathname.startsWith('/stepstudio') || window.parent !== window) && (
-                <div className="mt-2 text-[10px] text-amber-500/70 flex items-center gap-1">
-                  <span>⚠</span> Demo: uploaded files are cleared after generation
-                </div>
-              )}
-            </div>
-
-            {/* Mine Section */}
-            <div className="border-t border-zinc-100 dark:border-white/5">
-              <div className="px-5 py-3 flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold">
-                  Mine
-                </span>
-              </div>
-
-              {/* Track List */}
-              <div className="max-h-[280px] overflow-y-auto">
-                {isLoadingTracks ? (
-                  <div className="px-5 py-8 text-center">
-                    <RefreshCw size={20} className="animate-spin mx-auto text-zinc-400" />
-                    <p className="text-xs text-zinc-400 mt-2">Loading tracks...</p>
-                  </div>
-                ) : referenceTracks.length === 0 ? (
-                  <div className="px-5 py-8 text-center">
-                    <Music2 size={24} className="mx-auto text-zinc-300 dark:text-zinc-600" />
-                    <p className="text-sm text-zinc-400 mt-2">No tracks yet</p>
-                    <p className="text-xs text-zinc-400 mt-1">Upload audio files to use them as references</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-zinc-100 dark:divide-white/5">
-                    {referenceTracks.map((track) => (
-                      <div
-                        key={track.id}
-                        className="px-5 py-3 flex items-center gap-3 hover:bg-zinc-50 dark:hover:bg-white/[0.02] transition-colors group"
-                      >
-                        {/* Play Button */}
-                        <button
-                          type="button"
-                          onClick={() => toggleModalTrack(track)}
-                          className="flex-shrink-0 w-9 h-9 rounded-full bg-zinc-100 dark:bg-white/10 text-zinc-600 dark:text-zinc-300 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-white/20 transition-colors"
-                        >
-                          {playingTrackId === track.id ? (
-                            <Pause size={14} fill="currentColor" />
-                          ) : (
-                            <Play size={14} fill="currentColor" className="ml-0.5" />
-                          )}
-                        </button>
-
-                        {/* Track Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                              {track.filename.replace(/\.[^/.]+$/, '')}
-                            </span>
-                            {track.tags && track.tags.length > 0 && (
-                              <div className="flex gap-1">
-                                {track.tags.slice(0, 2).map((tag, i) => (
-                                  <span key={i} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400">
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          {/* Progress bar with seek - show when this track is playing */}
-                          {playingTrackId === track.id ? (
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <span className="text-[10px] text-zinc-400 tabular-nums w-8">
-                                {formatTime(modalTrackTime)}
-                              </span>
-                              <div
-                                className="flex-1 h-1.5 rounded-full bg-zinc-200 dark:bg-white/10 cursor-pointer group/seek"
-                                onClick={(e) => {
-                                  if (modalAudioRef.current && modalTrackDuration > 0) {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const percent = (e.clientX - rect.left) / rect.width;
-                                    modalAudioRef.current.currentTime = percent * modalTrackDuration;
-                                  }
-                                }}
-                              >
-                                <div
-                                  className="h-full bg-gradient-to-r from-accent-500 to-purple-500 rounded-full relative"
-                                  style={{ width: modalTrackDuration > 0 ? `${(modalTrackTime / modalTrackDuration) * 100}%` : '0%' }}
-                                >
-                                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow-md opacity-0 group-hover/seek:opacity-100 transition-opacity" />
-                                </div>
-                              </div>
-                              <span className="text-[10px] text-zinc-400 tabular-nums w-8 text-right">
-                                {formatTime(modalTrackDuration)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-zinc-400 mt-0.5">
-                              {track.duration ? formatTime(track.duration) : '--:--'}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => useReferenceTrack(track)}
-                            className="px-3 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
-                          >
-                            Use
-                          </button>
-                          {track.deletable && (
-                            <button
-                              type="button"
-                              onClick={() => void deleteReferenceTrack(track.id)}
-                              className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-400 hover:text-rose-500 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Hidden audio element for modal playback */}
-            <audio
-              ref={modalAudioRef}
-              onTimeUpdate={() => {
-                if (modalAudioRef.current) {
-                  setModalTrackTime(modalAudioRef.current.currentTime);
-                }
-              }}
-              onLoadedMetadata={() => {
-                if (modalAudioRef.current) {
-                  setModalTrackDuration(modalAudioRef.current.duration);
-                  const track = referenceTracks.find(t => t.id === playingTrackId);
-                  if (track && !track.duration) {
-                    setReferenceTracks(prev => prev.map(t =>
-                      t.id === track.id ? { ...t, duration: Math.round(modalAudioRef.current?.duration || 0) } : t
-                    ));
-                  }
-                }
-              }}
-              onEnded={() => setPlayingTrackId(null)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Footer: Usage Tier + Create Button */}
       <div className="p-4 mt-auto sticky bottom-0 backdrop-blur-sm z-10 border-t space-y-3" style={{ background: 'var(--s3-panel, #14151C)', borderColor: 'var(--s3-border, rgba(255,255,255,0.05))' }}>

@@ -27,7 +27,6 @@ export {
   vaultRegisterVideo,
   vaultFileUrl,
   vaultThumbnailUrl,
-  runGener8VaultAudioImport,
 } from './vault';
 export type {
   VaultItem,

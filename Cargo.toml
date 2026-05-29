@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "crates/applet-ipc",
     "crates/beats-engine",
-    "crates/data-migration",
     "crates/model-manager",
     "crates/vault",
     "crates/mait",

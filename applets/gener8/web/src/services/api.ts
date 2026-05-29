@@ -47,6 +47,7 @@ import {
   type VaultItem,
 } from '@everywear/transport';
 import { supabase } from '../lib/supabase';
+import type { CreatePayload } from '../pro/proPayloadBuilder';
 
 // ─── API base resolution ────────────────────────────────────────────────────
 
@@ -423,12 +424,11 @@ interface Comment {
 //  songs come from the local shim as LibraryTrack, translated by
 //  `trackToSong` further down.)
 
-// ─── Local library adapter ─────────────────────────────────────────────────
+// ─── Everywear Vault library adapter ───────────────────────────────────────
 //
-// Songs and playlists moved OFF Supabase and onto the Tauri shim's local
-// library.json (ported from the legacy hub at
-// strands-sound-studio/packages/hub). Supabase remains AUTH-ONLY for this
-// release; Phase 2 social sharing will opt tracks UP, not move them.
+// Songs moved OFF Supabase and legacy flat-file storage into Everywear Vault.
+// Supabase remains AUTH-ONLY for this release; Phase 2 social sharing will
+// opt tracks UP, not move them.
 //
 // On-disk shape: `LibraryTrack` (camelCase, see src-tauri/src/library.rs).
 // UI shape: `Song` (snake_case + camelCase duplicates, see above). The
@@ -542,9 +542,8 @@ async function currentUserId(): Promise<string | undefined> {
 
 export const songsApi = {
   /** Local library. Per-user folder-segmented (#26, 2026-05-02 SGT): the
-   *  shim resolves the bearer token to a folder_key and reads only that
-   *  user's library.json. Token MUST be threaded through; calls without
-   *  it 401 from the auth_extract middleware. */
+ *  transport resolves the bearer token through the shell and reads the
+ *  user's Everywear Vault. Token MUST be threaded through. */
   getMySongs: async (token: string): Promise<{ songs: Song[] }> => {
     const body = await api<{ tracks: LibraryTrackWire[]; total: number }>(
       '/api/songs?limit=500&sortBy=createdAt&sortDir=desc',
@@ -689,64 +688,7 @@ export const songsApi = {
 // Generation API — local engine
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface GenerationParams {
-  // 2026-05-04 SGT (#36): customMode + songDescription removed; Custom is
-  // the only mode, tier-gating governs panel surface. Mirror of the
-  // canonical type in src/types.ts.
-  prompt?: string;
-  lyrics: string;
-  style: string;
-  title: string;
-  // 2026-05-04 SGT (engine-detected model swap): forwarded directly to
-  // ace-server's ServerFields.synth_model. ace-server lazy-loads + swaps
-  // at request time; no /init call needed.
-  synth_model?: string;
-  instrumental: boolean;
-  vocalLanguage?: string;
-  duration?: number;
-  bpm?: number;
-  keyScale?: string;
-  timeSignature?: string;
-  inferenceSteps?: number;
-  guidanceScale?: number;
-  batchSize?: number;
-  randomSeed?: boolean;
-  seed?: number;
-  thinking?: boolean;
-  audioFormat?: 'mp3' | 'flac';
-  inferMethod?: 'ode' | 'sde';
-  shift?: number;
-  lmTemperature?: number;
-  lmCfgScale?: number;
-  lmTopK?: number;
-  lmTopP?: number;
-  lmNegativePrompt?: string;
-  referenceAudioUrl?: string;
-  sourceAudioUrl?: string;
-  audioCodes?: string;
-  repaintingStart?: number;
-  repaintingEnd?: number;
-  instruction?: string;
-  audioCoverStrength?: number;
-  taskType?: string;
-  useAdg?: boolean;
-  cfgIntervalStart?: number;
-  cfgIntervalEnd?: number;
-  customTimesteps?: string;
-  useCotMetas?: boolean;
-  useCotCaption?: boolean;
-  useCotLanguage?: boolean;
-  autogen?: boolean;
-  constrainedDecodingDebug?: boolean;
-  allowLmBatch?: boolean;
-  getScores?: boolean;
-  getLrc?: boolean;
-  scoreScale?: number;
-  lmBatchChunkSize?: number;
-  trackName?: string;
-  completeTrackClasses?: string[];
-  sourceSongTitle?: string;
-}
+export type GenerationParams = CreatePayload;
 
 export interface GenerationJob {
   jobId: string;
@@ -897,11 +839,19 @@ async function handleLocalPlaylists<T>(_endpoint: string, method: string, body: 
 }
 
 function normalizeGenerationParams(params: GenerationParams): GenerationParams {
-  return {
-    ...params,
-    referenceAudioUrl: getAudioRequestPath(params.referenceAudioUrl),
-    sourceAudioUrl: getAudioRequestPath(params.sourceAudioUrl),
-  };
+  if (params.mode === 'reference') {
+    return {
+      ...params,
+      referenceAudioUrl: getAudioRequestPath(params.referenceAudioUrl) || params.referenceAudioUrl,
+    };
+  }
+  if (params.mode === 'cover') {
+    return {
+      ...params,
+      sourceAudioUrl: getAudioRequestPath(params.sourceAudioUrl) || params.sourceAudioUrl,
+    };
+  }
+  return params;
 }
 
 export const generateApi = {
