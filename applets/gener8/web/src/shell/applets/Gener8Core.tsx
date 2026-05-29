@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CreatePanel } from '@/components/CreatePanel';
 import { SongList } from '@/components/SongList';
 import { RightSidebar } from '@/components/RightSidebar';
-import { LibraryView as VaultLibraryView } from '@/views/LibraryView';
+import VaultLibraryView from '@/views/LibraryView';
 import { PlaylistDetail } from '@/components/PlaylistDetail';
 import { UserProfile } from '@/components/UserProfile';
 import { SongProfile } from '@/components/SongProfile';
