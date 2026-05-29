@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.16
-Last updated: 2026-05-29 (Live QA S3 Gate and EWDS Chrome Split)
+Version: 1.1.17
+Last updated: 2026-05-29 (Gener8 Library Compile Repair and Debug Build)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -162,6 +162,15 @@ Maintainer: Sean Uddin / Somo Kasane
 > barcodes, serials, JP labels, registration marks, traffic-light side,
 > chrome-density, bevel degree, and rounded/cut-corner controls must visibly
 > survive into Settings and applet chrome.
+>
+> Current-state note, 2026-05-29 v1.1.17: The Gener8 shell route compile break
+> from the Pro audio extraction pass was repaired. `Gener8Core.tsx` now imports
+> the Everywear Vault `LibraryView` through its default export, matching
+> `applets/gener8/web/src/views/LibraryView.tsx`. `npm run build --workspace
+> everywear-os` and `cargo build -p everywear-os` both passed after the repair,
+> producing a fresh debug Everywear OS executable at
+> `C:\Users\MAG MSI\Project Everywear\target\debug\everywear-os.exe` with
+> timestamp 2026-05-29 13:02:55 SGT. Live runtime QA remains separate.
 
 ## Current State Addendum 2026-05-28: Identity, Vault, Entitlement, and Engine Migration Contract
 
