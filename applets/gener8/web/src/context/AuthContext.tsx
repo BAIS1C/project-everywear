@@ -31,7 +31,9 @@ interface AuthContextValue {
   isLoading: boolean;
   entitlementResolved: boolean;
   isTrialActive: boolean;
-  hasTier: (tier: 'gener8' | 'gener8_base' | 'gener8_pro' | 'creator_studio' | 'vid_pro' | 'daw_pro') => boolean;
+  canUseVidPro: boolean;
+  canRemoveWatermark: boolean;
+  hasTier: (tier: 'gener8' | 'gener8_base' | 'gener8_pro' | 'creator_studio' | 'vid' | 'vid_pro' | 'daw_pro') => boolean;
   setupUser: () => Promise<void>;
   logout: () => Promise<void>;
   /** Request fresh auth state from shell. */
@@ -46,6 +48,8 @@ const AuthCtx = createContext<AuthContextValue>({
   isLoading: true,
   entitlementResolved: false,
   isTrialActive: true,
+  canUseVidPro: false,
+  canRemoveWatermark: false,
   hasTier: () => false,
   setupUser: async () => {},
   logout: async () => {},
@@ -64,8 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [entitlementResolved, setEntitlementResolved] = useState(false);
 
   const refresh = async () => {
+    let resolved = true;
     try {
       const result = await getAuthContext();
+      resolved = result?.entitlement_resolved ?? true;
       setUser(result ? {
         id: result.id,
         email: result.email || '',
@@ -83,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } finally {
       setIsLoading(false);
-      setEntitlementResolved(true);
+      setEntitlementResolved(resolved);
     }
   };
 
@@ -94,7 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const tier = user?.tier ?? 'demo';
   const token = user ? 'everywear-shell-session' : null;
   const hasTier: AuthContextValue['hasTier'] = (required) => {
-    if (required === 'vid_pro' || required === 'daw_pro') {
+    if (required === 'vid') {
+      return tier === 'gener8' || tier === 'gener8_pro' || tier === 'creator_studio';
+    }
+    if (required === 'vid_pro') {
+      return tier === 'gener8_pro' || tier === 'creator_studio';
+    }
+    if (required === 'daw_pro') {
       return tier === 'creator_studio';
     }
     const normalized = required === 'gener8_base' ? 'gener8' : required;
@@ -107,6 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return rank[tier] >= rank[normalized as Tier];
   };
 
+  const isTrialActive = tier === 'demo';
+  const canUseVidPro = hasTier('vid_pro');
+  const canRemoveWatermark = canUseVidPro && !isTrialActive;
+
   return (
     <AuthCtx.Provider
       value={{
@@ -116,7 +132,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         entitlementResolved,
-        isTrialActive: tier === 'demo',
+        isTrialActive,
+        canUseVidPro,
+        canRemoveWatermark,
         hasTier,
         setupUser: refresh,
         logout: async () => setUser(null),

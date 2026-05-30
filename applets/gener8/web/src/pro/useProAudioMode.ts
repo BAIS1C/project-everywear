@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from 'react';
 
-export type ProAudioMode = 'song' | 'reference' | 'cover';
+export type ProAudioMode = 'reference' | 'cover';
 
 export interface ProAudioState {
   mode: ProAudioMode;
@@ -38,18 +38,6 @@ export function proAudioReducer(
 ): ProAudioState {
   switch (action.type) {
     case 'setMode':
-      if (action.mode === 'song') {
-        return {
-          ...state,
-          mode: 'song',
-          referenceAudioUrl: '',
-          referenceAudioLabel: '',
-          referenceDuration: 0,
-          sourceAudioUrl: '',
-          sourceAudioLabel: '',
-          sourceDuration: 0,
-        };
-      }
       if (action.mode === 'reference') {
         return {
           ...state,

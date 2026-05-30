@@ -210,6 +210,7 @@ pub struct AuthReport {
     pub tier: &'static str,
     pub is_paid: bool,
     pub is_pro: bool,
+    pub entitlement_resolved: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -303,6 +304,7 @@ pub async fn push_auth_state(
         tier: tier.as_str(),
         is_paid: tier.is_paid(),
         is_pro: tier.is_pro(),
+        entitlement_resolved: true,
     })
 }
 
@@ -325,6 +327,7 @@ pub async fn get_auth_context(
             "tier": tier.as_str(),
             "is_paid": tier.is_paid(),
             "is_pro": tier.is_pro(),
+            "entitlement_resolved": true,
             "entitlements": &*entitlements,
         }))),
         None => Ok(None),
@@ -344,6 +347,7 @@ pub async fn check_licence(state: tauri::State<'_, crate::AppState>) -> Result<A
         tier: tier.as_str(),
         is_paid: tier.is_paid(),
         is_pro: tier.is_pro(),
+        entitlement_resolved: true,
     })
 }
 

@@ -25,6 +25,7 @@ import { Song, GenerationParams, View, Playlist } from '@/types';
 import { generateApi, getAudioRequestPath, songsApi, playlistsApi } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useResponsive } from '@/context/ResponsiveContext';
+import { useLaunchManifest } from '@/context/LaunchManifestContext';
 import { useShellAudio } from '@/shell/ShellAudioPlayer';
 import { useSongStore } from '@/shell/SongStoreContext';
 import { openVidWithSong, sendToStudio, areModelsUnloaded } from '@/shell/intentBus';
@@ -323,6 +324,7 @@ function Gener8Nav({
 
 export default function Gener8Core() {
   const { isMobile } = useResponsive();
+  const launchManifest = useLaunchManifest();
   const { user, token, isAuthenticated, isLoading: authLoading, setupUser, logout, hasTier } = useAuth();
   const audio = useShellAudio();
   const songStore = useSongStore();
@@ -759,9 +761,18 @@ export default function Gener8Core() {
   };
 
   const openVideoGenerator = (song: Song) => {
-    // In Everywear mode, dispatch intent to open Vid applet
+    // In Everywear mode, dispatch intent to the single Vid Studio applet.
     try {
-      openVidWithSong('gener8', song.id, song.title);
+      openVidWithSong(launchManifest?.id ?? 'gener8', song.id, song.title);
+      window.dispatchEvent(new CustomEvent('everywear:launch-applet', {
+        detail: {
+          appletId: 'vid',
+          sourceApp: launchManifest?.id ?? 'gener8',
+          action: 'open-with-song',
+          songId: song.id,
+          songTitle: song.title,
+        },
+      }));
       return;
     } catch { /* fall through */ }
 
@@ -936,6 +947,7 @@ export default function Gener8Core() {
                   onGenerate={handleGenerate}
                   isGenerating={isGenerating}
                   initialData={reuseData}
+                  launchManifest={launchManifest}
                   onOpenUpgrade={() => setShowUpgradeModal(true)}
                 />
               </div>

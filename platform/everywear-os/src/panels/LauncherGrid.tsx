@@ -13,8 +13,11 @@ function iconGlyph(id: string): string {
     '3nvizen': '3N',
     'mymories': 'MY',
     'gener8': 'G8',
+    'gener8-4ever': '4E',
+    'gener8-pro': 'GP',
     'vid': 'VD',
     'ai-director': 'AD',
+    'daw': 'DW',
   };
   return map[id] || id.slice(0, 2).toUpperCase();
 }
@@ -44,12 +47,16 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
   const s3web = byId.get('s3studio');
   if (s3web) s3Children.push({ type: 'applet', applet: s3web });
 
-  const gener8 = byId.get('gener8');
-  if (gener8) s3Children.push({ type: 'applet', applet: gener8 });
+  const gener8FourEver = byId.get('gener8-4ever');
+  if (gener8FourEver) s3Children.push({ type: 'applet', applet: gener8FourEver });
+  const gener8Pro = byId.get('gener8-pro');
+  if (gener8Pro) s3Children.push({ type: 'applet', applet: gener8Pro });
   const vid = byId.get('vid');
   if (vid) s3Children.push({ type: 'applet', applet: vid });
   const director = byId.get('ai-director');
   if (director) s3Children.push({ type: 'applet', applet: director });
+  const daw = byId.get('daw');
+  if (daw) s3Children.push({ type: 'applet', applet: daw });
 
   const creatorChildren: FolderItem[] = [];
   const onemagen = byId.get('1magen');
@@ -79,7 +86,7 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
     });
   }
 
-  const grouped = new Set(['s3studio', 'gener8', 'vid', 'ai-director', '1magen', '3nvizen']);
+  const grouped = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '1magen', '3nvizen']);
   for (const applet of applets) {
     if (!grouped.has(applet.id)) {
       items.push({ type: 'applet', applet });

@@ -22,8 +22,11 @@ interface AppletIconProps {
 const APPLET_COLORS: Record<string, { primary: string; secondary: string; rgb: [number, number, number] }> = {
   '1magen':           { primary: '#00C2FF', secondary: '#0090CC', rgb: [0, 194, 255] },
   'gener8':           { primary: '#76B900', secondary: '#5A8F00', rgb: [118, 185, 0] },
+  'gener8-4ever':     { primary: '#76B900', secondary: '#5A8F00', rgb: [118, 185, 0] },
+  'gener8-pro':       { primary: '#8B5CF6', secondary: '#6D28D9', rgb: [139, 92, 246] },
   'vid':              { primary: '#E040FB', secondary: '#C000D0', rgb: [224, 64, 251] },
   'ai-director':      { primary: '#F43F5E', secondary: '#BE123C', rgb: [244, 63, 94] },
+  'daw':              { primary: '#3B82F6', secondary: '#1D4ED8', rgb: [59, 130, 246] },
   's3studio':         { primary: '#00C2FF', secondary: '#0090CC', rgb: [0, 194, 255] },
   'strands-game':     { primary: '#C4008E', secondary: '#A00074', rgb: [196, 0, 142] },
   'kasai':            { primary: '#FF8800', secondary: '#D97200', rgb: [255, 136, 0] },
@@ -43,8 +46,11 @@ const APPLET_COLORS: Record<string, { primary: string; secondary: string; rgb: [
 const MONOGRAM: Record<string, string> = {
   '1magen':           '1M',
   'gener8':           'G8',
+  'gener8-4ever':     '4E',
+  'gener8-pro':       'GP',
   'vid':              'VD',
   'ai-director':      'AD',
+  'daw':              'DW',
   's3studio':         'S3',
   'strands-game':     'SN',
   'kasai':            'MM',

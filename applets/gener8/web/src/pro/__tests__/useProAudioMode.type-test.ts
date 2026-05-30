@@ -22,8 +22,11 @@ if (withCover.referenceAudioUrl) {
   throw new Error('Cover mode must clear stale reference audio.');
 }
 
-const backToSong = proAudioReducer(withCover, { type: 'setMode', mode: 'song' });
+const backToReference = proAudioReducer(withCover, { type: 'setMode', mode: 'reference' });
 
-if (backToSong.referenceAudioUrl || backToSong.sourceAudioUrl) {
-  throw new Error('Returning to Song must clear both audio slots.');
+if (backToReference.mode !== 'reference' || backToReference.sourceAudioUrl) {
+  throw new Error('Returning to Reference must clear stale cover source audio.');
 }
+
+// @ts-expect-error Pro audio mode must never reintroduce Song.
+proAudioReducer(withCover, { type: 'setMode', mode: 'song' });

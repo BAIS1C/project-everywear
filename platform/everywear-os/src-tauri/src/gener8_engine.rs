@@ -478,7 +478,8 @@ async fn require_tier(
     required: model_manager::LicenceTier,
 ) -> Result<(), String> {
     let tier = *state.licence_tier.lock().await;
-    if tier.satisfies(required) {
+    let entitlements = state.entitlement_flags.lock().await;
+    if tier.satisfies(required) || entitlement_satisfies_tier(&entitlements, required) {
         Ok(())
     } else {
         Err(format!(
@@ -487,6 +488,19 @@ async fn require_tier(
             tier.as_str()
         ))
     }
+}
+
+fn entitlement_satisfies_tier(
+    entitlements: &HashMap<String, bool>,
+    required: model_manager::LicenceTier,
+) -> bool {
+    let keys: &[&str] = match required {
+        model_manager::LicenceTier::Demo => &[],
+        model_manager::LicenceTier::Gener8 => &["gener8", "gener8.audio"],
+        model_manager::LicenceTier::Gener8Pro => &["gener8_pro", "creator_studio"],
+        model_manager::LicenceTier::CreatorStudio => &["creator_studio", "creator_pro"],
+    };
+    keys.iter().any(|key| entitlements.get(*key).copied().unwrap_or(false))
 }
 
 async fn ensure_ace_ready(engine: Gener8Engine) -> Result<(), String> {

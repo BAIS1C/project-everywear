@@ -9,6 +9,7 @@ export interface ShellAuthContext {
   tier: LicenceTier;
   is_paid?: boolean;
   is_pro?: boolean;
+  entitlement_resolved?: boolean;
   entitlements?: Record<string, boolean>;
 }
 

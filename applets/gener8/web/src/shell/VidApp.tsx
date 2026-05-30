@@ -31,19 +31,35 @@ export default function VidApp(_props: VidAppProps = {}) {
   const [activeTab, setActiveTab] = useState<'visualiser' | 'ai-video' | 'storyboard'>('visualiser');
   // Cache hint for the empty-state Loading vs No-songs distinction.
   const hadSongsHintRef = useRef(readHasSongsHint());
+  const pendingSongIdRef = useRef<string | null>(null);
 
   // Listen for cross-app intents (e.g., camera button from Gener8)
   useEffect(() => {
     const unsub = intentBus.subscribe('vid', (intent) => {
       if (intent.action === 'open-with-song' && intent.payload?.songId) {
-        const song = songs.find(s => s.id === intent.payload!.songId);
+        const songId = String(intent.payload.songId);
+        pendingSongIdRef.current = songId;
+        const song = songs.find(s => s.id === songId);
         if (song) {
           setSelectedSong(song);
           setActiveTab('visualiser');
+          pendingSongIdRef.current = null;
         }
       }
     });
     return unsub;
+  }, [songs]);
+
+  useEffect(() => {
+    const pendingSongId = pendingSongIdRef.current;
+    if (!pendingSongId) return;
+
+    const song = songs.find(s => s.id === pendingSongId);
+    if (!song) return;
+
+    setSelectedSong(song);
+    setActiveTab('visualiser');
+    pendingSongIdRef.current = null;
   }, [songs]);
 
   return (

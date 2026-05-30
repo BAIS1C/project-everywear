@@ -1,5 +1,5 @@
 /**
- * CreateView — primary generation interface.
+ * CreateView - archived pre-split generation interface.
  *
  * Ported from S3 Studio's CreatePanel. Contains:
  *   - Prompt input with style patch strip

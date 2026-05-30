@@ -81,7 +81,9 @@ explicitly rather than inferred from the old S3 tier ladder:
 - `creator_studio`: S3 family bundle, deferred paid subscription.
 - `1magen`: applet, bundle-included, not a separate launch SKU.
 - `3nvizen`: applet, bundle-included, not a separate launch SKU.
-- `vid`: applet, included in Creator Studio, live visual parity still blocked.
+- `vid`: applet, included from Gener8 4ever onwards. Basic Vid Studio launch
+  is the single applet target; `vid_pro` is an internal feature entitlement
+  unlocked at Gener8 Pro and inherited by Creator Studio.
 - `ai_director`: Creator Studio capability using provider-routed SAPI.
 - `daw_pro`: Creator Studio capability inside Gener8.
 - `loom`: free Everywear applet.
@@ -104,10 +106,11 @@ unplumbed until that runtime bridge exists.
 Plan grants:
 
 - `free_everywear`: grants Loom, Loom Teacher Agent, Character Studio, and the hidden My Maits Lite runtime needed by Loom.
-- `gener8_4ever`: grants Gener8 and 1magen.
-- `gener8_pro`: grants Gener8, Gener8 pro model pack, 1magen, 3nvizen.
-- `creator_studio`: grants Gener8, Gener8 Pro model pack, 1magen, 3nvizen,
-  AI Director, the SAPI-targeted planner entitlement, DAW Pro, Vid, and Vid Pro.
+- `gener8_4ever`: grants Gener8, 1magen, and basic Vid Studio (`vid`).
+- `gener8_pro`: grants Gener8, Gener8 pro model pack, 1magen, and Vid Pro
+  internal features (`vid_pro`).
+- `creator_studio`: inherits lower-tier Gener8/Vid capability and adds 3nvizen,
+  AI Director, the SAPI-targeted planner entitlement, and DAW Pro.
 - `mymaits_full_addon`: grants the standalone My Maits hub and microtransaction support.
 
 Compatibility:

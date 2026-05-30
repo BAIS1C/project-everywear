@@ -81,8 +81,24 @@
 - Preview playback can use `vaultFileUrl()` / Tauri `asset:` URLs, but
   generation requests must keep the raw Vault file path so the Rust engine can
   resolve the source audio on disk.
-- Vault-backed audio and image previews require Tauri CSP support for
-  `asset:` URLs.
+- Vault-backed audio and image previews require both Tauri CSP support for
+  `asset:` URLs and `app.security.assetProtocol.enable = true` with the
+  Everywear Vault directory in `assetProtocol.scope`. The Everywear OS Tauri
+  crate must also enable the `tauri/protocol-asset` feature.
+- The shell audio element must not set `crossOrigin = 'anonymous'` for
+  Tauri `asset:` / local Vault URLs. Restrict CORS mode to HTTP(S) media.
+- `views/LibraryView.tsx` is a shell-level Vault surface. Audio rows consume
+  `useShellAudio()` directly and call `playSong(song, queue)` with Vault items
+  converted through `vaultFileUrl()`. Do not thread playback props through
+  `Gener8Core`.
+- `views/LibraryView.tsx` must normalize Vault rows once at the adapter
+  boundary with `normalizeVaultItem()`. Downstream row JSX, playback
+  conversion, detail open, and delete handling should receive a complete safe
+  shape for optional fields such as `tags`, `file_path`, `duration_seconds`,
+  `generation_params`, `applet_id`, and `title`.
+- Workspace song-row delete visibility is gated by the presence of an
+  `onDelete` handler, not by matching `song.userId` against the web auth user.
+  Vault/session ownership is enforced below the row component.
 
 **Tests**: Re-run `npm run build --workspace applets/gener8/web` and `cargo check -p everywear-os` after edits that touch this contract.
 

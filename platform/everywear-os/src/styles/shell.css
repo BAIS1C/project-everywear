@@ -460,16 +460,20 @@ body[data-mode="light"] .ew-folder-icon__badge {
   position: absolute;
   left: 82px;
   top: -4px;
+  z-index: 50;
   max-width: min(430px, calc(100vw - 120px));
   padding: 8px 10px;
   border: 1px solid color-mix(in oklab, var(--ew-primary) 30%, var(--ew-border));
   border-radius: var(--ew-radius-lg);
-  background: color-mix(in oklab, var(--ew-surface) 86%, transparent);
-  backdrop-filter: blur(18px);
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--ew-primary) 8%, transparent), transparent 62%),
+    color-mix(in oklab, var(--ew-surface-raised) 98%, black 2%);
+  backdrop-filter: blur(22px) saturate(1.08);
   clip-path: var(--ew-clip-card);
   box-shadow: var(--ew-shadow-float);
   overflow-x: auto;
   overflow-y: hidden;
+  isolation: isolate;
   animation: ew-folder-concertina 220ms cubic-bezier(0.19, 1, 0.22, 1) both;
 }
 .ew-folder-tray__rail {
@@ -481,7 +485,9 @@ body[data-mode="light"] .ew-folder-icon__badge {
   flex: 0 0 88px;
 }
 body[data-mode="light"] .ew-folder-tray {
-  background: rgba(255, 255, 255, 0.9);
+  background:
+    linear-gradient(145deg, color-mix(in oklab, var(--ew-primary) 8%, transparent), transparent 62%),
+    rgba(255, 255, 255, 0.98);
   border-color: rgba(29, 41, 60, 0.14);
   box-shadow: 0 20px 46px rgba(18, 27, 42, 0.14);
 }

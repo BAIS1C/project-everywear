@@ -57,7 +57,11 @@ class IntentBus {
 export const intentBus = new IntentBus();
 
 // Convenience dispatchers
-export function openVidWithSong(sourceApp: string, songId: string, songTitle?: string) {
+export function openVidWithSong(
+  sourceApp: string,
+  songId: string,
+  songTitle?: string,
+) {
   intentBus.dispatch({
     source: sourceApp,
     target: 'vid',

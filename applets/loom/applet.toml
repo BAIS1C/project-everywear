@@ -15,6 +15,7 @@ backend = "none"
 server_binary = ""
 
 [entitlements.teacher_agent]
+min_tier = "demo"
 enforced_by = ["everywear_shell", "loom_runtime"]
 features = ["loom", "loom.teacher_agent", "mymaits_lite_runtime"]
 

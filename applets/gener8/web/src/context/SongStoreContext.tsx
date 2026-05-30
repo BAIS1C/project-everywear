@@ -7,7 +7,7 @@
  *   - Auth context from Everywear's AuthContext (Tauri invoke)
  *   - No social layer (like/dislike stubs retained for UI compat)
  *
- * Consumers: Gener8 CreateView, LibraryView, VidView.
+ * Consumers: Gener8 CreatePanel, LibraryView, VidApp.
  */
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { Song } from '../types';

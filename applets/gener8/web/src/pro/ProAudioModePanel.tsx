@@ -19,7 +19,7 @@ const MAX_AUDIO_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_AUDIO_UPLOAD_LABEL = '15 MB';
 const AUDIO_FORMATS_LABEL = 'MP3, WAV, FLAC, OGG, up to 15 MB';
 
-type ProCreateMode = Exclude<ProAudioMode, 'song'>;
+type ProCreateMode = ProAudioMode;
 
 interface BuildBaseFieldsOptions {
   mode: ProCreateMode;
@@ -155,7 +155,7 @@ export function ProAudioModePanel({
         dispatch({ type: 'setSource', url: result.url, label: displayName, duration });
       }
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed.');
+      setUploadError(err instanceof Error ? err.message : String(err || 'Upload failed.'));
     } finally {
       setIsUploading(false);
     }

@@ -17,6 +17,7 @@ use std::{collections::HashMap, path::PathBuf};
 use tracing::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppletEntry {
     pub id: String,
     pub name: String,
@@ -49,6 +50,16 @@ pub struct AppletEntry {
     /// The shell will launch the parent's binary instead of its own.
     #[serde(default)]
     pub shares_backend: Option<String>,
+    #[serde(default, rename = "lockedModel")]
+    pub locked_model: Option<String>,
+    #[serde(default, rename = "allowedAudioModes")]
+    pub allowed_audio_modes: Vec<String>,
+    #[serde(default, rename = "stepCeiling")]
+    pub step_ceiling: Option<u32>,
+    #[serde(default, rename = "vaultScope")]
+    pub vault_scope: Option<String>,
+    #[serde(default, rename = "vidTarget")]
+    pub vid_target: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -108,14 +119,18 @@ impl AppletRegistry {
                 frontend_port: Some(3002),
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
-                id: "gener8".into(),
-                name: "Gener8".into(),
-                description: "Local AI music generation, stem mixing, and production"
-                    .into(),
+                id: "gener8-4ever".into(),
+                name: "Gener8 4ever".into(),
+                description: "Local AI text-to-song generation".into(),
                 version: "0.1.0".into(),
-                icon: "gener8".into(),
+                icon: "gener8-4ever".into(),
                 status: AppletStatus::Active,
                 launch_kind: AppletLaunchKind::FrontendInline,
                 engine_type: "audio".into(),
@@ -123,8 +138,8 @@ impl AppletRegistry {
                 tags: vec![
                     "music".into(),
                     "audio".into(),
-                    "generation".into(),
-                    "daw".into(),
+                    "song".into(),
+                    "4ever".into(),
                 ],
                 launch_url: None,
                 launch_binary: None,
@@ -133,6 +148,40 @@ impl AppletRegistry {
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: Some("song".into()),
+                allowed_audio_modes: vec!["song".into()],
+                step_ceiling: Some(12),
+                vault_scope: Some("full".into()),
+                vid_target: Some("vid".into()),
+            },
+            AppletEntry {
+                id: "gener8-pro".into(),
+                name: "Gener8 Pro".into(),
+                description: "Local AI reference and cover audio generation".into(),
+                version: "0.1.0".into(),
+                icon: "gener8-pro".into(),
+                status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
+                engine_type: "audio".into(),
+                min_vram_mb: 6144,
+                tags: vec![
+                    "music".into(),
+                    "audio".into(),
+                    "reference".into(),
+                    "cover".into(),
+                ],
+                launch_url: None,
+                launch_binary: None,
+                required_tier: Some("gener8_pro".into()),
+                required_entitlements: vec!["gener8_pro".into()],
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: None,
+                locked_model: Some("pro".into()),
+                allowed_audio_modes: vec!["reference".into(), "cover".into()],
+                step_ceiling: Some(75),
+                vault_scope: Some("full".into()),
+                vid_target: Some("vid".into()),
             },
             // Vid Studio is a Gener8 studio surface mounted inline by
             // AppletViewRouter. It uses shell IPC for video sidecars.
@@ -149,11 +198,16 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "visualiser".into(), "music".into()],
                 launch_url: None,
                 launch_binary: None,
-                required_tier: Some("creator_studio".into()),
-                required_entitlements: vec!["vid_pro".into()],
+                required_tier: Some("gener8".into()),
+                required_entitlements: vec!["vid".into()],
                 frontend_port: None,
                 frontend_route: None,
-                shares_backend: Some("gener8".into()),
+                shares_backend: Some("gener8-4ever".into()),
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "ai-director".into(),
@@ -175,7 +229,36 @@ impl AppletRegistry {
                 ],
                 frontend_port: None,
                 frontend_route: None,
-                shares_backend: Some("gener8".into()),
+                shares_backend: Some("gener8-4ever".into()),
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
+            },
+            AppletEntry {
+                id: "daw".into(),
+                name: "DAW".into(),
+                description: "Multi-track timeline, stem mixing, and arrangement".into(),
+                version: "0.1.0".into(),
+                icon: "daw".into(),
+                status: AppletStatus::Active,
+                launch_kind: AppletLaunchKind::FrontendInline,
+                engine_type: "none".into(),
+                min_vram_mb: 0,
+                tags: vec!["daw".into(), "audio".into(), "mixing".into(), "stems".into()],
+                launch_url: None,
+                launch_binary: None,
+                required_tier: Some("creator_studio".into()),
+                required_entitlements: vec!["daw_pro".into()],
+                frontend_port: None,
+                frontend_route: None,
+                shares_backend: Some("gener8-4ever".into()),
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "s3studio".into(),
@@ -200,6 +283,11 @@ impl AppletRegistry {
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "strands-game".into(),
@@ -219,6 +307,11 @@ impl AppletRegistry {
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "kasai".into(),
@@ -244,6 +337,11 @@ impl AppletRegistry {
                 frontend_port: Some(3003),
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "layeru-osint".into(),
@@ -269,6 +367,11 @@ impl AppletRegistry {
                 frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "3nvizen".into(),
@@ -283,11 +386,16 @@ impl AppletRegistry {
                 tags: vec!["video".into(), "generation".into()],
                 launch_url: None,
                 launch_binary: Some("everywear-3nvizen".into()),
-                required_tier: Some("gener8_pro".into()),
+                required_tier: Some("creator_studio".into()),
                 required_entitlements: vec!["3nvizen".into(), "3nvizen.video".into()],
                 frontend_port: Some(3004),
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "character-studio".into(),
@@ -312,6 +420,11 @@ impl AppletRegistry {
                 frontend_port: Some(3007),
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             AppletEntry {
                 id: "loom".into(),
@@ -336,6 +449,11 @@ impl AppletRegistry {
                 frontend_port: Some(3008),
                 frontend_route: None,
                 shares_backend: None,
+                locked_model: None,
+                allowed_audio_modes: Vec::new(),
+                step_ceiling: None,
+                vault_scope: None,
+                vid_target: None,
             },
             // Mymories applet removed 2026-05-29 per WIKI.md "Everywear Vault /
             // Project Mymory / MyMaits Boundary" unification: Vault is the
@@ -437,7 +555,15 @@ impl AppletRegistry {
 
     /// Get a specific applet by ID.
     pub fn get(&self, id: &str) -> Option<&AppletEntry> {
+        let id = canonical_applet_id(id);
         self.applets.iter().find(|a| a.id == id)
+    }
+}
+
+pub fn canonical_applet_id(id: &str) -> &str {
+    match id {
+        "gener8" => "gener8-4ever",
+        _ => id,
     }
 }
 

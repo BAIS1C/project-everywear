@@ -17,7 +17,7 @@ backend = "server"
 server_binary = "3nvizen-ltx-sidecar"
 
 [entitlements.launch]
-min_tier = "gener8_pro"
+min_tier = "creator_studio"
 enforced_by = ["everywear_shell", "3nvizen_runtime"]
 features = ["3nvizen", "3nvizen.video"]
 

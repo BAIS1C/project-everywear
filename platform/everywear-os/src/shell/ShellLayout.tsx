@@ -46,8 +46,8 @@ const SYSTEM_ICONS: SystemIcon[] = [
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
 type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
-const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8', 'vid', 'ai-director', '3nvizen']);
-const S3_FOLDER_ORDER = ['1magen', 'gener8', 'vid', 'ai-director', '3nvizen'];
+const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '3nvizen']);
+const S3_FOLDER_ORDER = ['1magen', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '3nvizen'];
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
 const TIER_RANK: Record<string, number> = {
   demo: 0,
@@ -1266,10 +1266,18 @@ export function ShellLayout() {
   // launcher badge agrees with appletLaunchBlocked() rather than trusting a
   // stale presentation `Locked` from the registry. (WIKI.md v1.1.16)
   const gatedApplets = useMemo(
-    () => registryApplets.map((applet) => ({
-      ...applet,
-      status: resolveAppletStatus(applet, authUser?.entitlements ?? authUser?.tiers),
-    })),
+    () => {
+      const flags = authUser?.entitlements ?? authUser?.tiers;
+      return registryApplets.map((applet) => {
+        const isVidPro = applet.id === 'vid' && flags?.vid_pro === true;
+        return {
+          ...applet,
+          name: isVidPro ? 'Vid Studio Pro' : applet.name,
+          description: isVidPro ? 'Audio-reactive visualizer with Pro video export.' : applet.description,
+          status: resolveAppletStatus(applet, flags),
+        };
+      });
+    },
     [registryApplets, authUser?.entitlements, authUser?.tiers]
   );
   const s3FolderApplets = useMemo(
@@ -1278,10 +1286,38 @@ export function ShellLayout() {
       .sort((a, b) => S3_FOLDER_ORDER.indexOf(a.id) - S3_FOLDER_ORDER.indexOf(b.id)),
     [gatedApplets]
   );
-  const visibleApplets = useMemo(
-    () => gatedApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio'),
+  // My Mait (internal id `kasai`) takes top billing: rendered first in the
+  // roster, above the S3 Studio folder. It is the free companion chassis and
+  // the front door of Everywear. Excluded from visibleApplets so it is not
+  // also rendered in the standalone list. (Display name "My Mait"; id stays kasai.)
+  const myMaitApplet = useMemo(
+    () => gatedApplets.find((applet) => applet.id === 'kasai') ?? null,
     [gatedApplets]
   );
+  const visibleApplets = useMemo(
+    () => gatedApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio' && applet.id !== 'kasai'),
+    [gatedApplets]
+  );
+  useEffect(() => {
+    const handleAppletLaunchRequest = (event: Event) => {
+      const appletId = (event as CustomEvent<{ appletId?: string }>).detail?.appletId;
+      if (!appletId) return;
+
+      const applet = gatedApplets.find((entry) => entry.id === appletId)
+        ?? registryApplets.find((entry) => entry.id === appletId);
+      if (!applet) {
+        log.warn('ui', `Applet launch request ignored; ${appletId} is not registered`);
+        return;
+      }
+
+      void handleAppletLaunch(applet, { skipSwitchPrompt: true });
+    };
+
+    window.addEventListener('everywear:launch-applet', handleAppletLaunchRequest);
+    return () => {
+      window.removeEventListener('everywear:launch-applet', handleAppletLaunchRequest);
+    };
+  }, [gatedApplets, registryApplets, handleAppletLaunch]);
   const launchingApplet = launchingId
     ? registryApplets.find((applet) => applet.id === launchingId) ?? null
     : null;
@@ -1317,6 +1353,7 @@ export function ShellLayout() {
       return (
         <AppletViewRouter
           appletId={applet.id}
+          applet={applet}
           skin={effectiveSkin}
           mode={mode}
           onClose={() => closeShellWindow(win.id)}
@@ -1377,8 +1414,17 @@ export function ShellLayout() {
           widgetsEnabled={!hasOpenApplet}
         />
 
-        {/* Icon grid: registry applets + system icons */}
+        {/* Icon grid: My Mait (top billing) + registry applets + system icons */}
         <div className="ew-icon-grid">
+          {myMaitApplet && (
+            <AppletIcon
+              key={myMaitApplet.id}
+              applet={myMaitApplet}
+              health={iconHealth[myMaitApplet.id] ?? 'checking'}
+              isLaunching={launchingId === myMaitApplet.id}
+              onClick={() => handleAppletLaunch(myMaitApplet)}
+            />
+          )}
           <S3StudioFolder
             applets={s3FolderApplets}
             iconHealth={iconHealth}

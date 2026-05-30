@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.17
-Last updated: 2026-05-29 (Gener8 Library Compile Repair and Debug Build)
+Version: 1.1.19
+Last updated: 2026-05-30 (Password reset architecture)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -55,7 +55,8 @@ Maintainer: Sean Uddin / Somo Kasane
 > audio, visualizer videos, 1magen images, and 3nvizen videos now register with
 > source app, library scope, vault id, original path, vault path, SHA-256,
 > storage mode, and shell-derived entitlement context where available. Shell
-> launch gates now lock 1magen below Gener8 4ever and 3nvizen below Gener8 Pro.
+> launch gates now lock 1magen and basic Vid Studio below Gener8 4ever,
+> Vid Pro features below Gener8 Pro, and 3nvizen below Creator Studio.
 
 > Current-state note, 2026-05-28 v1.1.8: Product-facing language is My Maits
 > and My Maits Lite. My Maits Lite is a hidden headless runtime used by Loom
@@ -77,7 +78,9 @@ Maintainer: Sean Uddin / Somo Kasane
 
 > Current-state note, 2026-05-28 v1.1.10: Phase 3.5 headless audit found and
 > fixed shifted shell registry gates. Gener8 is gated at `gener8` /
-> `gener8.audio`; Vid Studio is gated at Creator Studio / `vid_pro`; AI
+> `gener8.audio`; Vid Studio launch is included at Gener8 4ever through
+> `vid`; Vid Pro features unlock at Gener8 Pro through `vid_pro` and are
+> inherited by Creator Studio. AI
 > Director is gated at Creator Studio / `ai_director.planner`; Loom remains
 > free with `loom` / `loom.teacher_agent`. The audit also confirmed that the
 > frontend can consume entitlement flags, but Tauri-side launch checks still
@@ -205,7 +208,10 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
   provider event ledgers.
 - S3 Studio / Gener8 family is the first shippable paid production line.
 - `1magen` is included from Gener8 4ever onwards.
-- `3nvizen` is included from Gener8 Pro onwards.
+- Basic Vid Studio (`vid`) is included from Gener8 4ever onwards.
+- Vid Pro features (`vid_pro`) unlock at Gener8 Pro and are inherited by
+  Creator Studio.
+- `3nvizen` is included from Creator Studio onwards.
 - Loom and Character Studio are free Everywear applets by the current product
   canon.
 - My Maits Lite is a hidden headless runtime used by Loom as the free teacher
@@ -238,7 +244,7 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
 | S3 / Gener8 Vault runtime | Wired | Shell-owned Gener8 output registration and applet save paths now attach source app id, library scope, vault id, original path, vault path, SHA-256, storage mode, and entitlement context. |
 | Reference / Cover assets | Wired | Gener8 reference uploads register as `reference`; cover source uploads register as `cover_source`; generated covers register as `cover_output`. |
 | 1magen launch gate | Wired | Shell registry and browser fallback require `gener8` / `1magen.image` before inline mount; applet manifest records shell/runtime enforcement. |
-| 3nvizen launch gate | Wired | Shell registry and browser fallback require `gener8_pro` / `3nvizen.video`; applet manifest records shell/runtime enforcement. |
+| 3nvizen launch gate | Wired | Shell registry and browser fallback require `creator_studio` plus `3nvizen` / `3nvizen.video`; applet manifest records shell/runtime enforcement. |
 | 3nvizen frontend package | Added | `@everywear/3nvizen` now has npm workspace metadata and build config. Frontend build passes; live sidecar/generation remains unproven. |
 | Gener8 / Vid / AI Director / Loom gates | Corrected in Phase 3.5 | Headless audit fixed shifted registry entries: Gener8 no longer carries AI Director's gate, AI Director is no longer ungated, Vid no longer carries Loom's teacher gate, and Loom exposes free teacher-agent entitlements. |
 | Native entitlement flags | Wired | Tauri auth now stores neutral entitlement flags pushed from the frontend and launch checks use them before compatibility tier rank. |
@@ -3290,7 +3296,10 @@ Current production reality: the only near-term shippable paid products are the S
 Initial entitlement map:
 - S3 Studio / Gener8 product family: first production paid products; carry forward current Supabase buy/auth work into neutral Everywear identity and entitlement tables.
 - 1magen: included from the Gener8 4ever bundle onwards, not a separate launch SKU.
-- 3nvizen: included from the Gener8 Pro bundle onwards, not a separate launch SKU.
+- Basic Vid Studio (`vid`): included from the Gener8 4ever bundle onwards.
+- Vid Pro (`vid_pro`): internal feature entitlement unlocked by Gener8 Pro and
+  inherited by Creator Studio, not a separate launcher app.
+- 3nvizen: included from the Creator Studio bundle onwards, not a separate launch SKU.
 - Loom: free Everywear applet.
 - My Maits Lite: hidden headless runtime used by Loom as a free teacher agent; not a standalone launcher or chat surface.
 - AI Director planner: SAPI-targeted through LM Studio, Ollama, or external API providers. Provider-routed adapter exists with fallback reporting. Internal My Maits provider link is planned but unplumbed.
@@ -3581,6 +3590,25 @@ The applet manifest should evolve from rough model groups to a real VRAM ladder 
 > until its binary exists. See
 > docs/vault/2026-05-30_everywear-launcher-badge-entitlement-gating.md.
 
+> Current-state note, 2026-05-30 v1.1.18: Gener8 split P7-P9 smoke completed
+> after the single-`vid` tier contract correction: Gener8 handoff launches Vid
+> Studio / Vid Studio Pro by entitlement label, not a second applet; dead
+> `CreateView.tsx` is quarantined; S3 folder occlusion is fixed. Auth smoke
+> constraint: fresh signups currently receive demo access that behaves like a
+> Gener8 Pro-level test grant, so they do not validate true Gener8 4ever/base
+> Vid behaviour. Older lower-tier test accounts need a password-reset flow
+> because Supabase Auth stores password hashes, not recoverable plaintext.
+
+> Current-state note, 2026-05-30 v1.1.19: Password reset architecture is
+> defined in `docs/wiki/shell/password-reset-auth.md`. Version 1 should add a
+> `Forgot password?` path in `AuthGate.tsx`, wrap Supabase
+> `resetPasswordForEmail` in `AuthContext.tsx`, send users to
+> `https://everywear.id/auth/reset-password`, and let the desktop app reuse
+> normal email/password sign-in after the web callback updates the password.
+> Do not attempt password exposure; Supabase Auth stores hashes. Do not make a
+> desktop deep-link reset path the first implementation because this Tauri app
+> does not currently register a deep-link plugin.
+
 
 ---
 
@@ -3592,7 +3620,7 @@ Canonical reference: `applets/gener8/web/src/pro/`. Pattern extracted from the 2
 
 Apply when an applet contains a Pro / tier-gated feature surface whose mount must depend on a value that hydrates after initial render (auth/entitlement flags, license state, neutral `user_entitlements`). Apply when the free-tier UX should never see the gated surface mount-and-unmount during auth hydration. Apply when the free-tier and gated-tier paths use different model resolvers or different payload shapes.
 
-Current direct candidates: Vid Pro (`vid_pro` / Creator Studio), AI Director planner (`ai_director.planner` / Creator Studio). Both currently use the same truthiness-race pattern the Gener8 split eliminated. Do not refactor either until the shell `platform/everywear-os/src/shell/AuthContext.tsx` has its own `entitlementResolved` flag; gener8's local resolved-flag is applet-scoped only.
+Current direct candidates: Vid Pro (`vid_pro` / Gener8 Pro, inherited by Creator Studio), AI Director planner (`ai_director.planner` / Creator Studio). Both currently use the same truthiness-race pattern the Gener8 split eliminated. Do not refactor either until the shell `platform/everywear-os/src/shell/AuthContext.tsx` has its own `entitlementResolved` flag; gener8's local resolved-flag is applet-scoped only.
 
 ### The 7-part shape
 
@@ -3636,7 +3664,7 @@ Use the entitlement key as the code-level identifier. Use the product-facing nam
 | Tier | Code | UI |
 |------|------|----|
 | Gener8 Pro | `gener8_pro` | "Gener8 Pro" |
-| Vid Pro (Creator Studio) | `vid_pro` | "Vid Pro" |
+| Vid Pro (Gener8 Pro, inherited by Creator Studio) | `vid_pro` | "Vid Pro" |
 | AI Director planner (Creator Studio) | `ai_director.planner` | "AI Director" |
 | Creator Studio (tier) | `creator_studio` | "Creator Studio" |
 
@@ -3650,4 +3678,243 @@ Use the entitlement key as the code-level identifier. Use the product-facing nam
 
 ### Pending shell prerequisite
 
-The shell-wide `entitlementResolved` flag at `platform/everywear-os/src/shell/AuthContext.tsx` does NOT exist as of this writing. The 2026-05-28 local owner bypass release blocker is the symptom of the same race at the shell level. Vid Pro and AI Director planner cannot adopt this pattern reliably until the shell exposes a resolved-flag analogous to the gener8-applet one. Treat the shell AuthContext entitlementResolved as a prerequisite for the next capability extraction, not a follow-up.
+Superseded by P1 on 2026-05-30: the shell-wide `entitlementResolved` flag now
+exists at `platform/everywear-os/src/shell/AuthContext.tsx`, and
+`get_auth_context` returns `entitlement_resolved` through the shell IPC contract.
+The 2026-05-28 local owner bypass remains a separate release blocker, but the
+hydration-race prerequisite for Vid Pro, AI Director planner, and the Gener8
+two-applet split is now landed.
+
+---
+
+## Addendum 2026-05-30: Gener8 Two-Applet Split Architecture
+
+Location: C:\Users\MAG MSI\Project Everywear
+
+Status: target architecture for the real Gener8 split. This supersedes the
+interpretation that the 2026-05-29 Pro audio extraction was the product split.
+That extraction remains useful as the internal Pro capability module pattern,
+but it did not create separate launcher applets.
+
+Canonical module page: `docs/wiki/gener8/split-architecture.md`.
+
+### Decision
+
+Gener8 splits into two standalone launcher applets that share one Gener8 web
+bundle:
+
+- `gener8-4ever`: text-to-song applet. Locked to the song model path. No model
+  selector. Audio modes: `song` only. Vault scope: `full`. Create links to
+  the single Vid Studio applet through `vidTarget = "vid"`.
+- `gener8-pro`: Pro audio applet. Locked to the Pro capability model. No model
+  selector. Audio modes: `reference`, `cover`. No `song` mode in the Pro path.
+  Create links to the single Vid Studio applet through `vidTarget = "vid"`;
+  Vid Pro capabilities are internal to Vid Studio and unlocked by the
+  `vid_pro` entitlement at Gener8 Pro.
+
+The split is launcher-level and manifest-driven, not a fork of
+`CreatePanel.tsx`. Do not create two near-identical CreatePanel copies.
+
+### Capability Manifest Contract
+
+The shell registry entry becomes the single source of per-applet behaviour for
+the shared Gener8 bundle:
+
+```ts
+type Gener8LockedModel = 'song' | 'pro';
+type Gener8AudioMode = 'song' | 'reference' | 'cover';
+
+interface Gener8CapabilityManifest {
+  lockedModel: Gener8LockedModel;
+  allowedAudioModes: Gener8AudioMode[];
+  stepCeiling: number;
+  vaultScope: 'full';
+  vidTarget: 'vid';
+}
+```
+
+Initial launcher entries:
+
+| Applet id | lockedModel | allowedAudioModes | stepCeiling | vaultScope | vidTarget |
+|---|---|---|---:|---|---|
+| `gener8-4ever` | `song` | `['song']` | `12` | `full` | `vid` |
+| `gener8-pro` | `pro` | `['reference', 'cover']` | `75` | `full` | `vid` |
+
+The 4ever ceiling reflects the base `xl-turbo` song path. If the product later
+permits a stronger song resolver for 4ever, update this manifest value and the
+resolver together. The clamp must key off the locked model plus manifest
+ceiling, never off the old in-frame toggle or audio-mode proxy.
+
+### Pipe Diagram
+
+```mermaid
+graph LR
+  Launcher["Shell launcher entry"] -- "capability, process-local" --> Manifest["Gener8 capability manifest"]
+  Manifest -- "data, device-local" --> BundleBoot["Gener8 bundle boot"]
+  BundleBoot -- "control, device-local" --> ModelLock["Boot-time model force-load"]
+  ModelLock -- "state, process-local" --> CreateConfig["CreatePanel applet config"]
+  CreateConfig -- "capability, process-local" --> Modes["Allowed audio modes"]
+  CreateConfig -- "capability, process-local" --> Clamp["Advanced step ceiling"]
+  CreateConfig -- "capability, device-local" --> VidTarget["Vid handoff target"]
+```
+
+### Required Sequencing
+
+1. Add shell-side `entitlementResolved` before relying on launcher entitlement
+   state for the split. The applet-local flag only fixed the old in-tree Pro
+   panel bounce. **Done 2026-05-30 in P1**: shell `AuthContext.tsx` now keeps
+   a signed-in provisional user behind `isLoading` until tier and entitlement
+   flags are resolved; Rust `get_auth_context` returns
+   `entitlement_resolved: true`; shared transport and the Gener8 applet auth
+   reader understand the flag.
+2. Register `gener8-4ever` and `gener8-pro` with manifest fields. Keep a legacy
+   `gener8` alias pointing to `gener8-4ever`. **Done 2026-05-30 in P2**:
+   browser and Rust registries now expose the two applets, serialize the
+   manifest fields, and keep the non-enumerated legacy alias for old launch
+   paths.
+3. Make the shared Gener8 bundle read the launch manifest at boot, force-load
+   the locked model, hide the model selector, and remove user-reachable model
+   switching. **Done 2026-05-30 in P3**: `AppletViewRouter` passes the
+   registry manifest into `Gener8ShellApp`, `LaunchManifestProvider` exposes
+   it to `Gener8Core`, and `CreatePanel` force-loads the manifest-resolved
+   locked model while hiding the selector/swap controls for launcher-locked
+   applets.
+4. Drive audio-mode rails, Vault scope, Vid target, and advanced-step clamp
+   from the manifest.
+5. Quarantine `applets/gener8/web/src/views/CreateView.tsx`. It is dead code and
+   still carries a static clamp that must not become the basis for either
+   applet.
+
+### Drift Notes
+
+- `BROWSER_APPLET_REGISTRY` and the Rust shell registry now expose
+  `gener8-4ever` and `gener8-pro`; the legacy `gener8` id is alias-only.
+- `CreatePanel.tsx` currently owns live create behaviour and still contains the
+  model selector and user-reachable model switch path.
+- `views/CreateView.tsx` is not the active surface. Treat it as pending archive
+  cleanup, not as a reusable split base.
+- `useProAudioMode.ts` still has a `song` branch. The Pro applet must remove
+  that branch when P5 lands.
+
+### P1 Verification
+
+P1 changed:
+
+- `platform/everywear-os/src/shell/AuthContext.tsx`
+- `platform/everywear-os/src/lib/transport.ts`
+- `platform/everywear-os/src-tauri/src/auth.rs`
+- `packages/transport/src/auth.ts`
+- `applets/gener8/web/src/context/AuthContext.tsx`
+
+Verification passed on 2026-05-30:
+
+- `npm run build --workspace everywear-os`
+- `npm run build --workspace @everywear/transport`
+- `npm run build --workspace @everywear/gener8-web`
+- `cargo check -p everywear-os` with existing warning debt only
+
+---
+
+## Addendum 2026-05-30: Windows Asset-Protocol Media Loading (3-part requirement) — Major Player Bug Resolved
+
+This was a multi-hour, multi-session break: the Gener8 in-window audio player selected a song (bottom bar populated, waveform drawn) but never played; duration stuck at `0:00`, no sound. Root cause was infrastructural, not in any React file. Recorded here so the infra is understood and never costs a day again.
+
+### The core fact
+
+On **Windows (WebView2)**, Tauri v2 does NOT serve `convertFileSrc()` over the `asset://` scheme. It serves it over the origin **`http://asset.localhost/<percent-encoded-absolute-path>`**. (macOS/Linux use `asset://localhost/...`; Windows/Android use the `http://<scheme>.localhost` form.) Everything that gates a URL must therefore allow the Windows origin, not just the `asset:` scheme.
+
+### Three things must ALL be true for vault media to load (miss any one → silent, `0:00`)
+
+1. **Cargo feature.** `tauri = { version = "2", features = [..., "protocol-asset"] }` in `platform/everywear-os/src-tauri/Cargo.toml`. Without it the build refuses / the protocol does not exist.
+2. **Asset-protocol scope.** `app.security.assetProtocol = { "enable": true, "scope": ["$HOME/Documents/Everywear Vault/**", "$DOCUMENT/Everywear Vault/**", ...] }` in `tauri.conf.json`. This is SEPARATE from `fs:scope` in `capabilities/default.json` — `fs:scope` governs the fs plugin read/write API, NOT `convertFileSrc`. Without the asset-protocol scope, the protocol 403s.
+3. **CSP origin.** The CSP `media-src` (and `img-src` for asset-served images, `connect-src` for any fetch/range probe) must include `http://asset.localhost https://asset.localhost`. Listing only `asset:` is the macOS/Linux form and is NOT sufficient on Windows. Without the origin, the WebView blocks the media load before `loadedmetadata` fires → duration `0:00` → silence.
+
+Current good values (`tauri.conf.json` CSP): `media-src 'self' asset: http://asset.localhost https://asset.localhost data: blob: http://127.0.0.1:*` (and the same origins added to `img-src` and `connect-src`).
+
+### Why it was hard to find
+
+- `asset:` was already in the CSP and looked sufficient; on Windows `asset:` scheme != `http://asset.localhost` origin. The scope fix (#2) was necessary but masked #3 — fixing the protocol while the CSP still blocked the resulting URL meant "nothing changed" after a correct-looking fix.
+- CSP and the Cargo feature are baked into the Rust shell at build time. **A passing `npm run build` proves nothing** about media loading; only `cargo build -p everywear-os` + relaunch exercises #1 and #3. A playback/asset bug that survives a green web rebuild is below the web layer — stop patching React, check Tauri config and rebuild the shell.
+- The dev `everywear-os.exe` is unpackaged, so screen-automation tools cannot target its window to read the WebView console; and the observability pipeline is itself stubbed (see CONTEXT P3ii). Live `[audio-diag]` instrumentation in `ShellAudioPlayer.tsx` prints the actual `audio.src` to the WebView devtools console (F12) — the single datum that ends guessing is whether `audio.src` is `http://asset.localhost/...` (then it is CSP/scope) or a raw path (then it is the vault adapter).
+
+### Reusable rule
+
+Any new media element (audio, video, image) that points at a vault file via `convertFileSrc` on Windows must have its URL origin (`http://asset.localhost`) present in the relevant CSP directive, the path inside `assetProtocol.scope`, and the `protocol-asset` feature on. This rule also lives in `docs/wiki/gener8/vault-library.md`.
+
+---
+
+## Addendum 2026-05-30: Applet Gate Manifest + My Mait Product Model (CANONICAL)
+
+Canonical source for which tier/gate governs every official Everywear applet, and the locked My Mait product model. Authority: Sean, 2026-05-30. Full decision record: `Project Mymory/everywear/2026-05-30_my_mait_product_model_and_applet_gate_manifest.md`.
+
+### Gating axes (do not conflate)
+
+Everywear gates capability on THREE independent axes:
+
+1. **License tier** (`demo` < `gener8` < `gener8_pro` < `creator_studio`): governs compute-heavy creative generation and output rights. Resolved frontend from Supabase claims AND enforced backend via `require_tier(...)` against `AppState.licence_tier`. Both sides must agree (the owner/test bypass is frontend-only and does NOT set the backend tier — that mismatch is a known bug class).
+2. **Content ownership** (owned trait/skill shards): the My Mait Trading Post economy. Per-user inventory, NOT a tier flag. The gate system needs an ownership ledger separate from tier→flags.
+3. **VRAM / hardware**: which local model runs. Resolved at install via `model_manager::ModelResolver` + VRAM scan + `vram_scheduler.rs` / `min_vram_mb`. NOT a paywall.
+
+### Canonical applet gate table
+
+| Applet (id) | Display | License gate |
+|---|---|---|
+| `1magen` | 1magen | Gener8 |
+| `gener8-4ever` | Gener8 4ever | Gener8 |
+| `gener8-pro` | Gener8 Pro | Gener8 Pro |
+| `3nvizen` | 3nvizen | **Creator Studio** (corrected from code's gener8_pro) |
+| `vid` | Vid Studio | Gener8 (basic `vid` launch); Gener8 Pro unlocks `vid_pro` internal features; Creator Studio inherits lower tiers |
+| `ai-director` | AI Director | Creator Studio (ai_director) as a standalone applet; also an INVISIBLE backend engine for the free My Mait (never surfaced as "AI Director") |
+| `daw` | DAW | Creator Studio (daw_pro) |
+| `kasai` | My Mait | FREE / untiered; model = VRAM-gated; capabilities = owned shards |
+| `character-studio` | Avatar Studio | FREE (My Mait line); premium via Trading Post |
+| `layeru-osint` | Layer U OSINT | FREE |
+| `loom` | The Loom | FREE |
+| `strands-game` | Strands Nation | FREE (external/iframe) |
+| `s3studio` | S3 Studio | FREE (external URL) |
+
+Gate definitions must agree across ALL of: `platform/everywear-os/src/lib/transport.ts` (browser registry), `platform/everywear-os/src-tauri/src/registry.rs` (Rust registry), `applets/<id>/applet.toml` (`[entitlements.*]` min_tier), and `platform/everywear-os/src/shell/AuthContext.tsx` (tier → entitlement-flag grants). Drift between these is the root of recurring "everything Locked" / "feature rejected" bugs.
+
+### Billing model per tier
+
+- **Gener8 = Gener8 4ever = ONE-OFF payment, no subscription** (name is literal: pay once, owned forever, ~$20 one-time).
+- **Gener8 Pro = subscription** (~$13.37/mo). **Creator Studio = subscription** (top tier).
+- **My Mait = free**, monetized via Trading Post microtransactions (trait/skill shards), not a tier or sub.
+
+### Roster placement
+
+My Mait (`kasai`) takes TOP BILLING in the desktop icon roster: rendered first, above the S3 Studio folder (`ShellLayout.tsx`), as the free companion chassis and front door of Everywear.
+
+### Positioning guardrail
+
+"Steam for AI apps" is EVERYWEAR's platform positioning (the storefront of AI apps). Do NOT reuse the Steam metaphor for My Mait, that double-dips. My Mait is positioned on ownership/identity ("raise a companion, don't rent a mind"), not a marketplace metaphor.
+
+### My Mait product model (LOCKED)
+
+- Name: **My Mait** (singular, no "s"). Display name only; INTERNAL id stays `kasai` until a dedicated migration task. Do not let `kasai` leak into user-facing surfaces; do not casually refactor the id.
+- **No Lite/Full.** My Mait base is FREE, bundled in the free tier, untiered. Ships a default starter personality (cheerful, competent, helpful; low memory, low tool access), not a blank agent. Model: "Download My Mait. Meet your Mait. Shape your Mait."
+- It is the free **orchestration chassis**: base system prompt that transparently manages backend engines (AI Director, Loom). AI Director is plumbing the user never sees named.
+- Monetization: the **Trading Post**, a visuals-heavy in-app storefront (SCOPED, NOT BUILT) selling trait/skill shards (possibly sub-$1 base sets). Eventually an NFT store; model the ownership ledger NFT-shaped now, with `creator`/`provenance` fields, for the future UGC marketplace.
+- Avatar Studio (`character-studio`) is part of this line: free base avatar, premium assets via the Trading Post.
+
+### Reconciliation owed (code disagrees with canon)
+
+2026-05-30 reconciliation: `3nvizen` now maps to Creator Studio across the two shell registries, `applets/3nvizen/applet.toml`, and shell tier-to-flag expansion. Remaining reconciliation: remove My Mait Lite/Full in AuthContext (collapse to free base + owned-shard inventory); add the content-ownership axis; wire My Mait model selection to the VRAM resolver; display rename "My Maits" → "My Mait". Tracked in `PROJECT_STATE.md`.
+
+---
+
+## Addendum 2026-05-30: Auth + Security — Supabase is canonical; backend must verify before push (CANONICAL DECISION)
+
+Authority: Sean, 2026-05-30. Full record: `Project Mymory/everywear/2026-05-30_everywear_auth_security_decision_supabase_source_of_truth.md` + `PROJECT_STATE.md` (AUTH INTEGRITY).
+
+**Supabase is THE source of truth for auth, identity, and tier/entitlements.** Everywear ID derives from it.
+
+**Current code does NOT enforce that.** `auth.rs` `update_auth` writes `AppState.licence_tier` and `entitlement_flags` from CLIENT-supplied `update.tier`/`update.entitlements`, and the JWT is parsed via `parse_jwt_unverified` (no signature check). `require_tier` (`gener8_engine.rs`) trusts those. So paid-tier enforcement is HONOR-SYSTEM and trivially bypassable. The migration wired Supabase's UX but never its enforcement.
+
+**Decision:**
+- DEV (local, no users): client-trust gate ACCEPTED. Proceed.
+- PRE-PUSH (HARD RELEASE BLOCKER): (1) verify the Supabase JWT signature in the Rust backend via asymmetric/JWKS public keys (never ship the HS256 secret); (2) read tier/entitlements from the VERIFIED token claims (placed there via a Supabase custom-access-token hook), ignore client-supplied fields for gating; (3) server-side validate any feature that costs us (cloud gen, API credits, gated downloads). Own-GPU local features may stay on the verified-local-token model.
+
+**Tier naming:** `auth.rs:230` hard-rejects any tier not exactly `demo`/`gener8`/`gener8_pro`/`creator_studio`; a mismatched Supabase plan name resolves wrong entitlements. Reconcile the live Supabase plan strings against the enum (note: code `gener8` = product "Gener8 4ever"). Pending.
+
+**Security rule (canonical):** client-side tier/entitlement state is UNTRUSTED. Enforce on cryptographically verified Supabase claims for local features, and server-side for anything that costs us.

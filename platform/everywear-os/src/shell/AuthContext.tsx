@@ -101,6 +101,7 @@ interface AuthContextValue {
   tier: LicenceTier;
   isAuthenticated: boolean;
   isLoading: boolean;
+  entitlementResolved: boolean;
   /** Sign in with email + password. */
   signInWithPassword: (email: string, password: string, rememberProfile?: boolean) => Promise<void>;
   /** Sign up with email + password. */
@@ -122,6 +123,7 @@ const AuthCtx = createContext<AuthContextValue>({
   tier: 'demo',
   isAuthenticated: false,
   isLoading: true,
+  entitlementResolved: false,
   signInWithPassword: async () => {},
   signUp: async () => {},
   verifyOtp: async () => {},
@@ -158,11 +160,12 @@ function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
     'gener8.audio': false,
     '1magen': false,
     '1magen.image': false,
+    vid: false,
+    vid_pro: false,
     '3nvizen': false,
     '3nvizen.video': false,
     gener8_pro: false,
     creator_studio: false,
-    vid_pro: false,
     daw_pro: false,
     ai_director: false,
     'ai_director.planner': false,
@@ -182,6 +185,7 @@ function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
     flags['gener8.audio'] = true;
     flags['1magen'] = true;
     flags['1magen.image'] = true;
+    flags.vid = true;
   }
   if (tier === 'gener8_pro') {
     flags.gener8_base = true;
@@ -189,8 +193,8 @@ function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
     flags['gener8.audio'] = true;
     flags['1magen'] = true;
     flags['1magen.image'] = true;
-    flags['3nvizen'] = true;
-    flags['3nvizen.video'] = true;
+    flags.vid = true;
+    flags.vid_pro = true;
     flags.gener8_pro = true;
   }
   if (tier === 'creator_studio') {
@@ -199,11 +203,12 @@ function expandTierToFlags(tier: LicenceTier | null): Record<string, boolean> {
     flags['gener8.audio'] = true;
     flags['1magen'] = true;
     flags['1magen.image'] = true;
+    flags.vid = true;
+    flags.vid_pro = true;
     flags['3nvizen'] = true;
     flags['3nvizen.video'] = true;
     flags.gener8_pro = true;
     flags.creator_studio = true;
-    flags.vid_pro = true;
     flags.daw_pro = true;
     flags.ai_director = true;
     flags['ai_director.planner'] = true;
@@ -233,9 +238,11 @@ function isAdminOrOwnerAccount(
   const handle = (profile?.handle || fallbackHandle || '').trim().toLowerCase();
   const email = (authEmail || '').trim().toLowerCase();
   return handle === 'seanie'
+    || handle === 'seanie.sean'
     || handle === 'somo'
     || handle === 'somokasane'
     || email === 'seanie@everywear.id'
+    || email === 'seanie.sean@everywear.id'
     || email === 'somo@metafintek.xyz';
 }
 
@@ -441,13 +448,16 @@ function assertValidEverywearHandle(handle: string): string {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<EverywearUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [entitlementResolved, setEntitlementResolved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /** Hydrate user state from a Supabase session. */
   const hydrateSession = useCallback(async (session: Session | null) => {
+    setEntitlementResolved(false);
     if (!session?.user) {
       setUser(null);
       await clearAuth().catch(() => {});
+      setEntitlementResolved(true);
       return;
     }
 
@@ -532,6 +542,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       entitlements: effectiveEntitlements,
       subscription: account.subscription,
     });
+    setEntitlementResolved(true);
   }, []);
 
   // Initial session check + auth state listener
@@ -558,6 +569,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           current_period_end: null,
         },
       });
+      setEntitlementResolved(true);
       setIsLoading(false);
       return () => {
         mounted = false;
@@ -569,7 +581,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // the try/catch/finally below — belt and suspenders.
     const safetyTimer = setTimeout(() => {
       if (mounted) {
-        console.warn('Auth init safety timeout fired (6s). Forcing isLoading=false.');
+        console.warn('Auth init safety timeout fired (6s). Forcing isLoading=false without marking entitlements resolved.');
         setIsLoading(false);
       }
     }, 6000);
@@ -598,6 +610,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error('Auth init failed:', err);
+        if (mounted) setEntitlementResolved(true);
       } finally {
         clearTimeout(safetyTimer);
         if (mounted) setIsLoading(false);
@@ -722,6 +735,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     await supabase.auth.signOut();
     setUser(null);
+    setEntitlementResolved(true);
     clearRememberedAuth();
     await clearAuth().catch(() => {});
   };
@@ -760,7 +774,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         tier: user?.tier ?? 'demo',
         isAuthenticated: !!user,
-        isLoading,
+        isLoading: isLoading || (!!user && !entitlementResolved),
+        entitlementResolved,
         signInWithPassword,
         signUp,
         verifyOtp,

@@ -17,6 +17,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { getLogger } from '@everywear/shared';
 import { AppletLoadingSkeleton } from './AppletLoadingSkeleton';
 import type { BugReportSeed } from './BugReportModal';
+import type { AppletEntry } from '../lib/transport';
 
 const log = getLogger('shell');
 
@@ -25,8 +26,17 @@ const log = getLogger('shell');
 // CODEX_NEEDED: When adding new headless applets, register their lazy
 // import here. The import path must resolve via the @applets Vite alias.
 
+type AppletLaunchManifest = Pick<AppletEntry, 'id' | 'lockedModel' | 'allowedAudioModes' | 'stepCeiling' | 'vaultScope' | 'vidTarget'>;
+
+interface AppletComponentProps {
+  skin?: string;
+  mode?: string;
+  appletId?: string;
+  launchManifest?: AppletLaunchManifest | null;
+}
+
 const APPLET_COMPONENTS: Record<string, {
-  component: React.LazyExoticComponent<React.ComponentType<{ skin?: string; mode?: string }>>;
+  component: React.LazyExoticComponent<React.ComponentType<AppletComponentProps>>;
   displayName: string;
   needsRouter?: boolean;
   initialPath?: string;
@@ -57,6 +67,22 @@ const APPLET_COMPONENTS: Record<string, {
     needsRouter: true,
     initialPath: '/',
   },
+  'gener8-4ever': {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
+    ),
+    displayName: 'Gener8 4ever',
+    needsRouter: true,
+    initialPath: '/',
+  },
+  'gener8-pro': {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
+    ),
+    displayName: 'Gener8 Pro',
+    needsRouter: true,
+    initialPath: '/',
+  },
   vid: {
     component: React.lazy(() =>
       import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
@@ -72,6 +98,14 @@ const APPLET_COMPONENTS: Record<string, {
     displayName: 'AI Director',
     needsRouter: true,
     initialPath: '/director',
+  },
+  daw: {
+    component: React.lazy(() =>
+      import('@applets/gener8/web/src/ShellApp').then(m => ({ default: m.Gener8ShellApp }))
+    ),
+    displayName: 'DAW',
+    needsRouter: true,
+    initialPath: '/daw',
   },
   '3nvizen': {
     component: React.lazy(() => import('@applets/3nvizen/src/index')),
@@ -176,6 +210,7 @@ class AppletErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
 
 export interface AppletViewRouterProps {
   appletId: string;
+  applet?: AppletEntry;
   skin?: string;
   mode?: string;
   onClose: () => void;
@@ -191,7 +226,7 @@ export function isRegisteredApplet(appletId: string): boolean {
   return appletId in APPLET_COMPONENTS;
 }
 
-export function AppletViewRouter({ appletId, skin, mode, onClose, onCrashReport }: AppletViewRouterProps) {
+export function AppletViewRouter({ appletId, applet, skin, mode, onClose, onCrashReport }: AppletViewRouterProps) {
   const entry = APPLET_COMPONENTS[appletId];
 
   if (!entry) {
@@ -210,10 +245,25 @@ export function AppletViewRouter({ appletId, skin, mode, onClose, onCrashReport 
   }
 
   const LazyComponent = entry.component;
+  const launchManifest: AppletLaunchManifest | null = applet
+    ? {
+        id: applet.id,
+        lockedModel: applet.lockedModel ?? applet.locked_model ?? null,
+        allowedAudioModes: applet.allowedAudioModes ?? applet.allowed_audio_modes ?? null,
+        stepCeiling: applet.stepCeiling ?? applet.step_ceiling ?? null,
+        vaultScope: applet.vaultScope ?? applet.vault_scope ?? null,
+        vidTarget: applet.vidTarget ?? applet.vid_target ?? null,
+      }
+    : null;
 
   const appletContent = (
     <Suspense fallback={<AppletLoadingSkeleton appletName={entry.displayName} />}>
-      <LazyComponent skin={skin} mode={mode} />
+      <LazyComponent
+        skin={skin}
+        mode={mode}
+        appletId={appletId}
+        launchManifest={launchManifest}
+      />
     </Suspense>
   );
 

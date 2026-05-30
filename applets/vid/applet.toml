@@ -28,3 +28,13 @@ server_binary = ""
 [requirements]
 # No CUDA or VRAM needed for the visualiser.
 # AI Video generation (future) will add model_groups when Wan 2.2 is integrated.
+
+[entitlements.launch]
+min_tier = "gener8"
+enforced_by = ["everywear_shell", "vid_runtime"]
+features = ["vid"]
+
+[entitlements.vid_pro]
+min_tier = "gener8_pro"
+enforced_by = ["vid_runtime"]
+features = ["vid_pro"]

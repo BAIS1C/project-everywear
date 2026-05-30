@@ -55,7 +55,6 @@ export function ShellAudioProvider({ children }: { children: React.ReactNode }) 
   // ── Audio element setup ───────────────────────────────────────
   useEffect(() => {
     audioRef.current = new Audio();
-    audioRef.current.crossOrigin = 'anonymous';
     const audio = audioRef.current;
     audio.volume = volume;
 
@@ -72,11 +71,23 @@ export function ShellAudioProvider({ children }: { children: React.ReactNode }) 
       pendingSeekRef.current = null;
     };
 
-    const onLoadedMetadata = () => { setDuration(audio.duration); applyPendingSeek(); };
+    const onLoadedMetadata = () => {
+      console.warn('[audio-diag] loadedmetadata', { src: audio.src, duration: audio.duration });
+      setDuration(audio.duration); applyPendingSeek();
+    };
     const onCanPlay = () => applyPendingSeek();
     const onProgress = () => applyPendingSeek();
     const onEnded = () => playNextRef.current();
-    const onError = () => setIsPlaying(false);
+    const onError = () => {
+      console.error('[audio-diag] audio element error', {
+        src: audio.currentSrc || audio.src,
+        errorCode: audio.error?.code,
+        errorMessage: audio.error?.message,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+      });
+      setIsPlaying(false);
+    };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -104,11 +115,41 @@ export function ShellAudioProvider({ children }: { children: React.ReactNode }) 
     const playAudio = async () => {
       try { await audio.play(); }
       catch (err) {
-        if (err instanceof Error && err.name !== 'AbortError') setIsPlaying(false);
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.warn('[gener8:audio] play failed', {
+            error: { name: err.name, message: err.message },
+            audioUrl: currentSong.audioUrl,
+            src: audio.currentSrc || audio.src,
+          });
+          setIsPlaying(false);
+        }
       }
     };
 
     if (audio.src !== currentSong.audioUrl) {
+      console.warn('[audio-diag] assigning src', {
+        songId: currentSong.id,
+        audioUrl: currentSong.audioUrl,
+        isPlaying,
+      });
+      // One-shot reachability probe: the decisive 200 vs 403 vs other.
+      // NOTE: fetch() is governed by CSP connect-src (which does NOT list asset:),
+      // while the <audio> media load is governed by media-src (which DOES). So a
+      // probe throw may be CSP-only; trust loadedmetadata vs audio-element-error as
+      // authoritative for the element itself. The probe still distinguishes 403 vs 200
+      // when the scheme is allowed.
+      fetch(currentSong.audioUrl, { method: 'GET', headers: { Range: 'bytes=0-0' } })
+        .then((r) => console.warn('[audio-diag] probe result', {
+          audioUrl: currentSong.audioUrl,
+          status: r.status,
+          ok: r.ok,
+          contentType: r.headers.get('content-type'),
+        }))
+        .catch((e) => console.error('[audio-diag] probe threw', {
+          audioUrl: currentSong.audioUrl,
+          error: String(e),
+        }));
+      audio.crossOrigin = /^https?:/i.test(currentSong.audioUrl) ? 'anonymous' : null;
       audio.src = currentSong.audioUrl;
       audio.load();
       if (isPlaying) playAudio();

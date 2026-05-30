@@ -472,7 +472,7 @@ export const SongList: React.FC<SongListProps> = ({
                                 isSelected={selectedSong?.id === song.id}
                                 isLiked={likedSongIds.has(song.id)}
                                 isPlaying={isPlaying}
-                                isOwner={user?.id === song.userId}
+                                isOwner={Boolean(onDelete)}
                                 onPlay={() => onPlay(song)}
                                 onSelect={() => onSelect(song)}
                                 onToggleLike={() => onToggleLike(song.id)}

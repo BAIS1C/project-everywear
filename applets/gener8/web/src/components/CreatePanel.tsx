@@ -3,17 +3,20 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Cpu, Zap, AlertTriangle, Layers, Loader2 } from 'lucide-react';
 import { GenerationParams, Song } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import type { Gener8AudioMode, Gener8LaunchManifest, Gener8LockedModel } from '@/context/LaunchManifestContext';
 import { generateApi, engineApi, type ModelInfo, type PatchManifest } from '@/services/api';
 import { PatchSelector } from './PatchSelector';
 import { showToast } from './ToastHost';
 import { ProAudioModePanel } from '@/pro/ProAudioModePanel';
 import { shouldMountProAudioModule } from '@/pro/entitlementGate';
 import { buildSongPayload, type BaseCreateFields, type CreateMode } from '@/pro/proPayloadBuilder';
+import { logInfo } from '@/lib/diag';
 
 interface CreatePanelProps {
   onGenerate: (params: GenerationParams) => void;
   isGenerating: boolean;
   initialData?: { song: Song, timestamp: number, mode?: 'reuse' | 'cover' } | null;
+  launchManifest?: Gener8LaunchManifest | null;
   onOpenUpgrade?: () => void;
 }
 
@@ -43,9 +46,8 @@ const detectStudioModelKind = (modelName: string): StudioModelKind => {
 
 const generationPresetFor = (modelName: string, mode: AudioPresetMode): GenerationPreset => {
   const kind = detectStudioModelKind(modelName);
-  const needsCapabilityPreset = mode === 'reference' || mode === 'cover' || kind === 'capability';
 
-  if (needsCapabilityPreset) {
+  if (kind === 'capability') {
     return {
       inferenceSteps: 50,
       guidanceScale: 1.0,
@@ -85,6 +87,27 @@ const generationPresetFor = (modelName: string, mode: AudioPresetMode): Generati
     cfgIntervalEnd: 1.0,
     customTimesteps: '',
   };
+};
+
+const resolveLockedModelName = (
+  lockedModel: Gener8LockedModel | null | undefined,
+  models: ModelInfo[],
+  fallback: string,
+): string => {
+  if (lockedModel === 'pro') {
+    return models.find((m) => m.name.toLowerCase().includes('xl-base'))?.name || fallback;
+  }
+
+  if (lockedModel === 'song') {
+    return (
+      models.find((m) => m.name.toLowerCase().includes('sftturbo50'))?.name ||
+      models.find((m) => m.name.toLowerCase().includes('xl-turbo'))?.name ||
+      models.find((m) => !m.name.toLowerCase().includes('xl-base'))?.name ||
+      fallback
+    );
+  }
+
+  return fallback;
 };
 
 const KEY_SIGNATURES = [
@@ -259,8 +282,26 @@ const RepaintRangeSlider: React.FC<RepaintRangeSliderProps> = ({
   );
 };
 
-export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerating, initialData, onOpenUpgrade }) => {
+export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerating, initialData, launchManifest, onOpenUpgrade }) => {
   const { isAuthenticated, token, hasTier, isTrialActive, entitlementResolved } = useAuth();
+  const lockedModel = launchManifest?.lockedModel ?? null;
+  const isModelLocked = lockedModel === 'song' || lockedModel === 'pro';
+  const launcherManifestRequired =
+    launchManifest?.id === 'gener8-4ever' || launchManifest?.id === 'gener8-pro';
+  const manifestUnreadable =
+    launcherManifestRequired &&
+    (!lockedModel || !launchManifest?.allowedAudioModes || launchManifest.allowedAudioModes.length === 0);
+  const manifestStepCeiling =
+    typeof launchManifest?.stepCeiling === 'number' && Number.isFinite(launchManifest.stepCeiling)
+      ? Math.max(1, Math.floor(launchManifest.stepCeiling))
+      : null;
+  const lockedModelStepCeiling = isModelLocked ? manifestStepCeiling : null;
+  const allowedAudioModes: Gener8AudioMode[] =
+    launchManifest?.allowedAudioModes ?? (launcherManifestRequired ? [] : ['song', 'reference', 'cover']);
+  const manifestAllowsProAudio = allowedAudioModes.some((mode) => mode === 'reference' || mode === 'cover');
+  const canMountProAudioModule =
+    manifestAllowsProAudio && shouldMountProAudioModule(entitlementResolved, hasTier('gener8_pro'));
+  const forcedModelRef = useRef<string>('');
 
   // Generation UX feedback (LOCKED 2026-04-18 in CONTEXT, wired 2026-04-26 SGT).
   // While isGenerating, the Create button transforms into a non-clickable
@@ -340,63 +381,52 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     [ditModels, loadedModel, selectedModel],
   );
 
-  const applyModelSwitch = useCallback(async (model: string) => {
-    if (!token || !model || isSwitchingModel) return;
+  const forceLoadModel = useCallback(async (model: string) => {
+    if (!token || !model) return false;
     setSelectedModel(model);
-    if (model === loadedModel) return;
     setIsSwitchingModel(true);
     try {
       const result = await engineApi.init({ model }, token);
       const newModel = result.loaded_model || model;
       setLoadedModel(newModel);
-      engineApi.models(token).then((inv) => {
+      if (isModelLocked) {
+        logInfo(`[gener8] window=${launchManifest?.id ?? 'gener8'} locked=${lockedModel} resolved=${newModel}`);
+      }
+      try {
+        const inv = await engineApi.models(token);
         setDitModels(inv.models || []);
-      }).catch(() => {});
+      } catch {
+        // Model init succeeded; inventory refresh can catch up later.
+      }
+      return true;
     } catch (err) {
-      console.error('Model switch failed:', err);
+      console.error('Model force-load failed:', err);
+      return false;
     } finally {
       setIsSwitchingModel(false);
     }
-  }, [token, isSwitchingModel, loadedModel]);
+  }, [token, isModelLocked, launchManifest?.id, lockedModel]);
 
-  // Fetch available models on mount
+  // Fetch available models on mount and force the manifest-locked DiT.
   useEffect(() => {
     if (!token) return;
-    engineApi.models(token).then((inv) => {
-      setDitModels(inv.models || []);
+    let cancelled = false;
+    engineApi.models(token).then(async (inv) => {
+      if (cancelled) return;
+      const models = inv.models || [];
+      setDitModels(models);
       const current = inv.models?.find(m => m.is_loaded)?.name || inv.default_model || '';
       setLoadedModel(current);
-      setSelectedModel(current);
+      const targetModel = isModelLocked ? resolveLockedModelName(lockedModel, models, current) : current;
+      setSelectedModel(targetModel);
+
+      if (isModelLocked && targetModel && forcedModelRef.current !== targetModel) {
+        const loaded = await forceLoadModel(targetModel);
+        if (!cancelled && loaded) forcedModelRef.current = targetModel;
+      }
     }).catch(() => { /* engine offline — selector stays hidden */ });
-  }, [token]);
-
-  const handleModelSwitch = async () => {
-    if (!token || selectedModel === loadedModel || isSwitchingModel) return;
-    await applyModelSwitch(selectedModel);
-
-    try {
-      const preset = generationPresetFor(selectedModel, 'song');
-      setInferenceSteps(preset.inferenceSteps);
-      setShift(preset.shift);
-      setGuidanceScale(preset.guidanceScale);
-      setThinking(preset.thinking);
-      setBatchSize(preset.batchSize);
-      setInferMethod(preset.inferMethod);
-      setCfgIntervalStart(preset.cfgIntervalStart);
-      setCfgIntervalEnd(preset.cfgIntervalEnd);
-      setCustomTimesteps(preset.customTimesteps);
-
-      // 2026-05-05 SGT: CoT auto-snap per model capability.
-      // All current LMs (0.6B Qwen3) support CoT. Future models without
-      // CoT (e.g. older 1B non-thinking LMs) would get false here.
-      const modelSupportsCot = true; // All shipped LMs have CoT
-      setUseCotMetas(modelSupportsCot);
-      setUseCotCaption(modelSupportsCot);
-      setUseCotLanguage(modelSupportsCot);
-    } catch (err) {
-      console.error('Model switch failed:', err);
-    }
-  };
+    return () => { cancelled = true; };
+  }, [token, isModelLocked, lockedModel, forceLoadModel]);
 
   // 2026-05-04 SGT (#36): customMode + songDescription state killed.
   // Custom is the only mode; tier governs panel surface.
@@ -472,8 +502,21 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   const [activePatchKeyword, setActivePatchKeyword] = useState<string | null>(null);
   const [activePatchName, setActivePatchName] = useState<string | null>(null);
 
+  const clampInferenceStepsForManifest = useCallback(
+    (steps: number): number => {
+      const rounded = Math.max(1, Math.round(Number.isFinite(steps) ? steps : 1));
+      return lockedModelStepCeiling ? Math.min(rounded, lockedModelStepCeiling) : rounded;
+    },
+    [lockedModelStepCeiling],
+  );
+
+  const setManifestInferenceSteps = useCallback(
+    (steps: number) => setInferenceSteps(clampInferenceStepsForManifest(steps)),
+    [clampInferenceStepsForManifest],
+  );
+
   const applyGenerationPreset = useCallback((preset: GenerationPreset, options?: { snapCoverStrength?: boolean }) => {
-    setInferenceSteps(preset.inferenceSteps);
+    setManifestInferenceSteps(preset.inferenceSteps);
     setGuidanceScale(preset.guidanceScale);
     setShift(preset.shift);
     setThinking(preset.thinking);
@@ -482,7 +525,12 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     setCfgIntervalStart(preset.cfgIntervalStart);
     setCfgIntervalEnd(preset.cfgIntervalEnd);
     setCustomTimesteps(preset.customTimesteps);
-  }, []);
+  }, [setManifestInferenceSteps]);
+
+  useEffect(() => {
+    if (!lockedModelStepCeiling) return;
+    setInferenceSteps((steps) => Math.min(steps, lockedModelStepCeiling));
+  }, [lockedModelStepCeiling]);
 
   // Resize Logic
   const [lyricsHeight, setLyricsHeight] = useState(() => {
@@ -577,7 +625,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
           const derivedThinking = derivedTrueBase || derivedSftTurbo50;
           const derivedBatch = derivedTurbo && !derivedSftTurbo50 ? 2 : 1;
           setModelType(derivedType);
-          setInferenceSteps(derivedSteps);
+          setManifestInferenceSteps(derivedSteps);
           setGuidanceScale(derivedCfg);
           setShift(derivedShift);
           setThinking(derivedThinking);
@@ -587,7 +635,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         }
 
         setModelType(defaults.model_type);
-        setInferenceSteps(defaults.inference_steps);
+        setManifestInferenceSteps(defaults.inference_steps);
         if (defaults.guidance_scale != null) setGuidanceScale(defaults.guidance_scale);
         if (defaults.shift != null) setShift(defaults.shift);
         setThinking(defaults.thinking);
@@ -602,27 +650,27 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
           const isTurboModel = lower.includes('turbo') && !isSftTurbo50;
           if (isTurboModel) {
             setModelType('turbo');
-            setInferenceSteps(8);
+            setManifestInferenceSteps(8);
             setShift(3.0);
             setBatchSize(2);
             setThinking(false);
           } else if (isTrueBase) {
             setModelType('base');
-            setInferenceSteps(50);
+            setManifestInferenceSteps(50);
             setShift(1.0);
             setGuidanceScale(1.0);
             setBatchSize(1);
             setThinking(true);
           } else if (isSftTurbo50) {
             setModelType('sftturbo50');
-            setInferenceSteps(50);
+            setManifestInferenceSteps(50);
             setShift(1.0);
             setGuidanceScale(1.0);
             setBatchSize(1);
             setThinking(true);
           } else if (loadedModel) {
             setModelType('unknown');
-            setInferenceSteps(50);
+            setManifestInferenceSteps(50);
             setShift(1.0);
             setBatchSize(1);
             setThinking(true);
@@ -630,7 +678,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         }
       });
     return () => { cancelled = true; };
-  }, [loadedModel]);
+  }, [loadedModel, setManifestInferenceSteps]);
 
   useEffect(() => {
     const targetModel = loadedModel || selectedModel || getSongModel();
@@ -789,18 +837,21 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         if (baseStyle.toLowerCase().includes(genderTag)) return baseStyle;
         return baseStyle.trim() ? `${baseStyle.trim()}, ${genderTag}` : genderTag;
       })();
-      const wantsCapabilityModel = mode === 'reference' || mode === 'cover';
       const effectiveSynthModel = synthModel || selectedModel || loadedModel || getSongModel();
+      const usesCapabilityModel =
+        lockedModel === 'pro' || detectStudioModelKind(effectiveSynthModel || '') === 'capability';
       const effectivePreset = generationPresetFor(
         effectiveSynthModel || loadedModel || selectedModel,
-        mode,
+        usesCapabilityModel ? 'reference' : mode,
       );
+      const requestedInferenceSteps =
+        usesCapabilityModel && inferenceSteps < 32 ? effectivePreset.inferenceSteps : inferenceSteps;
       const effectiveInferenceSteps =
-        wantsCapabilityModel && inferenceSteps < 32 ? effectivePreset.inferenceSteps : inferenceSteps;
+        clampInferenceStepsForManifest(requestedInferenceSteps);
       const effectiveGuidanceScale =
-        wantsCapabilityModel && guidanceScale < 5 ? effectivePreset.guidanceScale : guidanceScale;
+        usesCapabilityModel && guidanceScale < 5 ? effectivePreset.guidanceScale : guidanceScale;
       const effectiveShift =
-        wantsCapabilityModel && (shift < 1 || shift > 5) ? effectivePreset.shift : shift;
+        usesCapabilityModel && (shift < 1 || shift > 5) ? effectivePreset.shift : shift;
 
       return {
         // 2026-05-04 SGT (#36): customMode + songDescription dropped from
@@ -843,7 +894,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         batchSize: 1, // task #57: single ace-server job per call; UI loop produces multiple tracks via bulkCount. See Variations control above.
         randomSeed: randomSeed || index > 0, // Force random for subsequent bulk jobs
         seed: jobSeed,
-        thinking: wantsCapabilityModel ? effectivePreset.thinking : thinking,
+        thinking: usesCapabilityModel ? effectivePreset.thinking : thinking,
         audioFormat,
         inferMethod,
         shift: effectiveShift,
@@ -858,9 +909,9 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
         instruction,
         audioCoverStrength,
         useAdg,
-        cfgIntervalStart: wantsCapabilityModel ? effectivePreset.cfgIntervalStart : cfgIntervalStart,
-        cfgIntervalEnd: wantsCapabilityModel ? effectivePreset.cfgIntervalEnd : cfgIntervalEnd,
-        customTimesteps: wantsCapabilityModel
+        cfgIntervalStart: usesCapabilityModel ? effectivePreset.cfgIntervalStart : cfgIntervalStart,
+        cfgIntervalEnd: usesCapabilityModel ? effectivePreset.cfgIntervalEnd : cfgIntervalEnd,
+        customTimesteps: usesCapabilityModel
           ? undefined
           : customTimesteps.trim() || undefined,
         useCotMetas,
@@ -893,6 +944,8 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
     selectedModel,
     loadedModel,
     getSongModel,
+    lockedModel,
+    clampInferenceStepsForManifest,
     inferenceSteps,
     guidanceScale,
     shift,
@@ -978,8 +1031,14 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
           </div>
         </div>
 
-        {/* Model Selector — compact inline */}
-        {ditModels.length > 0 && (
+        {manifestUnreadable && (
+          <div className="ew-card p-3 border-red-500/50 bg-red-500/10 text-xs text-red-300">
+            Launch manifest unreadable. Close and relaunch this applet before generating.
+          </div>
+        )}
+
+        {/* Model Selector — compact inline. Hidden for launcher-locked applets. */}
+        {!isModelLocked && ditModels.length > 0 && (
           <div className="flex items-center gap-2 px-1">
             <Cpu size={12} className="text-zinc-400 flex-shrink-0" />
             <select
@@ -1002,11 +1061,11 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
             </select>
             {selectedModel !== loadedModel && (
               <button
-                onClick={handleModelSwitch}
+                onClick={() => void forceLoadModel(selectedModel)}
                 disabled={isSwitchingModel}
                 className="flex items-center gap-1 px-2 py-1 bg-indigo-600 text-white rounded text-[10px] font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
               >
-                {isSwitchingModel ? <RefreshCw size={10} className="animate-spin" /> : <Zap size={10} />}
+                {isSwitchingModel ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
                 {isSwitchingModel ? 'Swapping...' : 'Swap'}
               </button>
             )}
@@ -1272,7 +1331,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               />
             )}
 
-            {shouldMountProAudioModule(entitlementResolved, hasTier('gener8_pro')) && (
+            {canMountProAudioModule && (
               <ProAudioModePanel
                 token={token}
                 isGenerating={isGenerating}
@@ -1281,7 +1340,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                 ditModels={ditModels}
                 loadedModel={loadedModel}
                 onModelsRefresh={setDitModels}
-                onUseCapabilityModel={applyModelSwitch}
+                onUseCapabilityModel={isModelLocked ? () => undefined : forceLoadModel}
                 buildBaseFields={buildBaseCreateFields}
                 onGenerate={onGenerate}
                 onBulkReset={() => setBulkCount(1)}
@@ -1507,13 +1566,20 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               </div>
               {(() => {
                 const capabilityMode = modelKind(loadedModel) === 'capability';
+                const manifestSongCeiling = lockedModel === 'song' && lockedModelStepCeiling === 12;
                 const isTurbo = isFastTurboModel(loadedModel) && !capabilityMode;
 
-                const presets = capabilityMode
+                const rawPresets = manifestSongCeiling
+                  ? [{ label: 'Draft', steps: 4 }, { label: 'Standard', steps: 8 }, { label: 'High', steps: 12 }]
+                  : capabilityMode
                   ? [{ label: 'Fast', steps: 25 }, { label: 'Standard', steps: 50 }, { label: 'High', steps: 75 }]
                   : isTurbo
                   ? [{ label: 'Draft', steps: 4 }, { label: 'Standard', steps: 8 }, { label: 'High', steps: 12 }]
                   : [{ label: 'Fast', steps: 25 }, { label: 'Standard', steps: 50 }, { label: 'High', steps: 75 }];
+                const presets = rawPresets.map((preset) => ({
+                  ...preset,
+                  steps: clampInferenceStepsForManifest(preset.steps),
+                }));
 
                 return (
                   <>
@@ -1522,7 +1588,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
                         <button
                           key={label}
                           onClick={() => {
-                            setInferenceSteps(steps);
+                            setManifestInferenceSteps(steps);
                             if (capabilityMode) {
                               setGuidanceScale(1.0);
                               setShift(1.0);

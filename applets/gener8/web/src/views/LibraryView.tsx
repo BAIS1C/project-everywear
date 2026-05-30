@@ -5,11 +5,13 @@
  * Features: media filter tabs, sort dropdown, pagination, stats bar,
  * thumbnail display, and item detail navigation.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Music, Image, Film, FileAudio, Star, Search, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { useVault, type VaultMediaFilter, type VaultSortBy } from '../context/VaultProvider';
-import type { VaultItem } from '@everywear/transport';
+import { vaultFileUrl, type VaultItem } from '@everywear/transport';
 import { VaultDetailPanel } from '../components/VaultDetailPanel';
+import { useShellAudio } from '../shell/ShellAudioPlayer';
+import type { Song } from '../types';
 
 // ── Tab / Sort definitions ──────────────────────────────────────────
 
@@ -107,6 +109,68 @@ function displayItemTitle(item: VaultItem): string {
   return fileStem(item.file_path) || item.title || 'Untitled';
 }
 
+function safeNumber(value: unknown, fallback = 0): number {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
+
+function normalizeVaultItem(item: VaultItem): VaultItem {
+  const mediaType = item.media_type === 'image' || item.media_type === 'video' || item.media_type === 'audio'
+    ? item.media_type
+    : 'audio';
+  const filePath = typeof item.file_path === 'string' ? item.file_path : '';
+  const fallbackTitle = fileStem(filePath) || 'Untitled';
+  const title = typeof item.title === 'string' && item.title.trim() ? item.title : fallbackTitle;
+  const generationParams = item.generation_params && typeof item.generation_params === 'object' && !Array.isArray(item.generation_params)
+    ? item.generation_params
+    : {};
+
+  return {
+    ...item,
+    media_type: mediaType,
+    id: typeof item.id === 'string' && item.id.trim() ? item.id : `${mediaType}:${filePath || title}`,
+    applet_id: typeof item.applet_id === 'string' ? item.applet_id : '',
+    title,
+    tags: Array.isArray(item.tags) ? item.tags.filter((tag) => typeof tag === 'string') : [],
+    created_at: safeNumber(item.created_at),
+    updated_at: safeNumber(item.updated_at),
+    file_path: filePath,
+    file_size_bytes: safeNumber(item.file_size_bytes),
+    mime_type: typeof item.mime_type === 'string' ? item.mime_type : '',
+    favorite: Boolean(item.favorite),
+    asset_kind: item.asset_kind,
+    duration_seconds: safeNumber(item.duration_seconds),
+    generation_params: generationParams,
+  };
+}
+
+function isPlayableAudioItem(item: VaultItem): boolean {
+  return item.media_type === 'audio' && Boolean(item.file_path);
+}
+
+function vaultItemToSong(item: VaultItem): Song {
+  const durationSeconds = Number(item.duration_seconds ?? 0);
+  const audioUrl = vaultFileUrl(item.file_path);
+  return {
+    id: item.id,
+    title: displayItemTitle(item),
+    lyrics: item.lyrics_text ?? '',
+    style: item.genre ?? '',
+    coverUrl: `https://picsum.photos/seed/${item.id}/400/400`,
+    duration: durationSeconds > 0
+      ? `${Math.floor(durationSeconds / 60)}:${String(Math.floor(durationSeconds % 60)).padStart(2, '0')}`
+      : undefined,
+    createdAt: new Date(item.created_at * 1000),
+    created_at: new Date(item.created_at * 1000).toISOString(),
+    tags: item.tags ?? [],
+    audioUrl,
+    audio_url: audioUrl,
+    bpm: item.bpm,
+    generation_params: item.generation_params,
+    lrc_data: item.lyrics_text ?? null,
+  };
+}
+
 // ── Item Row ────────────────────────────────────────────────────────
 
 function VaultItemRow({
@@ -114,25 +178,36 @@ function VaultItemRow({
   onClick,
   onDelete,
   getThumbnailUrl,
+  isActive = false,
+  isPlaying = false,
+  isPlayable = false,
   variant = 'row',
 }: {
   item: VaultItem;
   onClick: () => void;
   onDelete: () => void;
   getThumbnailUrl: (id: string) => string;
+  isActive?: boolean;
+  isPlaying?: boolean;
+  isPlayable?: boolean;
   variant?: 'row' | 'gallery';
 }) {
   const [thumbError, setThumbError] = useState(false);
   const showThumb = item.media_type === 'image' || item.media_type === 'video';
   const title = displayItemTitle(item);
   const isGallery = variant === 'gallery';
+  const tags = item.tags;
 
   return (
     <div
       className={
         isGallery
-          ? 'flex flex-col gap-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 hover:bg-white/[0.06] cursor-pointer transition-colors group'
-          : 'flex items-center gap-3 px-3 py-2 rounded-md hover:bg-white/5 cursor-pointer transition-colors group'
+          ? `flex flex-col gap-3 rounded-lg border p-3 cursor-pointer transition-colors group ${
+              isActive ? 'border-white/25 bg-white/[0.08]' : 'border-white/10 bg-white/[0.035] hover:bg-white/[0.06]'
+            }`
+          : `flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors group ${
+              isActive ? 'bg-white/10' : 'hover:bg-white/5'
+            }`
       }
       onClick={onClick}
     >
@@ -160,7 +235,9 @@ function VaultItemRow({
           </>
         ) : (
           <span className="text-s3-text-muted opacity-40">
-            {mediaIcon(item.media_type)}
+            {isPlayable && isActive && isPlaying
+              ? <Music size={14} style={{ color: 'var(--ew-accent, var(--ew-text))' }} />
+              : mediaIcon(item.media_type)}
           </span>
         )}
       </div>
@@ -174,12 +251,15 @@ function VaultItemRow({
         <div className="text-xs text-s3-text-muted truncate flex items-center gap-2">
           <span className="flex items-center gap-1">{mediaIcon(item.media_type)} {itemKindLabel(item)}</span>
           {item.applet_id && <span>{item.applet_id}</span>}
+          {isPlayable && isActive && (
+            <span style={{ color: 'var(--ew-accent, var(--ew-text))' }}>{isPlaying ? 'Playing' : 'Paused'}</span>
+          )}
         </div>
       </div>
 
       {/* Tags */}
       <div className={isGallery ? 'flex flex-wrap gap-1' : 'hidden md:flex gap-1'}>
-        {item.tags.slice(0, 2).map((tag) => (
+        {tags.slice(0, 2).map((tag) => (
           <span
             key={tag}
             className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-s3-text-muted"
@@ -353,8 +433,11 @@ function SortDropdown({ value, onChange }: { value: VaultSortBy; onChange: (v: V
 
 export default function LibraryView() {
   const vault = useVault();
+  const audio = useShellAudio();
   const [deleteTarget, setDeleteTarget] = useState<VaultItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const items = useMemo(() => vault.items.map(normalizeVaultItem), [vault.items]);
+  const selectedItem = vault.selectedItem ? normalizeVaultItem(vault.selectedItem) : null;
 
   const totalPages = Math.max(1, Math.ceil(vault.total / vault.pageSize));
   const showingFrom = vault.total > 0 ? vault.page * vault.pageSize + 1 : 0;
@@ -362,8 +445,16 @@ export default function LibraryView() {
   const isVideoGallery = vault.filter === 'video';
 
   const handleItemClick = useCallback((item: VaultItem) => {
+    if (isPlayableAudioItem(item)) {
+      const queue = items
+        .filter(isPlayableAudioItem)
+        .map(vaultItemToSong);
+      const song = queue.find((entry) => entry.id === item.id) ?? vaultItemToSong(item);
+      audio.playSong(song, queue.length > 0 ? queue : [song]);
+      return;
+    }
     vault.setSelectedItem(item);
-  }, [vault]);
+  }, [audio, items, vault]);
 
   const deleteItem = useCallback(async (item: VaultItem) => {
     try {
@@ -395,10 +486,10 @@ export default function LibraryView() {
   }, [deleteItem, deleteTarget]);
 
   // Detail panel takes over when an item is selected
-  if (vault.selectedItem) {
+  if (selectedItem) {
     return (
       <VaultDetailPanel
-        item={vault.selectedItem}
+        item={selectedItem}
         onBack={() => vault.setSelectedItem(null)}
       />
     );
@@ -475,7 +566,7 @@ export default function LibraryView() {
               </div>
             ))}
           </div>
-        ) : vault.items.length === 0 ? (
+        ) : items.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
             <Music size={48} className="text-s3-text-muted opacity-30" />
@@ -492,7 +583,7 @@ export default function LibraryView() {
           </div>
         ) : (
           <div className={isVideoGallery ? 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4' : 'flex flex-col'}>
-            {vault.items.map((item) => (
+            {items.map((item) => (
               <VaultItemRow
                 key={item.id}
                 item={item}
@@ -500,6 +591,9 @@ export default function LibraryView() {
                 onClick={() => handleItemClick(item)}
                 onDelete={() => requestDeleteItem(item)}
                 getThumbnailUrl={vault.getThumbnailUrl}
+                isActive={audio.currentSong?.id === item.id}
+                isPlaying={audio.currentSong?.id === item.id && audio.isPlaying}
+                isPlayable={isPlayableAudioItem(item)}
               />
             ))}
           </div>

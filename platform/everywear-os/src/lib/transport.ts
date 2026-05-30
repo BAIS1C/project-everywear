@@ -134,16 +134,36 @@ export interface AppletEntry {
   icon: string;
   status: 'Active' | 'Locked' | 'NotBuilt';
   launch_kind: 'BinaryLocal' | 'FrontendInline' | 'ExternalUrl' | 'Placeholder';
+  launchKind?: 'BinaryLocal' | 'FrontendInline' | 'ExternalUrl' | 'Placeholder';
   engine_type: string;
+  engineType?: string;
   min_vram_mb: number;
+  minVramMb?: number;
   tags: string[];
   launch_url: string | null;
+  launchUrl?: string | null;
   launch_binary: string | null;
+  launchBinary?: string | null;
   required_tier: LicenceTier | null;
+  requiredTier?: LicenceTier | null;
   required_entitlements: string[];
+  requiredEntitlements?: string[];
   frontend_port: number | null;
+  frontendPort?: number | null;
   frontend_route: string | null;
+  frontendRoute?: string | null;
   shares_backend: string | null;
+  sharesBackend?: string | null;
+  lockedModel?: 'song' | 'pro' | null;
+  allowedAudioModes?: ('song' | 'reference' | 'cover')[] | null;
+  stepCeiling?: number | null;
+  vaultScope?: 'full' | null;
+  vidTarget?: 'vid' | null;
+  locked_model?: 'song' | 'pro' | null;
+  allowed_audio_modes?: ('song' | 'reference' | 'cover')[] | null;
+  step_ceiling?: number | null;
+  vault_scope?: 'full' | null;
+  vid_target?: 'vid' | null;
 }
 
 export interface PlatformStatus {
@@ -175,6 +195,25 @@ const hasTauriRuntime = () =>
   typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 const nowIso = () => new Date().toISOString();
+const canonicalAppletId = (id: string) => (id === 'gener8' ? 'gener8-4ever' : id);
+const normalizeAppletEntry = (entry: AppletEntry): AppletEntry => ({
+  ...entry,
+  launch_kind: entry.launch_kind ?? entry.launchKind ?? 'Placeholder',
+  engine_type: entry.engine_type ?? entry.engineType ?? 'none',
+  min_vram_mb: entry.min_vram_mb ?? entry.minVramMb ?? 0,
+  launch_url: entry.launch_url ?? entry.launchUrl ?? null,
+  launch_binary: entry.launch_binary ?? entry.launchBinary ?? null,
+  required_tier: entry.required_tier ?? entry.requiredTier ?? null,
+  required_entitlements: entry.required_entitlements ?? entry.requiredEntitlements ?? [],
+  frontend_port: entry.frontend_port ?? entry.frontendPort ?? null,
+  frontend_route: entry.frontend_route ?? entry.frontendRoute ?? null,
+  shares_backend: entry.shares_backend ?? entry.sharesBackend ?? null,
+  lockedModel: entry.lockedModel ?? entry.locked_model ?? null,
+  allowedAudioModes: entry.allowedAudioModes ?? entry.allowed_audio_modes ?? null,
+  stepCeiling: entry.stepCeiling ?? entry.step_ceiling ?? null,
+  vaultScope: entry.vaultScope ?? entry.vault_scope ?? null,
+  vidTarget: entry.vidTarget ?? entry.vid_target ?? null,
+});
 
 function browserProfileFallback(): UserProfile {
   return {
@@ -226,16 +265,16 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     shares_backend: null,
   },
   {
-    id: 'gener8',
-    name: 'Gener8',
-    description: 'Local AI music generation, stem mixing, and production',
+    id: 'gener8-4ever',
+    name: 'Gener8 4ever',
+    description: 'Local AI text-to-song generation',
     version: '0.1.0',
-    icon: 'gener8',
+    icon: 'gener8-4ever',
     status: 'Active',
     launch_kind: 'FrontendInline',
     engine_type: 'audio',
     min_vram_mb: 6144,
-    tags: ['music', 'audio', 'generation', 'daw'],
+    tags: ['music', 'audio', 'song', '4ever'],
     launch_url: null,
     launch_binary: null,
     required_tier: 'gener8',
@@ -243,6 +282,35 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     frontend_port: null,
     frontend_route: null,
     shares_backend: null,
+    lockedModel: 'song',
+    allowedAudioModes: ['song'],
+    stepCeiling: 12,
+    vaultScope: 'full',
+    vidTarget: 'vid',
+  },
+  {
+    id: 'gener8-pro',
+    name: 'Gener8 Pro',
+    description: 'Local AI reference and cover audio generation',
+    version: '0.1.0',
+    icon: 'gener8-pro',
+    status: 'Active',
+    launch_kind: 'FrontendInline',
+    engine_type: 'audio',
+    min_vram_mb: 6144,
+    tags: ['music', 'audio', 'reference', 'cover'],
+    launch_url: null,
+    launch_binary: null,
+    required_tier: 'gener8_pro',
+    required_entitlements: ['gener8_pro'],
+    frontend_port: null,
+    frontend_route: null,
+    shares_backend: null,
+    lockedModel: 'pro',
+    allowedAudioModes: ['reference', 'cover'],
+    stepCeiling: 75,
+    vaultScope: 'full',
+    vidTarget: 'vid',
   },
   {
     id: 'vid',
@@ -257,11 +325,11 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     tags: ['video', 'visualiser', 'music'],
     launch_url: null,
     launch_binary: null,
-    required_tier: 'creator_studio',
-    required_entitlements: ['vid_pro'],
+    required_tier: 'gener8',
+    required_entitlements: ['vid'],
     frontend_port: null,
     frontend_route: null,
-    shares_backend: 'gener8',
+    shares_backend: 'gener8-4ever',
   },
   {
     id: 'ai-director',
@@ -280,7 +348,26 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     required_entitlements: ['ai_director', 'ai_director.planner'],
     frontend_port: null,
     frontend_route: null,
-    shares_backend: 'gener8',
+    shares_backend: 'gener8-4ever',
+  },
+  {
+    id: 'daw',
+    name: 'DAW',
+    description: 'Multi-track timeline, stem mixing, and arrangement',
+    version: '0.1.0',
+    icon: 'daw',
+    status: 'Active',
+    launch_kind: 'FrontendInline',
+    engine_type: 'none',
+    min_vram_mb: 0,
+    tags: ['daw', 'audio', 'mixing', 'stems'],
+    launch_url: null,
+    launch_binary: null,
+    required_tier: 'creator_studio',
+    required_entitlements: ['daw_pro'],
+    frontend_port: null,
+    frontend_route: null,
+    shares_backend: 'gener8-4ever',
   },
   {
     id: 's3studio',
@@ -373,7 +460,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     tags: ['video', 'generation'],
     launch_url: null,
     launch_binary: 'everywear-3nvizen',
-    required_tier: 'gener8_pro',
+    required_tier: 'creator_studio',
     required_entitlements: ['3nvizen', '3nvizen.video'],
     frontend_port: 3004,
     frontend_route: null,
@@ -440,6 +527,7 @@ export interface AuthReport {
   tier: string;
   is_paid: boolean;
   is_pro: boolean;
+  entitlement_resolved: boolean;
   entitlements?: Record<string, boolean>;
 }
 
@@ -450,6 +538,8 @@ export interface AuthContext {
   tier: LicenceTier;
   is_paid: boolean;
   is_pro: boolean;
+  entitlement_resolved: boolean;
+  entitlements?: Record<string, boolean>;
 }
 
 // ─── GPU ────────────────────────────────────────────────────────────────────
@@ -489,7 +579,9 @@ export const walletDisconnect = () => invoke<void>('wallet_disconnect');
 // ─── Registry ───────────────────────────────────────────────────────────────
 
 export const listApplets = async () =>
-  hasTauriRuntime() ? invoke<AppletEntry[]>('list_applets') : BROWSER_APPLET_REGISTRY;
+  hasTauriRuntime()
+    ? (await invoke<AppletEntry[]>('list_applets')).map(normalizeAppletEntry)
+    : BROWSER_APPLET_REGISTRY.map(normalizeAppletEntry);
 
 /**
  * Resolve an applet's effective display/launch status against the signed-in
@@ -518,17 +610,22 @@ export function resolveAppletStatus(
   const owned = applet.required_entitlements.some((key) => entitlements?.[key] === true);
   return owned ? 'Active' : 'Locked';
 }
-export const getApplet = async (id: string) =>
-  hasTauriRuntime()
-    ? invoke<AppletEntry | null>('get_applet', { id })
-    : BROWSER_APPLET_REGISTRY.find((applet) => applet.id === id) ?? null;
+export const getApplet = async (id: string) => {
+  const canonicalId = canonicalAppletId(id);
+  if (hasTauriRuntime()) {
+    const entry = await invoke<AppletEntry | null>('get_applet', { id: canonicalId });
+    return entry ? normalizeAppletEntry(entry) : null;
+  }
+  const entry = BROWSER_APPLET_REGISTRY.find((applet) => applet.id === canonicalId);
+  return entry ? normalizeAppletEntry(entry) : null;
+};
 export const launchApplet = async (id: string) => {
   if (!hasTauriRuntime()) return;
-  return invoke<void>('launch_applet', { id });
+  return invoke<void>('launch_applet', { id: canonicalAppletId(id) });
 };
 export const requestAppletSwitch = async (appletId: string) => {
   if (!hasTauriRuntime()) return;
-  return invoke<void>('request_applet_switch', { appletId });
+  return invoke<void>('request_applet_switch', { appletId: canonicalAppletId(appletId) });
 };
 export const closeAppletWebview = (appletId: string) =>
   hasTauriRuntime() ? invoke<void>('close_applet_webview', { appletId }) : Promise.resolve();

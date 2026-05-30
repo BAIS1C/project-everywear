@@ -21,14 +21,14 @@ export interface ProVaultTrack {
 }
 
 interface ProVaultPickerProps {
-  mode: Exclude<ProAudioMode, 'song'>;
+  mode: ProAudioMode;
   open: boolean;
   onClose: () => void;
   onPick: (track: ProVaultTrack) => void;
 }
 
 export function expectedAssetKindsForMode(
-  mode: Exclude<ProAudioMode, 'song'>,
+  mode: ProAudioMode,
 ): VaultAssetKind[] {
   return mode === 'reference'
     ? ['reference']
@@ -37,7 +37,7 @@ export function expectedAssetKindsForMode(
 
 export function filterVaultItemsForProMode(
   items: VaultItem[],
-  mode: Exclude<ProAudioMode, 'song'>,
+  mode: ProAudioMode,
 ): VaultItem[] {
   const allowed = new Set(expectedAssetKindsForMode(mode));
   return items.filter((item) => (
@@ -81,7 +81,7 @@ function formatTime(time: number | null): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-async function fetchTracksForMode(mode: Exclude<ProAudioMode, 'song'>): Promise<ProVaultTrack[]> {
+async function fetchTracksForMode(mode: ProAudioMode): Promise<ProVaultTrack[]> {
   const responses = await Promise.all(
     expectedAssetKindsForMode(mode).map((kind) => vaultSearch('', kind, 'newest', 250, 0)),
   );

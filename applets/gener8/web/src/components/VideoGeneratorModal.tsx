@@ -171,10 +171,9 @@ function ColumnsIcon() {
 export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen, onClose, song, embedded = false }) => {
   const { isMobile } = useResponsive();
   const { user, hasTier, isTrialActive, canRemoveWatermark } = useAuth();
-  const isGener8Pro = hasTier('gener8_pro');
-  // canRemoveWatermark = subscribed Pro/Creator only (NOT trial). Trial
-  // users stay on base export settings; subscribed Pro/Creator can unlock
-  // Pro presets, while watermark removal remains its own explicit gate.
+  const isVidPro = hasTier('vid_pro');
+  // Vid Pro is an internal entitlement state of the single Vid Studio applet.
+  // It is not a separate `vid_pro` applet target.
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationRef = useRef<number>(0);
@@ -206,7 +205,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
   const albumArtInputRef = useRef<HTMLInputElement>(null);
   const customAlbumArtImageRef = useRef<HTMLImageElement | null>(null);
 
-  // Slideshow layer (Gener8 Pro) — beat-synced image bank
+  // Slideshow layer (Vid Pro) — beat-synced image bank
   const [slideshowImages, setSlideshowImages] = useState<string[]>([]); // data URLs
   const slideshowImagesRef = useRef<HTMLImageElement[]>([]);
   const slideshowIndexRef = useRef(0);
@@ -236,7 +235,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
   const [pexelsError, setPexelsError] = useState<string | null>(null);
   
   // Export resolution presets — social platforms + standard aspect ratios
-  // Gener8 Pro unlocks everything beyond 540p 9:16
+  // Vid Pro unlocks everything beyond the basic Vid Studio 540p presets.
   const RENDER_PRESETS = [
     // --- Social-optimised (9:16 vertical) ---
     { label: 'TikTok / Reels',      w: 1080, h: 1920, aspect: '9:16', tier: 'pro' as const },
@@ -256,7 +255,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
   ] as const;
   const BASE_DEFAULT_INDEX = 5; // 540p 16:9
   const [selectedPreset, setSelectedPreset] = useState(BASE_DEFAULT_INDEX);
-  const renderRes = RENDER_PRESETS[isGener8Pro ? selectedPreset : BASE_DEFAULT_INDEX];
+  const renderRes = RENDER_PRESETS[isVidPro ? selectedPreset : BASE_DEFAULT_INDEX];
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -3489,8 +3488,8 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                             />
                         </div>
 
-                        {/* Particle Transform Controls — Gener8 Pro */}
-                        {isGener8Pro && <div className="space-y-3">
+                        {/* Particle Transform Controls — Vid Pro */}
+                        {isVidPro && <div className="space-y-3">
                             <label className="text-xs font-bold text-zinc-500 uppercase">Particle Transform <span className="text-accent-500">PRO</span></label>
                             <div>
                                 <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
@@ -3532,8 +3531,8 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                             </div>
                         </div>}
 
-                        {/* Void Centre Image Toggle — Gener8 Pro */}
-                        {isGener8Pro && ['NCS Circle', 'Hexagon', 'Orbital', 'Shockwave'].includes(config.preset) && (
+                        {/* Void Centre Image Toggle — Vid Pro */}
+                        {isVidPro && ['NCS Circle', 'Hexagon', 'Orbital', 'Shockwave'].includes(config.preset) && (
                             <div className="space-y-3">
                                 <div
                                     className={`ew-card flex items-center justify-between p-3 cursor-pointer transition-all ${config.showVoidImage ? '' : 'opacity-70'}`}
@@ -3734,7 +3733,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                         </div>
 
                         {/* Watermark toggle.
-                            Subscribed Gener8 Pro / Creator Studio: can toggle off.
+                            Vid Pro entitlement: can toggle off.
                             Trial users: locked ON. Drives viral free-distribution
                             loop and conversion to paid.
                             Base/anon: locked ON (no Pro UI access at all).
@@ -3748,7 +3747,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                                 ? (showWatermark ? 'Click to disable watermark' : 'Click to re-enable watermark')
                                 : isTrialActive
                                   ? 'Subscribe to Gener8 Pro to remove the watermark'
-                                  : 'Enabled in Gener8 Pro'
+                                  : 'Enabled in Vid Pro'
                             }
                             onClick={() => canRemoveWatermark && setShowWatermark(!showWatermark)}
                         >
@@ -3991,7 +3990,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                         Replaces the prior <select><optgroup> dropdown
                         (2026-04-19). Sean's call: the Render tab has the
                         whole page available, give the resolutions room to
-                        breathe and surface the Gener8 Pro upsell visually
+                        breathe and surface the Vid Pro upsell visually
                         on each locked card rather than buried in a dropdown.
                         2026-04-25 SGT.
 
@@ -4012,12 +4011,12 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                         >
                           Export Format
                         </span>
-                        {!isGener8Pro && (
+                        {!isVidPro && (
                           <span
                             className="text-[10px] normal-case tracking-normal font-medium"
                             style={{ color: 'var(--ew-warning)' }}
                           >
-                            Upgrade to Gener8 Pro to unlock all formats
+                            Upgrade to Gener8 Pro to unlock Vid Pro formats
                           </span>
                         )}
                       </div>
@@ -4042,14 +4041,14 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
                             </h4>
                             <div className="grid grid-cols-2 gap-2">
                               {groupPresets.map(({ p, i }) => {
-                                const locked = p.tier === 'pro' && !isGener8Pro;
+                                const locked = p.tier === 'pro' && !isVidPro;
                                 const isSelected = selectedPreset === i && !locked;
                                 return (
                                   <button
                                     key={i}
                                     type="button"
                                     disabled={locked}
-                                    title={locked ? 'Enabled in Gener8 Pro' : `${p.label} — ${p.w} × ${p.h}`}
+                                    title={locked ? 'Enabled in Vid Pro' : `${p.label} — ${p.w} × ${p.h}`}
                                     onClick={() => {
                                       if (locked) return;
                                       setSelectedPreset(i);
