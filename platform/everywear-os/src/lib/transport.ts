@@ -364,7 +364,9 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     description: 'AI video generation with Wan 2.2 and LTX',
     version: '0.1.0',
     icon: '3nvizen',
-    status: 'Locked',
+    // Build-availability only; lock state is derived from entitlements via
+    // resolveAppletStatus(), not hardcoded here. (WIKI.md v1.1.16)
+    status: 'Active',
     launch_kind: 'BinaryLocal',
     engine_type: 'diffusion',
     min_vram_mb: 12288,
@@ -488,6 +490,34 @@ export const walletDisconnect = () => invoke<void>('wallet_disconnect');
 
 export const listApplets = async () =>
   hasTauriRuntime() ? invoke<AppletEntry[]>('list_applets') : BROWSER_APPLET_REGISTRY;
+
+/**
+ * Resolve an applet's effective display/launch status against the signed-in
+ * user's live entitlement flags.
+ *
+ * The Rust registry and the browser fallback only describe BUILD availability
+ * (`Active` / `NotBuilt`); any `Locked` they carry is a presentation default,
+ * not an authority. The authoritative lock decision is whether the user holds
+ * at least one of the applet's `required_entitlements`. This mirrors
+ * `appletLaunchBlocked()` in ShellLayout so the badge and the launch gate
+ * agree. See WIKI.md v1.1.16 launcher gating note.
+ *
+ * Rules:
+ *  - `NotBuilt` always wins (cannot launch a missing binary, owned or not).
+ *  - No `required_entitlements` => available (never a hard Locked).
+ *  - Has `required_entitlements` => `Active` if the user holds any, else `Locked`.
+ */
+export function resolveAppletStatus(
+  applet: AppletEntry,
+  entitlements?: Record<string, boolean> | null,
+): AppletEntry['status'] {
+  if (applet.status === 'NotBuilt') return 'NotBuilt';
+  if (!applet.required_entitlements || applet.required_entitlements.length === 0) {
+    return applet.status === 'Locked' ? 'Active' : applet.status;
+  }
+  const owned = applet.required_entitlements.some((key) => entitlements?.[key] === true);
+  return owned ? 'Active' : 'Locked';
+}
 export const getApplet = async (id: string) =>
   hasTauriRuntime()
     ? invoke<AppletEntry | null>('get_applet', { id })

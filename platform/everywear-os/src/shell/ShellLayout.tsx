@@ -6,6 +6,7 @@ import {
   getGpuStatus,
   listModelAssessments,
   listApplets,
+  resolveAppletStatus,
   requestAppletSwitch,
   closeAppletWebview,
   type AppletEntry,
@@ -1261,15 +1262,25 @@ export function ShellLayout() {
 
   // Show the registry as the desktop source of truth. S3 Studio is a desktop
   // folder, not a web shortcut; its child applets still come from the registry.
+  // Lock state is derived from the owner's live entitlement flags here, so the
+  // launcher badge agrees with appletLaunchBlocked() rather than trusting a
+  // stale presentation `Locked` from the registry. (WIKI.md v1.1.16)
+  const gatedApplets = useMemo(
+    () => registryApplets.map((applet) => ({
+      ...applet,
+      status: resolveAppletStatus(applet, authUser?.entitlements ?? authUser?.tiers),
+    })),
+    [registryApplets, authUser?.entitlements, authUser?.tiers]
+  );
   const s3FolderApplets = useMemo(
-    () => registryApplets
+    () => gatedApplets
       .filter((applet) => S3_FOLDER_APPLET_IDS.has(applet.id))
       .sort((a, b) => S3_FOLDER_ORDER.indexOf(a.id) - S3_FOLDER_ORDER.indexOf(b.id)),
-    [registryApplets]
+    [gatedApplets]
   );
   const visibleApplets = useMemo(
-    () => registryApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio'),
-    [registryApplets]
+    () => gatedApplets.filter((applet) => !S3_FOLDER_APPLET_IDS.has(applet.id) && applet.id !== 's3studio'),
+    [gatedApplets]
   );
   const launchingApplet = launchingId
     ? registryApplets.find((applet) => applet.id === launchingId) ?? null

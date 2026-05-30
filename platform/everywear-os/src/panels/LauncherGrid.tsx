@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { listApplets, launchApplet, type AppletEntry } from '../lib/transport';
+import { useEffect, useMemo, useState } from 'react';
+import { listApplets, launchApplet, resolveAppletStatus, type AppletEntry } from '../lib/transport';
+import { useAuth } from '../shell/AuthContext';
 
 /** Icon glyph map */
 function iconGlyph(id: string): string {
@@ -157,10 +158,22 @@ function FolderAccordion({
 export function LauncherGrid({ onEmbedApplet }: { onEmbedApplet?: (applet: AppletEntry) => void }) {
   const [applets, setApplets] = useState<AppletEntry[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
 
   useEffect(() => {
     listApplets().then(setApplets).catch(console.error);
   }, []);
+
+  // Derive lock state from the owner's live entitlement flags rather than the
+  // registry's presentation `status`, so the badge matches the launch gate.
+  // (WIKI.md v1.1.16)
+  const gatedApplets = useMemo(
+    () => applets.map((applet) => ({
+      ...applet,
+      status: resolveAppletStatus(applet, user?.entitlements ?? user?.tiers),
+    })),
+    [applets, user?.entitlements, user?.tiers],
+  );
 
   const toggleFolder = (id: string) => {
     setExpandedFolders((prev) => {
@@ -189,7 +202,7 @@ export function LauncherGrid({ onEmbedApplet }: { onEmbedApplet?: (applet: Apple
     }
   };
 
-  const desktopItems = buildDesktopLayout(applets);
+  const desktopItems = buildDesktopLayout(gatedApplets);
 
   return (
     <div className="ew-launcher">
