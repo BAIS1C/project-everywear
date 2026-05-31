@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.19
-Last updated: 2026-05-30 (Password reset architecture)
+Version: 1.1.20
+Last updated: 2026-05-30 (DAW Pro Model recognition note)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -3608,6 +3608,19 @@ The applet manifest should evolve from rough model groups to a real VRAM ladder 
 > Do not attempt password exposure; Supabase Auth stores hashes. Do not make a
 > desktop deep-link reset path the first implementation because this Tauri app
 > does not currently register a deep-link plugin.
+
+> Current-state note, 2026-05-30 v1.1.20: DAW stem extraction runtime note
+> logged after Sean observed "Pro Model required/not recognised" in DAW while
+> signed in as Creator Pro / Creator Studio level. Creator inherits Gener8 Pro,
+> so this should satisfy the Pro model entitlement. Source glance: `DawCore`
+> gates DAW at Creator Studio, but `StemStudio` separately gates extraction with
+> `hasTier('gener8_pro') && !isTrialActive` and probes
+> `http://127.0.0.1:3001/api/engine/pack-status?pack_id=pro_base`. The Gener8
+> shim routes found in this pass do not expose `/api/engine/pack-status` or
+> `/api/engine/install-pack`, while `applet.toml` names the upgrade pack
+> `better_models`. Next pass should verify route presence, pack-id aliasing
+> (`pro_base` vs `better_models`), and actual xl-base discovery before treating
+> this as another entitlement/auth bug.
 
 
 ---

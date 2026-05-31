@@ -233,6 +233,16 @@ launcher applet.
   isolated stacking context. Runtime window capture verified the left desktop
   icon column no longer bleeds through the tray. Screenshot proof:
   `C:\Users\MAG MSI\Project Everywear\screenshots\p9-folder-occlusion-window-smoke-child-2026-05-30.png`.
+- DAW follow-up note, 2026-05-30: Sean observed DAW stem extraction blocking on
+  "Pro Model required/not recognised" while logged in as Creator Pro / Creator
+  Studio level. Creator inherits Gener8 Pro, so the session should satisfy
+  `hasTier('gener8_pro')`. Initial source read says DAW launch is Creator
+  Studio-gated in `DawCore`, but stem extraction separately depends on
+  `StemStudio` recognising the Pro model pack via
+  `/api/engine/pack-status?pack_id=pro_base`. The Gener8 shim route list in
+  this pass did not show `pack-status` or `install-pack`, and the manifest
+  upgrade pack id is `better_models`. Next fix should verify the route/alias
+  contract before changing auth gates.
 
 **Last verified**: 2026-05-30, Codex P7 runtime smoke against the Everywear OS
 desktop build, live Vid handoff path, Vid Studio Pro Render tab, and S3 folder

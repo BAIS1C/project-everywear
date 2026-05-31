@@ -304,6 +304,43 @@ This Everywear-side append is consistent with that manifest.
 OPEN FORK (new): creator UGC cash-economy = direct-channel-only, with Steam
 limited to curated/first-party shard packs? Leaning yes. Decide before build.
 
+## 8d. PENDING DISCUSSION (NOT DECIDED, 2026-05-30 SGT): editions + creator channel
+
+Status: OPEN. Sean percolating. Do NOT treat as locked; do NOT file to canon.
+Parked here so it is not lost.
+
+Sean's inclination (not final):
+- No creator economy on Steam. Steam = consumer BUYING only.
+- To create: mandatory KYC + download a separate "Creators Edition" from
+  everywear.id.
+
+Why it is attractive (one gate, five jobs): anti-bot/personhood, quality filter,
+legal firewall (real-money + crypto off Steam), wallet seeding, Pro paywall.
+
+THE OPEN HINGE (undecided): when a consumer buys on Steam, is it
+  (a) creator-made content, creator paid off-Steam, or
+  (b) first-party / curated content Everywear owns only?
+- (a) gives creators Steam's reach but risks Steam-Workshop-paid-content mess /
+  Valve revenue-share scrutiny.
+- (b) keeps Steam policy-clean but walls creators off from the big audience,
+  weakening marketplace supply.
+- Kasai-proposed middle path (not adopted): Steam = curated first-party shelf
+  that Everywear stocks by LICENSING top content UP from the direct marketplace;
+  creators reach Steam by being licensed, Everywear is seller-of-record, creator
+  gets a licensing deal not a per-Steam-sale payout. Steam becomes the "big
+  leagues" creators grind toward.
+
+Side notes parked with this:
+- Two orthogonal gates: CHANNEL (Steam vs direct) gates wallet/crypto; KYC gates
+  create + cash-out. Three populations: Steam consumer (walletless), direct
+  consumer (wallet ok), KYC creator (full economy).
+- Kreds seed reframed: not millions of passive Steam buyers, but the funded /
+  KYC'd creator + direct cohort. Quality base over headcount.
+- Supply-side risk: KYC + second download will cut creator conversion; value
+  prop must justify the climb.
+- Build discipline: ONE codebase, edition by build-flag + entitlement, never two
+  forks.
+
 ## 9. Narrative / why (for marketing + My Mait onboarding copy)
 
 Vertical integration of the entire creator value chain, every link owned and
