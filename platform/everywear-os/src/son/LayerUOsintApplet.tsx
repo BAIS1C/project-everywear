@@ -34,7 +34,7 @@ export function LayerUOsintApplet() {
         <header className="lu-rail__header">
           <span className={`lu-status lu-status--${statusLabel}`}>{statusLabel}</span>
           <h2>Layer U OSINT</h2>
-          <p>Worldview, flights, map layers, feeds, and sweep posture.</p>
+          <p>Free-tier OSINT information layer powered by Project SON.</p>
         </header>
 
         <div className="lu-tabs" role="tablist" aria-label="Layer U views">
@@ -94,7 +94,7 @@ export function LayerUOsintApplet() {
         {tab === 'map' && (
           <section className="lu-panel" aria-label="Map layer notes">
             <div className="lu-panel__label">Worldview</div>
-            <p className="lu-empty">Flights, maritime, GPS interference, event overlays, and Layer U map state stay inside this window.</p>
+            <p className="lu-empty">The Project SON worldview, map overlays, feeds, and source posture stay inside this window.</p>
           </section>
         )}
 

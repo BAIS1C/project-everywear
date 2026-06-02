@@ -104,6 +104,8 @@ interface AuthContextValue {
   entitlementResolved: boolean;
   /** Sign in with email + password. */
   signInWithPassword: (email: string, password: string, rememberProfile?: boolean) => Promise<void>;
+  /** Start the Supabase Google OAuth flow. */
+  signInWithGoogle: () => Promise<void>;
   /** Sign up with email + password. */
   signUp: (email: string, password: string, handle: string, displayName?: string) => Promise<void>;
   /** Verify OTP code from email. */
@@ -125,6 +127,7 @@ const AuthCtx = createContext<AuthContextValue>({
   isLoading: true,
   entitlementResolved: false,
   signInWithPassword: async () => {},
+  signInWithGoogle: async () => {},
   signUp: async () => {},
   verifyOtp: async () => {},
   signOut: async () => {},
@@ -427,6 +430,14 @@ function rememberedAuthIsValid() {
   return Number.isFinite(expiry) && expiry > Date.now();
 }
 
+function currentOAuthRedirectUrl(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const url = new URL(window.location.href);
+  url.searchParams.delete('preview');
+  url.hash = '';
+  return url.toString();
+}
+
 function normalizeEverywearHandle(input: string): string {
   return input
     .trim()
@@ -653,6 +664,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await hydrateSession(data.session);
   };
 
+  const signInWithGoogle = async () => {
+    setError(null);
+    setRememberedAuth(true);
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: currentOAuthRedirectUrl(),
+        queryParams: {
+          prompt: 'select_account',
+        },
+      },
+    });
+    if (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
   const writeSignupProfile = async (
     session: Session,
     rawHandle: string,
@@ -777,6 +806,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading: isLoading || (!!user && !entitlementResolved),
         entitlementResolved,
         signInWithPassword,
+        signInWithGoogle,
         signUp,
         verifyOtp,
         signOut,

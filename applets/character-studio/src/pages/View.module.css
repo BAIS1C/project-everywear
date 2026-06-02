@@ -1,0 +1,95 @@
+  .scrollContainer {
+    height: 98%;
+    width: 99%;
+    position: absolute;
+    left: 0;
+    top: 2px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+  
+  .topLine {
+      background: var(--ew-primary-press);
+      background: -moz-linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      background: -webkit-linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+    }
+    
+    .bottomLine {
+      background: var(--ew-primary-press);
+      background: -moz-linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      background: -webkit-linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--ew-primary) 50%,
+        transparent 100%
+      );
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+    }
+  
+  .buttonContainer {
+    position: absolute;
+    bottom: 20px;
+    left: 32px;
+    width: calc(100% - 64px);
+    width: -webkit-calc(100% - 64px);
+    text-align: center;
+  }
+  
+  .buttonContainer .buttonLeft {
+    float: left;
+  }
+  
+  .buttonContainer .buttonRight {
+    float: Right;
+  }
+  
+  .buttonContainer .buttonCenter {
+    margin: 0 8px;
+  }
+  
+  .buttonContainer::after {
+    content: " ";
+    display: block;
+    clear: both;
+  }
+  
+  .buttonContainer button {
+    min-width: 120px;
+  }
+  

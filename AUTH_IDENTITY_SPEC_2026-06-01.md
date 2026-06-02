@@ -154,17 +154,17 @@ Flarum is a pure relying party. It does not authenticate; it consumes the everyw
 ## 12. Execution plan
 
 Sean actions (external accounts, cannot be done from here):
-- Create Google Cloud OAuth client (redirect to Supabase callback), capture client id/secret.
-- Create Discord application, capture client id/secret.
-- Configure both providers in the Supabase dashboard for `ykqdsihnzroglepoxwcj`, plus the redirect allowlist entry for everywear.id.
+- DONE 2026-06-02: Google Cloud OAuth client created for Everywear and configured in Supabase project `ykqdsihnzroglepoxwcj`.
+- BLOCKED 2026-06-02: Discord application creation stopped at Discord human-check / create flow; Supabase Discord provider remains disabled.
+- Configure Discord provider in the Supabase dashboard after the Discord application exists, plus any redirect allowlist entries needed for everywear.id callback pages.
 
 Agent actions:
 1. Wiki gate + map shell/applet auth call chain.
 2. DB tier punch-list only (cutover already shipped): audit `active_tier(other_user)` call sites post self-guard; move `demo_active()` off legacy `subscriptions`; remove `AuthContext.tsx` owner bypass; ensure social signups get `free_everywear` via `plan_entitlements` expansion.
 3. `external_identities` write path on social sign-in/link, with the section-4 state machine (table + commerce-provider rows already exist; add the social-login rows).
 4. Handle-claim step for social-first signup.
-5. Shell login UI: add Google + Discord buttons.
-6. everywear.id shared web login page + callback (scope with Sean; lives in the everywear.id web project, not this repo).
+5. Shell login UI: Google button added 2026-06-02; Discord shown as deferred until provider exists.
+6. everywear.id shared web login page + callback (scope with Sean; lives in the everywear.id web project, not this repo). 2026-06-02 static site now has a Google OAuth entry CTA and download-gate panel, but not a full callback/session page.
 7. Telegram fast-follow.
 8. Unpark Flarum SSO against this contract.
 

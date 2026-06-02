@@ -31,7 +31,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function LoginScreen() {
-  const { signInWithPassword, signUp, verifyOtp, error } = useAuth();
+  const { signInWithPassword, signInWithGoogle, signUp, verifyOtp, error } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +41,7 @@ function LoginScreen() {
   const [rememberProfile, setRememberProfile] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [socialSubmitting, setSocialSubmitting] = useState<'google' | null>(null);
 
   const displayError = localError || error;
 
@@ -74,6 +75,17 @@ function LoginScreen() {
       setLocalError(err?.message || 'Something went wrong.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLocalError(null);
+    setSocialSubmitting('google');
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setLocalError(err?.message || 'Google sign-in failed.');
+      setSocialSubmitting(null);
     }
   };
 
@@ -191,6 +203,28 @@ function LoginScreen() {
                   : 'Verify Code'}
           </button>
         </form>
+
+        {mode === 'login' && (
+          <div className="ew-auth-card__socials" aria-label="Social sign in">
+            <button
+              type="button"
+              className="ew-auth-card__social ew-auth-card__social--google"
+              onClick={handleGoogleSignIn}
+              disabled={submitting || socialSubmitting === 'google'}
+            >
+              <span className="ew-auth-card__social-mark">G</span>
+              <span>{socialSubmitting === 'google' ? 'Opening Google...' : 'Continue with Google'}</span>
+            </button>
+            <button
+              type="button"
+              className="ew-auth-card__social"
+              disabled
+            >
+              <span className="ew-auth-card__social-mark">D</span>
+              <span>Discord next</span>
+            </button>
+          </div>
+        )}
 
         <div className="ew-auth-card__footer">
           {mode === 'login' && (

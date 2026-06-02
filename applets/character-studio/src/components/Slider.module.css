@@ -1,0 +1,36 @@
+.slider-container {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.slider {
+  width: 100%; /* Adjust as needed */
+  margin-right: 10px;
+  
+}
+.infoContainer{
+  display: flex;
+  justify-content: space-between;
+}
+
+.input-box {
+  width: 60px; /* Adjust as needed */
+  height: 20px;
+  color: var(--ew-primary);
+  background-color:color-mix(in oklab, var(--ew-surface-sunken) 50%, transparent);
+  border: none;
+  font-size: medium;
+  font-weight: 500;
+  margin-left: 15px;
+}
+.input-box:focus {
+  outline: none;
+}
+
+.input-box::selection {
+  background-color: var(--ew-surface-sunken);
+  color: var(--ew-primary);
+}
+

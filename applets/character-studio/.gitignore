@@ -1,0 +1,17 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Binary asset dirs (downloaded at runtime via VITE_ASSET_PATH / placed locally for dev)
+# These are large and must NEVER be committed. See public/README.md.
+public/character-assets/
+public/hdr/
+public/lora-assets/
+public/sound/
+public/ktx2/
+
+# Vite temp / alternate build output (sandbox artifacts)
+dist2
+vite.config.ts.timestamp-*.mjs

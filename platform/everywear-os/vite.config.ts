@@ -1,9 +1,53 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import fs from 'node:fs';
 import path from 'path';
 
+const characterStudioPublicRoot = path.resolve(__dirname, '../../applets/character-studio/public');
+const contentTypes: Record<string, string> = {
+  '.fbx': 'application/octet-stream',
+  '.hdr': 'image/vnd.radiance',
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    {
+      name: 'everywear-character-studio-assets',
+      configureServer(server) {
+        server.middlewares.use('/cs-assets', (req, res, next) => {
+          const rawPath = (req.url || '/').split('?')[0];
+          const relativePath = decodeURIComponent(rawPath)
+            .replace(/^\/cs-assets\/?/, '')
+            .replace(/^\/+/, '');
+          const filePath = path.resolve(characterStudioPublicRoot, path.normalize(relativePath));
+
+          if (filePath !== characterStudioPublicRoot && !filePath.startsWith(`${characterStudioPublicRoot}${path.sep}`)) {
+            res.statusCode = 403;
+            res.end('Forbidden');
+            return;
+          }
+
+          fs.stat(filePath, (statError, stat) => {
+            if (statError || !stat.isFile()) {
+              next();
+              return;
+            }
+
+            const contentType = contentTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+            res.setHeader('Content-Type', contentType);
+            fs.createReadStream(filePath)
+              .on('error', next)
+              .pipe(res);
+          });
+        });
+      },
+    },
+    react(),
+  ],
   clearScreen: false,
   server: {
     port: 5173,

@@ -2140,6 +2140,64 @@ body[data-skin="carbon"] .ew-section {
   cursor: not-allowed;
 }
 
+.ew-auth-card__socials {
+  display: grid;
+  gap: var(--ew-space-3);
+  margin-top: var(--ew-space-4);
+  padding-top: var(--ew-space-4);
+  border-top: 1px solid var(--ew-border);
+}
+
+.ew-auth-card__social {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ew-space-3);
+  border: 1px solid color-mix(in oklab, var(--ew-text) 16%, transparent);
+  background: color-mix(in oklab, var(--ew-text) 5%, transparent);
+  color: var(--ew-text);
+  font-family: var(--ew-font-display);
+  font-size: 12px;
+  font-weight: var(--ew-fw-display);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: var(--ew-clip-button);
+  transition:
+    border-color var(--ew-t-fast) var(--ew-ease),
+    background var(--ew-t-fast) var(--ew-ease),
+    color var(--ew-t-fast) var(--ew-ease);
+}
+
+.ew-auth-card__social:hover:not(:disabled) {
+  border-color: var(--ew-primary);
+  background: color-mix(in oklab, var(--ew-primary) 10%, transparent);
+  color: var(--ew-primary);
+}
+
+.ew-auth-card__social:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ew-auth-card__social-mark {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--ew-font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.ew-auth-card__social--google .ew-auth-card__social-mark {
+  color: var(--ew-primary);
+}
+
 .ew-auth-card__footer {
   margin-top: var(--ew-space-5);
   text-align: center;

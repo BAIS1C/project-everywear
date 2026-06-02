@@ -346,7 +346,7 @@ impl AppletRegistry {
             AppletEntry {
                 id: "layeru-osint".into(),
                 name: "Layer U OSINT".into(),
-                description: "Compact OSINT worldview with flights, map layers, RSS, video, and source posture"
+                description: "Free-tier OSINT information layer powered by Project SON: worldview, map layers, feeds, and source posture"
                     .into(),
                 version: "0.1.0".into(),
                 icon: "layeru-osint".into(),
@@ -356,8 +356,8 @@ impl AppletRegistry {
                 min_vram_mb: 0,
                 tags: vec![
                     "osint".into(),
+                    "information".into(),
                     "worldview".into(),
-                    "feeds".into(),
                     "map".into(),
                 ],
                 launch_url: None,

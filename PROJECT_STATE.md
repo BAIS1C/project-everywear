@@ -1,6 +1,6 @@
 # PROJECT_STATE.md — Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-05-30T15:43+08 SGT (Codex).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-01T09:51+08 SGT (Codex OODA reconciliation).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
@@ -58,14 +58,20 @@ Honest framing: this is an INTEGRATION-COMPLETENESS audit of the ported code, no
 | gener8-pro | Gener8ShellApp `/` | SMOKE-PENDING | needs play test + ref/cover (BROKEN, below) |
 | vid (Vid Studio) | Gener8ShellApp `/vid` → VidApp | WORKING | launcher opens; Gener8 handoff selects source song |
 | ai-director | Gener8ShellApp `/director` → AIDirectorView | SMOKE-PENDING | shim returns fallback shot plans (known carry) |
-| 1magen/3nvizen/character-studio/loom/kasai/layeru-osint | own indexes | mixed | see below |
-| 3nvizen | @applets/3nvizen | NOTBUILT | binary/package gap (shows NotBuilt) |
+| 1magen/3nvizen/character-studio/loom/kasai/layeru-osint | own indexes or shell-local virtual surfaces | mixed | see below |
+| 3nvizen | @applets/3nvizen | SPLIT-TRUTH | frontend package exists and TS no-emit passes; browser fallback marks Active/Locked from entitlements, but Rust registry still marks NotBuilt and native `list_applets` filters it out. Reconcile native/browser availability before launcher QA. |
 | character-studio (Avatar Studio) | @applets/character-studio | SCAFFOLD | placeholder only |
 | loom (The Loom) | @applets/loom | SMOKE-PENDING | manifest fixed this pass |
 | kasai (My Mait) | KasaiCore | SMOKE-PENDING | |
 | layeru-osint | LayerUOsintApplet | SMOKE-PENDING | |
 | strands-game (Strands Nation) | NOT in AppletViewRouter | IFRAME/EXTERNAL | falls through to HeadlessAppletView (iframe); likely intended (strandsnation.xyz) — verify |
 | s3studio | ExternalUrl | WORKING | opens s3studio.xyz |
+
+Virtual applet rule, 2026-06-01 OODA: not every visible launcher has a physical
+`applets/<id>/applet.toml`. `ai-director`, `daw`, and `layeru-osint` are
+registry/router surfaces over existing code, while `s3studio` and `strands-game`
+are external/iframe links. Treat them as virtual applets until a product decision
+creates physical applet packages. Do not invent missing directories during fixes.
 
 ### Gener8 internal surfaces (original Sidebar nav vs live Gener8Nav)
 
@@ -155,7 +161,7 @@ DECISION:
   3. Server-side validate any feature that costs us (cloud gen, API credits, gated weight downloads). Own-GPU local features may stay on the verified-local-token model.
 - TIER NAMING: suspected mismatch. auth.rs:230 hard-rejects any tier not exactly demo/gener8/gener8_pro/creator_studio. Verify against live Supabase (profiles/plan table) what strings it actually issues; reconcile names (note: code tier `gener8` = product "Gener8 4ever"). Pending Supabase query.
 
-Carries (do not lose): AI Director SAPI adapter unplumbed (fallback shot plans); 3nvizen binary; character-studio scaffold; VideoGeneratorModal 4,374-line hard-ceiling; shell.css / CreatePanel over soft target.
+Carries (do not lose): AI Director is a virtual Gener8 `/director` route, not a physical applet package; DAW is a virtual Gener8 `/daw` route and its Pro Model blocker is the missing `pack-status`/`install-pack` route or `pro_base` -> `better_models` alias, not entitlement; 3nvizen frontend/package exists but native Rust registry still marks NotBuilt; character-studio scaffold; VideoGeneratorModal 4,373-line hard-ceiling; packages/video-modal modal, shell.css, CreatePanel, StemStudio, and shim.rs watch-list.
 
 ---
 

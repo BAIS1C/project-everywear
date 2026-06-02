@@ -192,6 +192,7 @@ body[data-skin="classic"][data-mode="dark"],
   --ew-bg: #0A0B0D;
   --ew-sunken: #05060A;
   --ew-surface: rgba(20, 21, 28, 0.85);
+  --ew-surface-solid: #14151c;
   --ew-surface-raised: rgba(31, 35, 48, 0.9);
   --ew-surface-overlay: rgba(37, 42, 56, 0.95);
   --ew-surface-sunken: rgba(5, 6, 10, 0.6);
@@ -262,6 +263,7 @@ body[data-skin="refined"][data-mode="dark"],
   --ew-bg: oklch(14% .02 240);
   --ew-sunken: oklch(10% .02 240);
   --ew-surface: oklch(18% .03 245 / .88);
+  --ew-surface-solid: oklch(18% .03 245);
   --ew-surface-raised: oklch(22% .05 245 / .95);
   --ew-surface-overlay: oklch(22% .05 245 / .55);
   --ew-surface-sunken: oklch(12% .02 240 / .6);
@@ -334,6 +336,7 @@ body[data-skin="terminal"][data-mode="dark"],
   --ew-bg: #12100E;
   --ew-sunken: #0A0907;
   --ew-surface: #1A1714;
+  --ew-surface-solid: #1A1714;
   --ew-surface-raised: #211D19;
   --ew-surface-overlay: rgba(212, 183, 127, .06);
   --ew-surface-sunken: #0E0C0A;

@@ -1,0 +1,284 @@
+/* ============================================
+   STRANDS // Avatar Studio — OTG-Style Layout
+   EWDS-driven. Reads tokens, no raw colour.
+   ============================================ */
+
+/* ---- Container ---- */
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* ---- Right Panel (main UI surface) ---- */
+.rightPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: var(--ew-surface-solid);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid var(--ew-chrome-border);
+  display: flex;
+  flex-direction: column;
+  pointer-events: all;
+  z-index: 1000;
+  overflow: hidden;
+}
+body[data-skin="classic"] .rightPanel {
+  box-shadow: inset 1px 0 0 color-mix(in oklab, var(--ew-primary) 18%, transparent);
+}
+
+/* ---- Panel Header ---- */
+.panelHeader {
+  padding: 18px 20px 0;
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-family: var(--ew-font-display);
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--ew-primary);
+  text-shadow: 0 0 10px color-mix(in oklab, var(--ew-primary) 30%, transparent);
+  margin-bottom: 16px;
+}
+
+/* ---- Tab Bar ---- */
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--ew-border);
+  margin: 0 20px;
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-family: var(--ew-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ew-text-faint);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.tab:hover {
+  color: var(--ew-text-muted);
+}
+
+.tabActive {
+  color: var(--ew-primary);
+  border-bottom-color: var(--ew-primary);
+}
+body[data-skin="terminal"] .tabActive {
+  background: var(--ew-primary);
+  color: var(--ew-primary-fg);
+}
+
+/* ---- Divider Line ---- */
+.divider {
+  display: none;
+}
+
+/* ---- Scrollable Content Area ---- */
+.panelContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--ew-primary) 30%, transparent) transparent;
+}
+
+.panelContent::-webkit-scrollbar { width: 6px; }
+.panelContent::-webkit-scrollbar-track { background: transparent; }
+.panelContent::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--ew-primary) 30%, transparent);
+}
+
+/* ---- Category Buttons ---- */
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.categoryButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--ew-surface-raised);
+  border: 1px solid var(--ew-border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  user-select: none;
+  clip-path: var(--ew-clip-button-sm);
+}
+body[data-skin="terminal"] .categoryButton { clip-path: none; border-radius: 0; }
+body[data-skin="refined"]  .categoryButton { clip-path: none; border-radius: 8px; }
+
+.categoryButton:hover {
+  background: var(--ew-surface-overlay);
+  border-color: var(--ew-border-strong);
+}
+
+.categoryButtonActive {
+  background: var(--ew-primary-soft);
+  border-color: var(--ew-primary);
+  color: var(--ew-primary);
+  box-shadow: var(--ew-shadow-glow);
+}
+
+.categoryIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--ew-primary) 25%, transparent));
+}
+.categoryButtonActive .categoryIcon { opacity: 1; }
+
+.categoryName {
+  flex: 1;
+  font-family: var(--ew-font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ew-text);
+}
+.categoryButtonActive .categoryName { color: var(--ew-primary); }
+
+.categoryCount {
+  font-family: var(--ew-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ew-text-faint);
+}
+.categoryButtonActive .categoryCount {
+  color: color-mix(in oklab, var(--ew-primary) 70%, transparent);
+}
+
+/* ---- Trait Grid ---- */
+.traitSection {
+  margin: 6px 0 12px;
+  padding: 12px;
+  background: var(--ew-surface-sunken);
+  border: 1px solid var(--ew-border);
+}
+body[data-skin="classic"]  .traitSection { border-left: 2px solid var(--ew-primary); }
+body[data-skin="terminal"] .traitSection { border-radius: 0; }
+
+.traitSectionLabel {
+  font-family: var(--ew-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ew-text-faint);
+  margin-bottom: 8px;
+}
+
+.traitGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.traitItem {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.traitItem:hover { transform: scale(1.04); }
+.traitItemActive {
+  box-shadow: 0 0 0 2px var(--ew-primary), var(--ew-shadow-glow);
+}
+
+.traitSpecialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  background: var(--ew-surface-raised);
+  border: 1px solid var(--ew-border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.traitSpecialButton:hover {
+  background: var(--ew-primary-soft);
+  border-color: var(--ew-primary);
+}
+.traitSpecialButton img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--ew-primary) 30%, transparent));
+}
+
+/* ---- Bottom Action Bar ---- */
+.bottomBar {
+  flex-shrink: 0;
+  padding: 14px 20px;
+  border-top: 1px solid var(--ew-chrome-border);
+  background: var(--ew-chrome-bg);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.bottomBar__spacer { flex: 1; }
+
+/* ---- Loading Overlay ---- */
+.loadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--ew-bg) 80%, transparent);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  pointer-events: all;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+.loadingOverlayActive { opacity: 1; visibility: visible; }
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  color: var(--ew-primary);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .rightPanel {
+    width: 100%;
+    top: 50vh;
+    height: 50vh;
+    border-left: none;
+    border-top: 1px solid var(--ew-chrome-border);
+  }
+  .traitGrid { grid-template-columns: repeat(5, 1fr); }
+}

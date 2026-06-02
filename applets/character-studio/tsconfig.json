@@ -12,11 +12,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["vite/client"],
     "paths": {
-      "@everywear/ewds": ["../../packages/ewds/src/index.ts"],
-      "@characterstudio/external/*": [
-        "../../../Project Strands/CharacterStudio-Strands/src/*"
-      ]
+      "@everywear/ewds": ["../../packages/ewds/src/index.ts"]
     }
   },
   "include": ["src"]

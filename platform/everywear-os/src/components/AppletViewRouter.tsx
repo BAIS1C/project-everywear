@@ -21,6 +21,22 @@ import type { AppletEntry } from '../lib/transport';
 
 const log = getLogger('shell');
 
+declare global {
+  interface Window {
+    __EVERYWEAR_ASSET_BASE__?: string;
+  }
+}
+
+function resolveCharacterStudioAssetBase(): string {
+  if (import.meta.env.DEV) return '/cs-assets';
+  return import.meta.env.VITE_ASSET_PATH || '';
+}
+
+function setCharacterStudioAssetBase(): void {
+  if (typeof window === 'undefined') return;
+  window.__EVERYWEAR_ASSET_BASE__ = resolveCharacterStudioAssetBase();
+}
+
 // ── Lazy applet registry ──────────────────────────────────────────
 
 // CODEX_NEEDED: When adding new headless applets, register their lazy
@@ -112,7 +128,10 @@ const APPLET_COMPONENTS: Record<string, {
     displayName: '3nvizen',
   },
   'character-studio': {
-    component: React.lazy(() => import('@applets/character-studio/src/index')),
+    component: React.lazy(() => {
+      setCharacterStudioAssetBase();
+      return import('@applets/character-studio/src/index');
+    }),
     displayName: 'Character Studio',
   },
   loom: {
