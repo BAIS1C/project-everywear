@@ -1,6 +1,20 @@
 
 import { getVectorCameraPosition } from "./utils";
 import { ZipManager } from "./zipManager";
+import { getAssetUrl } from "../lib/assetBase";
+
+const assetPath = (...parts) => {
+    const cleanParts = parts.filter(Boolean).map(String);
+    if (cleanParts.length === 0) return "";
+
+    const [first, ...rest] = cleanParts;
+    const joined = [
+        first.replace(/\/+$/, ""),
+        ...rest.map((part) => part.replace(/^\/+|\/+$/g, "")),
+    ].filter(Boolean).join("/");
+
+    return getAssetUrl(joined);
+};
 
 export class LoraDataGenerator {
     /**
@@ -39,7 +53,7 @@ export class LoraDataGenerator {
             height = 512,
             dataCollection
         } = manifest
-        const animBasePath = assetsLocation + animationsDirectory + "/";
+        const animBasePath = assetPath(assetsLocation, animationsDirectory);
         // @dev unused, commented out for now;
         // const normalizedTopOffset = topFrameOffsetPixels/height;
         // const normalizedBottomOffset = bottomFrameOffsetPixels/height;
@@ -70,7 +84,7 @@ export class LoraDataGenerator {
                         counter++
                         const saveName = counter.toString().padStart(4, '0');
                         const finalAnimationTime = animationFrame ? animationFrame/30 : animationTime
-                        await scope.animationManager.loadAnimation(animBasePath + animationPath, true, finalAnimationTime);
+                        await scope.animationManager.loadAnimation(assetPath(animBasePath, animationPath), true, finalAnimationTime);
                         this.vrms.forEach((vrm)=>{
                             vrm.springBoneManager?.reset()
                         })

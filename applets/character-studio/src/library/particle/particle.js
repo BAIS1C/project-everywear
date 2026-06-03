@@ -8,10 +8,11 @@ import {
 } from './mesh.js';
 
 import {transitionEffectTypeNumber} from '../constants.js';
+import { getAssetUrl } from "../../lib/assetBase";
 
 const textureLoader = new THREE.TextureLoader()
 
-const auraTexture = textureLoader.load(`./textures/beam2.png`);
+const auraTexture = textureLoader.load(getAssetUrl(`./textures/beam2.png`));
 auraTexture.wrapS = THREE.RepeatWrapping;
 
 

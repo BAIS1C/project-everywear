@@ -21,13 +21,14 @@ import {
   
 } from "./constants.js";
 import { MToonMaterial } from "@pixiv/three-vrm";
+import { getAssetUrl } from "../lib/assetBase";
 
 
 const textureLoader = new THREE.TextureLoader()
-const pixelTexture = textureLoader.load(`./textures/pixel9.png`);
+const pixelTexture = textureLoader.load(getAssetUrl(`./textures/pixel9.png`));
 pixelTexture.wrapS = pixelTexture.wrapT = THREE.RepeatWrapping;
 
-const noiseTexture = textureLoader.load(`./textures/noise3.jpg`);
+const noiseTexture = textureLoader.load(getAssetUrl(`./textures/noise3.jpg`));
 noiseTexture.wrapS = noiseTexture.wrapT = THREE.RepeatWrapping;
 
 

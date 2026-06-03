@@ -8,3 +8,14 @@ export function getAssetBase() {
 
   return "";
 }
+
+export function getAssetUrl(path) {
+  if (!path) return path;
+  if (typeof path !== "string") return path;
+  if (/^(https?:|blob:|data:)/.test(path)) return path;
+
+  const base = getAssetBase().replace(/\/$/, "");
+  if (base !== "" && path.startsWith(`${base}/`)) return path;
+
+  return `${base}/${path.replace(/^\.\//, "").replace(/^\//, "")}`;
+}

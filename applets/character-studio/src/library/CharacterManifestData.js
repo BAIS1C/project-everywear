@@ -1,7 +1,13 @@
 import { getAsArray } from "./utils";
 import { ManifestRestrictions } from "./manifestRestrictions";
 import { WalletCollections } from "./walletCollections";
+import { getAssetUrl } from "../lib/assetBase";
 
+const assetUrlList = (value) => Array.isArray(value) ? value.map(getAssetUrl) : getAssetUrl(value);
+const withTrailingSlash = (path) => {
+  if (!path) return path;
+  return path.endsWith("/") || path.endsWith("\\") ? path : `${path}/`;
+};
 
 
 /**
@@ -634,9 +640,7 @@ export class CharacterManifestData{
      */
     getTraitsDirectory(){
       let result = (this.assetsLocation || "") + (this.traitsDirectory || "");
-      if (!result.endsWith("/")&&!result.endsWith("\\"))
-        result += "/";
-      return result;
+      return withTrailingSlash(getAssetUrl(result));
     }
     /**
      * Gets thumbnails directory
@@ -644,9 +648,7 @@ export class CharacterManifestData{
      */
     getThumbnailsDirectory(){
       let result = (this.assetsLocation || "") + (this.thumbnailsDirectory || "");
-      if (!result.endsWith("/")&&!result.endsWith("\\"))
-        result += "/";
-      return result;
+      return withTrailingSlash(getAssetUrl(result));
     }
     /**
      * Gets trait icons directory SVG
@@ -654,9 +656,7 @@ export class CharacterManifestData{
      */
     getTraitIconsDirectorySvg(){
       let result = (this.assetsLocation || "") + (this.traitIconsDirectorySvg || "");
-      if (!result.endsWith("/")&&!result.endsWith("\\"))
-        result += "/";
-      return result;
+      return withTrailingSlash(getAssetUrl(result));
     }
     /**
      * Gets assets directory
@@ -664,9 +664,7 @@ export class CharacterManifestData{
      */
     getAssetsDirectory(){
       let result = (this.assetsLocation || "");
-      if (!result.endsWith("/")&&!result.endsWith("\\"))
-        result += "/";
-      return result;
+      return withTrailingSlash(getAssetUrl(result));
     }
 
     /**
@@ -675,9 +673,7 @@ export class CharacterManifestData{
      */
     getDecalsDirectory(){
       let result = (this.assetsLocation || "") + (this.decalDirectory || "");
-      if (!result.endsWith("/")&&!result.endsWith("\\"))
-        result += "/";
-      return result;
+      return withTrailingSlash(getAssetUrl(result));
     }
     
 
@@ -804,7 +800,7 @@ export class TraitModelsGroup{
         this.trait = trait;
         this.name = name;
         this.iconSvg = iconSvg;
-        this.fullIconSvg = manifestData.getTraitIconsDirectorySvg() + iconSvg;
+        this.fullIconSvg = iconSvg ? getAssetUrl(manifestData.getTraitIconsDirectorySvg() + iconSvg) : iconSvg;
 
         this.cameraTarget = cameraTarget;
         this.cullingDistance = cullingDistance;
@@ -1206,25 +1202,29 @@ export class ModelTrait{
 
       this._restrictedItems = restrictedItems||[];
       if (fullDirectory){
-        this.fullDirectory = fullDirectory
+        this.fullDirectory = assetUrlList(fullDirectory)
       }
       else{
         if (Array.isArray(directory))
         {
           this.fullDirectory = [];
           for (let i =0;i< directory.length;i++){
-            this.fullDirectory[i] = traitGroup.manifestData.getTraitsDirectory() + directory[i]
+            this.fullDirectory[i] = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory[i])
           }  
         }
         else
         {
-          this.fullDirectory = traitGroup.manifestData.getTraitsDirectory() + directory;
+          this.fullDirectory = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory);
         }
       }
       
       this.name = name;
       this.thumbnail = thumbnail;
-      this.fullThumbnail = fullThumbnail || traitGroup.manifestData.getThumbnailsDirectory() + thumbnail;
+      this.fullThumbnail = fullThumbnail
+        ? getAssetUrl(fullThumbnail)
+        : thumbnail
+          ? getAssetUrl(traitGroup.manifestData.getThumbnailsDirectory() + thumbnail)
+          : thumbnail;
 
       this.cullHiddenMeshes = cullingDistance|| [0,0];
       // Prioritize cullingLayer from trait, then from traitGroup, then default
@@ -1393,25 +1393,27 @@ class TextureTrait{
       this.id = id;
       this.directory = directory;
       if (fullDirectory){
-        this.fullDirectory = fullDirectory
+        this.fullDirectory = assetUrlList(fullDirectory)
       }
       else{
         if (Array.isArray(directory))
         {
           this.fullDirectory = [];
           for (let i =0;i< directory.length;i++){
-            this.fullDirectory[i] = traitGroup.manifestData.getTraitsDirectory() + directory[i]
+            this.fullDirectory[i] = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory[i])
           }  
         }
         else
         {
-          this.fullDirectory = traitGroup.manifestData.getTraitsDirectory() + thumbnail;
+          this.fullDirectory = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory);
         }
       }
 
       this.name = name;
       this.thumbnail = thumbnail;
-      this.fullThumbnail = traitGroup.manifestData.getThumbnailsDirectory() + thumbnail;
+      this.fullThumbnail = thumbnail
+        ? getAssetUrl(traitGroup.manifestData.getThumbnailsDirectory() + thumbnail)
+        : thumbnail;
   }
 }
 export class DecalTrait extends TextureTrait{
@@ -1455,25 +1457,27 @@ export class DecalTrait extends TextureTrait{
       this.id = id;
       this.directory = directory;
       if (fullDirectory){
-        this.fullDirectory = fullDirectory
+        this.fullDirectory = assetUrlList(fullDirectory)
       }
       else{
         if (Array.isArray(directory))
         {
           this.fullDirectory = [];
           for (let i =0;i< directory.length;i++){
-            this.fullDirectory[i] = traitGroup.manifestData.getTraitsDirectory() + directory[i]
+            this.fullDirectory[i] = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory[i])
           }  
         }
         else
         {
-          this.fullDirectory = traitGroup.manifestData.getTraitsDirectory() + thumbnail;
+          this.fullDirectory = getAssetUrl(traitGroup.manifestData.getTraitsDirectory() + directory);
         }
       }
 
       this.name = name;
       this.thumbnail = thumbnail;
-      this.fullThumbnail = traitGroup.manifestData.getThumbnailsDirectory() + thumbnail;
+      this.fullThumbnail = thumbnail
+        ? getAssetUrl(traitGroup.manifestData.getThumbnailsDirectory() + thumbnail)
+        : thumbnail;
   }
 }
 class ColorTrait{

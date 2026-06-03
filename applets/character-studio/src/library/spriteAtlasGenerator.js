@@ -1,5 +1,19 @@
 import { getVectorCameraPosition } from "./utils";
 import { ZipManager } from "./zipManager";
+import { getAssetUrl } from "../lib/assetBase";
+
+const assetPath = (...parts) => {
+    const cleanParts = parts.filter(Boolean).map(String);
+    if (cleanParts.length === 0) return "";
+
+    const [first, ...rest] = cleanParts;
+    const joined = [
+        first.replace(/\/+$/, ""),
+        ...rest.map((part) => part.replace(/^\/+|\/+$/g, "")),
+    ].filter(Boolean).join("/");
+
+    return getAssetUrl(joined);
+};
 
 export class SpriteAtlasGenerator {
     /**
@@ -32,7 +46,7 @@ export class SpriteAtlasGenerator {
             atlasHeight = 512,
             spritesCollection
         } = manifest
-        const animBasePath = assetsLocation + animationsDirectory + "/";
+        const animBasePath = assetPath(assetsLocation, animationsDirectory);
         // const normalizedTopOffset = topFrameOffsetPixels/height;
         // const normalizedBottomOffset = bottomFrameOffsetPixels/height;
         
@@ -62,7 +76,7 @@ export class SpriteAtlasGenerator {
                         } = spriteInfo;
                         counter++
                         const currentAnimationFolder = spriteFolderName + "/" + (animationName ? animationName : counter.toString().padStart(2, '0'));
-                        await scope.animationManager.loadAnimation(animBasePath + animationPath, true, 0);
+                        await scope.animationManager.loadAnimation(assetPath(animBasePath, animationPath), true, 0);
                         const vectorCameraPosition = getVectorCameraPosition(cameraPosition);
                         scope.screenshotManager.cameraFrameManager.setCameraFrameWithName(cameraFrame,vectorCameraPosition);
                         const clipDuration = scope.animationManager.getCurrentClipDuration();

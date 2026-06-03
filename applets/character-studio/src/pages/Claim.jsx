@@ -8,6 +8,7 @@ import { useContext } from "react"
 import { SceneContext } from "../context/SceneContext"
 import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
+import { getAssetUrl } from "../lib/assetBase"
 
 function Claim() {
   
@@ -22,16 +23,16 @@ function Claim() {
   
   useEffect(() => {
     if (manifest?.characters != null){
-      const manifestClasses = manifest.characters.map((c) => {
-        return {
-          name:c.name, 
-          image:c.portrait, 
-          description: c.description,
-          manifest: c.manifest,
-          icon:c.icon,
-          format:c.format,
-          disabled:false
-        }
+        const manifestClasses = manifest.characters.map((c) => {
+          return {
+            name:c.name, 
+            image:getAssetUrl(c.portrait), 
+            description: c.description,
+            manifest: getAssetUrl(c.manifest),
+            icon:getAssetUrl(c.icon),
+            format:c.format,
+            disabled:false
+          }
       })
       setClasses(manifestClasses);
     }
@@ -45,7 +46,7 @@ function Claim() {
   const selectClass = async (index) => {
     setIsLoading(true)
     // Load manifest first
-    characterManager.loadManifest(manifest.characters[index].manifest, manifest.characters[index].name).then(()=>{
+    characterManager.loadManifest(classes[index].manifest, classes[index].name).then(()=>{
       setViewMode(ViewMode.BATCHDOWNLOAD)
       // When Manifest is Loaded, load initial traits from given manifest
       characterManager.loadInitialTraits().then(()=>{
@@ -98,7 +99,7 @@ function Claim() {
               >
                 <div className={styles.frameContainer}>
                   <img
-                    src={"./assets/backgrounds/class-frame.svg"}
+                    src={getAssetUrl("./assets/backgrounds/class-frame.svg")}
                     className={styles.frame}
                   />
                 </div>
@@ -106,7 +107,7 @@ function Claim() {
                 <div className={styles.lockedContainer}>
                   {characterClass["disabled"] && (
                     <img
-                      src={"./assets/icons/locked.svg"}
+                      src={getAssetUrl("./assets/icons/locked.svg")}
                       className={styles.locked}
                     />
                   )}
@@ -128,11 +129,11 @@ function Claim() {
             >
             <div
                 className={styles.classFrame}
-                style={{"backgroundImage": `url(./assets/media/disabled.png)`}}
+                style={{"backgroundImage": `url(${getAssetUrl("./assets/media/disabled.png")})`}}
               >
                 <div className={styles.frameContainer}>
                   <img
-                    src={"./assets/backgrounds/class-frame.svg"}
+                    src={getAssetUrl("./assets/backgrounds/class-frame.svg")}
                     className={styles.frame}
                   />
                 </div>

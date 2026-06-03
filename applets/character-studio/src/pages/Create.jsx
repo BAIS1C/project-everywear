@@ -10,6 +10,7 @@ import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
 
 import { getAsArray } from "../library/utils"
+import { getAssetUrl } from "../lib/assetBase"
 
 function Create() {
   
@@ -40,10 +41,10 @@ function Create() {
       return charactersArray.map((c) => {
         return {
           name:c.name, 
-          portrait:c.portrait, 
+          portrait:getAssetUrl(c.portrait), 
           description: c.description,
-          manifest: c.manifest,
-          icon:c.icon,
+          manifest: getAssetUrl(c.manifest),
+          icon:getAssetUrl(c.icon),
           format:c.format,
           manifestAppend: getCharacterManifests(getAsArray(c.manifestAppend)),
         }
@@ -114,7 +115,7 @@ function Create() {
               >
                 <div className={styles.frameContainer}>
                   <img
-                    src={"./assets/backgrounds/class-frame.svg"}
+                    src={getAssetUrl("./assets/backgrounds/class-frame.svg")}
                     className={styles.frame}
                   />
                 </div>

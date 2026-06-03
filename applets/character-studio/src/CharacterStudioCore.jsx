@@ -57,20 +57,22 @@ export default function CharacterStudioCore({ fallback = null }) {
   }, [])
 
   return (
-    <AccountProvider>
-      <LanguageProvider>
-        <AudioProvider>
-          <ViewProvider>
-            <SceneProvider>
-              <SoundProvider>
-                <Suspense fallback={fallback}>
-                  <App />
-                </Suspense>
-              </SoundProvider>
-            </SceneProvider>
-          </ViewProvider>
-        </AudioProvider>
-      </LanguageProvider>
-    </AccountProvider>
+    <div className="cs-app-layer">
+      <AccountProvider>
+        <LanguageProvider>
+          <AudioProvider>
+            <ViewProvider>
+              <SceneProvider>
+                <SoundProvider>
+                  <Suspense fallback={fallback}>
+                    <App />
+                  </Suspense>
+                </SoundProvider>
+              </SceneProvider>
+            </ViewProvider>
+          </AudioProvider>
+        </LanguageProvider>
+      </AccountProvider>
+    </div>
   )
 }

@@ -13,6 +13,7 @@ import MergeOptions from "../components/MergeOptions"
 import { local } from "../library/store"
 import { ZipManager } from "../library/zipManager"
 import BottomDisplayMenu from "../components/BottomDisplayMenu"
+import { getAssetUrl } from "../lib/assetBase"
 
 function Optimizer() {
   const { 
@@ -200,7 +201,7 @@ function Optimizer() {
   return (
     <div className={styles.container}>
       <div className={`loadingIndicator ${isLoading ? "active" : ""}`}>
-        <img className={"rotate"} src="ui/loading.svg" />
+        <img className={"rotate"} src={getAssetUrl("ui/loading.svg")} />
       </div>
       <div className={"sectionTitle"}>Optimize your character</div>
       <FileDropComponent 

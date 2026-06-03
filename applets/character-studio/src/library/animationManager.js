@@ -4,11 +4,25 @@ import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader"
 import { addModelData } from "./utils";
 import { getMixamoAnimation } from './loadMixamoAnimation';
 import { getAsArray, getFileNameWithoutExtension } from './utils';
+import { getAssetUrl } from "../lib/assetBase";
 
 // make a class that hold all the informarion
 const fbxLoader = new FBXLoader();
 const gltfLoader = new GLTFLoader();
 const interpolationTime = 0.2;
+const assetPath = (...parts) => {
+  const cleanParts = parts.filter(Boolean).map(String);
+  if (cleanParts.length === 0) return "";
+  if (/^(blob:|data:|https?:)/.test(cleanParts[0])) return cleanParts[0];
+
+  const [first, ...rest] = cleanParts;
+  const joined = [
+    first.replace(/\/+$/, ""),
+    ...rest.map((part) => part.replace(/^\/+|\/+$/g, "")),
+  ].filter(Boolean).join("/");
+
+  return getAssetUrl(joined);
+};
 
 const getRandomInt = (max) => {
   return Math.floor(Math.random() * max);
@@ -227,7 +241,7 @@ export class AnimationManager{
   }
 
   async loadAnimation(paths, isPose, poseTime = 0, isfbx = true, pathBase = "", name = ""){
-    const path = pathBase + (pathBase != "" ? "/":"") + getAsArray(paths)[0];
+    const path = assetPath(pathBase, getAsArray(paths)[0]);
     name = name == "" ? getFileNameWithoutExtension(path) : name;
     this.currentAnimationName = name;
     const loader = isfbx ? fbxLoader : gltfLoader;
@@ -287,15 +301,15 @@ export class AnimationManager{
   storeAnimationPaths(pathArray, pathBase, addDefaultAnimationPaths = true){
     const paths = getAsArray(pathArray);
     if (addDefaultAnimationPaths) {
-        this.animationPaths = [...this.defaultAnimations, ...paths.map(path => `${pathBase}/${path}`)];
+        this.animationPaths = [...this.defaultAnimations, ...paths.map(path => assetPath(pathBase, path))];
     } else {
-        this.animationPaths = paths.map(path => pathBase != "" ? `${pathBase}/${path}` : path);
+        this.animationPaths = paths.map(path => assetPath(pathBase, path));
     }
   }
 
   storeDefaultAnimationPaths(pathArray, pathBase){
     const paths = getAsArray(pathArray);   
-    this.defaultAnimations = paths.map(path => pathBase != "" ? `${pathBase}/${path}` : path);
+    this.defaultAnimations = paths.map(path => assetPath(pathBase, path));
     this.animationPaths = this.defaultAnimations;
   }
 

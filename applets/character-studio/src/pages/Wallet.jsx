@@ -10,6 +10,7 @@ import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
 
 import { connectWallet } from "../library/mint-utils"
+import { getAssetUrl } from "../lib/assetBase"
 // import { getOpenseaCollection } from "../library/mint-utils"
 
 function Wallet() {
@@ -94,12 +95,12 @@ function Wallet() {
             <div
                 className={styles.classFrame}
                 style={{
-                  "backgroundImage": `url(${characterClass["image_url"]})`,
+                  "backgroundImage": `url(${getAssetUrl(characterClass["image_url"])})`,
                 }}
               >
                 <div className={styles.frameContainer}>
                   <img
-                    src={"./assets/backgrounds/class-frame.svg"}
+                    src={getAssetUrl("./assets/backgrounds/class-frame.svg")}
                     className={styles.frame}
                   />
                 </div>

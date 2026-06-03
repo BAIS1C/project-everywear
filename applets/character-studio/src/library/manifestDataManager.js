@@ -1,5 +1,45 @@
 import { CharacterManifestData } from "./CharacterManifestData";
 import { getAsArray } from "./utils";
+import { getAssetUrl } from "../lib/assetBase";
+
+const assetUrlList = (value) => Array.isArray(value) ? value.map(getAssetUrl) : getAssetUrl(value);
+const normalizeManifestEntry = (entry) => ({
+  ...entry,
+  manifest: getAssetUrl(entry.manifest),
+  icon: entry.icon === "|" ? entry.icon : getAssetUrl(entry.icon),
+  thumbnail: getAssetUrl(entry.thumbnail),
+  location: getAssetUrl(entry.location),
+});
+const normalizeManifestEntries = (entries) => (
+  entries == null ? entries : getAsArray(entries).map(normalizeManifestEntry)
+);
+const normalizeCharacterEntry = (character) => ({
+  ...character,
+  portrait: getAssetUrl(character.portrait),
+  image: getAssetUrl(character.image),
+  image_url: getAssetUrl(character.image_url),
+  icon: getAssetUrl(character.icon),
+  manifest: getAssetUrl(character.manifest),
+  manifestAppend: character.manifestAppend == null
+    ? character.manifestAppend
+    : getAsArray(character.manifestAppend).map(normalizeCharacterEntry),
+});
+
+const normalizeManifestAssetBases = (manifest) => ({
+  ...manifest,
+  thumbnail: getAssetUrl(manifest.thumbnail),
+  assetsLocation: getAssetUrl(manifest.assetsLocation),
+  traitsDirectory: manifest.traitsDirectory,
+  thumbnailsDirectory: manifest.thumbnailsDirectory,
+  traitIconsDirectory: manifest.traitIconsDirectory,
+  traitIconsDirectorySvg: manifest.traitIconsDirectorySvg,
+  animationPath: assetUrlList(manifest.animationPath),
+  characters: manifest.characters?.map(normalizeCharacterEntry),
+  loras: normalizeManifestEntries(manifest.loras),
+  sprites: normalizeManifestEntries(manifest.sprites),
+  thumbnails: normalizeManifestEntries(manifest.thumbnails),
+  defaultAnimations: normalizeManifestEntries(manifest.defaultAnimations),
+});
 
 export class ManifestDataManager{
     constructor(){
@@ -126,7 +166,7 @@ export class ManifestDataManager{
         try {
           // Fetch the manifest data asynchronously
           this._fetchManifest(url).then(manifest=>{
-            this.setManifest(manifest, identifier).then(()=>{
+            this.setManifest(normalizeManifestAssetBases(manifest), identifier).then(()=>{
               resolve();
             })
           })

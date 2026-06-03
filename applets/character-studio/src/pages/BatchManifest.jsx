@@ -17,6 +17,7 @@ import MergeOptions from "../components/MergeOptions"
 import { local } from "../library/store"
 import { ZipManager } from "../library/zipManager"
 import { connectWallet } from "../library/mint-utils"
+import { getAssetUrl } from "../lib/assetBase"
 
 function BatchManifest() {
   const { isLoading, setViewMode, setIsLoading } = React.useContext(ViewContext)
@@ -241,7 +242,7 @@ function BatchManifest() {
   return (
     <div className={styles.container}>
       <div className={`loadingIndicator ${isLoading ? "active" : ""}`}>
-        <img className={"rotate"} src="ui/loading.svg" />
+        <img className={"rotate"} src={getAssetUrl("ui/loading.svg")} />
       </div>
       <div className={"sectionTitle"}>NFT Characters</div>
       <FileDropComponent 

@@ -1,7 +1,20 @@
 
 import { getAsArray, getVectorCameraPosition } from "./utils";
 import { ZipManager } from "./zipManager";
+import { getAssetUrl } from "../lib/assetBase";
 
+const assetPath = (...parts) => {
+    const cleanParts = parts.filter(Boolean).map(String);
+    if (cleanParts.length === 0) return "";
+
+    const [first, ...rest] = cleanParts;
+    const joined = [
+        first.replace(/\/+$/, ""),
+        ...rest.map((part) => part.replace(/^\/+|\/+$/g, "")),
+    ].filter(Boolean).join("/");
+
+    return getAssetUrl(joined);
+};
 
 export class ThumbnailGenerator {
         /**
@@ -34,7 +47,7 @@ export class ThumbnailGenerator {
             
             thumbnailsCollection
         } = objectData
-        const animBasePath = assetsLocation + "/";
+        const animBasePath = assetPath(assetsLocation);
 
         let finalAnimationTime = animationFrame || 0;
         if (animationTime != null){
@@ -42,7 +55,7 @@ export class ThumbnailGenerator {
         }
 
         if (loadAnimation){
-            await this.animationManager.loadAnimation(animBasePath + poseAnimation, true, finalAnimationTime);
+            await this.animationManager.loadAnimation(assetPath(animBasePath, poseAnimation), true, finalAnimationTime);
         }
 
 

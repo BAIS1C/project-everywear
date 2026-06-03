@@ -5,6 +5,7 @@ import { ViewMode, ViewContext } from "../context/ViewContext"
 import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
 import { SceneContext } from "../context/SceneContext"
+import { getAssetUrl } from "../lib/assetBase"
 
 import { connectWallet } from "../library/mint-utils"
 
@@ -46,27 +47,27 @@ function Landing() {
     <div className={styles.container}>
       <div className={styles.buttonContainer}>
         <button className={styles.button} onClick={createCharacter}>
-          <img src="./assets/media/btn_create_character.png" />
+          <img src={getAssetUrl("./assets/media/btn_create_character.png")} />
         </button>
         <button className={styles.button} onClick={createVRMCharacter}>
-          <img src="./assets/media/btn_batch_download_character.png" />
+          <img src={getAssetUrl("./assets/media/btn_batch_download_character.png")} />
         </button>
         <button className={styles.button} onClick={optimizeCharacter}>
-          <img src="./assets/media/btn_optimize_character.png" />
+          <img src={getAssetUrl("./assets/media/btn_optimize_character.png")} />
         </button>
         {
         // opensea_Key && opensea_Key != "" && <button className={styles.button} onClick={getWallet}>
-        //   <img src="./assets/media/btn_optimize_character.png" />
+        //   <img src={getAssetUrl("./assets/media/btn_optimize_character.png")} />
         // </button>
         }
         {/* <button className={styles.button} onClick={createCharacter}>
-          <img src="./assets/media/btn_tools.png" />
+          <img src={getAssetUrl("./assets/media/btn_tools.png")} />
         </button> */}
         {/*
         <button className={styles.button}
             onClick={
                 loadCharacter
-            }><img src='/assets/media/btn_load_character.png' /></button>
+            }><img src={getAssetUrl("/assets/media/btn_load_character.png")} /></button>
             */}
       </div>
     </div>

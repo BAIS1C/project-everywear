@@ -16,6 +16,7 @@ import ModelInformation from "../components/ModelInformation"
 import MergeOptions from "../components/MergeOptions"
 import { local } from "../library/store"
 import { ZipManager } from "../library/zipManager"
+import { getAssetUrl } from "../lib/assetBase"
 
 function BatchDownload() {
   const { isLoading, setViewMode, setIsLoading } = React.useContext(ViewContext)
@@ -227,7 +228,7 @@ function BatchDownload() {
   return (
     <div className={styles.container}>
       <div className={`loadingIndicator ${isLoading ? "active" : ""}`}>
-        <img className={"rotate"} src="ui/loading.svg" />
+        <img className={"rotate"} src={getAssetUrl("ui/loading.svg")} />
       </div>
       <div className={"sectionTitle"}>Batch Download</div>
       <FileDropComponent 

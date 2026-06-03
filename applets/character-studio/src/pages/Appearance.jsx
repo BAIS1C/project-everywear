@@ -10,6 +10,7 @@ import { TokenBox } from "../components/token-box/TokenBox"
 import randomizeIcon from "../images/randomize.png"
 import cancel from "../images/cancel.png"
 import { getFileNameWithoutExtension } from "../library/utils"
+import { getAssetUrl } from "../lib/assetBase"
 
 /**
  * Tab definitions — maps trait groups to CHASSIS or IDENTITY
@@ -176,7 +177,7 @@ function Appearance() {
     <div className={styles.container}>
       {/* Loading Overlay */}
       <div className={`${styles.loadingOverlay} ${isLoading ? styles.loadingOverlayActive : ""}`}>
-        <img className={styles.loadingSpinner} src="ui/loading.svg" />
+        <img className={styles.loadingSpinner} src={getAssetUrl("ui/loading.svg")} />
       </div>
 
       {/* File Drop (invisible, full screen) */}

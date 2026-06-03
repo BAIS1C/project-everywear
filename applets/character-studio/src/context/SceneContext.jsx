@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react"
+import React, { createContext, useEffect, useRef, useState } from "react"
 
 import gsap from "gsap"
 import { sceneInitializer } from "../library/sceneInitializer"
@@ -40,25 +40,27 @@ export const SceneProvider = (props) => {
   const [manifest, setManifest] = useState(null)
   const [debugMode, setDebugMode] = useState(false);
 
-  let loaded = false
-  let [isLoaded, setIsLoaded] = useState(false)
+  const sceneInitializedRef = useRef(false)
+
   useEffect(()=>{
-    // hacky prevention of double render
-    if (loaded || isLoaded) return
-    setIsLoaded(true)
-    loaded = true;
+    if (sceneInitializedRef.current) return
+    sceneInitializedRef.current = true
 
     // Canvas internalization: the #editor-scene canvas previously lived in the
     // fork's index.html. As an embedded Everywear applet there is no such
     // static markup, so create it on demand before sceneInitializer reads it
     // via document.getElementById (sceneInitializer.js:~154).
+    const canvasHost = document.querySelector(".avr-viewport") || document.body;
+    const isShellViewport = canvasHost.classList?.contains("avr-viewport");
     let editorCanvas = document.getElementById("editor-scene");
     let createdEditorCanvas = false;
     if (!editorCanvas) {
       editorCanvas = document.createElement("canvas");
       editorCanvas.id = "editor-scene";
-      editorCanvas.style.cssText = "position:fixed;top:0;left:0;";
-      document.body.appendChild(editorCanvas);
+      editorCanvas.style.cssText = isShellViewport
+        ? "position:absolute;inset:0;width:100%;height:100%;z-index:0;"
+        : "position:fixed;top:0;left:0;";
+      canvasHost.prepend(editorCanvas);
       createdEditorCanvas = true;
     }
 
@@ -84,6 +86,7 @@ export const SceneProvider = (props) => {
     // Cleanup: only remove the canvas if this effect created it, so the host
     // shell can unmount/remount the applet window without leaking canvases.
     return () => {
+      sceneInitializedRef.current = false
       if (createdEditorCanvas && editorCanvas?.parentNode) {
         editorCanvas.parentNode.removeChild(editorCanvas);
       }
