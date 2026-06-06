@@ -1,5 +1,6 @@
 # Keep source and docs stable across Windows and POSIX tooling.
 * text=auto eol=lf
+*.module.css text eol=lf
 
 # Binary assets and archives.
 *.png binary

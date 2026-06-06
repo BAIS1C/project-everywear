@@ -53,14 +53,14 @@
   background-color: var(--ew-bg);
 }
 .left-button{
-  background: url('./ui/backButton_small.png');
+  background: url('../../public/ui/backButton_small.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 .right-button{
-  background: url('./ui/nextButton_small.png');
+  background: url('../../public/ui/nextButton_small.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
