@@ -60,6 +60,8 @@ graph LR
   Modal -. "event, process-local" .-> ToastCallback["onToast callback"]
 ```
 
-**Last verified**: 2026-06-05, Codex VideoGeneratorModal Phase B package parity pass.
+**Last verified**: 2026-06-06, Codex worker dedup audit pass.
 
 **Backlog**: Split `components/VideoGeneratorModal.tsx` before adding more S3-derived modal features. Natural first splits: pure types/presets/default config, render/export hooks, media controls, text/subtitle controls, settings panels, and worker protocol helpers.
+
+**Worker dedup note 2026-06-06**: `packages/video-modal/src/components/VideoGeneratorModal.tsx` imports the package worker through `../workers/videoRenderWorker.ts?worker`; no Gener8 applet import references `applets/gener8/web/src/workers/videoRenderWorker.ts`. The applet-local worker copy differs only by its old `// @ts-nocheck` line and is now marked deprecated in place. Do not delete it until a shell-launched video export parity smoke proves the package worker path end-to-end.

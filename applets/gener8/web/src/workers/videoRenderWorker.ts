@@ -1,3 +1,7 @@
+// Deprecated duplicate retained until a shell-launched video export parity smoke
+// proves the package worker path end-to-end. The live modal imports
+// packages/video-modal/src/workers/videoRenderWorker.ts through
+// @everywear/video-modal.
 // @ts-nocheck
 /* eslint-disable no-restricted-globals */
 import { drawS3Hero, drawDJAtWork } from '../lib/silhouetteEngine';
