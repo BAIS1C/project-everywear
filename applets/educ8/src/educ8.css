@@ -1,4 +1,4 @@
-.loom-root {
+.educ8-root {
   min-height: 100%;
   box-sizing: border-box;
   padding: 20px;
@@ -12,9 +12,9 @@
   overflow: auto;
 }
 
-body[data-skin="graphite"] .loom-root,
-body[data-skin="anodized"] .loom-root,
-body[data-skin="carbon"] .loom-root {
+body[data-skin="graphite"] .educ8-root,
+body[data-skin="anodized"] .educ8-root,
+body[data-skin="carbon"] .educ8-root {
   color: var(--ew-text);
   background:
     radial-gradient(circle at top left, color-mix(in oklab, var(--ew-v2-accent) 8%, transparent), transparent 32%),
@@ -22,7 +22,7 @@ body[data-skin="carbon"] .loom-root {
   font-family: var(--ew-font-body);
 }
 
-.loom-header {
+.educ8-header {
   grid-column: 1 / -1;
   display: flex;
   align-items: end;
@@ -32,13 +32,13 @@ body[data-skin="carbon"] .loom-root {
   padding-bottom: 16px;
 }
 
-body[data-skin="graphite"] .loom-header,
-body[data-skin="anodized"] .loom-header,
-body[data-skin="carbon"] .loom-header {
+body[data-skin="graphite"] .educ8-header,
+body[data-skin="anodized"] .educ8-header,
+body[data-skin="carbon"] .educ8-header {
   border-bottom-color: var(--ew-v2-hairline-strong);
 }
 
-.loom-kicker {
+.educ8-kicker {
   margin: 0 0 6px;
   color: #69d2c6;
   font-size: 12px;
@@ -47,37 +47,37 @@ body[data-skin="carbon"] .loom-header {
   text-transform: uppercase;
 }
 
-body[data-skin="graphite"] .loom-kicker,
-body[data-skin="anodized"] .loom-kicker,
-body[data-skin="carbon"] .loom-kicker,
-body[data-skin="graphite"] .loom-syllabus__code,
-body[data-skin="anodized"] .loom-syllabus__code,
-body[data-skin="carbon"] .loom-syllabus__code {
+body[data-skin="graphite"] .educ8-kicker,
+body[data-skin="anodized"] .educ8-kicker,
+body[data-skin="carbon"] .educ8-kicker,
+body[data-skin="graphite"] .educ8-syllabus__code,
+body[data-skin="anodized"] .educ8-syllabus__code,
+body[data-skin="carbon"] .educ8-syllabus__code {
   color: var(--ew-v2-accent);
 }
 
-.loom-header h1 {
+.educ8-header h1 {
   margin: 0;
   font-size: 34px;
   line-height: 1;
   letter-spacing: 0;
 }
 
-.loom-tagline {
+.educ8-tagline {
   margin: 8px 0 0;
   color: var(--ew-text-muted, rgba(247, 244, 236, 0.74));
   font-size: 14px;
   line-height: 1.4;
 }
 
-.loom-meter {
+.educ8-meter {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: end;
 }
 
-.loom-meter span {
+.educ8-meter span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -89,30 +89,30 @@ body[data-skin="carbon"] .loom-syllabus__code {
   font-size: 13px;
 }
 
-body[data-skin="graphite"] .loom-meter span,
-body[data-skin="anodized"] .loom-meter span,
-body[data-skin="carbon"] .loom-meter span,
-body[data-skin="graphite"] .loom-setup,
-body[data-skin="anodized"] .loom-setup,
-body[data-skin="carbon"] .loom-setup,
-body[data-skin="graphite"] .loom-teacher,
-body[data-skin="anodized"] .loom-teacher,
-body[data-skin="carbon"] .loom-teacher,
-body[data-skin="graphite"] .loom-phase,
-body[data-skin="anodized"] .loom-phase,
-body[data-skin="carbon"] .loom-phase,
-body[data-skin="graphite"] .loom-rail section,
-body[data-skin="anodized"] .loom-rail section,
-body[data-skin="carbon"] .loom-rail section,
-body[data-skin="graphite"] .loom-principle,
-body[data-skin="anodized"] .loom-principle,
-body[data-skin="carbon"] .loom-principle,
-body[data-skin="graphite"] .loom-pack,
-body[data-skin="anodized"] .loom-pack,
-body[data-skin="carbon"] .loom-pack,
-body[data-skin="graphite"] .loom-syllabus,
-body[data-skin="anodized"] .loom-syllabus,
-body[data-skin="carbon"] .loom-syllabus {
+body[data-skin="graphite"] .educ8-meter span,
+body[data-skin="anodized"] .educ8-meter span,
+body[data-skin="carbon"] .educ8-meter span,
+body[data-skin="graphite"] .educ8-setup,
+body[data-skin="anodized"] .educ8-setup,
+body[data-skin="carbon"] .educ8-setup,
+body[data-skin="graphite"] .educ8-teacher,
+body[data-skin="anodized"] .educ8-teacher,
+body[data-skin="carbon"] .educ8-teacher,
+body[data-skin="graphite"] .educ8-phase,
+body[data-skin="anodized"] .educ8-phase,
+body[data-skin="carbon"] .educ8-phase,
+body[data-skin="graphite"] .educ8-rail section,
+body[data-skin="anodized"] .educ8-rail section,
+body[data-skin="carbon"] .educ8-rail section,
+body[data-skin="graphite"] .educ8-principle,
+body[data-skin="anodized"] .educ8-principle,
+body[data-skin="carbon"] .educ8-principle,
+body[data-skin="graphite"] .educ8-pack,
+body[data-skin="anodized"] .educ8-pack,
+body[data-skin="carbon"] .educ8-pack,
+body[data-skin="graphite"] .educ8-syllabus,
+body[data-skin="anodized"] .educ8-syllabus,
+body[data-skin="carbon"] .educ8-syllabus {
   background: var(--ew-v2-surface-1);
   border-color: var(--ew-v2-hairline-strong);
   box-shadow:
@@ -125,15 +125,15 @@ body[data-skin="carbon"] .loom-syllabus {
     0 1px 0 rgba(0,0,0,0.5);
 }
 
-.loom-grid {
+.educ8-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   align-content: start;
 }
 
-.loom-setup,
-.loom-teacher {
+.educ8-setup,
+.educ8-teacher {
   grid-column: 1 / -1;
   border: 1px solid rgba(247, 244, 236, 0.14);
   border-radius: 8px;
@@ -143,7 +143,7 @@ body[data-skin="carbon"] .loom-syllabus {
   gap: 14px;
 }
 
-.loom-panel-head {
+.educ8-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -151,18 +151,18 @@ body[data-skin="carbon"] .loom-syllabus {
   flex-wrap: wrap;
 }
 
-.loom-panel-head h2,
-.loom-syllabus h3,
-.loom-principle h3 {
+.educ8-panel-head h2,
+.educ8-syllabus h3,
+.educ8-principle h3 {
   margin: 0;
   letter-spacing: 0;
 }
 
-.loom-panel-head h2 {
+.educ8-panel-head h2 {
   font-size: 20px;
 }
 
-.loom-action {
+.educ8-action {
   min-height: 36px;
   border: 1px solid rgba(105, 210, 198, 0.55);
   border-radius: 6px;
@@ -173,30 +173,30 @@ body[data-skin="carbon"] .loom-syllabus {
   cursor: pointer;
 }
 
-body[data-skin="graphite"] .loom-action,
-body[data-skin="anodized"] .loom-action,
-body[data-skin="carbon"] .loom-action,
-body[data-skin="graphite"] .loom-action--secondary,
-body[data-skin="anodized"] .loom-action--secondary,
-body[data-skin="carbon"] .loom-action--secondary,
-body[data-skin="graphite"] .loom-module-tabs button.active,
-body[data-skin="anodized"] .loom-module-tabs button.active,
-body[data-skin="carbon"] .loom-module-tabs button.active {
+body[data-skin="graphite"] .educ8-action,
+body[data-skin="anodized"] .educ8-action,
+body[data-skin="carbon"] .educ8-action,
+body[data-skin="graphite"] .educ8-action--secondary,
+body[data-skin="anodized"] .educ8-action--secondary,
+body[data-skin="carbon"] .educ8-action--secondary,
+body[data-skin="graphite"] .educ8-module-tabs button.active,
+body[data-skin="anodized"] .educ8-module-tabs button.active,
+body[data-skin="carbon"] .educ8-module-tabs button.active {
   border-color: var(--ew-v2-accent);
   background: color-mix(in oklab, var(--ew-v2-accent) 12%, transparent);
   color: var(--ew-v2-accent-strong);
 }
 
-.loom-action--secondary {
+.educ8-action--secondary {
   background: rgba(255, 255, 255, 0.055);
   color: rgba(247, 244, 236, 0.86);
 }
 
-.loom-action:hover {
+.educ8-action:hover {
   background: rgba(105, 210, 198, 0.22);
 }
 
-.loom-notice {
+.educ8-notice {
   border: 1px solid rgba(242, 209, 107, 0.28);
   border-radius: 6px;
   background: rgba(242, 209, 107, 0.1);
@@ -206,20 +206,20 @@ body[data-skin="carbon"] .loom-module-tabs button.active {
   line-height: 1.4;
 }
 
-.loom-plan-state {
+.educ8-plan-state {
   color: var(--ew-primary, #69d2c6);
   font-weight: 700;
 }
 
-body[data-skin="graphite"] .loom-notice,
-body[data-skin="anodized"] .loom-notice,
-body[data-skin="carbon"] .loom-notice,
-body[data-skin="graphite"] .loom-module-tabs button,
-body[data-skin="anodized"] .loom-module-tabs button,
-body[data-skin="carbon"] .loom-module-tabs button,
-body[data-skin="graphite"] .loom-syllabus li,
-body[data-skin="anodized"] .loom-syllabus li,
-body[data-skin="carbon"] .loom-syllabus li {
+body[data-skin="graphite"] .educ8-notice,
+body[data-skin="anodized"] .educ8-notice,
+body[data-skin="carbon"] .educ8-notice,
+body[data-skin="graphite"] .educ8-module-tabs button,
+body[data-skin="anodized"] .educ8-module-tabs button,
+body[data-skin="carbon"] .educ8-module-tabs button,
+body[data-skin="graphite"] .educ8-syllabus li,
+body[data-skin="anodized"] .educ8-syllabus li,
+body[data-skin="carbon"] .educ8-syllabus li {
   background: var(--ew-v2-surface-recessed);
   border-color: rgba(0,0,0,0.6);
   color: var(--ew-text-muted);
@@ -229,13 +229,13 @@ body[data-skin="carbon"] .loom-syllabus li {
     inset 0 1px 0 rgba(0,0,0,0.9);
 }
 
-.loom-module-tabs {
+.educ8-module-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.loom-module-tabs button {
+.educ8-module-tabs button {
   min-height: 34px;
   border: 1px solid rgba(247, 244, 236, 0.14);
   border-radius: 999px;
@@ -245,13 +245,13 @@ body[data-skin="carbon"] .loom-syllabus li {
   cursor: pointer;
 }
 
-.loom-module-tabs button.active {
+.educ8-module-tabs button.active {
   border-color: rgba(105, 210, 198, 0.55);
   color: #69d2c6;
   background: rgba(105, 210, 198, 0.14);
 }
 
-.loom-syllabus {
+.educ8-syllabus {
   display: grid;
   grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
   gap: 16px;
@@ -260,38 +260,38 @@ body[data-skin="carbon"] .loom-syllabus li {
   padding: 12px;
 }
 
-.loom-syllabus__code {
+.educ8-syllabus__code {
   color: #69d2c6;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 12px;
 }
 
-.loom-syllabus h3 {
+.educ8-syllabus h3 {
   font-size: 18px;
   margin-top: 6px;
 }
 
-.loom-syllabus p {
+.educ8-syllabus p {
   margin: 6px 0 0;
   color: rgba(247, 244, 236, 0.72);
   font-size: 13px;
 }
 
-.loom-syllabus ul,
-.loom-principles {
+.educ8-syllabus ul,
+.educ8-principles {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.loom-syllabus ul {
+.educ8-syllabus ul {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-content: start;
 }
 
-.loom-syllabus li {
+.educ8-syllabus li {
   border: 1px solid rgba(247, 244, 236, 0.12);
   border-radius: 999px;
   padding: 6px 9px;
@@ -299,13 +299,13 @@ body[data-skin="carbon"] .loom-syllabus li {
   color: rgba(247, 244, 236, 0.86);
 }
 
-.loom-pack-list {
+.educ8-pack-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.loom-pack {
+.educ8-pack {
   min-height: 118px;
   display: flex;
   gap: 10px;
@@ -317,12 +317,12 @@ body[data-skin="carbon"] .loom-syllabus li {
   cursor: pointer;
 }
 
-.loom-pack--required {
+.educ8-pack--required {
   border-color: rgba(105, 210, 198, 0.38);
   cursor: default;
 }
 
-.loom-pack input {
+.educ8-pack input {
   width: 18px;
   height: 18px;
   margin: 2px 0 0;
@@ -330,7 +330,7 @@ body[data-skin="carbon"] .loom-syllabus li {
   flex: 0 0 auto;
 }
 
-.loom-pack__body {
+.educ8-pack__body {
   min-width: 0;
   display: grid;
   gap: 7px;
@@ -339,54 +339,54 @@ body[data-skin="carbon"] .loom-syllabus li {
   line-height: 1.35;
 }
 
-.loom-pack__top {
+.educ8-pack__top {
   display: flex;
   gap: 8px;
   align-items: start;
   justify-content: space-between;
 }
 
-.loom-pack strong {
+.educ8-pack strong {
   color: rgba(247, 244, 236, 0.95);
   font-size: 13px;
 }
 
-.loom-pack em {
+.educ8-pack em {
   color: #f2d16b;
   font-size: 11px;
   font-style: normal;
   text-transform: uppercase;
 }
 
-.loom-pack__resolver {
+.educ8-pack__resolver {
   color: #9fb6c7;
 }
 
-.loom-principles {
+.educ8-principles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.loom-principle {
+.educ8-principle {
   border: 1px solid rgba(247, 244, 236, 0.12);
   border-radius: 8px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.045);
 }
 
-.loom-principle h3 {
+.educ8-principle h3 {
   font-size: 14px;
 }
 
-.loom-principle p {
+.educ8-principle p {
   margin: 8px 0 0;
   color: rgba(247, 244, 236, 0.78);
   font-size: 12px;
   line-height: 1.45;
 }
 
-.loom-phase {
+.educ8-phase {
   min-height: 230px;
   border: 1px solid rgba(247, 244, 236, 0.14);
   border-radius: 8px;
@@ -398,33 +398,33 @@ body[data-skin="carbon"] .loom-syllabus li {
   gap: 12px;
 }
 
-.loom-phase--active {
+.educ8-phase--active {
   border-color: rgba(105, 210, 198, 0.54);
   background: rgba(30, 115, 113, 0.18);
 }
 
-.loom-phase--planned {
+.educ8-phase--planned {
   border-color: rgba(242, 209, 107, 0.34);
 }
 
-.loom-phase--blocked {
+.educ8-phase--blocked {
   border-color: rgba(242, 139, 130, 0.44);
 }
 
-.loom-phase__header {
+.educ8-phase__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.loom-phase__id {
+.educ8-phase__id {
   color: #9fb6c7;
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 12px;
 }
 
-.loom-phase__state {
+.educ8-phase__state {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   padding: 3px 8px;
@@ -432,38 +432,38 @@ body[data-skin="carbon"] .loom-syllabus li {
   color: #f2d16b;
 }
 
-.loom-phase--active .loom-phase__state {
+.educ8-phase--active .educ8-phase__state {
   color: #69d2c6;
 }
 
-.loom-phase--planned .loom-phase__state {
+.educ8-phase--planned .educ8-phase__state {
   color: #f2d16b;
 }
 
-.loom-phase--blocked .loom-phase__state {
+.educ8-phase--blocked .educ8-phase__state {
   color: #f28b82;
 }
 
-.loom-phase h2,
-.loom-rail h2 {
+.educ8-phase h2,
+.educ8-rail h2 {
   margin: 0;
   font-size: 16px;
   line-height: 1.2;
   letter-spacing: 0;
 }
 
-.loom-phase dl {
+.educ8-phase dl {
   margin: 0;
   display: grid;
   gap: 10px;
 }
 
-.loom-phase dl div {
+.educ8-phase dl div {
   display: grid;
   gap: 3px;
 }
 
-.loom-phase dt {
+.educ8-phase dt {
   color: #9fb6c7;
   font-size: 11px;
   font-weight: 700;
@@ -471,34 +471,34 @@ body[data-skin="carbon"] .loom-syllabus li {
   letter-spacing: 0;
 }
 
-.loom-phase dd {
+.educ8-phase dd {
   margin: 0;
   color: rgba(247, 244, 236, 0.88);
   font-size: 13px;
   line-height: 1.4;
 }
 
-.loom-phase__next {
+.educ8-phase__next {
   margin: auto 0 0;
   color: #f2d16b;
   font-size: 13px;
   line-height: 1.4;
 }
 
-.loom-rail {
+.educ8-rail {
   display: grid;
   gap: 12px;
   align-content: start;
 }
 
-.loom-rail section {
+.educ8-rail section {
   border: 1px solid rgba(247, 244, 236, 0.14);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   padding: 14px;
 }
 
-.loom-rail ul {
+.educ8-rail ul {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
@@ -506,7 +506,7 @@ body[data-skin="carbon"] .loom-syllabus li {
   gap: 8px;
 }
 
-.loom-rail li {
+.educ8-rail li {
   overflow-wrap: anywhere;
   color: rgba(247, 244, 236, 0.82);
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -514,7 +514,7 @@ body[data-skin="carbon"] .loom-syllabus li {
   line-height: 1.35;
 }
 
-.loom-rail p {
+.educ8-rail p {
   margin: 12px 0 0;
   color: rgba(247, 244, 236, 0.84);
   font-size: 13px;
@@ -522,46 +522,46 @@ body[data-skin="carbon"] .loom-syllabus li {
 }
 
 @media (max-width: 980px) {
-  .loom-root {
+  .educ8-root {
     grid-template-columns: 1fr;
   }
 
-  .loom-grid {
+  .educ8-grid {
     grid-template-columns: 1fr;
   }
 
-  .loom-pack-list,
-  .loom-principles {
+  .educ8-pack-list,
+  .educ8-principles {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 680px) {
-  .loom-root {
+  .educ8-root {
     padding: 14px;
   }
 
-  .loom-header {
+  .educ8-header {
     align-items: start;
     flex-direction: column;
   }
 
-  .loom-meter {
+  .educ8-meter {
     justify-content: start;
   }
 
-  .loom-panel-head,
-  .loom-syllabus {
+  .educ8-panel-head,
+  .educ8-syllabus {
     grid-template-columns: 1fr;
   }
 
-  .loom-panel-head {
+  .educ8-panel-head {
     align-items: start;
     flex-direction: column;
   }
 
-  .loom-pack-list,
-  .loom-principles {
+  .educ8-pack-list,
+  .educ8-principles {
     grid-template-columns: 1fr;
   }
 }

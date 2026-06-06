@@ -14,7 +14,7 @@
     "applets/character-studio",
     "applets/gener8/web",
     "applets/vid/web",
-    "applets/loom"
+    "applets/educ8"
   ],
   "scripts": {
     "dev:shell": "cd platform/everywear-os && npm run dev",

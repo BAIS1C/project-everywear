@@ -57,7 +57,7 @@ const MONOGRAM: Record<string, string> = {
   'layeru-osint':     'LU',
   'character-studio': 'CS',
   '3nvizen':          '3N',
-  'loom':             'LM',
+  'loom':             'E8',
   'mymories':         'MY',
   'settings':         'ST',
   'vault':            'VA',

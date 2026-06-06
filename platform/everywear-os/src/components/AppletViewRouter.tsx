@@ -135,8 +135,8 @@ const APPLET_COMPONENTS: Record<string, {
     displayName: 'Character Studio',
   },
   loom: {
-    component: React.lazy(() => import('@applets/loom/src/index')),
-    displayName: 'The Loom',
+    component: React.lazy(() => import('@applets/educ8/src/index')),
+    displayName: 'Educ8',
   },
 };
 

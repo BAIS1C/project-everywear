@@ -2,7 +2,7 @@ model_groups = []
 
 [applet]
 id = "loom"
-name = "The Loom"
+name = "Educ8"
 version = "0.1.0"
 description = "Everywear Knowledge Engine: the Project NOMAD Rust migration"
 icon = "loom"

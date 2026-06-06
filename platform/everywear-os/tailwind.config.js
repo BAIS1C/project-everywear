@@ -9,7 +9,7 @@ export default {
     '../../applets/gener8/web/src/**/*.{ts,tsx,js,jsx}',
     '../../applets/1magen/src/**/*.{ts,tsx,js,jsx}',
     '../../applets/kasai/src/**/*.{ts,tsx,js,jsx}',
-    '../../applets/loom/src/**/*.{ts,tsx,js,jsx}',
+    '../../applets/educ8/src/**/*.{ts,tsx,js,jsx}',
     '../../applets/character-studio/src/**/*.{ts,tsx,js,jsx}',
   ],
   plugins: [],

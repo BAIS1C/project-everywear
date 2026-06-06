@@ -2,7 +2,7 @@ import React from 'react';
 import { CONTENT_PACKS, IGCSE_MODULES, PEDAGOGY } from './learningContent';
 import { MY_MAITS_LITE_HOST_CONTRACTS } from '@everywear/transport';
 
-export interface LoomCoreProps {
+export interface Educ8CoreProps {
   skin?: string;
   mode?: string;
 }
@@ -94,7 +94,7 @@ function stateLabel(state: PhaseState) {
   return 'Blocked';
 }
 
-export function LoomCore({ skin, mode }: LoomCoreProps) {
+export function Educ8Core({ skin, mode }: Educ8CoreProps) {
   const teacherContract = MY_MAITS_LITE_HOST_CONTRACTS.loom_teacher;
   const [selectedPacks, setSelectedPacks] = React.useState<Set<string>>(
     () => new Set(CONTENT_PACKS.filter((pack) => pack.status !== 'optional').map((pack) => pack.id)),
@@ -142,26 +142,26 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
   }
 
   return (
-    <main className="loom-root" data-skin={skin} data-mode={mode}>
-      <section className="loom-header">
+    <main className="educ8-root" data-skin={skin} data-mode={mode}>
+      <section className="educ8-header">
         <div>
-          <p className="loom-kicker">Agentic education for the home</p>
-          <h1>The Loom</h1>
-          <p className="loom-tagline">Weaving Agentic Education into your Home.</p>
+          <p className="educ8-kicker">Agentic education for the home</p>
+          <h1>Educ8</h1>
+          <p className="educ8-tagline">Weaving Agentic Education into your Home.</p>
         </div>
-        <div className="loom-meter" aria-label="Migration status">
+        <div className="educ8-meter" aria-label="Migration status">
           <span><strong>{active}</strong> active</span>
           <span><strong>{planned}</strong> planned</span>
           <span><strong>{blocked}</strong> blocked</span>
         </div>
       </section>
 
-      <section className="loom-grid" aria-label="Migration phases">
+      <section className="educ8-grid" aria-label="Migration phases">
         {PHASES.map((phase) => (
-          <article className={`loom-phase loom-phase--${phase.state}`} key={phase.id}>
-            <header className="loom-phase__header">
-              <span className="loom-phase__id">{phase.id}</span>
-              <span className="loom-phase__state">{stateLabel(phase.state)}</span>
+          <article className={`educ8-phase educ8-phase--${phase.state}`} key={phase.id}>
+            <header className="educ8-phase__header">
+              <span className="educ8-phase__id">{phase.id}</span>
+              <span className="educ8-phase__state">{stateLabel(phase.state)}</span>
             </header>
             <h2>{phase.title}</h2>
             <dl>
@@ -174,20 +174,20 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
                 <dd>{phase.target}</dd>
               </div>
             </dl>
-            <p className="loom-phase__next">{phase.nextStep}</p>
+            <p className="educ8-phase__next">{phase.nextStep}</p>
           </article>
         ))}
       </section>
 
-      <section className="loom-setup" aria-label="IGCSE setup and content selection">
-        <div className="loom-panel-head">
+      <section className="educ8-setup" aria-label="IGCSE setup and content selection">
+        <div className="educ8-panel-head">
           <div>
-            <p className="loom-kicker">Learner Setup</p>
+            <p className="educ8-kicker">Learner Setup</p>
             <h2>IGCSE Teacher Pack</h2>
           </div>
           <button
             type="button"
-            className="loom-action"
+            className="educ8-action"
             onClick={planDownload}
             title="Creates a transparent download plan. The real downloader must show exact URLs, file sizes, checksums, and ask before fetching large files."
           >
@@ -195,7 +195,7 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
           </button>
           <button
             type="button"
-            className="loom-action loom-action--secondary"
+            className="educ8-action educ8-action--secondary"
             onClick={acceptPlan}
             title="Accepts the visible plan for manifest review only. It does not download files yet."
           >
@@ -203,12 +203,12 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
           </button>
         </div>
 
-        <div className="loom-notice" role="status">
-          <strong>Loom says:</strong> {setupMessage}
-          {planAccepted && <span className="loom-plan-state"> Accepted for manifest review.</span>}
+        <div className="educ8-notice" role="status">
+          <strong>Educ8 says:</strong> {setupMessage}
+          {planAccepted && <span className="educ8-plan-state"> Accepted for manifest review.</span>}
         </div>
 
-        <div className="loom-module-tabs" role="tablist" aria-label="IGCSE subjects">
+        <div className="educ8-module-tabs" role="tablist" aria-label="IGCSE subjects">
           {IGCSE_MODULES.map((module) => (
             <button
               key={module.id}
@@ -228,9 +228,9 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
         </div>
 
         {activeModule && (
-          <article className="loom-syllabus">
+          <article className="educ8-syllabus">
             <div>
-              <span className="loom-syllabus__code">{activeModule.code}</span>
+              <span className="educ8-syllabus__code">{activeModule.code}</span>
               <h3>{activeModule.subject}</h3>
               <p>{activeModule.years}</p>
             </div>
@@ -242,10 +242,10 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
           </article>
         )}
 
-        <div className="loom-pack-list">
+        <div className="educ8-pack-list">
           {modulePacks.map((pack) => (
             <label
-              className={`loom-pack loom-pack--${pack.status}`}
+              className={`educ8-pack educ8-pack--${pack.status}`}
               key={pack.id}
               title={pack.tooltip}
             >
@@ -255,31 +255,31 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
                 disabled={pack.status === 'required'}
                 onChange={() => togglePack(pack.id)}
               />
-              <span className="loom-pack__body">
-                <span className="loom-pack__top">
+              <span className="educ8-pack__body">
+                <span className="educ8-pack__top">
                   <strong>{pack.title}</strong>
                   <em>{pack.status}</em>
                 </span>
                 <span>{pack.module} · {pack.type.toUpperCase()} · {pack.size}</span>
-                <span className="loom-pack__resolver">{pack.resolver}</span>
+                <span className="educ8-pack__resolver">{pack.resolver}</span>
               </span>
             </label>
           ))}
         </div>
       </section>
 
-      <section className="loom-teacher" aria-label="Teacher pedagogy model">
-        <div className="loom-panel-head">
+      <section className="educ8-teacher" aria-label="Teacher pedagogy model">
+        <div className="educ8-panel-head">
           <div>
-            <p className="loom-kicker">{teacherContract.label}</p>
+            <p className="educ8-kicker">{teacherContract.label}</p>
             <h2>Pedagogy Model</h2>
           </div>
         </div>
-        <div className="loom-principles">
+        <div className="educ8-principles">
           {PEDAGOGY.map((principle) => (
             <article
               key={principle.title}
-              className="loom-principle"
+              className="educ8-principle"
               title={`My Maits Lite uses this principle when planning lessons, feedback, and revision prompts: ${principle.summary}`}
             >
               <h3>{principle.title}</h3>
@@ -289,7 +289,7 @@ export function LoomCore({ skin, mode }: LoomCoreProps) {
         </div>
       </section>
 
-      <aside className="loom-rail" aria-label="Migration sources and rules">
+      <aside className="educ8-rail" aria-label="Migration sources and rules">
         <section>
           <h2>Source Maps</h2>
           <ul>

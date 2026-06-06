@@ -1,8 +1,8 @@
 {
-  "name": "@everywear/loom",
+  "name": "@everywear/educ8",
   "version": "0.1.0",
   "private": true,
-  "description": "The Loom applet: Everywear Knowledge Engine migration cockpit",
+  "description": "Educ8 applet: Everywear's free education module",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
