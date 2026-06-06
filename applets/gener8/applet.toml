@@ -265,6 +265,10 @@ min_vram_mb = 6144
 # licence tier entitles them. VRAM-gated quant selection uses the
 # same logic as model_groups (highest quant that fits).
 
+# Legacy manifest key retained for shell provisioning and Creator inheritance.
+# Public UI/shim APIs use pack_id = "pro_base"; shim.rs aliases that to this
+# upgrade pack so Reference, Cover, and DAW all mean the true xl-base capability
+# model without breaking older better_models manifest consumers.
 [upgrade_packs.better_models]
 label = "Better Models (Pro)"
 min_tier = "gener8_pro"

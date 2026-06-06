@@ -239,10 +239,13 @@ launcher applet.
   `hasTier('gener8_pro')`. Initial source read says DAW launch is Creator
   Studio-gated in `DawCore`, but stem extraction separately depends on
   `StemStudio` recognising the Pro model pack via
-  `/api/engine/pack-status?pack_id=pro_base`. The Gener8 shim route list in
-  this pass did not show `pack-status` or `install-pack`, and the manifest
-  upgrade pack id is `better_models`. Next fix should verify the route/alias
-  contract before changing auth gates.
+  `/api/engine/pack-status?pack_id=pro_base`.
+- DAW pack route fix, 2026-06-05: public pack id is `pro_base`; manifest
+  compatibility id remains `better_models` for shell provisioning and Creator
+  inheritance. `shim.rs` now exposes `pack-status` and `install-pack`, aliases
+  `pro_base` to `better_models`, resolves the VRAM-selected xl-base quant from
+  `applet.toml`, and keeps Gener8 Pro / Creator Studio entitlement semantics.
+  Runtime route smoke and real model download remain owed with the shim running.
 
 **Last verified**: 2026-05-30, Codex P7 runtime smoke against the Everywear OS
 desktop build, live Vid handoff path, Vid Studio Pro Render tab, and S3 folder

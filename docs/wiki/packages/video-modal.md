@@ -4,7 +4,7 @@
 
 **Purpose**: Provide the shared Gener8/Vid video generation modal, render worker, lyric parsing utilities, silhouette renderer, and canvas visualizer primitives.
 
-**Budget**: Key files: `components/VideoGeneratorModal.tsx` 3,642 lines, `workers/videoRenderWorker.ts` 1,059 lines, `render/canvasVisualizers.ts` 814 lines, `lib/silhouetteEngine.ts` 372 lines, `lib/lrcParser.ts` 128 lines. The package is under the module-unit budget when loaded as the shared video surface, but `VideoGeneratorModal.tsx` is near the practical per-file ceiling and should be split before major feature additions.
+**Budget**: Key files: `components/VideoGeneratorModal.tsx` 3,349 lines, `workers/videoRenderWorker.ts` 973 lines, `render/canvasVisualizers.ts` 814 lines, `lib/silhouetteEngine.ts` 372 lines, `lib/lrcParser.ts` 128 lines. The package is under the module-unit budget when loaded as the shared video surface, but `VideoGeneratorModal.tsx` remains the watch-list file and should be split before major feature additions.
 
 **Pipes in**:
 
@@ -17,6 +17,7 @@
 - Shared modal -> render worker for export rendering (`control, process-local`)
 - Shared modal -> Pexels media search/download APIs when used (`data, online-dep`)
 - Shared modal -> applet-provided `registerVideo` callback when supplied (`event, process-local`)
+- Shared modal -> applet-provided toast callback when supplied (`event, process-local`)
 - Render worker -> canvas visualizers, lyric parser, silhouette engine (`data, process-local`)
 
 **Public API**:
@@ -33,6 +34,8 @@
 - `drawDJAtWork(...)`
 
 Additional internal render exports live in `render/canvasVisualizers.ts` and are used by the modal/worker.
+
+`VideoGeneratorModal` also accepts applet-parity hooks for `isMobile`, `proEnabled`, `isTrialActive`, `canRemoveWatermark`, `apiBase`, `gpuSaveMode`, `registerCpuExport`, and `onToast`. Defaults preserve the existing package/Vid path when wrappers do not pass them.
 
 **State**:
 
@@ -54,8 +57,9 @@ graph LR
   Worker -- "data, process-local" --> Silhouette["silhouetteEngine"]
   Modal -- "data, online-dep" --> Pexels["Pexels API"]
   Modal -. "event, process-local" .-> VaultCallback["registerVideo callback"]
+  Modal -. "event, process-local" .-> ToastCallback["onToast callback"]
 ```
 
-**Last verified**: 2026-05-22, Codex post-modularisation repair pass.
+**Last verified**: 2026-06-05, Codex VideoGeneratorModal Phase B package parity pass.
 
-**Backlog**: Split `components/VideoGeneratorModal.tsx` before adding more S3-derived modal features.
+**Backlog**: Split `components/VideoGeneratorModal.tsx` before adding more S3-derived modal features. Natural first splits: pure types/presets/default config, render/export hooks, media controls, text/subtitle controls, settings panels, and worker protocol helpers.

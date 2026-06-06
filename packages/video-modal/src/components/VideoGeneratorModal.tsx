@@ -7,9 +7,11 @@ import { parseLrc, getCurrentLine, srtToLrc, naiveLrcFromLyrics } from '../lib/l
 import VideoRenderWorker from '../workers/videoRenderWorker.ts?worker';
 import { drawAlbumArt, drawCenterWave, drawDigitalRain, drawDualMirror, drawHexagon, drawLinearBars, drawNCSCircle, drawOrbital, drawOscilloscope, drawParticles, drawShockwave, drawStrandsParticle, drawStrandsWatermark, renderSlideshow } from '../render/canvasVisualizers';
 
-// Stubs for S3 Studio dependencies not yet ported to Everywear
+// Fallbacks for package consumers that do not inject shell/app services.
 const useResponsive = () => ({ isMobile: false });
-function showToast(msg: string | { kind: string; message: string; durationMs?: number }, opts?: any) {
+type VideoModalToast = (msg: string | { kind: string; message: string; durationMs?: number }, opts?: any) => void;
+
+function defaultShowToast(msg: string | { kind: string; message: string; durationMs?: number }, opts?: any) {
   if (typeof msg === 'object') { console.log('[toast]', msg.kind, msg.message); }
   else { console.log('[toast]', msg, opts); }
 }
@@ -43,6 +45,14 @@ interface VideoGeneratorModalProps {
   tier?: VideoModalTier;
   vaultTag?: string;
   registerVideo?: (payload: VaultVideoRegistration) => Promise<unknown>;
+  isMobile?: boolean;
+  proEnabled?: boolean;
+  isTrialActive?: boolean;
+  canRemoveWatermark?: boolean;
+  apiBase?: string;
+  gpuSaveMode?: 'upload-blob' | 'save-from-encoder';
+  registerCpuExport?: boolean;
+  onToast?: VideoModalToast;
 }
 
 type PresetType =
@@ -193,16 +203,35 @@ function ColumnsIcon() {
   );
 }
 
-export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen, onClose, song, embedded = false, tier = 'demo', vaultTag = 'gener8', registerVideo }) => {
-  const { isMobile } = useResponsive();
+export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
+  isOpen,
+  onClose,
+  song,
+  embedded = false,
+  tier = 'demo',
+  vaultTag = 'gener8',
+  registerVideo,
+  isMobile: isMobileOverride,
+  proEnabled,
+  isTrialActive: isTrialActiveOverride,
+  canRemoveWatermark: canRemoveWatermarkOverride,
+  apiBase = 'http://127.0.0.1:3001',
+  gpuSaveMode = 'upload-blob',
+  registerCpuExport = false,
+  onToast,
+}) => {
+  const { isMobile: fallbackIsMobile } = useResponsive();
+  const isMobile = isMobileOverride ?? fallbackIsMobile;
+  const showToast = onToast ?? defaultShowToast;
   // Tier mapping: in Everywear, 'gener8_pro' or 'creator_studio' = Pro features
   const hasTier = (t: string) => {
     const tierOrder: VideoModalTier[] = ['demo', 'gener8', 'gener8_pro', 'creator_studio'];
     return tierOrder.indexOf(tier) >= tierOrder.indexOf(t as VideoModalTier);
   };
-  const isTrialActive = false; // Trials handled by shell, not per-applet
-  const canRemoveWatermark = hasTier('gener8_pro');
-  const isGener8Pro = hasTier('gener8_pro');
+  const tierHasPro = hasTier('gener8_pro');
+  const isTrialActive = isTrialActiveOverride ?? false;
+  const canRemoveWatermark = canRemoveWatermarkOverride ?? tierHasPro;
+  const isGener8Pro = proEnabled ?? tierHasPro;
   // canRemoveWatermark = subscribed Pro/Creator only (NOT trial). Trial
   // users see Pro UI everywhere else but the watermark stays on as the
   // viral free-distribution hook (task #42, 2026-05-03 SGT).
@@ -385,7 +414,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
   //
   // Idempotent on initial mount: useState already defaults to true and
   // this effect re-asserts it, so first paint behaviour is unchanged.
-  const tierKey = JSON.stringify(tier ?? 'demo');
+  const tierKey = JSON.stringify({ tier, proEnabled: isGener8Pro, canRemoveWatermark, isTrialActive });
   useEffect(() => {
     setShowWatermark(true);
   }, [tierKey, isTrialActive]);
@@ -1269,33 +1298,24 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
     console.log('[Video] Download triggered!');
     showToast({ kind: 'success', message: 'Video exported! Check your Downloads folder.', durationMs: 5000 });
 
-    /**
-     * CODEX_NEEDED: Vault registration for CPU-encoded (FFmpeg.wasm) videos.
-     * The CPU path produces a Blob and triggers a browser download; there is no
-     * filesystem path to register with the vault. Options:
-     *   (A) POST the blob to the Gener8 shim's /api/video/save endpoint (like GPU path)
-     *       to get a filesystem path, then register with vault.
-     *   (B) Add a Tauri command that accepts base64/blob data and writes it to the
-     *       Everywear Vault directory, returning the path.
-     *   (C) Use Tauri's fs plugin to write the blob directly from the webview.
-     * For now, attempt the shim save route as a best-effort vault registration.
-     */
-    try {
-      const shimSaveRes = await fetch(
-        `http://127.0.0.1:3001/api/video/save?title=${encodeURIComponent(song.title || 'strands-sounds')}`,
-        { method: 'POST', body: blob, headers: { 'Content-Type': 'video/mp4' } }
-      );
-      if (shimSaveRes.ok) {
-        const shimData = await shimSaveRes.json();
-        await registerVideo?.({
-          title: `${song.title || 'Video'} ${new Date().toISOString().slice(0, 10)}`,
-          filePath: shimData.path,
-          durationSeconds: typeof song.duration === 'number' ? song.duration : undefined,
-          tags: [vaultTag, 'video', 'cpu-encode'],
-        });
+    if (registerCpuExport && registerVideo) {
+      try {
+        const shimSaveRes = await fetch(
+          `${apiBase}/api/video/save?title=${encodeURIComponent(song.title || 'strands-sounds')}`,
+          { method: 'POST', body: blob, headers: { 'Content-Type': 'video/mp4' } }
+        );
+        if (shimSaveRes.ok) {
+          const shimData = await shimSaveRes.json();
+          await registerVideo({
+            title: `${song.title || 'Video'} ${new Date().toISOString().slice(0, 10)}`,
+            filePath: shimData.path,
+            durationSeconds: typeof song.duration === 'number' ? song.duration : undefined,
+            tags: [vaultTag, 'video', 'cpu-encode'],
+          });
+        }
+      } catch (vaultErr) {
+        console.warn('[Video] Vault registration failed (CPU path):', vaultErr);
       }
-    } catch (vaultErr) {
-      console.warn('[Video] Vault registration failed (CPU path):', vaultErr);
     }
 
     // Cleanup FFmpeg filesystem
@@ -1826,20 +1846,30 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
 
     setExportProgress(95);
 
-    // Fetch MP4 from sidecar then persist via shim
     console.log(`[GPU Encode] Downloading from ${downloadUrl}`);
-    const mp4Response = await fetch(`http://127.0.0.1:9877${downloadUrl}`);
-    const mp4Blob = await mp4Response.blob();
 
-    // Save to Videos/Strands Sound Studio via local shim
     const videoTitle = (song.title || 'strands-sounds')
       .replace(/\s*\((reference|cover)\)/gi, '')
       .replace(/\s*\(\d+\)\s*$/, '')
       .trim();
-    const saveRes = await fetch(
-      `http://127.0.0.1:3001/api/video/save?title=${encodeURIComponent(videoTitle)}`,
-      { method: 'POST', body: mp4Blob, headers: { 'Content-Type': 'video/mp4' } }
-    );
+    let saveRes: Response;
+    if (gpuSaveMode === 'save-from-encoder') {
+      const encoderSessionId = downloadUrl.split('/').filter(Boolean).pop();
+      if (!encoderSessionId) {
+        throw new Error('Encoder did not return a usable download session.');
+      }
+      saveRes = await fetch(
+        `${apiBase}/api/video/save-from-encoder?session_id=${encodeURIComponent(encoderSessionId)}&title=${encodeURIComponent(videoTitle)}`,
+        { method: 'POST' }
+      );
+    } else {
+      const mp4Response = await fetch(`http://127.0.0.1:9877${downloadUrl}`);
+      const mp4Blob = await mp4Response.blob();
+      saveRes = await fetch(
+        `${apiBase}/api/video/save?title=${encodeURIComponent(videoTitle)}`,
+        { method: 'POST', body: mp4Blob, headers: { 'Content-Type': 'video/mp4' } }
+      );
+    }
     if (!saveRes.ok) {
       const errText = await saveRes.text();
       console.error('[GPU Encode] Save failed:', errText);
@@ -1853,7 +1883,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({ isOpen
       // Register with Everywear Vault
       try {
         await registerVideo?.({
-          title: `${videoTitle} ${new Date().toISOString().slice(0, 10)}`,
+          title: videoTitle,
           filePath: saveData.path,
           durationSeconds: typeof song.duration === 'number' ? song.duration : undefined,
           tags: [vaultTag, 'video', 'gpu-encode'],

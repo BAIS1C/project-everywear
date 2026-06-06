@@ -163,6 +163,8 @@ pub async fn boot(
         .route("/api/engine/health", get(health))
         .route("/api/engine/props", get(engine_props))
         .route("/api/engine/models", get(engine_models))
+        .route("/api/engine/pack-status", get(pack_status))
+        .route("/api/engine/install-pack", post(install_pack))
         .route("/api/engine/model-defaults", get(model_defaults))
         .route("/api/engine/stats", get(engine_stats))
         .route("/api/engine/init", post(init_model))
@@ -446,6 +448,301 @@ async fn engine_stats(State(st): State<Arc<ShimState>>) -> Json<Value> {
         "uptime_s":        0,
         "models_loaded":   true,
     }))
+}
+
+// ─── Model pack status / install ───────────────────────────────────────────
+
+const PRO_CAPABILITY_PACK_ID: &str = "pro_base";
+const PRO_MANIFEST_PACK_ID: &str = "better_models";
+
+#[derive(Deserialize)]
+struct PackStatusQuery {
+    #[serde(default)]
+    pack_id: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct InstallPackRequest {
+    pack_id: String,
+}
+
+fn manifest_pack_id(pack_id: &str) -> &str {
+    match pack_id {
+        PRO_CAPABILITY_PACK_ID => PRO_MANIFEST_PACK_ID,
+        other => other,
+    }
+}
+
+fn canonical_pack_id(manifest_pack_id: &str) -> &str {
+    match manifest_pack_id {
+        PRO_MANIFEST_PACK_ID => PRO_CAPABILITY_PACK_ID,
+        other => other,
+    }
+}
+
+fn current_tier_for_model_manager(tier: crate::LicenceTier) -> model_manager::LicenceTier {
+    match tier {
+        crate::LicenceTier::Demo => model_manager::LicenceTier::Demo,
+        crate::LicenceTier::Gener8 => model_manager::LicenceTier::Gener8,
+        crate::LicenceTier::Gener8Pro => model_manager::LicenceTier::Gener8Pro,
+        crate::LicenceTier::CreatorStudio => model_manager::LicenceTier::CreatorStudio,
+    }
+}
+
+fn load_applet_manifest() -> Result<model_manager::AppletManifest, String> {
+    model_manager::AppletManifest::from_toml(include_str!("../../applet.toml"))
+        .map_err(|error| format!("failed to parse Gener8 applet manifest: {error}"))
+}
+
+fn model_type_for_role(
+    role: &model_manager::ModelRole,
+    engine_type: &str,
+) -> model_manager::ModelType {
+    match role {
+        model_manager::ModelRole::Encoder
+        | model_manager::ModelRole::TextEncoder
+        | model_manager::ModelRole::Projection => model_manager::ModelType::Encoder,
+        model_manager::ModelRole::Vae
+        | model_manager::ModelRole::VideoVae
+        | model_manager::ModelRole::AudioVae => model_manager::ModelType::Vae,
+        _ => match engine_type {
+            "llm" => model_manager::ModelType::Llm,
+            "audio" => model_manager::ModelType::Audio,
+            _ => model_manager::ModelType::TextToImage,
+        },
+    }
+}
+
+fn pack_model_info(
+    manifest: &model_manager::AppletManifest,
+    pack_id: &str,
+    vram_mb: u64,
+) -> Result<(model_manager::ModelInfo, Value, model_manager::LicenceTier), String> {
+    let pack = manifest
+        .upgrade_packs
+        .get(pack_id)
+        .ok_or_else(|| format!("unknown model pack: {pack_id}"))?;
+
+    if pack.status != "active" {
+        return Err(format!("model pack is not downloadable yet: {pack_id}"));
+    }
+
+    if let Some(file) = &pack.file {
+        let info = model_manager::ModelInfo {
+            key: file.key.clone(),
+            name: format!("{} ({})", pack.label, file.key),
+            filename: file.filename.clone(),
+            size_bytes: file.size_bytes,
+            sha256: file.sha256.clone(),
+            hf_repo: file.hf_repo.clone(),
+            hf_file: file.hf_file.clone(),
+            model_type: model_type_for_role(&file.role, &manifest.engine.engine_type),
+            path: None,
+            downloaded: false,
+        };
+        let plan = json!({
+            "filename": file.filename.clone(),
+            "role": format!("{:?}", file.role),
+            "quant": null,
+            "size_bytes": file.size_bytes,
+            "key": file.key.clone(),
+        });
+        return Ok((info, plan, pack.min_tier));
+    }
+
+    let selected = model_manager::AppletManifest::select_pack_quant(pack, vram_mb)
+        .ok_or_else(|| format!("no quant in pack {pack_id} fits {vram_mb} MB VRAM"))?;
+    let info = model_manager::ModelInfo {
+        key: selected.key.clone(),
+        name: format!("{} {} ({})", pack.label, selected.quant, selected.key),
+        filename: selected.filename.clone(),
+        size_bytes: selected.size_bytes,
+        sha256: selected.sha256.clone(),
+        hf_repo: selected.hf_repo.clone(),
+        hf_file: selected.hf_file.clone(),
+        model_type: model_type_for_role(&selected.role, &manifest.engine.engine_type),
+        path: None,
+        downloaded: false,
+    };
+    let plan = json!({
+        "filename": selected.filename.clone(),
+        "role": format!("{:?}", selected.role),
+        "quant": selected.quant.clone(),
+        "size_bytes": selected.size_bytes,
+        "key": selected.key.clone(),
+    });
+    Ok((info, plan, pack.min_tier))
+}
+
+fn pack_error(status: StatusCode, error: impl Into<String>) -> (StatusCode, Json<Value>) {
+    (
+        status,
+        Json(json!({
+            "error": error.into(),
+        })),
+    )
+}
+
+async fn pack_status(
+    State(st): State<Arc<ShimState>>,
+    Query(query): Query<PackStatusQuery>,
+) -> Result<Json<Value>, (StatusCode, Json<Value>)> {
+    let requested_id = query
+        .pack_id
+        .unwrap_or_else(|| PRO_CAPABILITY_PACK_ID.to_string());
+    let manifest_id = manifest_pack_id(&requested_id).to_string();
+    let manifest = load_applet_manifest()
+        .map_err(|error| pack_error(StatusCode::INTERNAL_SERVER_ERROR, error))?;
+    let (model, plan, required_tier) =
+        pack_model_info(&manifest, &manifest_id, u64::from(st.vram_mb))
+            .map_err(|error| pack_error(StatusCode::BAD_REQUEST, error))?;
+
+    let actual_tier = current_tier(&st).await;
+    let actual_model_tier = current_tier_for_model_manager(actual_tier);
+    if !actual_model_tier.satisfies(required_tier) {
+        return Err(upgrade_required_with_actual(
+            required_tier.as_str(),
+            actual_tier,
+        ));
+    }
+
+    let mut model_mgr = model_manager::ModelManager::global();
+    model_mgr.add_models(vec![model.clone()]);
+    model_mgr.scan();
+    let present = model_mgr.is_downloaded(&model.key);
+
+    Ok(Json(json!({
+        "pack_id": canonical_pack_id(&manifest_id),
+        "requested_pack_id": requested_id,
+        "manifest_pack_id": manifest_id,
+        "present": present,
+        "bytes_total": model.size_bytes,
+        "vram_mb": st.vram_mb,
+        "plan": [plan],
+    })))
+}
+
+fn sse_body(frames: Vec<(&str, Value)>) -> String {
+    frames
+        .into_iter()
+        .map(|(event, data)| format!("event: {event}\ndata: {data}\n\n"))
+        .collect::<Vec<_>>()
+        .join("")
+}
+
+fn sse_response(status: StatusCode, body: String) -> Response {
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "text/event-stream; charset=utf-8")
+        .body(Body::from(body))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+async fn install_pack(
+    State(st): State<Arc<ShimState>>,
+    Json(body): Json<InstallPackRequest>,
+) -> Response {
+    let requested_id = if body.pack_id.trim().is_empty() {
+        PRO_CAPABILITY_PACK_ID.to_string()
+    } else {
+        body.pack_id
+    };
+    let manifest_id = manifest_pack_id(&requested_id).to_string();
+
+    let manifest = match load_applet_manifest() {
+        Ok(manifest) => manifest,
+        Err(error) => {
+            return sse_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                sse_body(vec![("error", json!({ "error": error }))]),
+            );
+        }
+    };
+    let (model, plan, required_tier) =
+        match pack_model_info(&manifest, &manifest_id, u64::from(st.vram_mb)) {
+            Ok(resolved) => resolved,
+            Err(error) => {
+                return sse_response(
+                    StatusCode::BAD_REQUEST,
+                    sse_body(vec![("error", json!({ "error": error }))]),
+                );
+            }
+        };
+
+    let actual_tier = current_tier(&st).await;
+    let actual_model_tier = current_tier_for_model_manager(actual_tier);
+    if !actual_model_tier.satisfies(required_tier) {
+        return sse_response(
+            StatusCode::FORBIDDEN,
+            sse_body(vec![(
+                "error",
+                json!({
+                    "error": "upgrade_required",
+                    "required_tier": required_tier.as_str(),
+                    "actual_tier": actual_tier.as_str(),
+                }),
+            )]),
+        );
+    }
+
+    let mut model_mgr = model_manager::ModelManager::global();
+    model_mgr.add_models(vec![model.clone()]);
+    model_mgr.scan();
+
+    let mut frames = vec![(
+        "plan",
+        json!({
+            "pack_id": canonical_pack_id(&manifest_id),
+            "requested_pack_id": requested_id,
+            "manifest_pack_id": manifest_id,
+            "bytes_total": model.size_bytes,
+            "plan": [plan],
+        }),
+    )];
+
+    if model_mgr.is_downloaded(&model.key) {
+        frames.push((
+            "done",
+            json!({
+                "pack_id": canonical_pack_id(&manifest_id),
+                "already_present": true,
+            }),
+        ));
+        return sse_response(StatusCode::OK, sse_body(frames));
+    }
+
+    match model_mgr.download(&model.key, |_| {}).await {
+        Ok(path) => {
+            frames.push((
+                "progress",
+                json!({
+                    "overall_pct": 100.0,
+                    "bytes_done_global": model.size_bytes,
+                    "bytes_total_global": model.size_bytes,
+                    "file": model.filename,
+                    "role": "Primary",
+                }),
+            ));
+            frames.push((
+                "done",
+                json!({
+                    "pack_id": canonical_pack_id(&manifest_id),
+                    "path": path.display().to_string(),
+                }),
+            ));
+            sse_response(StatusCode::OK, sse_body(frames))
+        }
+        Err(error) => sse_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            sse_body(vec![(
+                "error",
+                json!({
+                    "error": error.to_string(),
+                    "pack_id": canonical_pack_id(&manifest_id),
+                }),
+            )]),
+        ),
+    }
 }
 
 // ─── VRAM ─────────────────────────────────────────────────────────────
@@ -1801,7 +2098,10 @@ async fn director_lm_load(State(st): State<Arc<ShimState>>) -> (StatusCode, Json
         return upgrade_required_with_actual("creator_studio", tier);
     }
     let status = crate::ai_director::sapi_planner::planner_status();
-    (StatusCode::OK, Json(json!({ "status": "provider_routed", "planner": status })))
+    (
+        StatusCode::OK,
+        Json(json!({ "status": "provider_routed", "planner": status })),
+    )
 }
 
 async fn director_lm_unload(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {
@@ -1810,7 +2110,10 @@ async fn director_lm_unload(State(st): State<Arc<ShimState>>) -> (StatusCode, Js
         return upgrade_required_with_actual("creator_studio", tier);
     }
     let status = crate::ai_director::sapi_planner::planner_status();
-    (StatusCode::OK, Json(json!({ "status": "provider_routed", "planner": status })))
+    (
+        StatusCode::OK,
+        Json(json!({ "status": "provider_routed", "planner": status })),
+    )
 }
 
 async fn director_lm_status(State(st): State<Arc<ShimState>>) -> (StatusCode, Json<Value>) {

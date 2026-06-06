@@ -9,8 +9,8 @@
 //!
 //! Wire types match `vidDirectorApi.ts` for frontend compatibility.
 
-pub mod shot_planner;
 pub mod sapi_planner;
+pub mod shot_planner;
 
 use serde::{Deserialize, Serialize};
 

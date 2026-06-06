@@ -273,7 +273,8 @@ fn default_shot_type() -> String {
 
 fn parse_sapi_shots(raw: &str, beat_map: &BeatMap) -> Result<Vec<Shot>, String> {
     let value = parse_json_payload(raw)?;
-    let raw_shots: Vec<SapiShot> = if let Some(shots) = value.get("shots").and_then(Value::as_array) {
+    let raw_shots: Vec<SapiShot> = if let Some(shots) = value.get("shots").and_then(Value::as_array)
+    {
         serde_json::from_value(Value::Array(shots.clone())).map_err(|e| e.to_string())?
     } else if value.is_array() {
         serde_json::from_value(value).map_err(|e| e.to_string())?
@@ -283,14 +284,21 @@ fn parse_sapi_shots(raw: &str, beat_map: &BeatMap) -> Result<Vec<Shot>, String> 
     if raw_shots.is_empty() {
         return Err("SAPI planner returned zero shots".to_string());
     }
-    let section_starts: Vec<u64> = beat_map.sections.iter().map(|section| section.start_ms).collect();
+    let section_starts: Vec<u64> = beat_map
+        .sections
+        .iter()
+        .map(|section| section.start_ms)
+        .collect();
     Ok(raw_shots
         .into_iter()
         .enumerate()
         .filter(|(_, shot)| shot.end_ms > shot.start_ms)
         .map(|(index, shot)| {
-            let shot_id = shot.shot_id.unwrap_or_else(|| format!("shot-{}", index + 1));
-            let init_source = init_source_for(index, shot.start_ms, &section_starts, &shot.visual_prompt);
+            let shot_id = shot
+                .shot_id
+                .unwrap_or_else(|| format!("shot-{}", index + 1));
+            let init_source =
+                init_source_for(index, shot.start_ms, &section_starts, &shot.visual_prompt);
             Shot {
                 shot_id,
                 start_ms: shot.start_ms,

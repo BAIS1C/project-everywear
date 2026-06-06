@@ -6,7 +6,7 @@
 
    What it does
      1. On mount + on tier transition, GET /api/engine/pack-status?pack_id
-        =better_models to learn whether the XL Base DiT is on disk and how
+        =pro_base to learn whether the XL Base DiT is on disk and how
         big the download would be.
      2. If the user is on Pro+ AND the pack is missing, render an inline
         banner inside the Reference / Cover panel: "Reference and Cover
@@ -33,11 +33,11 @@
    first. This prevents trial-tier users from monopolising bandwidth on
    a download whose entitlement expires in 60 minutes.
 
-   Tier-mapping note (Sean 2026-05-03 LATE NIGHT SGT): Reference + Cover
-   are Gener8 Pro features; better_models pack is the Pro entitlement.
-   Creator Studio adds StyleForge / DAW / AI Director / Stem on top.
-   The shim's pack_entitled() in shim.rs mirrors this: better_models is
-   accepted for Gener8Pro and CreatorStudio tiers, rejected otherwise.
+   Tier-mapping note: Reference + Cover are Gener8 Pro features; pro_base
+   is the public Pro capability pack id. The manifest still carries the
+   legacy better_models upgrade-pack key, and shim.rs aliases pro_base to
+   that manifest key so Gener8 Pro and Creator Studio keep the same
+   entitlement semantics.
    ═══════════════════════════════════════════════════════════════════ */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';

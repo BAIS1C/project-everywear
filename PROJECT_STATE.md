@@ -1,8 +1,100 @@
-# PROJECT_STATE.md — Everywear / Gener8 Port
+# PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-01T09:51+08 SGT (Codex OODA reconciliation).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-05T22:45+08 SGT (Claude Cowork: kasai launch contract restored, install doctrine filed).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-05T22:45+08 SGT - Kasai Launch Contract Restored + Install Doctrine Filed (Claude Cowork)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- OODA pass (full report: `OODA_REPORT_2026-06-05.md`) found both registries holding kasai as pure `FrontendInline` / `launch_binary: None`, contradicting the locked contract in the 12:03 My Mait section below, the WIKI launcher table, and the progress report's own caution. That state never calls `request_applet_switch("kasai")` (ShellLayout FrontendInline branch short-circuits) and reproduces `KASAI_NOT_ACTIVE`. A stray inert `launch_binary: "everywear-kasai"` sat on `gener8-4ever`, documented nowhere; assessed as the morning's intended kasai restore landing on the wrong entry during the 18:46 SGT registry write.
+- RESTORED in both registries: kasai -> `BinaryLocal` + `launch_binary = everywear-kasai` + `frontend_port: None` (hybrid: bridge activation + shell-native inline UI). gener8-4ever -> `launch_binary: None`. Files: `platform/everywear-os/src-tauri/src/registry.rs`, `platform/everywear-os/src/lib/transport.ts`. The afternoon pass's other registry changes (1magen `BinaryLocal`, s3studio entitlements emptied) were NOT touched.
+- VERIFICATION OWED: edits are source-level only from a sandbox that cannot run the Windows build. Required: `cargo build -p everywear-os`, `npm run build --workspace everywear-os`, relaunch, then the desktop acceptance checklist in `MYMAIT_INTEGRATION_PROGRESS_REPORT_2026-06-05.md` (green dot, inline open, no Edge page, no `KASAI_NOT_ACTIVE`, truthful status pill).
+- Applet install assessment doctrine LOCKED and filed: `CONTEXT_APPEND_APPLET_INSTALL_DOCTRINE_2026-06-05.md` + WIKI v1.1.26 note. Shell assessment -> shell-owned install with UI and receipt -> launch activates from resolved paths, never downloads. Sidecars stay dumb. The 2026-06-05 `shim.rs` pack-status/install-pack routes are flagged as a stopgap doctrine violation pending migration to shell/model-manager authority.
+- Process finding for the vault: the registries are the documented one-agent collision hotspot (promptpack binding rule 6) and were written by two streams in one day without reconciliation; the afternoon stream has no rollout summary in `.codex/memories`. Vault filing owed for: OODA report, doctrine, this restore.
+
+---
+
+## 2026-06-05T21:28+08 SGT - VideoGeneratorModal Phase B Package Parity
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Phase B convergence landed as modularisation-only work: Gener8 now consumes `@everywear/video-modal` through a 68-line local wrapper instead of carrying the 3,939-line applet-local modal fork.
+- Behavior intentionally preserved by applet-injected package hooks: Gener8 passes its responsive state, `vid_pro` entitlement gate, trial/watermark flags, `getApiBase()`, toast bridge, GPU `save-from-encoder` mode, and rich Vault registration metadata into the shared modal.
+- Vid behavior intentionally unchanged: `applets/vid/web/src/components/VideoGeneratorModal.tsx` remains a thin 21-line wrapper over the shared package with `vaultTag="vid"` and no vault registration callback.
+- Module map now: `applets/gener8/web/src/components/VideoGeneratorModal.tsx` owns only Gener8 app context adaptation; `applets/vid/web/src/components/VideoGeneratorModal.tsx` owns only Vid app context adaptation; `packages/video-modal/src/components/VideoGeneratorModal.tsx` owns the shared modal UI, presets, preview, FFmpeg/GPU/export orchestration, package worker import, and optional applet callbacks.
+- Line counts: Gener8 `VideoGeneratorModal.tsx` 4,373 original -> 3,939 after Phase A -> 68 after Phase B; removed temporary `VideoGeneratorModal.canvas.ts`; package modal currently 3,349; Vid wrapper 21; Gener8 local duplicate worker still exists at 974 lines but is not imported by the modal path.
+- Verification passed: `npm run build --workspace @everywear/video-modal`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace @everywear/vid-web`; `npm run build --workspace everywear-os`.
+- Remaining split debt: split `packages/video-modal/src/components/VideoGeneratorModal.tsx` into types/presets/default config, render/export hooks, media controls, text/subtitle controls, and settings panels before major feature additions; decide whether to delete the orphan Gener8 worker duplicate after a dedicated import/dependency audit; live export parity still needs a human or seeded-song smoke to prove encoder/Vault side effects at runtime.
+
+---
+
+## 2026-06-05T21:14+08 SGT - VideoGeneratorModal Phase A Canvas Helper Split
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Modularisation-only pass on `applets/gener8/web/src/components/VideoGeneratorModal.tsx`; visual behavior, presets, worker protocol, render output, and public props intentionally unchanged.
+- Safest path chosen: local split first, not package migration. `packages/video-modal/src/components/VideoGeneratorModal.tsx` has different public API and tier/auth plumbing, so switching Gener8 to the package modal is Phase B risk, not this patch.
+- Added `applets/gener8/web/src/components/VideoGeneratorModal.canvas.ts` for pure canvas helpers copied out of the local modal: core visualizer draw functions, particle background helper, album-art draw, watermark draw, and slideshow image fitting.
+- Kept stateful Strands particle preset inside `VideoGeneratorModal.tsx` because it owns per-instance `useRef` particle state; lifting it now would risk visual behavior drift.
+- Module map now: `VideoGeneratorModal.tsx` owns modal props, auth/tier decisions, FFmpeg/GPU/export flow, worker protocol, render orchestration, stateful Strands particle preset, upload/search/UI JSX; `VideoGeneratorModal.canvas.ts` owns stateless canvas draw helpers only; `packages/video-modal` remains the shared Vid package surface for later convergence.
+- Line counts: Gener8 `VideoGeneratorModal.tsx` 4,373 -> 3,939; new `VideoGeneratorModal.canvas.ts` 450; package modal unchanged at 3,642; `VidApp.tsx` 244; `VidView.tsx` 194.
+- Verification passed: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace @everywear/vid-web`; `npm run build --workspace everywear-os`; `git diff --check` returned exit 0 with line-ending warnings only.
+- Remaining split debt: extract pure types/presets/default configs next; then decide Phase B convergence into `packages/video-modal`; worker de-dup into `packages/video-modal/src/workers/` remains untouched; live Vid visual parity smoke still owed before stronger production claims.
+
+---
+
+## 2026-06-05T21:03+08 SGT - DAW Pro Model Pack Route And Alias Fixed
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Fixed source blocker: Gener8 shim now exposes `GET /api/engine/pack-status` and `POST /api/engine/install-pack`.
+- Canonical public pack id: `pro_base`. Manifest compatibility id: `better_models`, retained for shell upgrade-pack provisioning and Creator Studio inheritance.
+- Shim contract: `pro_base` aliases to manifest pack `better_models`, resolves the VRAM-selected xl-base quant from `applets/gener8/applet.toml`, checks reconciled Gener8 Pro-or-Creator entitlement, reports existing disk presence through `model_manager`, and installs through the same Everywear model cache.
+- UI docs corrected: `BetterModelsBanner` now describes `pro_base` instead of stale `better_models`; manifest comments record the alias boundary.
+- Verification passed: `cargo fmt -p gener8`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `cargo check -p gener8`; `cargo check -p everywear-os`; `rg "pack-status|install-pack|pro_base|better_models" applets/gener8 platform/everywear-os packages`; `git diff --check` returned line-ending warnings only.
+- Remaining gate: live route smoke/download requires the Gener8 shim running on `127.0.0.1:3001` with a reconciled Pro/Creator tier; a headless `GET /api/health` attempt timed out because the shim was not running. Source route is present, but model download itself may still fail on network/disk/HF availability.
+
+---
+
+## 2026-06-05T20:52+08 SGT - Manifest Icons And S3Studio Entitlement Coupling Fixed
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Fixed blocker 1: added manifest PNG assets at `applets/1magen/icons/1magen.png` and `applets/3nvizen/icons/3nvizen.png`, matching the existing `applet.toml` icon paths.
+- Inspection result: shell launcher glyphs still come from registry/browser icon ids; manifest-level PNG paths are asset hygiene for manifest consumers, not the current desktop glyph renderer.
+- Fixed blocker 2: removed stale `loom` / `loom.teacher_agent` entitlement coupling from `s3studio` in both registries.
+- `s3studio` now matches WIKI truth: free `ExternalUrl` boundary helper pointing to `https://s3studio.xyz`, no Loom entitlement requirement.
+- Verification passed: `Test-Path` for both icon PNGs; `npm run build --workspace onemagen`; `npm run build --workspace @everywear/3nvizen`; `npm run build --workspace everywear-os`; `rg "loom|loom.teacher_agent"` now only returns the legitimate Loom applet id/icon rows; `cargo check -p everywear-os`.
+- Existing unrelated residue: `git diff --check` reports trailing whitespace in `applets/character-studio/src/components/FloatingMenu.module.css:240`; not touched in this pass.
+
+---
+
+## 2026-06-05T12:03:16+08:00 SGT - My Mait Integration Filed For Continuation
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Report filed: `MYMAIT_INTEGRATION_PROGRESS_REPORT_2026-06-05.md`.
+- My Mait UI/graphics pass implemented: running state, tool-card fail-closed rendering, slot-event display, MyMory status rail, singular public naming.
+- Desktop launch bug found and partially corrected: false launch-failed report, Edge `127.0.0.1 refused`, and gray launcher dot came from stale My Mait launch/health classification.
+- Important correction: My Mait must remain bridge-backed `BinaryLocal` so `request_applet_switch("kasai")` activates the runtime and avoids `KASAI_NOT_ACTIVE`; it must not advertise a `frontend_port` because the UI is shell-native inline.
+- Window chrome status is now contextual instead of hardcoded `LIVE`.
+- BugReportModal clipboard copy now has WebView fallback and visible copied/error state.
+- Verified builds/checks passed after final patch: `npm run build --workspace everywear-os`, `cargo check -p everywear-os`, `cargo check -p everywear-kasai`, `cargo build -p everywear-os`.
+- Next required gate: fresh desktop relaunch from `target\debug\everywear-os.exe` and human acceptance of My Mait green dot, inline launch, no Edge popup, no false bug modal, no `KASAI_NOT_ACTIVE`, and truthful runtime status pill.
+
+---
+
+## 2026-06-05T12:35+08:00 SGT - Character Studio Vendored State Reconciled
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- Character Studio docs corrected: `applets/character-studio` is no longer scaffold-only. It is a full vendored Avatar Studio frontend with `@everywear/character-studio` package metadata, `applet.toml` name `Avatar Studio`, a large `src/` implementation, and a large `public/` asset base.
+- Shell route confirmed: `platform/everywear-os/src/components/AppletViewRouter.tsx` sets `window.__EVERYWEAR_ASSET_BASE__` before lazy-loading `@applets/character-studio/src/index`; `src/lib/assetBase.js` resolves shell/dev asset bases through that shim or `VITE_ASSET_PATH`.
+- Current status is `SMOKE-PENDING`, not `SCAFFOLD`: source and assets are vendored, but live shell visual QA is still owed.
+- Resolved follow-up: Character Studio CSS asset refs now resolve through Vite-relative paths into the vendored public asset base. `token-frame-empty.svg` was not present in the vendored tree or donor tree, so the mask uses existing `token-frame-active.svg`.
+- Verified after CSS repair: `npm run build --workspace @everywear/character-studio` and `npm run build --workspace everywear-os` passed with no unresolved Character Studio asset warnings.
 
 ---
 
@@ -47,6 +139,7 @@ Honest framing: this is an INTEGRATION-COMPLETENESS audit of the ported code, no
 - BROKEN: routed but fails at runtime.
 - DEFERRED: intentionally parked (tier-gated, not yet shipped).
 - SCAFFOLD/NOTBUILT: placeholder or missing binary.
+- VENDORED: substantial source/assets are present in-repo; runtime smoke still required unless marked WORKING.
 - SMOKE-PENDING: registered + mounted, runtime not yet verified this pass.
 
 ### Top-level applets (shell launcher — both registries + AppletViewRouter)
@@ -60,8 +153,8 @@ Honest framing: this is an INTEGRATION-COMPLETENESS audit of the ported code, no
 | ai-director | Gener8ShellApp `/director` → AIDirectorView | SMOKE-PENDING | shim returns fallback shot plans (known carry) |
 | 1magen/3nvizen/character-studio/loom/kasai/layeru-osint | own indexes or shell-local virtual surfaces | mixed | see below |
 | 3nvizen | @applets/3nvizen | SPLIT-TRUTH | frontend package exists and TS no-emit passes; browser fallback marks Active/Locked from entitlements, but Rust registry still marks NotBuilt and native `list_applets` filters it out. Reconcile native/browser availability before launcher QA. |
-| character-studio (Avatar Studio) | @applets/character-studio | SCAFFOLD | placeholder only |
-| loom (The Loom) | @applets/loom | SMOKE-PENDING | manifest fixed this pass |
+| character-studio (Avatar Studio) | @applets/character-studio | VENDORED / SMOKE-PENDING | full vendored Avatar Studio frontend with large `src/` + `public/` asset base; shell asset-base shim present; CSS asset path repair verified; live visual QA still owed |
+| loom (Educ8) | @applets/educ8 | SMOKE-PENDING | brand+Tier A rename 2026-06-06; internal id stays `loom` |
 | kasai (My Mait) | KasaiCore | SMOKE-PENDING | |
 | layeru-osint | LayerUOsintApplet | SMOKE-PENDING | |
 | strands-game (Strands Nation) | NOT in AppletViewRouter | IFRAME/EXTERNAL | falls through to HeadlessAppletView (iframe); likely intended (strandsnation.xyz) — verify |
@@ -147,7 +240,7 @@ Ref/cover UPLOAD now WORKS (fixes: backend tier check + transport wrapper `isSte
 - [ ] **Cover/Reference default duration = 30s.** Possibly a hook/stem-duration concept tied to the DAW changes (NOT yet started). Do NOT patch in isolation as a cover/reference default; revisit WITH the DAW/stem work so the duration model is consistent. (Cover arguably should track source length; reference 30s maybe short, but defer until the DAW stem-duration design lands.)
 - [ ] **Model not verifiable from logs (P3ii).** Runtime model loads only reach terminal stdout; the file logger is startup-only. Add a one-line model-load log so "did the right model (xl-base for Pro) load" is checkable. Recurring; ties to P3ii observability.
 - [ ] **No forgot-password / password-reset flow.** 2026-05-30 auth smoke constraint: older non-owner test accounts exist, but their passwords are not recoverable from Supabase because Auth stores hashes, not plaintext. Do not attempt to expose passwords. Architecture is recorded in `docs/wiki/shell/password-reset-auth.md`: v1 should use Supabase `resetPasswordForEmail` to a web callback (`https://everywear.id/auth/reset-password`) and then normal desktop sign-in; deep-link recovery is a later Windows-verified upgrade. Add this before relying on long-lived lower-tier test accounts. New signups currently receive demo access that behaves like a Gener8 Pro-level test grant, so they do not validate true `gener8` / Gener8 4ever base Vid behaviour.
-- [ ] **DAW Pro Model not recognised / stem extraction blocked.** 2026-05-30 Sean runtime note while logged in as Creator Pro / Creator Studio level: DAW opens but stem extraction says the Pro Model is required/not recognised. Creator inherits Gener8 Pro, so this should already satisfy `hasTier('gener8_pro')`; do not blame missing Creator entitlement without proof. Source glance: `DawCore` gates DAW at `hasTier('creator_studio')`, while `StemStudio` gates extraction with `hasTier('gener8_pro') && !isTrialActive` and then probes `http://127.0.0.1:3001/api/engine/pack-status?pack_id=pro_base`. `rg` found no Gener8 shim routes for `/api/engine/pack-status` or `/api/engine/install-pack`, and the manifest upgrade pack is named `better_models` while the UI uses `pro_base`. Likely bug class: entitlement is present but model-pack status/install endpoint or pack-id alias is missing, so UI falls back to "Download Pro Model" and blocks extraction. First verify route presence, pack-id mapping (`pro_base` -> `better_models` or canonical rename), and actual xl-base file discovery.
+- [~] **DAW Pro Model not recognised / stem extraction blocked.** Source blocker fixed 2026-06-05: Gener8 shim now exposes `/api/engine/pack-status` and `/api/engine/install-pack`; public pack id `pro_base` aliases to manifest upgrade pack `better_models`, resolves the VRAM-selected xl-base quant, and preserves Gener8 Pro / Creator Studio entitlement semantics. Runtime route smoke and real model-download verification are still owed with the shim running.
 
 ### AUTH INTEGRITY — RELEASE BLOCKER (decision 2026-05-30, Sean)
 
@@ -161,7 +254,7 @@ DECISION:
   3. Server-side validate any feature that costs us (cloud gen, API credits, gated weight downloads). Own-GPU local features may stay on the verified-local-token model.
 - TIER NAMING: suspected mismatch. auth.rs:230 hard-rejects any tier not exactly demo/gener8/gener8_pro/creator_studio. Verify against live Supabase (profiles/plan table) what strings it actually issues; reconcile names (note: code tier `gener8` = product "Gener8 4ever"). Pending Supabase query.
 
-Carries (do not lose): AI Director is a virtual Gener8 `/director` route, not a physical applet package; DAW is a virtual Gener8 `/daw` route and its Pro Model blocker is the missing `pack-status`/`install-pack` route or `pro_base` -> `better_models` alias, not entitlement; 3nvizen frontend/package exists but native Rust registry still marks NotBuilt; character-studio scaffold; VideoGeneratorModal 4,373-line hard-ceiling; packages/video-modal modal, shell.css, CreatePanel, StemStudio, and shim.rs watch-list.
+Carries (do not lose): AI Director is a virtual Gener8 `/director` route, not a physical applet package; DAW is a virtual Gener8 `/daw` route; DAW Pro Model source blocker is now fixed at the shim route/alias layer but runtime route smoke and real model download remain owed; 3nvizen frontend/package exists but native Rust registry still marks NotBuilt; character-studio is vendored Avatar Studio with CSS asset path repair verified but live visual QA still owed; VideoGeneratorModal 4,373-line hard-ceiling; packages/video-modal modal, shell.css, CreatePanel, StemStudio, and shim.rs watch-list.
 
 ---
 
@@ -174,3 +267,10 @@ Carries (do not lose): AI Director is a virtual Gener8 `/director` route, not a 
 - Dead CreateView quarantine (P7). 2026-05-30.
 - Vid Studio Pro Render smoke (P8). 2026-05-30. Pro-tagged multi-resolution presets visible; base-state smoke awaits a real `gener8` / Gener8 4ever account. Fresh demo signups behave as Pro-level test grants, not base Vid test users.
 - S3 folder occlusion (P9). 2026-05-30. Tray now renders above the desktop icon column with a solid raised surface.
+
+---
+
+> 2026-06-06 10:19 SGT: Loom -> Educ8 rename pass. Brand + Tier A compile-time surface renamed
+> (applets/educ8, @everywear/educ8, Educ8Core, educ8-* css). Wire id stays `loom`
+> (documented codename, kasai precedent). Historical "Loom"/"loom" mentions above
+> this line are accurate for their dates; do not retro-edit. Native build verify owed.

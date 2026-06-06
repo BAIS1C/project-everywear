@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.21
-Last updated: 2026-06-01 (OODA reconciliation against visible codebase)
+Version: 1.1.27
+Last updated: 2026-06-06 (launcher registry table reconciled)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -21,6 +21,64 @@ Maintainer: Sean Uddin / Somo Kasane
 > stale. The current split uses one shared Gener8 bundle, two launcher entries
 > (`gener8-4ever`, `gener8-pro`), and the single `vid` applet as the handoff
 > target for both.
+
+> Current-state note, 2026-06-05 v1.1.22: Character Studio is no longer
+> scaffold-only. `applets/character-studio` is a vendored Avatar Studio
+> frontend with package metadata, `applet.toml` display name `Avatar Studio`,
+> a large `src/` implementation, and a large `public/` asset base. The shell
+> mounts it through `AppletViewRouter.tsx`, which sets
+> `window.__EVERYWEAR_ASSET_BASE__`; `src/lib/assetBase.js` then resolves dev
+> and shell asset roots. Current status is vendored / smoke-pending. CSS asset
+> refs for `ui/*.png`, token-box SVGs, and the frame mask now resolve through
+> Vite-relative paths into the vendored public asset base; live visual QA is
+> still owed.
+
+> Current-state note, 2026-06-05 v1.1.24: DAW stem extraction Pro Model
+> readiness is source-fixed at the route/alias layer. The public UI/shim pack id
+> is `pro_base`; the manifest compatibility key remains `better_models` for
+> shell upgrade-pack provisioning and Creator Studio inheritance. `shim.rs`
+> aliases `pro_base` to `better_models`, exposes `/api/engine/pack-status` and
+> `/api/engine/install-pack`, selects the VRAM-fit xl-base quant from
+> `applets/gener8/applet.toml`, and keeps Gener8 Pro / Creator Studio
+> entitlement checks intact. Runtime route smoke and real model-download proof
+> still require the Gener8 shim running on `127.0.0.1:3001`.
+
+> Current-state note, 2026-06-05 v1.1.25: VideoGeneratorModal Phase B package
+> parity landed. Gener8 and Vid now both consume `@everywear/video-modal`
+> through applet-local wrappers. Gener8 preserves its old app behavior by
+> injecting responsive state, `vid_pro` entitlement gating, trial/watermark
+> flags, API base, toast bridge, GPU `save-from-encoder` mode, and rich Vault
+> metadata. Source builds are green; live export side-effect parity remains
+> owed.
+
+> Current-state note, 2026-06-05 v1.1.26: Applet install assessment doctrine
+> LOCKED (Sean authority, originated in 3nvizen install tests; full text in
+> [CONTEXT_APPEND_APPLET_INSTALL_DOCTRINE_2026-06-05.md](./CONTEXT_APPEND_APPLET_INSTALL_DOCTRINE_2026-06-05.md)).
+> Canonical flow: shell assessment first, shell-owned install/provision with
+> visible UI and install receipt second, runtime launch third. Install pulls
+> models for all tier-appropriate applets up front; tier activation triggers
+> install readiness for newly entitled applets; launch activates from
+> resolved local paths and never downloads. Applets must not pull models
+> through ad hoc UI endpoints; sidecars stay dumb. The 2026-06-05 `shim.rs`
+> pack-status/install-pack routes (v1.1.24 note) are flagged as a stopgap
+> doctrine violation pending migration to shell/model-manager authority.
+> Launcher dot vocabulary locked: green = provisioned + healthy, amber =
+> entitled + installing/pack missing, gray = not entitled. KNOWN DRIFT at
+> this note's filing: both registries hold kasai as pure FrontendInline with
+> no launch_binary, contradicting the locked BinaryLocal hybrid contract in
+> the launcher table below and breaking launch-time activation
+> (KASAI_NOT_ACTIVE); gener8-4ever carries a stray inert
+> launch_binary = everywear-kasai. Restore owed, then desktop acceptance.
+
+> Current-state note, 2026-06-06 v1.1.27: Launcher registry table reconciled
+> against `platform/everywear-os/src-tauri/src/registry.rs` and
+> `platform/everywear-os/src/lib/transport.ts`. Current registry truth:
+> `kasai` is `BinaryLocal` with `launch_binary = everywear-kasai` and no
+> frontend port; `gener8-4ever` has no launch binary; `1magen` is
+> `BinaryLocal` using `onemagen` on port 3002; `s3studio` is a free external
+> URL with no required entitlements; wire id `loom` now displays Educ8 and
+> points at the renamed `applets/educ8` compile-time package. Desktop
+> acceptance and native build receipts are still owed.
 
 > Current-state note, 2026-05-26 v1.1.1: Gener8/Vault repair work is tracked
 > in [docs/wiki/gener8/vault-library.md](./docs/wiki/gener8/vault-library.md).
@@ -154,9 +212,11 @@ Maintainer: Sean Uddin / Somo Kasane
 > settings treatment was not visible enough in the settings slider. Loom still
 > presents Project NOMAD migration wording and queued items with no download,
 > accept, or ZIM modularisation flow; desired title direction is "The Loom,
-> Weaving Agentic Education into your Home." Character Studio is still a
-> placeholder, not ported. Minting/NFT/crypto language must not be visible in
-> Character Studio or public Everywear surfaces. Vault media player failed on
+> Weaving Agentic Education into your Home." Character Studio was placeholder
+> only at this 2026-05-28 QA point; this was superseded on 2026-06-05 when the
+> vendored Avatar Studio source and public asset base landed in
+> `applets/character-studio`. Minting/NFT/crypto language must not be visible
+> in Character Studio or public Everywear surfaces. Vault media player failed on
 > playback and video library should use larger tiled cards. Strands Nation must
 > open inside an Everywear iframe/internal browser at `strandsnation.xyz`, not
 > launch external Chrome. Base Everywear should eventually expose first-class
@@ -299,9 +359,9 @@ Project location: `C:\Users\MAG MSI\Project Everywear`.
   host (`docker info` reports `docker` is not recognized).
 - Live-unproven: `applets/3nvizen` now has a frontend npm build path, but no
   LTX sidecar boot/generation/Vault-registration proof has run yet.
-- Visual QA owed: Gener8's local `VideoGeneratorModal.tsx` and
-  `@everywear/video-modal` need a live parity pass before Vid production
-  claims.
+- Visual QA owed: `@everywear/video-modal` is now the shared Gener8/Vid source
+  path. Live modal/export side-effect parity still needs a seeded-song or human
+  smoke before stronger Vid production claims.
 
 ## Current State Addendum 2026-05-28: My Mait Agent Hub Surface Port
 
@@ -810,7 +870,7 @@ applets/1magen/
 | `applets/vid/` | Frontend-only applet metadata and wrapper surface. Live launcher route currently mounts the shared Gener8 bundle at `/vid`; `applets/vid/web` is retained as applet package surface. | **Active; TS no-emit passed 2026-06-01** |
 | `applets/3nvizen/` | Rust IPC backend + React workbench scaffold + package/build metadata. Frontend package exists and TS no-emit passes. Native Rust registry still marks the applet `NotBuilt` until binary/runtime availability is reconciled. | **Frontend-buildable; native availability pending** |
 | `applets/kasai/` | Rust inference/slot backend + React Agent Hub My Mait surface. Manifest still uses old "My Maits" / Lite / Full labels and needs product-name reconciliation. | **Active scaffold; TS no-emit passed 2026-06-01** |
-| `applets/character-studio/` | Minimal Avatar Studio placeholder component and package metadata. | **Frontend scaffold** |
+| `applets/character-studio/` | Vendored Avatar Studio frontend package. `package.json` declares the full dependency footprint, `applet.toml` registers display name `Avatar Studio`, `src/` contains the React/pages/components/library implementation, `public/` contains the asset base, and `src/lib/assetBase.js` cooperates with the shell asset-base shim. CSS asset refs now build through Vite-resolved paths into `public/`. | **Vendored; smoke-pending** |
 | `applets/loom/` | React/Vite frontend-only applet at port 3008. The Loom: Everywear Knowledge Engine, free teacher-agent surface. `applet.toml` registered; engine type `none`. | **Frontend scaffold** |
 
 ### crates/ (Shared Rust)
@@ -1106,19 +1166,19 @@ Current launcher inventory (13 registry entries):
 
 | ID | Kind | Physical package | Gate | Status notes |
 |----|------|------------------|------|--------------|
-| `1magen` | FrontendInline + binary-backed runtime | `applets/1magen` | `gener8`, `1magen.image` | In S3 folder; launcher opens shell router surface before runtime bridge work. |
+| `1magen` | BinaryLocal + frontend workbench | `applets/1magen` | `gener8`, `1magen.image` | Launches `onemagen` with frontend port 3002. |
 | `gener8-4ever` | Virtual launcher over shared Gener8 bundle | `applets/gener8` | `gener8`, `gener8.audio` | Song-only manifest, 12-step ceiling, `vidTarget = "vid"`. |
 | `gener8-pro` | Virtual launcher over shared Gener8 bundle | `applets/gener8` | `gener8_pro` | Reference/Cover manifest, 75-step ceiling, `vidTarget = "vid"`. |
 | `vid` | Virtual launcher over shared Gener8 bundle `/vid` | `applets/vid` package metadata also exists | `gener8`, `vid`; `vid_pro` internal | Single Vid Studio applet. Do not create a `vid_pro` launcher. |
 | `ai-director` | Virtual launcher over shared Gener8 bundle `/director` | none | `creator_studio`, `ai_director.planner` | Not a physical applet package yet. Documented as virtual until product decision creates one. |
 | `daw` | Virtual launcher over shared Gener8 bundle `/daw` | none | `creator_studio`, `daw_pro` | Not a physical applet package yet. DAW Pro Model blocker is pack route/alias, not entitlement. |
-| `s3studio` | External URL | none | free external link in canon | Code currently lists Loom flags as required entitlements; demo grants make this benign but the coupling should be removed. |
+| `s3studio` | External URL | none | free external link in canon | Free external URL surface; no required entitlements. |
 | `strands-game` | External URL / iframe target | none | free | External Strands Nation surface. |
 | `kasai` | BinaryLocal + inline router fallback | `applets/kasai` | free, VRAM-gated | User-facing name is My Mait; manifest naming still needs cleanup. |
 | `layeru-osint` | Shell-local virtual applet | `platform/everywear-os/src/son` | free | Not a physical `applets/` package. |
 | `3nvizen` | BinaryLocal + frontend workbench | `applets/3nvizen` | `creator_studio`, `3nvizen.video` | Browser fallback says Active; Rust registry says NotBuilt and native `list_applets` filters it out. Reconcile before launcher QA. |
-| `character-studio` | FrontendInline | `applets/character-studio` | free | Avatar Studio scaffold. |
-| `loom` | FrontendInline | `applets/loom` | free | The Loom scaffold. |
+| `character-studio` | FrontendInline | `applets/character-studio` | free | Vendored Avatar Studio frontend; shell sets the asset-base shim before lazy import. Runtime visual QA still owed. |
+| `loom` | FrontendInline | `applets/educ8` | free | Wire id remains `loom`; user-facing brand and compile-time package are Educ8. |
 
 ### Platform Status Command
 
@@ -1663,7 +1723,7 @@ Gener8 ships two DiT model families, gated by licence tier:
 | Q6_K | 12 GB | ~3.9 GB | `acestep-v15-xl-turbo-Q6_K.gguf` |
 | Q8_0 | 16 GB | ~5.0 GB | `acestep-v15-xl-turbo-Q8_0.gguf` |
 
-**xl-base / sftturbo50** (Pro upgrade pack, Gener8 Pro and Creator Studio): Full-quality 50-step model (50/50 SFT+Turbo distillation). Enables proper cover/reference/extract/lego/complete quality. Downloaded via the `better_models` upgrade pack when user upgrades to Pro. **Mandatory rename on download**: HF hosts as `sftturbo50`, saved as `xl-base` on disk so ace-server's `model-registry.h::registry_classify_gguf` recognises it.
+**xl-base / sftturbo50** (Pro upgrade pack, Gener8 Pro and Creator Studio): Full-quality 50-step model (50/50 SFT+Turbo distillation). Enables proper cover/reference/extract/lego/complete quality. Public UI/shim calls use `pack_id=pro_base`; the manifest compatibility key remains `better_models` for shell upgrade-pack provisioning and Creator Studio inheritance. **Mandatory rename on download**: HF hosts as `sftturbo50`, saved as `xl-base` on disk so ace-server's `model-registry.h::registry_classify_gguf` recognises it.
 
 | Quant | VRAM floor | Size | HF filename | Local filename |
 |---|---|---|---|---|
@@ -2321,9 +2381,10 @@ Implementation status 2026-05-28 SGT:
   - `3nvizen`: in-place React/Rust scaffold; Rust check and frontend npm build
     pass after adding applet-local package metadata. Live LTX sidecar boot,
     video generation, and Vault registration remain unproven.
-  - `character-studio`: scaffold only. Canonical source remains
-    `C:\Users\MAG MSI\Project Strands\CharacterStudio-Strands` with EWDS visual
-    reference at `C:\Users\MAG MSI\Project Mymaits\Character Studio EWDS Design`.
+  - `character-studio`: vendored Avatar Studio package in
+    `C:\Users\MAG MSI\Project Everywear\applets\character-studio`. The older
+    donor/reference locations remain useful comparison material, but the
+    Everywear repo now carries the applet source and public asset base.
   - `gener8`: S3 family route, faithful enough to theme; scoped build passed.
   - `vid`: S3 family route, faithful enough to theme after scoped pass; scoped
     build passed.
@@ -2342,7 +2403,7 @@ Implementation status 2026-05-28 SGT:
   after real ports, runtime contracts, Everywear auth/VRAM assessment, and
   applet-owned purge/switching are stable.
 - Next live verification pass: open Everywear platform surfaces under Graphite,
-  Anodized, and Carbon for 1magen, 3nvizen, Character Studio scaffold, S3 family
+  Anodized, and Carbon for 1magen, 3nvizen, vendored Avatar Studio, S3 family
   routes, Vid, AI Director, and Loom. Treat Strands Game and SON/Layer U as
   paused/placeholder states, not visual failures. Mymories has been removed as
   a separate applet; Vault surface is exercised through any media-producing
@@ -2907,16 +2968,16 @@ fresh reproduction.
 
 | Applet | Has | Current Status | Needs |
 |--------|-----|-------------|-------|
-| Gener8 | Shared Gener8 web bundle, headless Rust binary, shim, ACE sidecar, DAW, beats, cpal playback, tier reconciler | TS no-emit passed 2026-06-01. One hard-ceiling file remains: `applets/gener8/web/src/components/VideoGeneratorModal.tsx`. | Split hard-ceiling modal before more S3 copy-in; continue `@ts-nocheck` triage. |
+| Gener8 | Shared Gener8 web bundle, headless Rust binary, shim, ACE sidecar, DAW, beats, cpal playback, tier reconciler | TS no-emit passed 2026-06-01. `VideoGeneratorModal` Phase B package parity landed 2026-06-05; local wrapper is no longer a hard-ceiling file. | Continue `@ts-nocheck` triage; split package video modal before major new S3 copy-in. |
 | Vid | Frontend-only package metadata and wrapper surface; live launcher route uses shared Gener8 bundle at `/vid` | TS no-emit passed 2026-06-01. The old malformed-JSX failure is stale. | Decide whether the package stays as wrapper/docs surface or becomes a fully physical applet. |
 | Kasai | Rust inference/slot backend, React Agent Hub My Mait surface | TS no-emit passed 2026-06-01. Old missing `ToolCallCard` failure is stale. | Clean product naming in manifest: singular My Mait, no Lite/Full. |
 | 3nvizen | Rust IPC backend, React workbench scaffold, package/build metadata | TS no-emit passed 2026-06-01. Native Rust registry still marks `NotBuilt`; browser fallback marks Active/Locked from entitlements. | Reconcile native/browser availability, then prove live LTX sidecar boot, generation, and Vault registration. |
 
-### Placeholder Directories (No Source Code)
+### Applet Directories Reconciled 2026-06-05
 
 | Applet | Has | Needs |
 |--------|-----|-------|
-| character-studio | Minimal placeholder component (4 files) | Full port from CharacterStudio-Strands external repo |
+| character-studio | Vendored Avatar Studio source and public assets under `applets/character-studio`, plus shell asset-base shim wiring and Vite-resolved CSS asset refs. | Live visual QA in Everywear shell. |
 
 `mymories`, `strands-game`, and `s3studio` placeholder applet dirs were removed
 2026-05-29. `mymories` is fully retired per the Vault/MyMory unification.
@@ -2930,7 +2991,7 @@ to game.strandsnation.xyz and s3studio.xyz respectively; no local applet is need
 3. **transport.ts** : per-app invoke wrappers duplicated. `@everywear/transport` provides the base layer; app-specific wrappers still needed on top.
 4. **model_manager.rs** : RESOLVED. 1magen imports from crates/model-manager/. Z-Image manifest lives in z_image_manifest.rs.
 5. **Google Fonts import** : in imagen.css. Should be in a shared location or loaded by EWDS.
-6. **VideoGeneratorModal** : large component copied between Vid and Gener8. Fix once, then decide whether to de-duplicate into shared package.
+6. **VideoGeneratorModal** : Phase B package convergence landed 2026-06-05. Gener8 and Vid both consume `@everywear/video-modal` through applet-local wrappers; remaining risk is the shared package modal watch-list and the orphan Gener8 worker duplicate.
 
 ### Gener8 Web @ts-nocheck Migration Debt (Track C, multi-session)
 
@@ -3386,7 +3447,7 @@ modularisation gate. Do not migrate new S3 web surfaces into Everywear by copyin
 large files first. Any agent continuing migration work must:
 
 1. Split or quarantine the current migration-touch risk files first:
-   - **Hard ceiling**: `applets/gener8/web/src/components/VideoGeneratorModal.tsx` (4,373 lines / ~17.5k estimated tokens on 2026-06-01).
+   - **Phase B converged 2026-06-05**: `applets/gener8/web/src/components/VideoGeneratorModal.tsx` is now a 68-line wrapper around `@everywear/video-modal`. The wrapper injects Gener8 responsive/auth/tier/toast/API/Vault behavior while the shared package owns the modal UI, presets, preview, worker import, FFmpeg/GPU/export orchestration, and render output.
    - **Watch list**: `packages/video-modal/src/components/VideoGeneratorModal.tsx`, `applets/gener8/web/src/components/CreatePanel.tsx`, `applets/gener8/web/src/components/studio/StemStudio.tsx`, `applets/gener8/src-tauri/src/shim.rs`, and shell CSS.
    - `applets/vid/web/src/components/VideoGeneratorModal.tsx` is no longer a hard failure; it is a thin wrapper over `@everywear/video-modal`.
    - `platform/everywear-os/src-tauri/src/lib.rs` is no longer over the hard ceiling after the command split, but remains stability-critical.
@@ -3395,6 +3456,19 @@ large files first. Any agent continuing migration work must:
    - `packages/video-modal/` for modal, render worker, render types, shared video UI
    - `packages/visualizer/` for visualizer primitives
    - `packages/lyrics/` or `packages/shared/` for lyrics utilities and shared event/types
+
+2026-06-05 Phase B module map:
+
+| Module | Current responsibility | Budget state |
+|--------|------------------------|--------------|
+| `applets/gener8/web/src/components/VideoGeneratorModal.tsx` | Gener8 adapter wrapper: public props, responsive state, `vid_pro` entitlement bridge, trial/watermark flags, toast bridge, API base, GPU `save-from-encoder`, and rich Vault metadata. | 68 lines, under hard ceiling. |
+| `applets/vid/web/src/components/VideoGeneratorModal.tsx` | Vid adapter wrapper: public props, tier bridge, `vaultTag="vid"`, no registration callback. | 21 lines, under hard ceiling. |
+| `packages/video-modal/src/components/VideoGeneratorModal.tsx` | Shared modal UI, presets, preview/render loop, package worker import, FFmpeg/GPU/export orchestration, media/search/text/effects controls, and optional applet callbacks. | 3,349 lines, under hard line ceiling but still watch-list before feature additions. |
+
+Phase B deliberately did not change visual behavior, presets, worker protocol,
+render output, public props, or Vid launcher flow. Remaining video debt is
+package-modal internal splitting plus a dedicated audit of the orphan Gener8
+`videoRenderWorker.ts` duplicate before deletion.
 3. Keep the rest of the repo moving opportunistically. Files below the hard 16k-token
    code ceiling do not block migration unless the next migration step touches them.
 4. Every migrated surface must update or create its `docs/wiki/...` Module Contract
@@ -3415,8 +3489,8 @@ behaviour on top of known oversized files.
 7. `local_discovery.rs` → `local_discovery/` split.
 8. `gpu.rs` → `gpu/` split.
 9. `ShellLayout.tsx` → multi-file split.
-10. `VideoGeneratorModal` Phase A both applets. Phase B held for Sean's call.
-11. `videoRenderWorker.ts` de-dup → `packages/video-modal/workers/` (Phase B).
+10. `VideoGeneratorModal` Phase B: Gener8 and Vid wrappers consume `@everywear/video-modal`; shared package remains watch-list and must be split before major modal features.
+11. `videoRenderWorker.ts` de-dup -> `packages/video-modal/workers/`: package worker is used by the shared modal, but the applet-local Gener8 duplicate remains on disk pending a deletion audit.
 12. `MIGRATION_ARCHITECTURE.md` → `docs/_archive/` (DONE 2026-05-29).
 13. Module Contract Template skeletons populated for every unit.
 
@@ -3635,18 +3709,16 @@ The applet manifest should evolve from rough model groups to a real VRAM ladder 
 > desktop deep-link reset path the first implementation because this Tauri app
 > does not currently register a deep-link plugin.
 
-> Current-state note, 2026-05-30 v1.1.20: DAW stem extraction runtime note
-> logged after Sean observed "Pro Model required/not recognised" in DAW while
-> signed in as Creator Pro / Creator Studio level. Creator inherits Gener8 Pro,
-> so this should satisfy the Pro model entitlement. Source glance: `DawCore`
-> gates DAW at Creator Studio, but `StemStudio` separately gates extraction with
-> `hasTier('gener8_pro') && !isTrialActive` and probes
-> `http://127.0.0.1:3001/api/engine/pack-status?pack_id=pro_base`. The Gener8
-> shim routes found in this pass do not expose `/api/engine/pack-status` or
-> `/api/engine/install-pack`, while `applet.toml` names the upgrade pack
-> `better_models`. Next pass should verify route presence, pack-id aliasing
-> (`pro_base` vs `better_models`), and actual xl-base discovery before treating
-> this as another entitlement/auth bug.
+> Current-state note, 2026-06-05 v1.1.24: DAW stem extraction source blocker
+> is fixed at the shim contract. `DawCore` still gates the DAW surface at
+> Creator Studio, and `StemStudio` still gates extraction with
+> `hasTier('gener8_pro') && !isTrialActive`, preserving Creator inheritance.
+> The Gener8 shim now exposes `/api/engine/pack-status` and
+> `/api/engine/install-pack`; both accept public `pack_id=pro_base`, alias it to
+> manifest upgrade pack `better_models`, resolve the VRAM-selected xl-base
+> model, and enforce Gener8 Pro / Creator Studio before status/install.
+> Remaining proof is runtime route smoke and real model download with the shim
+> running.
 
 
 ---
@@ -3966,3 +4038,45 @@ Related website location: `C:\Users\MAG MSI\Project Websites\everywear`
 Google OAuth is configured in the Everywear Supabase project `ykqdsihnzroglepoxwcj` and the shell login gate now exposes a `Continue with Google` action through `platform/everywear-os/src/shell/AuthContext.tsx` and `platform/everywear-os/src/shell/AuthGate.tsx`. Discord remains visibly deferred in the shell UI until the Discord Developer Portal app creation flow clears and the Supabase Discord provider is enabled.
 
 The static `everywear.id` website now has a Google-powered Everywear ID CTA and a download-gate panel. This is not the full shared web callback/session page from `AUTH_IDENTITY_SPEC_2026-06-01.md`; that remains a separate web-auth surface before public signup/download access should be considered complete.
+
+---
+
+> Addendum 2026-06-06 08:15 SGT — BRAND RENAME: The Loom -> Educ8
+> Loc: applets/loom (dir + internal ids unchanged); platform/everywear-os (display strings).
+> The free education applet's USER-FACING brand changed from "The Loom" to "Educ8"
+> (pairs with Gener8 via shared -8 = "ate" device). Rationale: "Loom" collides with the
+> Atlassian-owned Loom brand (SEO + trademark, software class). Educ8 ships as an in-app
+> submodule, so edu-vertical crowding (educ8group.com et al.) is accepted; standalone
+> trademark clearance deferred to any future spin-out.
+> SCOPE = brand surface only: display name, monogram (LM -> E8), html <title>, <h1>,
+> "says" label, shell registry name+description (transport.ts, registry.rs),
+> AppletViewRouter displayName, applet.toml name, package.json description.
+> UNCHANGED (plumbing): applet id "loom"; entitlements `loom` / `loom.teacher_agent`;
+> `mymaits_lite_runtime`; npm pkg @everywear/loom; @applets/loom import path;
+> loom-db / loom-server / loom-teacher / loom-maps / loom-datatools / loom-notes;
+> CSS loom-* classes; the supabase migration (immutable). Historical "Loom" references
+> earlier in this doc are retained as-is. Brand token superseded; architecture/gates unchanged.
+
+---
+
+> Addendum 2026-06-06 10:19 SGT — TIER A RENAME EXECUTED: loom compile-time identifiers -> educ8
+> Loc: C:\Users\MAG MSI\Project Everywear
+> Following the brand rename (addendum 2026-06-06 08:15), the developer-facing
+> compile-time surface was renamed atomically:
+>   applets/loom/ -> applets/educ8/ ; LoomCore.tsx -> Educ8Core.tsx (LoomCore ->
+>   Educ8Core, LoomCoreProps -> Educ8CoreProps) ; loom.css -> educ8.css with all
+>   loom-* CSS classes -> educ8-* ; npm pkg @everywear/loom -> @everywear/educ8 ;
+>   import @applets/loom -> @applets/educ8 (AppletViewRouter) ; root package.json
+>   workspaces entry ; everywear-os tailwind content glob ; package-lock regenerated.
+> STILL `loom` BY DESIGN (Tier B wire contracts + persisted data, documented codename,
+> kasai precedent): applet id "loom"; icon key "loom"; entitlements `loom` /
+> `loom.teacher_agent` / `mymaits_lite_runtime`; `loom_runtime` enforced_by;
+> MY_MAITS_LITE_HOST_CONTRACTS.loom_teacher; planned crates loom-db/loom-server/
+> loom-teacher/loom-maps/loom-datatools/loom-notes; data path ~/.everywear/data/loom/;
+> supabase migration (immutable). Rule: brand = Educ8, wire id = loom. Do not
+> "fix" wire keys in passing; any wire-key migration is its own deliberate pass.
+> Verification: repo-wide grep clean of LoomCore/@everywear/loom/@applets/loom/
+> loom.css/className loom-*; Tier B keys confirmed intact. Native build check owed
+> on Windows: npm install && npm run build -w @everywear/educ8 (sandbox cannot run
+> win32 esbuild). package-lock retains one "extraneous" applets/loom block that
+> native npm install will prune.
