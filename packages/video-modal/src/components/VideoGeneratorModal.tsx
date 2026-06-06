@@ -1,207 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { X, Play, Pause, Download, Wand2, Image as ImageIcon, Music, Video, Loader2, Palette, Layers, Zap, Type, Monitor, Aperture, Activity, Circle, Grid, Box, BarChart2, Waves, Disc, Upload, Plus, Trash2, Settings2, MousePointer2, Search, ExternalLink, Sun, Film, Minus, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Play, Pause, Download, Wand2, Image as ImageIcon, Music, Video, Loader2, Palette, Layers, Zap, Type, Monitor, Activity, Circle, Grid, Disc, Upload, Plus, Trash2, Settings2, MousePointer2, Search, ExternalLink, Sun, Film, Minus, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { drawS3Hero, drawDJAtWork } from '../lib/silhouetteEngine';
 import { parseLrc, getCurrentLine, srtToLrc, naiveLrcFromLyrics } from '../lib/lrcParser';
 import VideoRenderWorker from '../workers/videoRenderWorker.ts?worker';
 import { drawAlbumArt, drawCenterWave, drawDigitalRain, drawDualMirror, drawHexagon, drawLinearBars, drawNCSCircle, drawOrbital, drawOscilloscope, drawParticles, drawShockwave, drawStrandsParticle, drawStrandsWatermark, renderSlideshow } from '../render/canvasVisualizers';
-
-// Fallbacks for package consumers that do not inject shell/app services.
-const useResponsive = () => ({ isMobile: false });
-type VideoModalToast = (msg: string | { kind: string; message: string; durationMs?: number }, opts?: any) => void;
-
-function defaultShowToast(msg: string | { kind: string; message: string; durationMs?: number }, opts?: any) {
-  if (typeof msg === 'object') { console.log('[toast]', msg.kind, msg.message); }
-  else { console.log('[toast]', msg, opts); }
-}
-
-export type VideoModalTier = 'demo' | 'gener8' | 'gener8_pro' | 'creator_studio';
-
-export interface VideoModalSong {
-  id?: string;
-  title: string;
-  lyrics: string;
-  style?: string;
-  coverUrl?: string;
-  duration?: string | number;
-  audioUrl?: string;
-  lrc_data?: string | null;
-}
-
-export interface VaultVideoRegistration {
-  title: string;
-  filePath: string;
-  durationSeconds?: number;
-  tags: string[];
-}
-
-interface VideoGeneratorModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  song: VideoModalSong | null;
-  /** When true, renders inline (no fixed overlay/backdrop). Used by VidApp. */
-  embedded?: boolean;
-  tier?: VideoModalTier;
-  vaultTag?: string;
-  registerVideo?: (payload: VaultVideoRegistration) => Promise<unknown>;
-  isMobile?: boolean;
-  proEnabled?: boolean;
-  isTrialActive?: boolean;
-  canRemoveWatermark?: boolean;
-  apiBase?: string;
-  gpuSaveMode?: 'upload-blob' | 'save-from-encoder';
-  registerCpuExport?: boolean;
-  onToast?: VideoModalToast;
-}
-
-type PresetType =
-  | 'NCS Circle' | 'Linear Bars' | 'Dual Mirror' | 'Center Wave'
-  | 'Orbital' | 'Digital Rain' | 'Hexagon' | 'Shockwave'
-  | 'Oscilloscope' | 'Minimal' | 'Strands Particle'
-  | 'S3 Hero' | 'DJ At Work';
-
-interface VisualizerConfig {
-  preset: PresetType;
-  primaryColor: string;
-  secondaryColor: string;
-  bgDim: number;
-  particleCount: number;
-  showVoidImage: boolean;
-  particleScale: number;   // 0.1-3.0, default 1.0
-  particleOffsetX: number; // -100 to 100 percentage
-  particleOffsetY: number; // -100 to 100 percentage
-}
-
-interface EffectConfig {
-  shake: boolean;
-  glitch: boolean;
-  vhs: boolean;
-  cctv: boolean;
-  scanlines: boolean;
-  chromatic: boolean;
-  bloom: boolean;
-  filmGrain: boolean;
-  pixelate: boolean;
-  strobe: boolean;
-  vignette: boolean;
-  hueShift: boolean;
-  letterbox: boolean;
-}
-
-interface EffectIntensities {
-  shake: number;
-  glitch: number;
-  vhs: number;
-  cctv: number;
-  scanlines: number;
-  chromatic: number;
-  bloom: number;
-  filmGrain: number;
-  pixelate: number;
-  strobe: number;
-  vignette: number;
-  hueShift: number;
-  letterbox: number;
-}
-
-interface TextLayer {
-  id: string;
-  text: string;
-  x: number; // 0-100 percentage
-  y: number; // 0-100 percentage
-  size: number;
-  color: string;
-  font: string;
-  visible: boolean;
-  background?: string; // background colour (transparent if empty/undefined)
-}
-
-interface PexelsPhoto {
-  id: number;
-  src: { large: string; original: string };
-  photographer: string;
-}
-
-interface PexelsVideo {
-  id: number;
-  image: string;
-  video_files: { link: string; quality: string; width: number }[];
-  user: { name: string };
-}
-
-// Tiny S³ wordmark used as the preset card icon for the flagship
-// particle preset. Uses the active skin's display font so it renders as
-// Orbitron in Classic, Chakra Petch in Refined, IBM Plex Mono in Terminal,
-// and stays sharp at 16px (a downscaled particle canvas would just blur).
-// Sean, 2026-04-25 SGT.
-const S3Wordmark = () => (
-  <span
-    aria-hidden="true"
-    style={{
-      display: 'inline-block',
-      fontFamily: 'var(--ew-font-display)',
-      fontWeight: 800,
-      fontSize: 14,
-      letterSpacing: '0.04em',
-      lineHeight: 1,
-      color: 'currentColor',
-    }}
-  >
-    S³
-  </span>
-);
-
-// "DJ" wordmark for the DJ-At-Work silhouette particle preset.
-const DJWordmark = () => (
-  <span
-    aria-hidden="true"
-    style={{
-      display: 'inline-block',
-      fontFamily: 'var(--ew-font-mono)',
-      fontWeight: 700,
-      fontSize: 12,
-      letterSpacing: '0.18em',
-      lineHeight: 1,
-      color: 'currentColor',
-    }}
-  >
-    DJ
-  </span>
-);
-
-const PRESETS: { id: PresetType; label: string; icon: React.ReactNode }[] = [
-  // S3 Hero: particles resolve into the "S³" wordmark via the silhouette
-  // engine in videoRenderWorker. Replaces the original "Strands Particle"
-  // preset as the flagship S³ branding visualiser. Sean 2026-04-25 SGT.
-  { id: 'S3 Hero', label: 'S³', icon: <S3Wordmark /> },
-  // DJ At Work: particles resolve into a stick-figure DJ silhouette
-  // (head + headphones + body + raised arm + decks). Same engine as
-  // S3 Hero, different target shape.
-  { id: 'DJ At Work', label: 'DJ', icon: <DJWordmark /> },
-  // Legacy Strands logo particle. Kept for backwards-compat with any
-  // saved video configs that point at it.
-  { id: 'Strands Particle', label: 'Strands', icon: <Disc size={16} /> },
-  { id: 'NCS Circle', label: 'Classic NCS', icon: <Circle size={16} /> },
-  { id: 'Linear Bars', label: 'Spectrum', icon: <BarChart2 size={16} /> },
-  { id: 'Dual Mirror', label: 'Mirror', icon: <ColumnsIcon /> },
-  { id: 'Center Wave', label: 'Shockwave', icon: <Waves size={16} /> },
-  { id: 'Orbital', label: 'Orbital', icon: <Disc size={16} /> },
-  { id: 'Hexagon', label: 'Hex Core', icon: <Box size={16} /> },
-  { id: 'Oscilloscope', label: 'Analog', icon: <Activity size={16} /> },
-  { id: 'Digital Rain', label: 'Matrix', icon: <Grid size={16} /> },
-  { id: 'Shockwave', label: 'Pulse', icon: <Aperture size={16} /> },
-  { id: 'Minimal', label: 'Clean', icon: <Type size={16} /> },
-];
-
-function ColumnsIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v18"/>
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-    </svg>
-  );
-}
+import { BASE_DEFAULT_INDEX, DEFAULT_EFFECTS, DEFAULT_INTENSITIES, DEFAULT_VISUALIZER_CONFIG, RENDER_PRESETS, defaultShowToast, useResponsive } from './videoModalDefaults';
+import { PRESETS } from './videoModalPresets';
+import type { EffectConfig, EffectIntensities, PexelsPhoto, PexelsVideo, TextLayer, VideoGeneratorModalProps, VideoModalTier, VisualizerConfig } from './videoModalTypes';
 
 export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   isOpen,
@@ -306,26 +113,6 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   const [showPexelsApiKeyInput, setShowPexelsApiKeyInput] = useState(false);
   const [pexelsError, setPexelsError] = useState<string | null>(null);
   
-  // Export resolution presets — social platforms + standard aspect ratios
-  // Gener8 Pro unlocks everything beyond 540p 9:16
-  const RENDER_PRESETS = [
-    // --- Social-optimised (9:16 vertical) ---
-    { label: 'TikTok / Reels',      w: 1080, h: 1920, aspect: '9:16', tier: 'pro' as const },
-    { label: 'YouTube Shorts',       w: 1080, h: 1920, aspect: '9:16', tier: 'pro' as const },
-    { label: 'Snapchat',             w: 1080, h: 1920, aspect: '9:16', tier: 'pro' as const },
-    { label: 'Pinterest',            w: 1000, h: 1500, aspect: '2:3',  tier: 'pro' as const },
-    // --- Social-optimised (1:1 square) ---
-    { label: 'Instagram Post',       w: 1080, h: 1080, aspect: '1:1',  tier: 'pro' as const },
-    // --- Standard landscape (16:9) ---
-    { label: '540p (16:9)',          w: 960,  h: 540,  aspect: '16:9', tier: 'base' as const },
-    { label: '720p (16:9)',          w: 1280, h: 720,  aspect: '16:9', tier: 'pro' as const },
-    { label: '1080p (16:9)',         w: 1920, h: 1080, aspect: '16:9', tier: 'pro' as const },
-    // --- Square ---
-    { label: 'Square 720',          w: 720,  h: 720,  aspect: '1:1',  tier: 'pro' as const },
-    // --- Vertical (base) ---
-    { label: '540p (9:16)',          w: 540,  h: 960,  aspect: '9:16', tier: 'base' as const },
-  ] as const;
-  const BASE_DEFAULT_INDEX = 5; // 540p 16:9
   const [selectedPreset, setSelectedPreset] = useState(BASE_DEFAULT_INDEX);
   const renderRes = RENDER_PRESETS[isGener8Pro ? selectedPreset : BASE_DEFAULT_INDEX];
 
@@ -347,49 +134,9 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   // Config State
-  const [config, setConfig] = useState<VisualizerConfig>({
-    preset: 'Strands Particle',
-    primaryColor: '#00C2FF',
-    secondaryColor: '#3b82f6',
-    bgDim: 0.6,
-    particleCount: 50,
-    showVoidImage: false,
-    particleScale: 1.0,
-    particleOffsetX: 0,
-    particleOffsetY: 0,
-  });
-
-  const [effects, setEffects] = useState<EffectConfig>({
-    shake: true,
-    glitch: false,
-    vhs: false,
-    cctv: false,
-    scanlines: false,
-    chromatic: false,
-    bloom: false,
-    filmGrain: false,
-    pixelate: false,
-    strobe: false,
-    vignette: false,
-    hueShift: false,
-    letterbox: false
-  });
-
-  const [intensities, setIntensities] = useState<EffectIntensities>({
-    shake: 0.05,
-    glitch: 0.3,
-    vhs: 0.5,
-    cctv: 0.8,
-    scanlines: 0.4,
-    chromatic: 0.5,
-    bloom: 0.5,
-    filmGrain: 0.3,
-    pixelate: 0.3,
-    strobe: 0.5,
-    vignette: 0.5,
-    hueShift: 0.5,
-    letterbox: 0.5
-  });
+  const [config, setConfig] = useState<VisualizerConfig>(DEFAULT_VISUALIZER_CONFIG);
+  const [effects, setEffects] = useState<EffectConfig>(DEFAULT_EFFECTS);
+  const [intensities, setIntensities] = useState<EffectIntensities>(DEFAULT_INTENSITIES);
 
   // Text Layers State
   const [textLayers, setTextLayers] = useState<TextLayer[]>([]);

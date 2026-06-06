@@ -4,7 +4,7 @@
 
 **Purpose**: Provide the shared Gener8/Vid video generation modal, render worker, lyric parsing utilities, silhouette renderer, and canvas visualizer primitives.
 
-**Budget**: Key files: `components/VideoGeneratorModal.tsx` 3,349 lines, `workers/videoRenderWorker.ts` 973 lines, `render/canvasVisualizers.ts` 814 lines, `lib/silhouetteEngine.ts` 372 lines, `lib/lrcParser.ts` 128 lines. The package is under the module-unit budget when loaded as the shared video surface, but `VideoGeneratorModal.tsx` remains the watch-list file and should be split before major feature additions.
+**Budget**: Key files: `components/VideoGeneratorModal.tsx` 3,115 lines, `components/videoModalTypes.ts` 117 lines, `components/videoModalDefaults.ts` 66 lines, `components/videoModalPresets.tsx` 58 lines, `workers/videoRenderWorker.ts` 973 lines, `render/canvasVisualizers.ts` 814 lines, `lib/silhouetteEngine.ts` 372 lines, `lib/lrcParser.ts` 128 lines. The package is under the module-unit budget when loaded as the shared video surface, but `VideoGeneratorModal.tsx` remains the watch-list file and render/export plus panel extraction should continue before major feature additions.
 
 **Pipes in**:
 
@@ -26,6 +26,9 @@
 - `VideoModalSong`
 - `VideoModalTier`
 - `VaultVideoRegistration`
+- `videoModalTypes.ts` owns shared public types and internal modal state shapes
+- `videoModalDefaults.ts` owns fallback app services, render presets, and default state config
+- `videoModalPresets.tsx` owns visualizer preset card metadata/icons
 - `parseLrc(raw) -> LrcLine[]`
 - `getCurrentLine(parsed, currentTime) -> string`
 - `srtToLrc(srt) -> string`
@@ -60,8 +63,8 @@ graph LR
   Modal -. "event, process-local" .-> ToastCallback["onToast callback"]
 ```
 
-**Last verified**: 2026-06-06, Codex worker dedup audit pass.
+**Last verified**: 2026-06-06, Codex partial modal split and worker dedup audit pass.
 
-**Backlog**: Split `components/VideoGeneratorModal.tsx` before adding more S3-derived modal features. Natural first splits: pure types/presets/default config, render/export hooks, media controls, text/subtitle controls, settings panels, and worker protocol helpers.
+**Backlog**: Continue splitting `components/VideoGeneratorModal.tsx` before adding more S3-derived modal features. Completed first seam: pure types, presets, and default config. Remaining seams: render/export hooks, media controls, text/subtitle controls, settings panels, and worker protocol helpers.
 
 **Worker dedup note 2026-06-06**: `packages/video-modal/src/components/VideoGeneratorModal.tsx` imports the package worker through `../workers/videoRenderWorker.ts?worker`; no Gener8 applet import references `applets/gener8/web/src/workers/videoRenderWorker.ts`. The applet-local worker copy differs only by its old `// @ts-nocheck` line and is now marked deprecated in place. Do not delete it until a shell-launched video export parity smoke proves the package worker path end-to-end.
