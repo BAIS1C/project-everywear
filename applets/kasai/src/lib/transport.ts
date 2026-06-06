@@ -134,7 +134,7 @@ class TauriTransport implements KasaiTransport {
 const MOCK_RESPONSES: Record<string, unknown> = {
   get_engine_status: {
     gpu: { name: 'RTX 5090', vram_mb: 32768 },
-    tier: 'My Maits Local Ultra 32GB',
+    tier: 'My Mait Local Ultra 32GB',
     loaded_slots: [
       { slot: 'Primary', model_name: 'Qwen3.6 35B-A3B Q4' },
       { slot: 'Encoder', model_name: 'Qwen3.5 9B Q8' },
@@ -153,6 +153,12 @@ const MOCK_RESPONSES: Record<string, unknown> = {
       icon: '📝', summary: 'Append decisions to the rolling vault note',
       description: 'Captures decisions, architecture changes, and facts into the active wing transient note.',
       status: 'idle', tag: 'memory', token_cost: 800,
+    },
+    {
+      id: 'mymory-graph', name: 'MyMory Graph', path: '/skills/mymory-graph',
+      icon: 'MG', summary: 'Refresh and inspect the MKV graph projection',
+      description: 'Checks the MyMory graph projection outputs that map MKV L1, L2, and L3 memory units.',
+      status: 'idle', tag: 'memory', token_cost: 1200,
     },
     {
       id: 'code-review', name: 'Code Review', path: '/skills/code-review',
@@ -176,8 +182,18 @@ const MOCK_RESPONSES: Record<string, unknown> = {
   list_watched_projects: [
     {
       id: 'proj-everywear', name: 'Project Everywear', path: 'C:\\Users\\MAG MSI\\Project Everywear',
-      wing: 'engineering', watch_enabled: true,
+      wing: 'everywear', watch_enabled: true,
       structure: { project_type: 'monorepo', docs: [], source_roots: ['src'], package_files: ['package.json'] },
+    },
+    {
+      id: 'proj-mymory', name: 'Project MyMory', path: 'C:\\Users\\MAG MSI\\Project Mymory',
+      wing: 'mymory', watch_enabled: true,
+      structure: {
+        project_type: 'obsidian-vault',
+        docs: ['CONTEXT.md', 'AGENTS.md', 'mymory_pipeline_spec.md'],
+        source_roots: ['mymory', '_graph', '_templates'],
+        package_files: ['kks_manifest.yaml'],
+      },
     },
   ],
   list_chat_sessions: [],
@@ -188,7 +204,7 @@ const MOCK_RESPONSES: Record<string, unknown> = {
     root: 'C:\\Users\\MAG MSI\\Project Mymory',
     exists: true,
     wings: ['strands', 'uddin', 'claude', 'ace', 'fintrek', 'mymory'],
-    markdown_files: 1409,
+    markdown_files: 2191,
     memory_layers: ['MKV-L0 raw evidence', 'MKV-L1 atoms', 'MKV-L2 scenarios', 'MKV-L3 canon'],
     graph_projection_json: 'C:\\Users\\MAG MSI\\Project Mymory\\_graph\\mkv_projection.json',
     graph_projection_mermaid: 'C:\\Users\\MAG MSI\\Project Mymory\\_graph\\mkv_projection.mmd',
@@ -235,15 +251,15 @@ class MockTransport implements KasaiTransport {
   private generateMockResponse(message: string): string {
     const lower = message.toLowerCase();
     if (lower.includes('hello') || lower.includes('hi')) {
-      return 'Hello. My Maits is running on your home node with the Qwen3.6 35B-A3B orchestrator loaded. VRAM allocation is nominal. What would you like to work on?';
+      return 'Hello. My Mait is running on your home node with the Qwen3.6 35B-A3B orchestrator loaded. VRAM allocation is nominal. What would you like to work on?';
     }
     if (lower.includes('status') || lower.includes('model')) {
       return 'Engine status: Qwen3.6 35B-A3B Q4 (Primary, 20.5 GB) and Qwen3.5 9B Q8 (Agent, 9.2 GB) are loaded. Total VRAM usage: 29.7 / 32 GB. Inference is ready on both slots.';
     }
     if (lower.includes('skill')) {
-      return 'I have 4 skills loaded: MyMory Recall (vault retrieval), MyMory Remember (decision capture), Code Review (wiki-referenced review), and File Organizer (structure analysis). Select one from the sidebar to see details, or mention it by name and I will prepare a run.';
+      return 'I have 6 skills loaded: MyMory Recall (vault retrieval), MyMory Remember (decision capture), MyMory Graph (projection inspection), Code Review (wiki-referenced review), IGCSE Teacher, and File Organizer. Select one from the sidebar to see details, or mention it by name and I will prepare a run.';
     }
-    return `Acknowledged. I am processing your request locally on the RTX 5090. The orchestrator is reasoning through your query now.\n\nYour message: "${message.slice(0, 80)}${message.length > 80 ? '...' : ''}"\n\nThis is a mock response; the full inference pipeline will be active once the My Maits engine binary is compiled and the IPC bridge is live.`;
+    return `Acknowledged. I am processing your request locally on the RTX 5090. The orchestrator is reasoning through your query now.\n\nYour message: "${message.slice(0, 80)}${message.length > 80 ? '...' : ''}"\n\nThis is a mock response; the full inference pipeline will be active once the My Mait engine binary is compiled and the IPC bridge is live.`;
   }
 
   destroy(): void {

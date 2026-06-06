@@ -15,6 +15,7 @@ import { getAllBufferedEntries, getLastError } from '@everywear/shared';
 
 type SendTarget = 'team' | 'kasai';
 type SendState = 'idle' | 'sending' | 'sent' | 'error';
+type CopyState = 'idle' | 'copied' | 'error';
 
 export interface BugReportSeed {
   source?: string;
@@ -48,9 +49,28 @@ function truncateForMailto(body: string): string {
 
 async function copyReportToClipboard(report: string): Promise<void> {
   try {
-    await navigator.clipboard.writeText(report);
-  } catch {
-    // Clipboard permission can be denied; the email draft still carries a useful excerpt.
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(report);
+      return;
+    }
+  } catch { /* fallback below */ }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = report;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('Clipboard copy command was rejected');
+    }
+  } finally {
+    document.body.removeChild(textarea);
   }
 }
 
@@ -221,6 +241,7 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
   );
   const [target, setTarget] = useState<SendTarget>('team');
   const [sendState, setSendState] = useState<SendState>('idle');
+  const [copyState, setCopyState] = useState<CopyState>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
 
@@ -239,6 +260,7 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
         setCheckedCategories(new Set([...DEFAULT_CHECKED, 'ui', 'ipc']));
       }
       setSendState('idle');
+      setCopyState('idle');
       setSendError(null);
       setReportId(null);
     }
@@ -389,8 +411,16 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
   // ── Copy to clipboard ─────────────────────────────────────────
 
   const handleCopy = useCallback(async () => {
-    const payload = await buildPayload();
-    await copyReportToClipboard(buildReportText(payload));
+    setCopyState('idle');
+    setSendError(null);
+    try {
+      const payload = await buildPayload();
+      await copyReportToClipboard(buildReportText(payload));
+      setCopyState('copied');
+    } catch (err) {
+      setCopyState('error');
+      setSendError(err instanceof Error ? err.message : 'Clipboard copy failed');
+    }
   }, [buildPayload, buildReportText]);
 
   // ── Render ────────────────────────────────────────────────────
@@ -472,6 +502,7 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
                 </div>
               </div>
 
+              {copyState === 'copied' && <div style={s.successMsg}>Report copied to clipboard.</div>}
               {sendError && <div style={s.errorMsg}>{sendError}</div>}
             </div>
 
@@ -479,7 +510,9 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
 
             {/* Footer actions */}
             <div style={s.footer}>
-              <button style={s.btn} onClick={handleCopy}>Copy to Clipboard</button>
+              <button style={s.btn} onClick={handleCopy}>
+                {copyState === 'copied' ? 'Copied' : 'Copy to Clipboard'}
+              </button>
               <button
                 style={{
                   ...s.btnPrimary,

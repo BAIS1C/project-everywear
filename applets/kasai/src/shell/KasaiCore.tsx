@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { getTransport } from '../lib/transport';
+import { getTransport, type MymoryStatus, type WatchedProject } from '../lib/transport';
 import { ToolCallGroup, type ToolCallInfo, type ToolCallStatus, type AuditResult } from './ToolCallCard';
 import { SlotStatusPanel } from './SlotStatusPanel';
 import '../styles/agent-hub.css';
@@ -147,6 +147,76 @@ interface ToolCallEventPayload {
   audit_result?: AuditResult;
 }
 
+const TOOL_CALL_STATUSES: ToolCallStatus[] = ['Pending', 'Executing', 'Success', 'Failed', 'Timeout', 'Rejected'];
+const AUDIT_RESULTS: AuditResult[] = ['Pending', 'Approved', 'Rejected'];
+const MIN_SKILL_RUN_VISIBLE_MS = 700;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeStatus(value: unknown, malformed: boolean): ToolCallStatus {
+  if (typeof value === 'string' && TOOL_CALL_STATUSES.includes(value as ToolCallStatus)) {
+    return value as ToolCallStatus;
+  }
+  return malformed ? 'Failed' : 'Pending';
+}
+
+function normalizeAudit(value: unknown): AuditResult | undefined {
+  if (typeof value === 'string' && AUDIT_RESULTS.includes(value as AuditResult)) {
+    return value as AuditResult;
+  }
+  return undefined;
+}
+
+function normalizeToolArgs(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : { malformedArgs: value ?? null };
+}
+
+function normalizeToolCallPayload(raw: unknown, fallbackIndex: number): ToolCallInfo {
+  const payload = isRecord(raw) && isRecord(raw.tool_call) ? raw.tool_call : raw;
+  if (!isRecord(payload)) {
+    return {
+      index: fallbackIndex,
+      session_id: '',
+      timestamp: Date.now(),
+      tool_name: 'Malformed tool event',
+      tool_args: { raw: payload ?? null },
+      status: 'Failed',
+      error: 'Tool event payload was not an object',
+    };
+  }
+
+  const malformed: string[] = [];
+  const index = typeof payload.index === 'number' ? payload.index : fallbackIndex;
+  const sessionId = typeof payload.session_id === 'string' ? payload.session_id : '';
+  const timestamp = typeof payload.timestamp === 'number' && payload.timestamp > 0 ? payload.timestamp : Date.now();
+  const toolName = typeof payload.tool_name === 'string' && payload.tool_name.trim()
+    ? payload.tool_name
+    : 'Malformed tool event';
+  if (toolName === 'Malformed tool event') malformed.push('missing tool_name');
+  if (!isRecord(payload.tool_args)) malformed.push('tool_args was not an object');
+
+  const existingError = typeof payload.error === 'string' ? payload.error : undefined;
+  const error = malformed.length > 0
+    ? [existingError, `Malformed tool event: ${malformed.join(', ')}`].filter(Boolean).join(' | ')
+    : existingError;
+
+  return {
+    index,
+    session_id: sessionId,
+    timestamp,
+    tool_name: toolName,
+    tool_args: normalizeToolArgs(payload.tool_args),
+    status: normalizeStatus(payload.status, malformed.length > 0),
+    result: payload.result,
+    error,
+    duration_ms: typeof payload.duration_ms === 'number' ? payload.duration_ms : undefined,
+    source_slot: typeof payload.source_slot === 'string' ? payload.source_slot : undefined,
+    audit_result: normalizeAudit(payload.audit_result),
+  };
+}
+
 const CONNECTIONS: Connection[] = [
   { id: 'mymory', name: 'MyMory', status: 'on', tone: 'primary' },
   { id: 'files', name: 'Local Files', status: 'on', tone: 'text' },
@@ -187,6 +257,7 @@ function Sidebar({
   chatCount,
   connections,
   nodeInfo,
+  runningSkillId,
   activeSkillId,
   onSelectSkill,
 }: {
@@ -194,6 +265,7 @@ function Sidebar({
   chatCount: number;
   connections: Connection[];
   nodeInfo: NodeInfo | null;
+  runningSkillId: string | null;
   activeSkillId: string | null;
   onSelectSkill: (id: string | null) => void;
 }) {
@@ -203,27 +275,30 @@ function Sidebar({
         <span className="ah-section-title">Everywear Skills <span className="ah-count">{skills.length}</span></span>
       </div>
       <div className="ah-skill-list ah-split-list">
-        {skills.map(skill => (
-          <button
-            key={skill.id}
-            type="button"
-            className={`ah-skill ${skill.id === activeSkillId ? 'active' : ''}`}
-            onClick={() => onSelectSkill(skill.id === activeSkillId ? null : skill.id)}
-            title={`${skill.name}\n\n${skill.description}`}
-          >
-            <span className="ah-skill-icon">{skill.icon || safeInitial(skill.name)}</span>
-            <span className="ah-skill-info">
-              <span className="ah-skill-name">{skill.name}</span>
-              <span className="ah-skill-desc">{skill.summary}</span>
-            </span>
-            <span className="ah-skill-badges">
-              <span className={`ah-status-dot ${skill.status}`} />
-              {skill.token_cost > 0 && (
-                <span className="ah-token-badge">{formatTokenCost(skill.token_cost)}</span>
-              )}
-            </span>
-          </button>
-        ))}
+        {skills.map(skill => {
+          const isRunning = skill.id === runningSkillId;
+          return (
+            <button
+              key={skill.id}
+              type="button"
+              className={`ah-skill ${skill.id === activeSkillId ? 'active' : ''} ${isRunning ? 'running' : ''}`}
+              onClick={() => onSelectSkill(skill.id === activeSkillId ? null : skill.id)}
+              title={`${skill.name}\n\n${skill.description}`}
+            >
+              <span className="ah-skill-icon">{skill.icon || safeInitial(skill.name)}</span>
+              <span className="ah-skill-info">
+                <span className="ah-skill-name">{skill.name}</span>
+                <span className="ah-skill-desc">{skill.summary}</span>
+              </span>
+              <span className="ah-skill-badges">
+                <span className={`ah-status-dot ${isRunning ? 'executing' : skill.status}`} />
+                <span className="ah-token-badge">
+                  {isRunning ? 'RUNNING' : skill.token_cost > 0 ? formatTokenCost(skill.token_cost) : skill.status}
+                </span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="ah-divider" />
@@ -389,11 +464,20 @@ function RightPane({
   skill,
   isGenerating,
   onRunSkill,
+  runningSkillId,
+  mymoryStatus,
+  watchedProjects,
 }: {
   skill: Skill | null;
   isGenerating: boolean;
   onRunSkill: (skill: Skill) => void;
+  runningSkillId: string | null;
+  mymoryStatus: MymoryStatus | null;
+  watchedProjects: WatchedProject[];
 }) {
+  const mymoryProject = watchedProjects.find(project => project.id === 'proj-mymory');
+  const activeSkillRunning = Boolean(skill && skill.id === runningSkillId);
+
   if (!skill) {
     return (
       <aside className="ah-right">
@@ -422,6 +506,39 @@ function RightPane({
             </div>
             <div className="ah-toggle on" />
           </div>
+          <div className="ah-r-section">MYMORY STATUS</div>
+          <div className="ah-fact-list">
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Vault</div>
+              <div className="ah-fact-val">{mymoryStatus?.exists ? 'Live' : 'Unavailable'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Root</div>
+              <div className="ah-fact-val">{mymoryStatus?.root || 'Not mounted'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Markdown</div>
+              <div className="ah-fact-val">{mymoryStatus ? mymoryStatus.markdown_files.toLocaleString() : 'Unknown'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Layers</div>
+              <div className="ah-fact-val">{mymoryStatus?.memory_layers?.join(', ') || 'Unknown'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Graph</div>
+              <div className="ah-fact-val">
+                {mymoryStatus?.graph_projection_json || mymoryStatus?.graph_projection_mermaid ? 'Projection available' : 'Projection pending'}
+              </div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Schema</div>
+              <div className="ah-fact-val">{mymoryStatus?.schema_template ? 'Memory unit schema found' : 'Schema missing'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Handoff</div>
+              <div className="ah-fact-val">{mymoryProject?.path || 'Project MyMory not discovered'}</div>
+            </div>
+          </div>
         </div>
       </aside>
     );
@@ -440,8 +557,8 @@ function RightPane({
           <div className="ah-right-token-info">Context cost: about {skill.token_cost.toLocaleString()} tokens</div>
         )}
         <div className="ah-right-actions">
-          <button className="ah-btn primary" onClick={() => onRunSkill(skill)} disabled={isGenerating}>
-            {isGenerating ? 'PREPARING' : 'PREPARE RUN'}
+          <button className="ah-btn primary" onClick={() => onRunSkill(skill)} disabled={isGenerating || activeSkillRunning}>
+            {activeSkillRunning ? 'RUNNING' : isGenerating ? 'PREPARING' : 'PREPARE RUN'}
           </button>
         </div>
       </div>
@@ -458,11 +575,22 @@ function RightPane({
           </div>
           <div className="ah-fact">
             <div className="ah-fact-lbl">Status</div>
-            <div className="ah-fact-val">{skill.status === 'live' ? 'Loaded in context' : skill.status}</div>
+            <div className="ah-fact-val">{activeSkillRunning ? 'Running now' : skill.status === 'live' ? 'Loaded in context' : skill.status}</div>
           </div>
         </div>
         <div className="ah-r-section">SLOT STATE</div>
         <SlotStatusPanel />
+        <div className="ah-r-section">BACKING VAULT</div>
+        <div className="ah-fact-list">
+          <div className="ah-fact">
+            <div className="ah-fact-lbl">Status</div>
+            <div className="ah-fact-val">{mymoryStatus?.exists ? 'MyMory live' : 'MyMory unavailable'}</div>
+          </div>
+          <div className="ah-fact">
+            <div className="ah-fact-lbl">Handoff</div>
+            <div className="ah-fact-val">{mymoryProject?.path || 'Project MyMory not discovered'}</div>
+          </div>
+        </div>
       </div>
     </aside>
   );
@@ -478,12 +606,24 @@ export function KasaiCore() {
   const [activeSkillId, setActiveSkillId] = useState<string | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
+  const [mymoryStatus, setMymoryStatus] = useState<MymoryStatus | null>(null);
+  const [watchedProjects, setWatchedProjects] = useState<WatchedProject[]>([]);
+  const [runningSkillId, setRunningSkillId] = useState<string | null>(null);
   const [toolCalls, setToolCalls] = useState<Map<number, ToolCallInfo>>(new Map());
   const assistantResponseCommittedRef = useRef(false);
+  const syntheticToolIndexRef = useRef(0);
 
   const activeSkill = useMemo(
     () => skills.find(skill => skill.id === activeSkillId) || null,
     [activeSkillId, skills],
+  );
+  const connections = useMemo(
+    () => CONNECTIONS.map(connection => (
+      connection.id === 'mymory'
+        ? { ...connection, status: mymoryStatus?.exists ? 'on' as const : 'off' as const }
+        : connection
+    )),
+    [mymoryStatus],
   );
 
   useEffect(() => {
@@ -548,8 +688,23 @@ export function KasaiCore() {
       }
     };
 
+    const fetchMymory = async () => {
+      try {
+        const [status, projects] = await Promise.all([
+          transport.invoke<MymoryStatus>('get_mymory_status'),
+          transport.invoke<WatchedProject[]>('list_watched_projects'),
+        ]);
+        setMymoryStatus(status);
+        setWatchedProjects(projects || []);
+      } catch {
+        setMymoryStatus(null);
+        setWatchedProjects([]);
+      }
+    };
+
     fetchStatus();
     fetchSkills();
+    fetchMymory();
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, [transport]);
@@ -609,7 +764,8 @@ export function KasaiCore() {
       }
     });
 
-    const unlistenUpdate = transport.listen<ToolCallEventPayload>('kasai://tool-call/update', (payload) => {
+    const unlistenUpdate = transport.listen<ToolCallEventPayload>('kasai://tool-call/update', (rawPayload) => {
+      const payload = normalizeToolCallPayload(rawPayload, syntheticToolIndexRef.current++);
       ensureToolCallMessage(payload.index + 1);
       setToolCalls(prev => {
         const next = new Map(prev);
@@ -630,7 +786,8 @@ export function KasaiCore() {
       });
     });
 
-    const unlistenComplete = transport.listen<ToolCallEventPayload>('kasai://tool-call/complete', (payload) => {
+    const unlistenComplete = transport.listen<ToolCallEventPayload>('kasai://tool-call/complete', (rawPayload) => {
+      const payload = normalizeToolCallPayload(rawPayload, syntheticToolIndexRef.current++);
       ensureToolCallMessage(payload.index + 1);
       setToolCalls(prev => {
         const next = new Map(prev);
@@ -703,9 +860,19 @@ export function KasaiCore() {
     }
   }, [transport]);
 
-  const handleRunSkill = useCallback((skill: Skill) => {
+  const handleRunSkill = useCallback(async (skill: Skill) => {
     if (isGenerating) return;
-    handleSend(`Prepare the "${skill.name}" skill.\n\n${skill.description}`);
+    setRunningSkillId(skill.id);
+    const startedAt = Date.now();
+    try {
+      await handleSend(`Prepare the "${skill.name}" skill.\n\n${skill.description}`);
+    } finally {
+      const remaining = MIN_SKILL_RUN_VISIBLE_MS - (Date.now() - startedAt);
+      if (remaining > 0) {
+        await new Promise(resolve => setTimeout(resolve, remaining));
+      }
+      setRunningSkillId(null);
+    }
   }, [handleSend, isGenerating]);
 
   const activeChatTitle = activeSkill ? activeSkill.name : 'Current session';
@@ -715,8 +882,9 @@ export function KasaiCore() {
       <Sidebar
         skills={skills}
         chatCount={messages.length}
-        connections={CONNECTIONS}
+        connections={connections}
         nodeInfo={nodeInfo}
+        runningSkillId={runningSkillId}
         activeSkillId={activeSkillId}
         onSelectSkill={setActiveSkillId}
       />
@@ -779,7 +947,14 @@ export function KasaiCore() {
         </div>
       </main>
 
-      <RightPane skill={activeSkill} isGenerating={isGenerating} onRunSkill={handleRunSkill} />
+      <RightPane
+        skill={activeSkill}
+        isGenerating={isGenerating}
+        onRunSkill={handleRunSkill}
+        runningSkillId={runningSkillId}
+        mymoryStatus={mymoryStatus}
+        watchedProjects={watchedProjects}
+      />
     </div>
   );
 }

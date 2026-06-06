@@ -8,7 +8,7 @@
  * This component is shared between the shell and Kasai applet.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 
 // ── Types (from CLAUDE_INTERFACE) ──────────────────────────────────
 
@@ -34,6 +34,26 @@ export interface ToolCallInfo {
   duration_ms?: number;
   source_slot?: string;
   audit_result?: AuditResult;
+}
+
+function safeToolName(toolCall: ToolCallInfo): string {
+  return typeof toolCall.tool_name === 'string' && toolCall.tool_name.trim()
+    ? toolCall.tool_name
+    : 'Malformed tool event';
+}
+
+function safeArgs(toolCall: ToolCallInfo): Record<string, unknown> {
+  return toolCall.tool_args && typeof toolCall.tool_args === 'object' && !Array.isArray(toolCall.tool_args)
+    ? toolCall.tool_args
+    : { malformedArgs: toolCall.tool_args ?? null };
+}
+
+function stringifyToolValue(value: unknown): string {
+  try {
+    return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  } catch {
+    return '[unrenderable value]';
+  }
 }
 
 // ── Icon mapping ───────────────────────────────────────────────────
@@ -119,14 +139,15 @@ export interface ToolCallCardProps {
 }
 
 export function ToolCallCard({ toolCall }: ToolCallCardProps) {
-  const icon = toolIcon(toolCall.tool_name);
+  const toolName = safeToolName(toolCall);
+  const icon = toolIcon(toolName);
   const durationLabel = toolCall.duration_ms != null
     ? `${(toolCall.duration_ms / 1000).toFixed(1)}s`
     : null;
 
-  const argsString = JSON.stringify(toolCall.tool_args, null, 2);
+  const argsString = stringifyToolValue(safeArgs(toolCall));
   const resultString = toolCall.result != null
-    ? (typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2))
+    ? stringifyToolValue(toolCall.result)
     : toolCall.error ?? null;
 
   const isTerminal = ['Success', 'Failed', 'Timeout', 'Rejected'].includes(toolCall.status);
@@ -136,7 +157,7 @@ export function ToolCallCard({ toolCall }: ToolCallCardProps) {
       {/* Header: icon + name + status */}
       <div className="tcc-card__header">
         <span className="tcc-card__icon">{icon}</span>
-        <span className="tcc-card__name">{toolCall.tool_name}</span>
+        <span className="tcc-card__name">{toolName}</span>
         <StatusBadge status={toolCall.status} />
       </div>
 

@@ -205,6 +205,34 @@ function panelLabel(panel: Exclude<PanelView, null>) {
   return 'Settings';
 }
 
+function isShellNativeBridgeApplet(applet: AppletEntry) {
+  return applet.launch_kind === 'BinaryLocal'
+    && isRegisteredApplet(applet.id)
+    && !applet.frontend_port;
+}
+
+function windowRuntimeLabel(
+  content: ShellWindowContent,
+  activeInferenceAppletId: string | null,
+  launchingId: string | null,
+  inferencePhase: InferencePhase,
+) {
+  if (content.kind === 'panel') return '● READY';
+
+  const applet = content.applet;
+  if (!isModelBackedApplet(applet)) return '● READY';
+  if (launchingId === applet.id || inferencePhase === 'opening' || inferencePhase === 'purging') {
+    return '● LOADING';
+  }
+  if (inferencePhase === 'error' && activeInferenceAppletId !== applet.id) {
+    return '● ERROR';
+  }
+  if (activeInferenceAppletId === applet.id && inferencePhase === 'ready') {
+    return '● LIVE';
+  }
+  return '● UI';
+}
+
 function ShellWindowFrame({
   win,
   isActive,
@@ -215,6 +243,7 @@ function ShellWindowFrame({
   onMinimize,
   onMaximize,
   onMove,
+  runtimeLabel,
   children,
 }: {
   win: ShellWindowState;
@@ -226,6 +255,7 @@ function ShellWindowFrame({
   onMinimize: () => void;
   onMaximize: () => void;
   onMove: (x: number, y: number) => void;
+  runtimeLabel: string;
   children: React.ReactNode;
 }) {
   const dragRef = useRef<{
@@ -306,7 +336,7 @@ function ShellWindowFrame({
         <div className="ew-window__chrome-head">
           <ChromeBarcode seed={win.title.length + win.id.length} width={62} height={10} />
           <ChromeSerial prefix="APP" code="42715/96" />
-          <span className="ew-chrome ew-status-pill">● LIVE</span>
+          <span className="ew-chrome ew-status-pill">{runtimeLabel}</span>
         </div>
         {trafficSide === 'right' && (
           <TrafficLights
@@ -1176,6 +1206,10 @@ export function ShellLayout() {
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
     try {
       await requestAppletSwitch(applet.id);
+      if (isShellNativeBridgeApplet(applet)) {
+        openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
+        markAppletReady(applet);
+      }
       if (!hasShellRuntime()) {
         if (applet.frontend_port) {
           if (isRegisteredApplet(applet.id)) {
@@ -1480,6 +1514,7 @@ export function ShellLayout() {
               onMinimize={() => minimizeShellWindow(win.id)}
               onMaximize={() => maximizeShellWindow(win.id)}
               onMove={(x, y) => moveShellWindow(win.id, x, y)}
+              runtimeLabel={windowRuntimeLabel(win.content, activeInferenceAppletId, launchingId, inferencePhase)}
             >
               {renderWindowContent(win)}
             </ShellWindowFrame>

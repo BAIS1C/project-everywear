@@ -14,6 +14,17 @@ import { getTransport, type EngineStatus } from '../lib/transport';
 
 const POLL_INTERVAL = 3000;
 
+interface SlotEventPayload {
+  event?: string;
+  slot_event?: {
+    kind?: string;
+    turn_id?: string;
+    calls?: number;
+    audit?: unknown;
+    tool_call?: unknown;
+  };
+}
+
 interface SlotDisplayProps {
   label: string;
   modelName: string;
@@ -21,7 +32,6 @@ interface SlotDisplayProps {
 }
 
 function SlotDisplay({ label, modelName, size }: SlotDisplayProps) {
-  const isBig = size === 'big';
   return (
     <div className={`ssp-slot ssp-slot--${size}`}>
       <div className="ssp-slot__indicator" />
@@ -33,9 +43,32 @@ function SlotDisplay({ label, modelName, size }: SlotDisplayProps) {
   );
 }
 
+function formatSlotEvent(payload: SlotEventPayload): string | null {
+  const event = payload.slot_event;
+  if (!event?.kind) return null;
+
+  switch (event.kind) {
+    case 'big_planning':
+      return 'Primary is planning the turn';
+    case 'small_tool_loop_start':
+      return 'Agent tool loop started';
+    case 'small_tool_loop_complete':
+      return `Agent tool loop complete${typeof event.calls === 'number' ? `, ${event.calls} call${event.calls === 1 ? '' : 's'}` : ''}`;
+    case 'big_auditing':
+      return 'Primary is auditing tool results';
+    case 'done':
+      return 'Turn complete';
+    case 'error':
+      return 'Slot event error';
+    default:
+      return event.kind.replace(/_/g, ' ');
+  }
+}
+
 export function SlotStatusPanel() {
   const [status, setStatus] = useState<EngineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentEvent, setRecentEvent] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const poll = useCallback(async () => {
@@ -50,9 +83,16 @@ export function SlotStatusPanel() {
   }, []);
 
   useEffect(() => {
+    const transport = getTransport();
+    const unlistenSlotEvent = transport.listen<SlotEventPayload>('kasai://slot-event', (payload) => {
+      const label = formatSlotEvent(payload);
+      if (label) setRecentEvent(label);
+    });
+
     poll();
     timerRef.current = setInterval(poll, POLL_INTERVAL);
     return () => {
+      unlistenSlotEvent();
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -98,6 +138,7 @@ export function SlotStatusPanel() {
       </div>
 
       <div className="ssp-tier">{status.tier}</div>
+      {recentEvent && <div className="ssp-event">{recentEvent}</div>}
 
       {/* Slot visualizations */}
       <div className="ssp-slots">

@@ -208,7 +208,9 @@ async fn handle_command(
     source: IpcSource,
 ) -> Result<serde_json::Value, String> {
     match command {
-        CommandKind::Ping | CommandKind::QueryStatus => Ok(json!({"status": "alive"})),
+        CommandKind::Ping => Ok(json!({"status": "alive"})),
+        CommandKind::QueryStatus => query_status().await,
+        CommandKind::StartInference { model_paths } => start_inference(model_paths).await,
         CommandKind::UnloadModel => {
             let status = unload_models().await;
             Ok(status)
@@ -348,6 +350,55 @@ async fn unload_models() -> serde_json::Value {
     })
 }
 
+async fn query_status() -> Result<serde_json::Value, String> {
+    let sidecar_url = sidecar_url();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .map_err(|error| format!("failed to build HTTP client: {error}"))?;
+    let probe = probe_sidecar(&client, &sidecar_url).await;
+    Ok(json!({
+        "status": "alive",
+        "engine_id": ENGINE_ID,
+        "sidecar_url": sidecar_url,
+        "sidecar_status": probe.state.as_str(),
+        "models_loaded": probe.models_loaded(),
+        "sidecar": probe.payload,
+    }))
+}
+
+async fn start_inference(
+    model_paths: Vec<applet_ipc::ModelPath>,
+) -> Result<serde_json::Value, String> {
+    let sidecar_url = sidecar_url();
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .build()
+        .map_err(|error| format!("failed to build HTTP client: {error}"))?;
+    let probe = probe_sidecar(&client, &sidecar_url).await;
+    let models = model_paths
+        .into_iter()
+        .map(|model| {
+            json!({
+                "role": model.role,
+                "path": model.path,
+                "vram_mb": model.vram_mb,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    Ok(json!({
+        "status": "lifecycle_ready",
+        "engine_id": ENGINE_ID,
+        "sidecar_url": sidecar_url,
+        "sidecar_status": probe.state.as_str(),
+        "models_loaded": probe.models_loaded(),
+        "model_paths": models,
+        "sidecar": probe.payload,
+        "note": "3nvizen Rust IPC lifecycle accepted StartInference; live LTX model loading and generation remain owned by the HTTP sidecar.",
+    }))
+}
+
 fn sidecar_url() -> String {
     std::env::var("THREENVIZEN_SIDECAR_URL")
         .unwrap_or_else(|_| "http://127.0.0.1:8787".to_string())
@@ -373,6 +424,16 @@ enum SidecarProbeState {
     Healthy,
     Error,
     Unreachable,
+}
+
+impl SidecarProbeState {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Self::Healthy => "healthy",
+            Self::Error => "error",
+            Self::Unreachable => "unreachable",
+        }
+    }
 }
 
 impl SidecarProbe {

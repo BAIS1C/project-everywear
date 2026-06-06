@@ -263,9 +263,24 @@ body[data-skin="carbon"] .ssp-slot {
   box-shadow: 0 0 8px color-mix(in oklab, var(--ew-status-green, #22c55e) 54%, transparent);
 }
 
+.ah-status-dot.executing {
+  opacity: 1;
+  background: var(--ew-primary, #00c2ff);
+  box-shadow: 0 0 10px color-mix(in oklab, var(--ew-primary, #00c2ff) 62%, transparent);
+  animation: ah-pulse 0.9s ease-in-out infinite;
+}
+
 .ah-status-dot.error {
   opacity: 1;
   background: var(--ew-status-red, var(--ew-danger, #ef4444));
+}
+
+.ah-skill.running {
+  border-color: color-mix(in oklab, var(--ew-primary, #00c2ff) 44%, transparent);
+}
+
+@keyframes ah-pulse {
+  50% { transform: scale(1.35); opacity: 0.72; }
 }
 
 .ah-token-badge,
@@ -1203,6 +1218,16 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 
 .ssp-tier {
   color: var(--ew-primary, #00c2ff);
+}
+
+.ssp-event {
+  padding: 6px 8px;
+  border: 1px solid color-mix(in oklab, var(--ew-primary, #00c2ff) 28%, var(--ew-border, rgba(255,255,255,0.12)));
+  border-radius: var(--ew-radius-sm, 4px);
+  background: color-mix(in oklab, var(--ew-primary, #00c2ff) 8%, transparent);
+  color: var(--ew-text-muted, #9aa8b5);
+  font: 800 10px/1.35 var(--ew-font-mono, monospace);
+  text-transform: uppercase;
 }
 
 .ssp-slots {

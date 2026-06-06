@@ -185,7 +185,7 @@ async fn advertise(
         "slots": status.slots,
         "engines": [{
             "engine_id": ENGINE_ID,
-            "label": "My Maits Local",
+            "label": "My Mait Local",
             "capabilities": capabilities,
             "status": status.status,
             "inference_ready": status.inference_ready,
