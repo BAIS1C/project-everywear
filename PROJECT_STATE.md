@@ -1,8 +1,22 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-05T22:45+08 SGT (Claude Cowork: kasai launch contract restored, install doctrine filed).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-06T12:48+08 SGT (Codex: Kasai Executive/Swarm stabilization pass, commits + builds + partial video-modal split).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-06T12:48+08 SGT - Kasai Executive/Swarm Stabilization Pass (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- COMMITTED backup stack on branch `phase2/character-studio-absorption`: `aded3dd` My Mait shell/runtime integration; `4dd6325` registry truth + Gener8 pack routes + WIKI launcher reconciliation; `8dcb938` Character Studio CSS normalization + `.gitattributes`; `8bf0800` Educ8 compile-time rename; `150d379` Gener8 worker duplicate deprecation; `79e5544` first VideoGeneratorModal split. Tag: `checkpoint/2026-06-06-pre-swarm`.
+- BUILD VERIFICATION PASSED: `cargo build -p everywear-os`; `cargo check -p gener8`; `cargo build -p gener8`; `npm run build --workspace @everywear/video-modal`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace @everywear/vid-web`; `npm run build --workspace everywear-os`. Warnings remain existing dead-code/chunk/Sass warnings, no build failures.
+- REGISTRY TRUTH VERIFIED IN SOURCE: `kasai` is `BinaryLocal` with `launch_binary = everywear-kasai` and `frontend_port = None` in both registries; `gener8-4ever` has no stray launch binary; `1magen` is `BinaryLocal` using `onemagen` on port 3002; `s3studio` is a free external URL with no required entitlements.
+- RUNTIME ROUTE SMOKE BLOCKED HEADLESS: direct `GET http://127.0.0.1:3001/api/health` and `/api/engine/pack-status` refused because no shim was running. Fresh `target\debug\gener8.exe` launch exited with `No EVERYWEAR_CMD_PORT env var set. Gener8 must be launched by the Everywear shell.` Shell-launched route smoke remains owed.
+- LANE A: `packages/video-modal/src/components/VideoGeneratorModal.tsx` is the only live import path for the package worker. The orphan `applets/gener8/web/src/workers/videoRenderWorker.ts` differed only by old `// @ts-nocheck`; it is now marked deprecated in place. DELETION HELD as T2 until shell-launched video export parity smoke proves the package worker path end-to-end.
+- LANE B: first safe split landed: `videoModalTypes.ts`, `videoModalDefaults.ts`, and `videoModalPresets.tsx` now own shared types, render presets/default state, and preset metadata. `VideoGeneratorModal.tsx` is reduced to 3,115 lines but remains above the soft target; render/export hooks, media controls, text/subtitle controls, and settings panels remain owed before major feature additions.
+- HUMAN HANDOFF OWED: desktop My Mait acceptance (green dot, inline open, no Edge page, no `KASAI_NOT_ACTIVE`, truthful status pill), shell-launched Gener8 `/api/engine/pack-status`, video export parity, Character Studio visual QA, Educ8 native build/visual QA.
+
+---
 
 ## 2026-06-05T22:45+08 SGT - Kasai Launch Contract Restored + Install Doctrine Filed (Claude Cowork)
 

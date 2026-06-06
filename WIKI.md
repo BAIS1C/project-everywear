@@ -1,7 +1,7 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.27
-Last updated: 2026-06-06 (launcher registry table reconciled)
+Version: 1.1.28
+Last updated: 2026-06-06 (video-modal worker audit and first modal split)
 Maintainer: Sean Uddin / Somo Kasane
 
 > This is the developer onboarding reference. For high-level vision and
@@ -79,6 +79,17 @@ Maintainer: Sean Uddin / Somo Kasane
 > URL with no required entitlements; wire id `loom` now displays Educ8 and
 > points at the renamed `applets/educ8` compile-time package. Desktop
 > acceptance and native build receipts are still owed.
+
+> Current-state note, 2026-06-06 v1.1.28: Video modal stabilization pass
+> landed. Worker ownership: `@everywear/video-modal` imports
+> `packages/video-modal/src/workers/videoRenderWorker.ts`; the orphan
+> `applets/gener8/web/src/workers/videoRenderWorker.ts` is deprecated in
+> place and must not be deleted until shell-launched video export parity is
+> proven. First modal split: `videoModalTypes.ts`, `videoModalDefaults.ts`,
+> and `videoModalPresets.tsx` now own shared types, default render/config
+> state, and preset metadata. `VideoGeneratorModal.tsx` is reduced to 3,115
+> lines but remains watch-list debt; render/export hooks, media controls,
+> text/subtitle controls, and settings panels remain owed.
 
 > Current-state note, 2026-05-26 v1.1.1: Gener8/Vault repair work is tracked
 > in [docs/wiki/gener8/vault-library.md](./docs/wiki/gener8/vault-library.md).
