@@ -1552,6 +1552,8 @@ pub fn run() {
             commands::platform::platform_status,
             commands::system::get_system_info,
             commands::system::save_bug_report,
+            commands::system::get_status,
+            commands::system::get_recommended_stack,
             commands::system::get_default_output_dir,
             commands::system::get_character_studio_asset_root,
             crash::take_pending_crash_report,

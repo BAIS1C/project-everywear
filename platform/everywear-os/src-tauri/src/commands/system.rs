@@ -4,6 +4,22 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ImagenEngineStatus {
+    pub engine_loaded: bool,
+    pub loaded_model: Option<String>,
+    pub available_models: Vec<model_manager::ModelInfo>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImagenRecommendedStack {
+    pub primary_model_key: String,
+    pub required_model_keys: Vec<String>,
+    pub detected_vram_mb: Option<u64>,
+    pub quality_label: String,
+    pub rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SystemInfoReport {
     pub os: String,
     pub os_version: String,
@@ -14,6 +30,61 @@ pub struct SystemInfoReport {
     pub session_duration_seconds: u64,
     pub models_available: Vec<String>,
     pub sidecars_running: Vec<String>,
+}
+
+/// 1magen UI compatibility: when 1magen is inline-mounted in the shell
+/// webview, launch-time status invokes hit the shell process. The heavy
+/// image engine still belongs to the managed onemagen runtime; this bridge
+/// prevents the shell workbench from failing before the runtime handoff.
+#[tauri::command]
+pub async fn get_status() -> Result<ImagenEngineStatus, String> {
+    Ok(ImagenEngineStatus {
+        engine_loaded: false,
+        loaded_model: None,
+        available_models: Vec::new(),
+    })
+}
+
+/// 1magen UI compatibility: mirrors the standalone onemagen
+/// get_recommended_stack command using the shell's GPU detection state.
+#[tauri::command]
+pub async fn get_recommended_stack(
+    state: tauri::State<'_, AppState>,
+) -> Result<ImagenRecommendedStack, String> {
+    let gpu_state = state.gpu.lock().await;
+    let detected_vram_mb = Some(u64::from(gpu_state.total_vram_mb));
+
+    if gpu_state.total_vram_mb >= 10_240 {
+        return Ok(ImagenRecommendedStack {
+            primary_model_key: "z-image-turbo-q8".into(),
+            required_model_keys: vec![
+                "z-image-turbo-q8".into(),
+                "qwen3-4b-encoder-q4".into(),
+                "pig-flux-vae".into(),
+            ],
+            detected_vram_mb,
+            quality_label: "High Quality".into(),
+            rationale: format!(
+                "Detected ~{} MB VRAM, so the higher-quality local 1magen stack is appropriate.",
+                gpu_state.total_vram_mb
+            ),
+        });
+    }
+
+    Ok(ImagenRecommendedStack {
+        primary_model_key: "z-image-turbo-q4km".into(),
+        required_model_keys: vec![
+            "z-image-turbo-q4km".into(),
+            "qwen3-4b-encoder-q4".into(),
+            "pig-flux-vae".into(),
+        ],
+        detected_vram_mb,
+        quality_label: "Standard".into(),
+        rationale: format!(
+            "Detected ~{} MB VRAM, so the lighter standard local 1magen stack is recommended.",
+            gpu_state.total_vram_mb
+        ),
+    })
 }
 
 /// 1magen UI compatibility: when 1magen is inline-mounted in the shell
