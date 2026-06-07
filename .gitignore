@@ -67,6 +67,13 @@ npm-debug.log*
 /MIGRATION_ARCHITECTURE.md
 /WIKI.md
 
+# Agent build handoffs and local run artifacts
+/*PROMPTPACK*.md
+/QA_TOUR_FINDINGS_*.md
+/TUTORIAL_SCRIPT_FULL_SYSTEM_*.md
+/.codex/
+/.codex-run/
+
 # LTX workflow JSON (proprietary, local only)
 /LTX*.json
 
