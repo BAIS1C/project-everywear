@@ -53,3 +53,21 @@ THE SOFTWARE.
 This licence shall be governed by and construed in accordance with the laws
 of the Republic of Indonesia. Any disputes arising under this licence shall
 be subject to the exclusive jurisdiction of the courts of Lombok, Indonesia.
+
+## Scope and Third-Party Components
+
+*(Added 2026-06-07 SGT)*
+
+This licence applies only to first-party software, assets, documentation,
+and branding authored by or for PT Metafintek AI Studios ("first-party
+components"). It does not apply to, restrict, or modify any third-party
+open-source software, library, inference engine, or AI model that the
+Software depends on, orchestrates, downloads, or interoperates with. All
+such third-party components remain governed exclusively by their own
+licences (including MIT, Apache-2.0, LGPL, GPL, OpenRAIL, and
+model-specific community licences). AI model weights are not distributed
+with the Software; they are obtained by the user at install or first use,
+subject to the licence presented by their upstream publisher.
+
+See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for the component
+inventory and copyleft hygiene rules.

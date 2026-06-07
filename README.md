@@ -10,9 +10,17 @@
 </p>
 
 <p align="center">
-  <a href="https://everywear.id">everywear.id</a> · 
-  <a href="https://strandsnation.xyz">Strands Nation</a> · 
-  <a href="https://s3studio.xyz">S3 Studio</a> · 
+  <a href="https://everywear.id"><img src="https://img.shields.io/badge/web-everywear.id-00e5ff?style=flat-square" alt="everywear.id" /></a>
+  <img src="https://img.shields.io/badge/status-pre--GA%20beta-amber?style=flat-square" alt="pre-GA" />
+  <img src="https://img.shields.io/badge/shell-Rust%20%2B%20Tauri%20v2-orange?style=flat-square" alt="Rust + Tauri" />
+  <img src="https://img.shields.io/badge/inference-100%25%20local-success?style=flat-square" alt="local inference" />
+  <img src="https://img.shields.io/badge/licence-Metafintek%20Source--Available-blue?style=flat-square" alt="licence" />
+</p>
+
+<p align="center">
+  <a href="https://everywear.id">everywear.id</a> ·
+  <a href="https://strandsnation.xyz">Strands Nation</a> ·
+  <a href="https://s3studio.xyz">S3 Studio</a> ·
   <a href="https://metafintek.xyz">Metafintek</a>
 </p>
 
@@ -20,23 +28,64 @@
 
 ## What is Everywear OS?
 
-Everywear OS is a Rust-native desktop platform that turns your GPU into a personal AI studio. It handles hardware detection, model management, VRAM arbitration, and inference engine lifecycle so that applications ("applets") are thin creative interfaces with declarative resource manifests.
+Everywear OS is a Rust-native desktop platform that turns your GPU into a
+personal AI studio. The shell owns hardware detection, model management,
+VRAM arbitration, entitlements, and inference engine lifecycle, so that
+applications ("applets") stay thin creative surfaces with declarative
+resource manifests.
 
-Think of it as **Steam for AI apps**: install once, launch anything, and let the platform handle the plumbing.
+Think of it as **an operating system for AI apps**: install once, launch
+anything, and let the platform handle the plumbing. The end-state is a
+desktop you leave running instead of Windows.
 
-Built by [PT Metafintek AI Studios](https://metafintek.xyz) from Lombok, Indonesia.
+Built by [PT Metafintek AI Studios](https://metafintek.xyz), Lombok, Indonesia.
 
 ---
 
 ## Philosophy
 
-**Sovereignty over convenience.** Every model runs on your hardware. Every file stays on your disk. There is no API key between you and your work.
+**Sovereignty over convenience.** Every model runs on your hardware. Every
+file stays on your disk. There is no API key between you and your work, and
+no runtime CDN between you and your apps. Assets, models, and your vault are
+local by doctrine, not by accident.
 
-**The GPU is a shared resource, not a locked room.** Everywear arbitrates VRAM across multiple running applets the way an OS arbitrates RAM across processes. Load an image model in 1magen, switch to Kasai for text, come back; the shell manages eviction, preemption, and reloading transparently.
+**The GPU is a shared resource, not a locked room.** Everywear arbitrates
+VRAM across applets the way an OS arbitrates RAM across processes: budgets,
+priority weights, LRU eviction, deterministic purge on applet switch. Models
+load when their applet is active and unload when it is not.
 
-**Applets declare; the shell provides.** An applet never touches the GPU directly. It ships a manifest describing what models it needs, at what quantisation, for what VRAM budget. The shell reads the manifest, provisions the engine, and hands the applet a ready-to-use inference channel. This means a new applet can ship in days, not months.
+**Applets declare; the shell provides.** An applet never touches the GPU
+directly. It ships an `applet.toml` describing the models it needs, at what
+quantisation, within what VRAM budget. The shell assesses, provisions with a
+visible install receipt, then hands the applet a ready inference channel.
 
-**Licence tiers unlock capability, not access.** Every user gets the full shell and the demo tier. Paid tiers unlock higher-fidelity models and professional features via upgrade packs; the architecture enforces this through HMAC-signed tier sync between the hub (Supabase), the shell, and each applet. No DRM. No phoning home. Cryptographic proof of entitlement, verified locally.
+**Status tells the truth.** A surface that is offline, asset-broken, or
+unmounted says so. READY means ready.
+
+**Licence tiers unlock capability, not access.** Every user gets the full
+shell and the demo tier. Paid tiers unlock higher-fidelity models and pro
+features via upgrade packs, enforced through HMAC-signed tier sync between
+hub (Supabase), shell, and applet. No DRM, no phoning home: cryptographic
+proof of entitlement, verified locally.
+
+---
+
+## The Surface
+
+| Applet | Domain | What it does |
+|--------|--------|--------------|
+| **My Mait** | Companion | Your local AI agent: chat, tools, memory, skills, model management. Runs Qwen-family models on llama.cpp with orchestrator/agent slot swapping. Knows it is local, because it is. |
+| **Gener8 4ever / Gener8 Pro** | Music | ACE-Step music generation: full songs from text, reference and cover modes, Pro model packs. |
+| **Vid Studio / Vid Studio Pro** | Video | Audio-reactive visualizers and video export from your songs. NVENC-accelerated export through the shared encoder sidecar, WASM fallback in-browser. |
+| **AI Director** | Music video | Multi-engine render sequencing on the Gener8 chassis. |
+| **DAW** | Audio | Stem separation and arrangement tools on your generated songs. |
+| **1magen** | Image | Local diffusion: txt2img, img2img, editing. Desktop-level applet. |
+| **3nvizen** | Video gen | Wan / LTX text-to-video and image-to-video. Desktop-level applet. |
+| **Avatar Studio** | Identity | Character and avatar creation; feeds My Mait companion presence. Assets fully local. |
+| **Educ8** | Education | Offline-first home education: curricula, lesson planning, local AI tutor, downloadable content packs with explicit plan/accept controls. |
+| **Layer U** | OSINT | Free-tier open-source intelligence layer powered by Project SON. |
+| **Vault** | Library | Your media and knowledge vault at `Documents/Everywear Vault`: hybrid vector + full-text search over everything you make. |
+| **Strands Nation** | World | The Strands game world, embedded live from strandsnation.xyz. |
 
 ---
 
@@ -44,94 +93,58 @@ Built by [PT Metafintek AI Studios](https://metafintek.xyz) from Lombok, Indones
 
 ```
 Everywear OS
-├── platform/everywear-os/     Tauri shell: GPU detect, model registry,
-│                               VRAM arbiter, applet launcher, auth gate
+├── platform/everywear-os/     Tauri shell: GPU detect, registry, VRAM
+│                              arbiter, launcher, auth gate, encoder sidecar
 ├── applets/
-│   ├── 1magen/                Image generation + editing (diffusion-rs)
-│   ├── 3nvizen/               Video generation (Wan 2.2 / LTX)
-│   ├── gener8/                Music generation (ACE-Step)
-│   ├── kasai/                 Local AI agent (llama.cpp)
-│   ├── mymories/              Memory + knowledge vault
-│   ├── s3studio/              Strands Sound Studio (web)
-│   └── strands-game/          The game (Three.js)
+│   ├── 1magen/                Image generation (diffusion-rs FFI)
+│   ├── 3nvizen/               Video generation (Wan / LTX)
+│   ├── gener8/                Music chassis: Gener8, Vid, AI Director, DAW
+│   ├── kasai/                 My Mait agent (llama.cpp, slot manager)
+│   ├── character-studio/      Avatar Studio (local asset doctrine)
+│   └── educ8/                 Knowledge engine (wire id: loom)
 ├── crates/                    Shared Rust workspace
 │   ├── applet-ipc/            IPC protocol (envelope v2 + legacy)
-│   ├── model-manager/         GGUF discovery, download, SHA256, symlinks
-│   ├── data-migration/        Schema migration engine
-│   ├── everywear-paths/       Cross-platform path resolution
+│   ├── model-manager/         GGUF discovery, download, SHA256, resolver
 │   ├── vault/                 LanceDB + Tantivy hybrid search
-│   ├── beats-engine/          Audio/rhythm processing
+│   ├── everywear-paths/       Canonical local paths (~/.everywear, vault)
 │   ├── mait/                  Trait-shard personality engine
-│   └── video-encoder/         Video encoding pipeline
+│   └── video-encoder/         NVENC sidecar lifecycle
 ├── engines/                   Native inference sidecars
 │   ├── sd-server/             stable-diffusion.cpp
 │   ├── ace-server/            ACE-Step
 │   └── llama-server/          llama.cpp
 └── packages/                  Shared TypeScript
-    ├── ewds/                  Design system (tokens + components)
+    ├── ewds/                  Design system (EWDS v2: skins, accents, bevels)
+    ├── video-modal/           Shared render/export modal
     ├── transport/             Tauri IPC / WebSocket abstraction
-    └── shared/                Common utils + types
+    └── shared/                Common utils, logging, types
 ```
 
 ### The Shell
 
-The shell is the single process that owns your hardware. It:
+The single process that owns your hardware:
 
 - **Detects compute** across three tiers: CUDA (NVIDIA via NVML), Vulkan (AMD/Intel), CPU fallback
 - **Classifies VRAM** into budgets: Ultra (24GB+), Standard (16-23GB), Constrained (12-15GB), Minimal (8-11GB)
-- **Manages models** through a unified cache at `~/.everywear/models/`, with discovery across LM Studio, Ollama, HuggingFace Hub, and GPT4All before downloading anything
-- **Arbitrates VRAM** with LRU eviction, priority weights, and a hard 90% utilisation ceiling
-- **Authenticates users** via Supabase (email OTP or password), syncs licence tier to applets over HMAC-signed IPC
-- **Launches applets** by reading their `applet.toml` manifest, provisioning engines and models, then spawning the process with an IPC channel
+- **Manages models** through a unified cache at `~/.everywear/models/`, discovering existing weights across LM Studio, Ollama, and HuggingFace caches before downloading anything
+- **Arbitrates VRAM** with LRU eviction, priority weights, and a hard utilisation ceiling; one active S3 suite applet at a time
+- **Owns shared services**: the NVENC video-encoder sidecar (acquire/release, boots on first consumer), bug-report capture with a local-only save path, applet health and status truth
+- **Authenticates** via Supabase and syncs licence tier to applets over HMAC-signed IPC
 
-### IPC Protocol
+### IPC
 
-Shell-to-applet communication runs over TCP on localhost with two protocol modes:
+Shell-to-applet communication over localhost TCP, two modes: legacy
+newline-JSON (v1) and `IpcEnvelope` (v2) with UUID correlation, sequence
+numbers, HMAC-SHA256 authentication, async events, heartbeats, and tier
+sync. A per-launch shared secret is injected into each applet's
+environment; applets that cannot verify it refuse to start.
 
-- **Legacy (v1):** Newline-delimited JSON `Command`/`Response` pairs. Backward compatible with standalone applets.
-- **Envelope (v2):** All messages wrapped in `IpcEnvelope` with UUID correlation, sequence numbers, source tagging, and HMAC-SHA256 authentication. Supports async events, heartbeats, capability advertisement, and tier sync.
+### Entitlements
 
-A per-launch shared secret (`EVERYWEAR_IPC_SECRET`) is generated by the shell and injected into each applet's environment. Applets that cannot verify the secret refuse to start.
-
-### Licence Tier Enforcement
-
-Defence-in-depth, three layers:
-
-1. **Hub (Supabase)** is the single writer of tier state via the `active_tier()` RPC
-2. **Shell** syncs tier on auth hydration, gates applet launches by manifest requirements
-3. **Applets** enforce tier internally via HMAC-verified `TierSync` messages from the shell
-
-No applet trusts its own tier claim. No applet trusts the shell's claim without cryptographic verification.
-
----
-
-## Applets
-
-| Applet | Domain | What it does |
-|--------|--------|-------------|
-| **1magen** | Image | Local Stable Diffusion: txt2img, img2img, inpainting, ControlNet. FFI-linked diffusion-rs, no sidecar overhead. |
-| **3nvizen** | Video | Wan 2.2 and LTX video generation. Text-to-video, image-to-video, interpolation. |
-| **Gener8** | Music | ACE-Step music generation with DAW integration, stem separation, style transfer, and AI director for multi-engine render sequences. |
-| **Kasai** | Agent | Local LLM agent running llama.cpp. Planning, tool use, memory, personality via trait shards. |
-| **Mymories** | Knowledge | Personal memory vault with hybrid search (vector + full-text) over LanceDB and Tantivy. |
-| **S3 Studio** | Web | Strands Sound Studio at s3studio.xyz. Web-based music creation interface. |
-| **Strands Game** | Game | The Strands Nation game world. Three.js desktop OS at game.strandsnation.xyz. |
-
----
-
-## Tech Stack
-
-**Shell:** Rust + Tauri v2, React 18, TypeScript, Vite
-
-**Inference:** diffusion-rs (FFI), llama-cpp-2, ACE-Step, stable-diffusion.cpp, Wan 2.2
-
-**Auth:** Supabase (Tokyo region), email OTP + password, JWT with unverified parse (Phase 1), JWKS verification planned (Phase 2)
-
-**Design System:** EWDS v1.0 (custom CSS properties, dark theme, tier-aware colour system)
-
-**IPC:** TCP localhost, newline-delimited JSON, HMAC-SHA256 envelope authentication
-
-**Search:** LanceDB (vector) + Tantivy (full-text) hybrid
+Defence-in-depth, three layers: the hub (Supabase) is the single writer of
+tier state; the shell gates launches by manifest requirements; applets
+verify HMAC-signed `TierSync` internally. No applet trusts its own tier
+claim.
 
 ---
 
@@ -139,28 +152,19 @@ No applet trusts its own tier claim. No applet trusts the shell's claim without 
 
 ### Prerequisites
 
-- Windows 10/11 or Linux (macOS CPU-only planned)
-- NVIDIA GPU with 8GB+ VRAM recommended (CUDA 11.8+)
-- Rust 1.77+ and Node.js 20+
-- Tauri v2 CLI: `cargo install tauri-cli`
+- Windows 10/11 (Linux planned; macOS CPU-only planned)
+- NVIDIA GPU with 8GB+ VRAM recommended (CUDA 11.8+); Vulkan and CPU fallbacks exist
+- Rust 1.77+, Node.js 20+, Tauri v2 CLI (`cargo install tauri-cli`)
 
 ### Build
 
 ```bash
-# Clone
-git clone https://github.com/BAIS1C/project-everywear.git
+git clone <repo> project-everywear
 cd project-everywear
-
-# Install frontend dependencies
 npm install
 
-# Build the shell
+# Shell
 cd platform/everywear-os
-npm install
-cargo tauri build
-
-# Build an applet (e.g. 1magen)
-cd ../../applets/1magen
 npm install
 cargo tauri build
 ```
@@ -171,42 +175,59 @@ cargo tauri build
 # Shell dev mode (hot reload)
 cd platform/everywear-os
 cargo tauri dev
-
-# Applet dev mode (standalone, no shell)
-cd applets/1magen
-cargo tauri dev
 ```
+
+Applets are launched BY the shell (they need the shell's IPC environment;
+`gener8.exe` exits without `EVERYWEAR_CMD_PORT`). For applet UI work, use
+the shell dev server and the inline applet routes.
+
+Contributors and agents: read `WIKI.md` before touching code. Wiki-first
+editing is enforced; see `AGENTS.md` and `CONTEXT.md` for the working
+protocol, and `CHANGELOG.md` for release history.
 
 ---
 
-## Project Structure
+## Licensing
 
-| Path | Language | Purpose |
-|------|----------|---------|
-| `platform/everywear-os/src-tauri/` | Rust | Shell backend: GPU, models, VRAM, launcher, auth |
-| `platform/everywear-os/src/` | TypeScript/React | Shell frontend: login, launcher grid, panels |
-| `applets/*/src-tauri/` | Rust | Applet backends |
-| `applets/*/src/` or `applets/*/web/` | TypeScript/React | Applet frontends |
-| `crates/` | Rust | Shared workspace crates |
-| `engines/` | C/C++ (prebuilt) | Inference engine sidecars |
-| `packages/` | TypeScript | Shared frontend packages |
+Everywear uses a two-layer licensing model. The short version: **our code
+is commercial, their code is theirs.**
+
+### First-party (Metafintek)
+
+All first-party source, applets, the EWDS design system, branding, and
+product names are Copyright (c) 2025-2026 PT Metafintek AI Studios, released
+under the [Metafintek Source-Available Licence v1.0](./LICENCE.md): view for
+reference, study, and security audit; commercial use, redistribution, and
+derivative works require written permission.
+
+Commercial licensing, OEM embedding, derivative works: **legal@metafintek.xyz**
+
+### Third-party (their own licences, always)
+
+Everywear orchestrates open-source engines and AI models. Those remain
+under their own licences, which the Metafintek licence does not and cannot
+override:
+
+| Layer | Examples | Licence |
+|---|---|---|
+| AI models | Qwen, ACE-Step, Wan (Apache-2.0); LTX-Video (Lightricks licence); Stable Diffusion family (OpenRAIL-M / Stability Community) | Per model card, accepted at download |
+| Engines | llama.cpp, stable-diffusion.cpp (MIT); diffusion-rs (MIT/Apache-2.0) | Upstream |
+| Media | FFmpeg (LGPL/GPL per build; runs as a separate sidecar process) | Upstream |
+| Frameworks | Tauri, React, Vite, Three.js (MIT/Apache-2.0) | Upstream |
+
+Model weights are never redistributed in this repository; the shell
+downloads them at install or first use and the user accepts each model's
+licence at that point. Full component-by-component detail, including the
+FFmpeg build caveat and copyleft hygiene rules, lives in
+[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
 ---
 
 ## Entity
 
-**PT Metafintek AI Studios**
-Lombok, Indonesia
-[metafintek.xyz](https://metafintek.xyz)
+**PT Metafintek AI Studios**, Lombok, Indonesia · [metafintek.xyz](https://metafintek.xyz)
+In formation: **somokasane Pte. Ltd.**, Singapore
 
-In formation: **somokasane Pte. Ltd.** (Singapore)
-
----
-
-## Licence
-
-This project is released under the [Metafintek Source-Available Licence v1.0](./LICENCE.md).
-
-You may view the source for reference, study, or security auditing. Commercial use, redistribution, and derivative works require written permission from PT Metafintek AI Studios. See `LICENCE.md` for full terms.
-
-For commercial licensing enquiries: **legal@metafintek.xyz**
+<p align="center">
+  <sub>Local-first by doctrine. Built on an island, runs on yours.</sub>
+</p>
