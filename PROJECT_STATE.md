@@ -318,3 +318,21 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - EDUC8 FINDING: Plan Downloads and Accept Plan work in preview; after Accept Plan, `Download` is no longer DOM-disabled. It was not clicked.
 - S3 FINDING: S3 tray entries render visually but are exposed as generic text, not stable buttons/data-tour targets. Coordinate clicks were required for Gener8, Vid, AI Director, DAW, 3nvizen, and 1magen.
 - PREVIEW SURFACE STATUS: My Mait, Educ8, Avatar Studio, Layer U, Gener8 4ever, Gener8 Pro, Vid, AI Director, DAW, 3nvizen, and 1magen all mounted in preview except Vault crash. Deep generation/export/stem acceptance remains owed in real desktop/Tauri.
+
+---
+
+## 2026-06-08 02:20 SGT: Full-system visual audit, real Tauri desktop
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- USER REQUEST: execute the full-system tour promptpack overnight; no source edits; run the build before stopping.
+- MODE: real Tauri desktop from `target\debug\everywear-os.exe`, not preview.
+- ARTIFACTS: screenshots at `screenshots/2026-06-08-everywear-full-tour/`; findings doc `QA_TOUR_FINDINGS_2026-06-08.md`; tutorial script `TUTORIAL_SCRIPT_FULL_SYSTEM_2026-06-08.md`; local rollout note `.codex/memories/2026-06-08-everywear-full-tour-desktop-audit.md`.
+- BUILD VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- PASSED: Settings visual controls and bug report modal; My Mait inline launch, no Edge spawn, no `KASAI_NOT_ACTIVE`, settings reachability, and successful chat response; Educ8 plan/accept without download; Gener8 4ever real song generation and playback; Vid Studio handoff; Vault native media listing; AI Director generated shot plan.
+- MAJOR FINDING: Vid Studio render/export fails after fallback encoder starts; native encoder service did not respond on port `9876`, then WASM render dialog reported `Video rendering failed. Please try again.`
+- MAJOR FINDING: DAW opens with `Unexpected token '<', '<!DOCTYPE...' is not valid JSON`; selecting `Morning QA Pulse` from S3 Library returns to empty Load a Track state for 60 seconds.
+- MAJOR FINDING: Avatar Studio cannot load local `/cs assets/manifest.json`; response is HTML, not JSON. This is the no-R2 local bundle boundary.
+- MAJOR FINDING: 1magen launch path reports `Command get_recommended_stack not found`.
+- MAJOR FINDING: Strands Nation opens to a blank/blocked browser surface instead of the game shell.
+- MINOR FINDINGS: My Mait skill catalog polluted with repeated internal `zsh-compatible` entries; Settings About domain typo; Educ8 Choose Location starts in `Project Layer U`; Layer U SON service offline on port `3117`; 3nvizen LTX sidecar offline.
