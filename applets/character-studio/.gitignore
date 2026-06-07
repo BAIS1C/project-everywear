@@ -4,7 +4,7 @@ node_modules
 # Build output
 dist
 
-# Served assets: local for dev, CDN download-on-load in prod. Never commit binaries.
+# Served assets: local for dev and production bundle. Never commit binaries.
 public/*
 !public/manifest.json
 !public/README.md

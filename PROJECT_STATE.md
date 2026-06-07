@@ -4,6 +4,19 @@ Single source of live state for surgical work. Read this first, every session. L
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
+## 2026-06-07 10:47 SGT - Avatar Studio Local Asset Runtime Fix (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- IMPLEMENTED Sean correction: Avatar Studio runtime assets are local-first, not R2/CDN streamed.
+- Shell asset base mounts Avatar Studio at `/cs-assets` in dev. In Tauri production, `AppletViewRouter.tsx` asks `get_character_studio_asset_root` for a local asset root and converts it through Tauri's asset protocol; no production `VITE_ASSET_PATH` handoff to `assets.everywear.id`.
+- Shell Vite serves `applets/character-studio/public/` from `/cs-assets` in dev without copying the large payload into frontend dist; production expects local app data or Tauri resources, not runtime CDN streaming.
+- Character Studio `assetBase.js` rejects remote `http(s)` `VITE_ASSET_PATH` values and documents the local-first contract.
+- Shell CSP no longer allows `https://assets.everywear.id` in `connect-src`; the old R2 upload script is deprecated with a hard throw.
+- Verification passed: local `manifest.json`, `character-assets/`, and `ktx2/libktx.js` exist; `npm run build --workspace @everywear/character-studio`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. The first implementation copied the large asset tree into frontend dist and produced a 4.79 GB MSVC archive; that dist-copy path was removed before the passing native build.
+
+---
+
 ## 2026-06-06T12:48+08 SGT - Kasai Executive/Swarm Stabilization Pass (Codex)
 
 Location: `C:\Users\MAG MSI\Project Everywear`
@@ -288,3 +301,20 @@ Carries (do not lose): AI Director is a virtual Gener8 `/director` route, not a 
 > (applets/educ8, @everywear/educ8, Educ8Core, educ8-* css). Wire id stays `loom`
 > (documented codename, kasai precedent). Historical "Loom"/"loom" mentions above
 > this line are accurate for their dates; do not retro-edit. Native build verify owed.
+
+---
+
+## 2026-06-07 00:08 SGT: Full-system visual audit, preview-only due Computer Use blocker
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- USER REQUEST: overnight hands-on full-system visual/computer-use audit, regular screenshots, Obsidian theme for now.
+- PREFLIGHT REFRESH PASSED: `cargo build -p everywear-os`; `cargo build`; npm builds for `@everywear/ewds`, `@everywear/video-modal`, `onemagen`, `@everywear/3nvizen`, `kasai-applet`, `@everywear/educ8`, `@everywear/gener8-web`, `@everywear/vid-web`, `@everywear/character-studio`, and `everywear-os`. Warnings only.
+- COMPUTER USE BLOCKER: Codex Computer Use returned `Computer Use native pipe path is unavailable` after reset and retry. Real desktop/Tauri acceptance was NOT run.
+- FALLBACK AUDIT: browser preview at `http://127.0.0.1:5173/?preview=1`; Graphite used as current Obsidian-family skin because no literal `obsidian` skin exists.
+- ARTIFACTS: screenshots at `screenshots/2026-06-06-everywear-full-tour/`; findings doc `QA_TOUR_FINDINGS_2026-06-06.md`; tutorial script `TUTORIAL_SCRIPT_FULL_SYSTEM_2026-06-06.md`; local rollout note `.codex/memories/2026-06-07-everywear-full-tour-preview-audit.md`.
+- MAJOR FINDING: integrated My Mait shell route imports `KasaiCore` directly, bypassing `KasaiApp`, so `MyMaitSettings` and model group selection are not reachable in-shell. The hub reports loaded slots, including Qwen3.6 35B-A3B Q4 and Qwen3.5 9B Q8 in preview, but Sean's local model selection/discovery question remains blocked by route exposure.
+- BLOCKER FINDING: Vault preview blanks the app. Console shows undefined Tauri `invoke` in Vault transport and `useShellAudio must be used within ShellAudioProvider` from `LibraryView`.
+- EDUC8 FINDING: Plan Downloads and Accept Plan work in preview; after Accept Plan, `Download` is no longer DOM-disabled. It was not clicked.
+- S3 FINDING: S3 tray entries render visually but are exposed as generic text, not stable buttons/data-tour targets. Coordinate clicks were required for Gener8, Vid, AI Director, DAW, 3nvizen, and 1magen.
+- PREVIEW SURFACE STATUS: My Mait, Educ8, Avatar Studio, Layer U, Gener8 4ever, Gener8 Pro, Vid, AI Director, DAW, 3nvizen, and 1magen all mounted in preview except Vault crash. Deep generation/export/stem acceptance remains owed in real desktop/Tauri.

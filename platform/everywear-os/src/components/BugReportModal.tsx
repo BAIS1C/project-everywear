@@ -13,7 +13,7 @@ import { getAllBufferedEntries, getLastError } from '@everywear/shared';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-type SendTarget = 'team' | 'kasai';
+type SendTarget = 'team' | 'kasai' | 'file';
 type SendState = 'idle' | 'sending' | 'sent' | 'error';
 type CopyState = 'idle' | 'copied' | 'error';
 
@@ -403,10 +403,30 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
     }
   }, [buildPayload, buildReportText]);
 
+  // Local-only QA capture: writes the report to ~/.everywear/reports/ via the
+  // shell, no external send path. Safe for unattended QA runs.
+  // (Handoff 2026-06-07.)
+  const handleSaveToFile = useCallback(async () => {
+    setSendState('sending');
+    setSendError(null);
+    try {
+      const payload = await buildPayload();
+      const reportText = buildReportText(payload);
+      const { invoke } = await import('@tauri-apps/api/core');
+      const savedPath = await invoke<string>('save_bug_report', { reportText });
+      setReportId(savedPath);
+      setSendState('sent');
+    } catch (err) {
+      setSendState('error');
+      setSendError(err instanceof Error ? err.message : 'Failed to save report locally');
+    }
+  }, [buildPayload, buildReportText]);
+
   const handleSend = useCallback(() => {
     if (target === 'team') handleSendToTeam();
+    else if (target === 'file') handleSaveToFile();
     else handleSendToKasai();
-  }, [target, handleSendToTeam, handleSendToKasai]);
+  }, [target, handleSendToTeam, handleSendToKasai, handleSaveToFile]);
 
   // ── Copy to clipboard ─────────────────────────────────────────
 
@@ -438,7 +458,9 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
 
         {sendState === 'sent' ? (
           <div style={s.successMsg}>
-            Email draft opened for {reportId || BUG_REPORT_EMAIL}. The full report was copied to clipboard.
+            {target === 'file'
+              ? `Report saved locally: ${reportId}`
+              : `Email draft opened for ${reportId || BUG_REPORT_EMAIL}. The full report was copied to clipboard.`}
           </div>
         ) : (
           <>
@@ -498,6 +520,15 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
                       onChange={() => setTarget('kasai')}
                     />
                     Local Kasai for diagnostics
+                  </label>
+                  <label style={s.radioLabel}>
+                    <input
+                      type="radio"
+                      name="target"
+                      checked={target === 'file'}
+                      onChange={() => setTarget('file')}
+                    />
+                    Save to this computer only
                   </label>
                 </div>
               </div>

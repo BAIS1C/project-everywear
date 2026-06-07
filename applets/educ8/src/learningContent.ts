@@ -10,6 +10,14 @@ export interface ContentPack {
   source: string;
   tooltip: string;
   resolver: string;
+  resources?: Array<{
+    id: string;
+    title: string;
+    url?: string | null;
+    filename?: string | null;
+    sizeBytes: number;
+    sha256?: string | null;
+  }>;
 }
 
 export interface SyllabusModule {
@@ -30,7 +38,7 @@ export const CONTENT_PACKS: ContentPack[] = [
   {
     id: 'teacher-skill',
     module: 'Teacher Agent',
-    title: 'My Maits Lite IGCSE Teacher Skill',
+    title: 'IGCSE AI Tutor Skill',
     type: 'skill',
     status: 'required',
     size: '< 1 MB',
@@ -41,24 +49,24 @@ export const CONTENT_PACKS: ContentPack[] = [
   {
     id: 'loom-db',
     module: 'Learning State',
-    title: 'Loom SQLite learning store',
+    title: 'Local learning library and progress storage',
     type: 'database',
     status: 'required',
     size: '< 50 MB starter',
     source: '~/.everywear/data/loom/loom.db',
-    resolver: 'loom-db setup phase',
+    resolver: 'Created automatically on first run',
     tooltip: 'Stores learner profile, selected syllabus, progress, retrieval schedule, misconceptions, notes, and teacher feedback.',
   },
   {
     id: 'mymaits-lite-model',
     module: 'Teacher Agent',
-    title: 'My Maits Lite headless model slot',
+    title: 'Local AI tutor model',
     type: 'model',
     status: 'required',
     size: '3-22 GB depending tier',
     source: 'Everywear shared model registry',
-    resolver: 'My Maits Lite runtime planner',
-    tooltip: 'Uses the shared My Maits Lite headless runtime instead of downloading a separate tutor model when a suitable local model already exists.',
+    resolver: 'Uses the AI model already installed on this machine when one fits',
+    tooltip: 'Built-in AI tutor running locally on this machine. Reuses a suitable local model instead of downloading a separate tutor model when one already exists.',
   },
   {
     id: 'wikipedia-schools',
@@ -113,7 +121,7 @@ export const CONTENT_PACKS: ContentPack[] = [
     size: 'Medium',
     source: 'Kiwix library',
     resolver: 'Query Kiwix library for programming and computer science Stack Exchange archives',
-    tooltip: 'Optional support for programming explanations. My Maits Lite should still align answers to the syllabus, not forum style.',
+    tooltip: 'Optional support for programming explanations. The AI tutor still aligns answers to the syllabus, not forum style.',
   },
   {
     id: 'openstreetmap-world',

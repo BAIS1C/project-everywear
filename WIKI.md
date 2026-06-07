@@ -1,8 +1,66 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.28
-Last updated: 2026-06-06 (video-modal worker audit and first modal split)
+Version: 1.1.30
+Last updated: 2026-06-07 (Avatar Studio local asset doctrine correction)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-07 v1.1.29: Visual bugfix handoff repair pass
+> (source: 2026-06-07 Codex Computer Use audit handoff; Claude Cowork repair).
+> 1) Applet taxonomy: 1magen and 3nvizen are desktop-level applets, removed
+> from the S3 Studio folder (`LauncherGrid.tsx` buildDesktopLayout,
+> `ShellLayout.tsx` S3_FOLDER_* constants). New `S3_SUITE_APPLET_IDS` set in
+> `ShellLayout.tsx` enforces one active S3 suite applet window: launching a
+> suite applet silently closes any other open suite applet
+> (`closeOpenApplets` gained an `onlyIds` filter); handoff context survives
+> via intentBus/Vault.
+> 2) Vault black screen: root cause was `VaultPanel` mounting Gener8's
+> `LibraryView` without `ShellAudioProvider` (useShellAudio threw) and with
+> no error boundary. `VaultPanel` now wraps `ShellAudioProvider` +
+> `AppletErrorBoundary` (newly exported from `AppletViewRouter.tsx`) with a
+> remount-key Retry. User vault path semantics unchanged
+> (`everywear_paths::vault_root()` → Documents\Everywear Vault).
+> 3) Vid NVENC routing: nothing ever called `request_video_encoder`, so the
+> shell sidecar never booted and Vid always fell back to WASM.
+> `VideoGeneratorModal` now acquires the encoder on open, retry-polls
+> /health (10x), releases on close, resets render state when the WASM
+> loader fails (the old silent return stuck the panel at "Rendering frames
+> 0%"), and shows a visible note when native export is unavailable. CSP
+> gained `https://unpkg.com` in connect-src (WASM core fetch was blocked),
+> `ws://127.0.0.1:*` (encoder WebSocket), and script-src/worker-src blob: +
+> wasm-unsafe-eval.
+> 4) My Mait local contract: `kasai_forward_chat` (shell commands/kasai.rs)
+> now injects a system prompt built from shell GPU state, loaded slots, and
+> Everywear Vault status into the ExecuteJob payload; the kasai runtime's
+> single-model path also reads job["system"] when a messages array exists.
+> Chat can no longer claim to be a cloud service while the side rail shows
+> local models. MyMaitSettings is now mounted inside KasaiCore (gear button
+> + clickable model cards, full-pane settings view).
+> 5) Strands Nation: CSP frame-src now allows https://strandsnation.xyz so
+> the embedded HeadlessAppletView iframe can load the live site; remote-URL
+> windows get an open-in-browser control.
+> 6) Status truthfulness: `windowRuntimeLabel` accepts iconHealth and shows
+> OFFLINE/CHECKING instead of READY; portless inline applets can self-report
+> via the new `everywear:applet-status` window event (Layer U dispatches it
+> from snapshot.online and gained a Retry control in its offline pane).
+> 7) Polish: folder tray icons widened to 96px with two-line labels (AI
+> Director truncation); BugReportModal gained a local-only "Save to this
+> computer" target backed by new shell command `save_bug_report` (writes to
+> ~/.everywear/reports/); new shell command `get_default_output_dir`
+> registered for inline-mounted 1magen UI compatibility.
+> 8) Educ8 donor-copy purge: user-facing Loom/My Maits/NOMAD language
+> replaced with product language; internal migration panels gated behind
+> SHOW_DEV_STATUS=false in Educ8Core.tsx. Avatar Studio: UI chrome assets
+> now bundle via import.meta.glob in assetBase.js (CDN prefix
+> assets.everywear.id/character-studio is unpopulated and returns 404);
+> manifest fetch failures now surface a visible error + Retry instead of a
+> black screen. AVATAR ASSET CORRECTION, 2026-06-07: do not build Avatar
+> Studio around runtime R2/CDN streaming. Character 3D assets must be locally
+> bundled/provisioned by the Everywear shell as an install pack with size,
+> checksum, receipt, and offline verification. REMAINING DEBT: local Avatar
+> Studio asset provisioning; full EWDS ports of 1magen/Layer U/Avatar Studio; Educ8 download
+> workflow rebuild; ShellLayout.tsx (~2600 lines) and
+> VideoGeneratorModal.tsx (~3500 lines) remain over context budget, split
+> owed.
 
 > This is the developer onboarding reference. For high-level vision and
 > architectural rationale, see [ARCHITECTURE.md](./ARCHITECTURE.md).
@@ -2268,6 +2326,16 @@ MyMaits is the privileged operator and presentation layer for Mait identity, sha
 
 Shard presentation belongs in MyMaits and Character Studio, with iconized hardware-module language from `C:\Users\MAG MSI\Project Mymory\mymaits\shards\2026-05-27_my_maits_look_shards_naming_canon.md`: Look Shards, Trait Shards, Skill Shards, Knowledge Shards, Voice Shards, Presence Shards, Style Patches, and Visual Patches. Service logos stay readable, but they sit inside recessed MyMaits hardware wells rather than generic app tiles.
 
+#### My Mait Everywear Vault Status Correction (2026-06-06 SGT)
+
+Project location: `C:\Users\MAG MSI\Project Everywear`.
+
+My Mait and Agent Hub product surfaces must present `Everywear Vault` as the backing store. The vault is powered by MyMory-compatible records, but it is not Sean's development `C:\Users\MAG MSI\Project Mymory` vault.
+
+The compatibility command `get_mymory_status` remains named for donor Kasai UI portability, but in Everywear it reports `C:\Users\MAG MSI\Documents\Everywear Vault`, its local sections, and any MyMory-compatible graph or schema files inside that vault. It must not report Project Mymory counts, graph paths, schema paths, or handoff paths.
+
+No migration is implied by this correction. Project Mymory remains the canon/taxonomy/reference source. Future full-install smoke can configure linked/reference mode, symlink/junction targets, existing-file ingest, or copy/move import policy explicitly.
+
 ### mait (crates/mait/)
 
 Trait-shard personality engine for composable AI agent identities.
@@ -3730,6 +3798,21 @@ The applet manifest should evolve from rough model groups to a real VRAM ladder 
 > model, and enforce Gener8 Pro / Creator Studio before status/install.
 > Remaining proof is runtime route smoke and real model download with the shim
 > running.
+>
+> Current-state note, 2026-06-06 v1.1.27: S3-family model lifecycle UX now
+> surfaces the locked doctrine in the shell. `ShellLayout.tsx` mounts the shared
+> EWDS `ToastHost`, announces local model loading for `1magen`, `gener8-pro`,
+> `daw`, `3nvizen`, `ai-director`, and `kasai`, warns that closing a model-backed
+> applet window unloads local models, polls GPU/model assessments while applets
+> are open, and requests `/api/engine/unload-models` for inline Gener8-family
+> windows before removing them from the desktop. DAW's previous
+> `ensureModel('base')` stub now checks `pack-status?pack_id=pro_base` and pulls
+> through `install-pack` when missing, with toast notifications. The layer
+> boundary remains: Everywear/model-manager decides the VRAM-fit pack; applet UI
+> requests the capability and reports progress. The stopgap shim-owned
+> `install-pack` route still needs migration into the full shell model-manager
+> authority path when the inline Gener8 surfaces are moved through
+> `request_applet_switch`.
 
 
 ---
@@ -4022,6 +4105,40 @@ My Mait (`kasai`) takes TOP BILLING in the desktop icon roster: rendered first, 
 ### Reconciliation owed (code disagrees with canon)
 
 2026-05-30 reconciliation: `3nvizen` now maps to Creator Studio across the two shell registries, `applets/3nvizen/applet.toml`, and shell tier-to-flag expansion. Remaining reconciliation: remove My Mait Lite/Full in AuthContext (collapse to free base + owned-shard inventory); add the content-ownership axis; wire My Mait model selection to the VRAM resolver; display rename "My Maits" → "My Mait". Tracked in `PROJECT_STATE.md`.
+
+### Addendum 2026-06-06: My Mait Settings and Residency Surface
+
+Authority: `C:\Users\MAG MSI\Project Mymory\everywear\2026-06-06_my_mait_settings_residency_fix_architecture.md`.
+
+**Purpose**: Restore the donor settings capability as an Everywear-native My Mait settings surface while keeping model lifecycle and VRAM authority in the shell.
+
+**Module map**:
+
+| Module | Purpose |
+|---|---|
+| `platform/everywear-os/src-tauri/src/commands/my_mait.rs` | Composite My Mait settings IPC: model groups, local model resolution, profile-backed model intent, residency preference, VRAM status, runtime residency, and MAIT companion manifest summaries. |
+| `platform/everywear-os/src-tauri/src/commands/kasai.rs` | Everywear-hosted Kasai compatibility IPC. Owns the My Mait skill catalog exposed to the Agent Hub; ports donor built-in content-capture skills, safety metadata, and read-only discovery for Everywear/local donor skill folders without importing standalone donor chrome. |
+| `applets/kasai/src/shell/KasaiApp.tsx` | Applet wrapper state. Switches between Agent Hub and My Mait Settings without importing standalone donor chrome. |
+| `applets/kasai/src/shell/MyMaitSettings.tsx` | Settings panels for Models, Residency, Memory/Vault, Personality, Pet/Avatar, Safety, and System. Owns user intent only. |
+| `applets/kasai/src/shell/MyMaitVramBadge.tsx` | Compact reusable VRAM/residency badge for My Mait chrome. |
+| `applets/kasai/src/shell/MyMaitSkillIcon.tsx` | EWDS icon renderer for every My Mait skill. Derives theme-aware glyphs from skill id/tag/name so donor and imported skills do not rely on emoji icons. |
+| `applets/kasai/src/lib/transport.ts` | Typed My Mait settings IPC contract plus browser-preview fallback data. |
+
+**Pipe diagram**:
+
+```mermaid
+  graph LR
+    UI["MyMaitSettings.tsx"] -- "data, process-local" --> T["Kasai transport"]
+    T -- "control, device-local" --> S["commands/my_mait.rs"]
+    T -- "skills, process-local" --> K["commands/kasai.rs"]
+    S -- "state, process-local" --> P["Profile prefs"]
+    S -- "capability, process-local" --> M["model-manager resolver"]
+    S -- "state, process-local" --> V["VRAM budget + GPU poll"]
+    S -- "data, process-local" --> A["MAIT store"]
+    K -- "presentation, process-local" --> I["MyMaitSkillIcon.tsx"]
+  ```
+
+**Boundary**: My Mait users may see model groups and residency policy because companion model size and keep-hot behavior are part of the relationship contract. Applets still do not download, adopt, detect GPUs, or own VRAM lifecycle. Phase 1 exposes and persists intent; close/unload behavior remains unchanged until the dedicated residency/chrome phase. Donor skills are catalog-portable, but donor standalone chrome is not. Skill folder discovery is read-only until an explicit import/copy flow is approved. Skill icons must render through EWDS v1/v2 icon primitives, not emoji-first bespoke tiles.
 
 ---
 

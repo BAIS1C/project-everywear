@@ -43,6 +43,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, AlertTriangle, X, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { showToast } from './ToastHost';
 
 const SHIM_BASE = 'http://127.0.0.1:3001';
 // 2026-05-21 SGT — pro_base means the true capability model. Do not
@@ -142,6 +143,12 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
       currentFile: '',
       currentRole: 'Connecting',
     });
+    showToast({
+      kind: 'info',
+      eyebrow: 'Everywear · model lifecycle',
+      message: 'Gener8 Pro requested the Pro Model. Everywear is pulling the VRAM-fit pack now.',
+      durationMs: 9000,
+    });
 
     try {
       const res = await fetch(`${SHIM_BASE}/api/engine/install-pack`, {
@@ -216,10 +223,22 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
                 });
               } else if (currentEvent === 'done' || currentEvent === 'pack_done') {
                 setPhase({ kind: 'done' });
+                showToast({
+                  kind: 'success',
+                  eyebrow: 'Everywear · model lifecycle',
+                  message: 'Pro Model installed. Gener8 Pro capability tasks are ready.',
+                  durationMs: 6500,
+                });
               } else if (currentEvent === 'error') {
                 setPhase({
                   kind: 'error',
                   message: data.error || 'Install failed.',
+                });
+                showToast({
+                  kind: 'error',
+                  eyebrow: 'Everywear · model lifecycle',
+                  message: data.error || 'Pro Model install failed.',
+                  durationMs: 9000,
                 });
               }
               // 'plan' and 'file_done' events are informational; the
@@ -247,9 +266,16 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
           : prev,
       );
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       setPhase({
         kind: 'error',
-        message: err instanceof Error ? err.message : 'Unknown error',
+        message,
+      });
+      showToast({
+        kind: 'error',
+        eyebrow: 'Everywear · model lifecycle',
+        message,
+        durationMs: 9000,
       });
     }
   }, [status]);

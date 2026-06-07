@@ -13,15 +13,67 @@
  * Consumes EWDS tokens via public/ewds/*.css (loaded by index.html or host shell).
  */
 
-import React, { Suspense, useEffect } from "react"
+import React, { Component, Suspense, useEffect } from "react"
 import { AccountProvider } from "./context/AccountContext"
 import { AudioProvider } from "./context/AudioContext"
 import { LanguageProvider } from "./context/LanguageContext"
 import { SceneProvider } from "./context/SceneContext"
 import { SoundProvider } from "./context/SoundContext"
 import { ViewProvider } from "./context/ViewContext"
-import App from "./App"
+import App, { retryManifestLoad } from "./App"
 import { getAssetBase } from "./lib/assetBase"
+
+/** Visible loading state shown while the manifest and 3D scene initialize. */
+function StudioLoading() {
+  return (
+    <div className="cs-status" role="status" aria-live="polite">
+      <span className="cs-status__spinner" aria-hidden="true" />
+      <div className="cs-status__message">Loading Avatar Studio...</div>
+    </div>
+  )
+}
+
+/**
+ * Local error boundary for the studio. Catches manifest fetch failures
+ * (thrown by the App suspense resource) and any render-time crash in the
+ * 3D scene or UI, then offers a Retry that re-arms the manifest fetch.
+ */
+class StudioErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("[character-studio] Studio failed to render:", error, errorInfo)
+  }
+
+  handleRetry = () => {
+    retryManifestLoad()
+    this.setState({ error: null })
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="cs-status cs-status--error" role="alert">
+          <div className="cs-status__title">Avatar Studio could not start</div>
+          <div className="cs-status__message">
+            {this.state.error?.message || "Something went wrong while loading the studio."}
+          </div>
+          <button className="cs-status__retry" type="button" onClick={this.handleRetry}>
+            Retry
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 /**
  * CharacterStudioCore
@@ -53,26 +105,34 @@ export default function CharacterStudioCore({ fallback = null }) {
     script.id = KTX2_SCRIPT_ID
     script.src = `${assetBase}/ktx2/libktx.js`
     script.async = true
+    script.onerror = () => {
+      console.warn(
+        `[character-studio] Failed to load KTX2 support from ${script.src}. ` +
+        `Compressed textures may not decode.`
+      )
+    }
     document.head.appendChild(script)
   }, [])
 
   return (
     <div className="cs-app-layer">
-      <AccountProvider>
-        <LanguageProvider>
-          <AudioProvider>
-            <ViewProvider>
-              <SceneProvider>
-                <SoundProvider>
-                  <Suspense fallback={fallback}>
-                    <App />
-                  </Suspense>
-                </SoundProvider>
-              </SceneProvider>
-            </ViewProvider>
-          </AudioProvider>
-        </LanguageProvider>
-      </AccountProvider>
+      <StudioErrorBoundary>
+        <AccountProvider>
+          <LanguageProvider>
+            <AudioProvider>
+              <ViewProvider>
+                <SceneProvider>
+                  <SoundProvider>
+                    <Suspense fallback={fallback ?? <StudioLoading />}>
+                      <App />
+                    </Suspense>
+                  </SoundProvider>
+                </SceneProvider>
+              </ViewProvider>
+            </AudioProvider>
+          </LanguageProvider>
+        </AccountProvider>
+      </StudioErrorBoundary>
     </div>
   )
 }

@@ -1,0 +1,56 @@
+[
+  {
+    "level": "warn",
+    "message": "getSession() took >4s, assuming no valid session.",
+    "timestamp": "2026-06-06T15:58:12.923Z",
+    "url": "http://127.0.0.1:5173/src/shell/AuthContext.tsx"
+  },
+  {
+    "level": "warn",
+    "message": "getSession() took >4s, assuming no valid session.",
+    "timestamp": "2026-06-06T15:58:12.923Z",
+    "url": "http://127.0.0.1:5173/src/shell/AuthContext.tsx"
+  },
+  {
+    "level": "error",
+    "message": "[Vault] Search failed: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-DOSDKB6Z.js?v=370a05cc:109:37)\n    at vaultSearch (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/packages/transport/src/vault.ts:3:10)\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:126:30\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:154:10\n    at commitHookEffectListMount (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:16915:34)\n    at commitPassiveMountOnFiber (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18156:19)\n    at commitPassiveMountEffects_complete (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18129:17)\n    at commitPassiveMountEffects_begin (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18119:15)\n    at commitPassiveMountEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18109:11)\n    at flushPassiveEffectsImpl (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19490:11)",
+    "timestamp": "2026-06-06T16:03:25.091Z",
+    "url": "http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx"
+  },
+  {
+    "level": "error",
+    "message": "[Vault] Stats failed: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-DOSDKB6Z.js?v=370a05cc:109:37)\n    at vaultGetStats (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/packages/transport/src/vault.ts:15:10)\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:147:23\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:157:10\n    at commitHookEffectListMount (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:16915:34)\n    at commitPassiveMountOnFiber (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18156:19)\n    at commitPassiveMountEffects_complete (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18129:17)\n    at commitPassiveMountEffects_begin (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18119:15)\n    at commitPassiveMountEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18109:11)\n    at flushPassiveEffectsImpl (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19490:11)",
+    "timestamp": "2026-06-06T16:03:25.091Z",
+    "url": "http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx"
+  },
+  {
+    "level": "error",
+    "message": "[Vault] Stats failed: TypeError: Cannot read properties of undefined (reading 'invoke')\n    at invoke (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-DOSDKB6Z.js?v=370a05cc:109:37)\n    at vaultGetStats (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/packages/transport/src/vault.ts:15:10)\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:147:23\n    at http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:157:10\n    at commitHookEffectListMount (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:16915:34)\n    at invokePassiveEffectMountInDEV (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:18324:19)\n    at invokeEffectsInDev (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19701:19)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19686:15)\n    at flushPassiveEffectsImpl (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19503:13)\n    at flushPassiveEffects (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19447:22)",
+    "timestamp": "2026-06-06T16:03:25.092Z",
+    "url": "http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx"
+  },
+  {
+    "level": "error",
+    "message": "Error: useShellAudio must be used within ShellAudioProvider\n    at useShellAudio (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/shell/ShellAudioPlayer.tsx:23:19)\n    at LibraryView (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/views/LibraryView.tsx:691:17)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:11548:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14582:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14833:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:15918:22)\n    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3674:22)\n    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3699:24)\n    at invokeGuardedCallback (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3733:39)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19765:15)",
+    "timestamp": "2026-06-06T16:03:25.170Z",
+    "url": "http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/shell/ShellAudioPlayer.tsx"
+  },
+  {
+    "level": "error",
+    "message": "Error: useShellAudio must be used within ShellAudioProvider\n    at useShellAudio (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/shell/ShellAudioPlayer.tsx:23:19)\n    at LibraryView (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/views/LibraryView.tsx:691:17)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:11548:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14582:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14833:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:15918:22)\n    at HTMLUnknownElement.callCallback2 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3674:22)\n    at Object.invokeGuardedCallbackDev (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3699:24)\n    at invokeGuardedCallback (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:3733:39)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19765:15)",
+    "timestamp": "2026-06-06T16:03:25.172Z",
+    "url": "http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/shell/ShellAudioPlayer.tsx"
+  },
+  {
+    "level": "error",
+    "message": "The above error occurred in the <LibraryView> component:\n\n    at LibraryView (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/views/LibraryView.tsx:690:17)\n    at Suspense\n    at VaultProvider (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/context/VaultProvider.tsx:107:33)\n    at div\n    at div\n    at VaultPanel (http://127.0.0.1:5173/src/shell/ShellLayout.tsx:152:33)\n    at div\n    at div\n    at ShellWindowFrame (http://127.0.0.1:5173/src/shell/ShellLayout.tsx:259:3)\n    at div\n    at div\n    at ShellLayout (http://127.0.0.1:5173/src/shell/ShellLayout.tsx:1084:49)\n    at AuthGate (http://127.0.0.1:5173/src/shell/AuthGate.tsx:20:28)\n    at AuthProvider (http://127.0.0.1:5173/src/shell/AuthContext.tsx:327:32)\n    at ThemeProvider (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/packages/ewds/src/ThemeContext.tsx:321:33)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+    "timestamp": "2026-06-06T16:03:25.173Z",
+    "url": "http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc"
+  },
+  {
+    "level": "error",
+    "message": "Error: useShellAudio must be used within ShellAudioProvider\n    at useShellAudio (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/shell/ShellAudioPlayer.tsx:23:19)\n    at LibraryView (http://127.0.0.1:5173/@fs/C:/Users/MAG%20MSI/Project%20Everywear/applets/gener8/web/src/views/LibraryView.tsx:691:17)\n    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:11548:26)\n    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14582:28)\n    at mountLazyComponent (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:14833:23)\n    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:15918:22)\n    at beginWork$1 (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19753:22)\n    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19198:20)\n    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19137:13)\n    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc:19116:15)",
+    "timestamp": "2026-06-06T16:03:25.173Z",
+    "url": "http://127.0.0.1:5173/node_modules/.vite/deps/chunk-WBM3LVNE.js?v=370a05cc"
+  }
+]

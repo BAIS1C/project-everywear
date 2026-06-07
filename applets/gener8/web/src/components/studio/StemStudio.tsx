@@ -25,6 +25,7 @@ import { analyseWaveformCached, type WaveformData } from "./waveformAnalyser";
 import { Knob, VolumeFader } from "./SvgControls";
 import { ensureModel } from "../../shell/intentBus";
 import { useSongStore } from "../../shell/SongStoreContext";
+import { showToast } from "../ToastHost";
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -990,6 +991,12 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
     }
     setProModelDownloading(true);
     setExtractError('Downloading Pro Model...');
+    showToast({
+      kind: 'info',
+      eyebrow: 'Everywear · model lifecycle',
+      message: 'Stem separation requested the Pro Model. Everywear is pulling the VRAM-fit pack now.',
+      durationMs: 9000,
+    });
     try {
       const res = await fetch(`${getApiBase()}/api/engine/install-pack`, {
         method: 'POST',
@@ -1005,10 +1012,22 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
       }
       setProModelPresent(true);
       setExtractError('Pro Model installed. Stem extraction is ready.');
+      showToast({
+        kind: 'success',
+        eyebrow: 'Everywear · model lifecycle',
+        message: 'Pro Model installed. Stem separation is ready.',
+        durationMs: 6500,
+      });
       if (phase === "error") setPhase("loaded");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setExtractError(msg);
+      showToast({
+        kind: 'error',
+        eyebrow: 'Everywear · model lifecycle',
+        message: msg,
+        durationMs: 9000,
+      });
       setPhase("error");
     } finally {
       setProModelDownloading(false);

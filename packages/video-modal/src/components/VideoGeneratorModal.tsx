@@ -206,66 +206,97 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
     slideshowIndexRef.current = 0;
   }, [slideshowImages]);
 
-  // ── Detect local GPU encoder sidecar (port 9877) ──
+  // ── Acquire + detect local GPU encoder sidecar (port 9877) ──
+  // The shell owns the NVENC sidecar lifecycle: it boots on the first
+  // `request_video_encoder` and stops on the last release. Nothing called
+  // request_video_encoder before this, so the sidecar never booted and Vid
+  // always fell back to WASM despite the RTX being detected by the shell.
+  // (Handoff 2026-06-07: Vid NVENC routing.)
   useEffect(() => {
     if (!isOpen) return;
-    const controller = new AbortController();
-    const checkGpuEncoder = async () => {
+    let cancelled = false;
+    let acquired = false;
+
+    const probeHealth = async (timeoutMs: number): Promise<Response> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const res = await fetch('http://127.0.0.1:9877/health', {
-          signal: controller.signal,
-          // 2s timeout via AbortController
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setGpuEncoderAvailable(true);
-          setGpuEncoderInfo({
-            encoder: data.encoder,
-            label: data.label,
-            gpu: data.gpu,
-            hardware: data.hardware,
-          });
-          console.log('[Video Studio] GPU encoder detected:', data.label, data.encoder, data.gpu || '');
-          if (!data.hardware) {
-            console.warn(
-              '[Video Studio] Sidecar reached but reports software-only encoder (%s). ' +
-              'NVENC not detected at sidecar startup — check nvidia-smi, ffmpeg -encoders | grep nvenc.',
-              data.encoder
-            );
-          }
-        } else {
-          // Sidecar responded with non-OK status
-          setGpuEncoderAvailable(false);
-          setGpuEncoderInfo(null);
-          console.warn(
-            '[Video Studio] Sidecar /health returned %d %s — falling back to WASM.',
-            res.status, res.statusText
-          );
-        }
-      } catch (err: unknown) {
-        // Self-report the failure mode so NVENC regressions don't hide.
-        // CORS rejection, connection refused, and abort-timeout look
-        // different in devtools — don't flatten them into a single line.
-        setGpuEncoderAvailable(false);
-        setGpuEncoderInfo(null);
-        const e = err as { name?: string; message?: string };
-        if (e?.name === 'AbortError') {
-          console.warn('[Video Studio] Sidecar /health timed out (>2s) — WASM fallback.');
-        } else if (e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError')) {
-          console.warn(
-            '[Video Studio] Cannot reach http://127.0.0.1:9877/health — ' +
-            'sidecar offline OR CORS block (stale dist?). WASM fallback. ' +
-            'Debug: curl http://127.0.0.1:9877/health from a terminal.'
-          );
-        } else {
-          console.warn('[Video Studio] GPU encoder check failed (%s) — WASM fallback.', e?.message || err);
-        }
+        return await fetch('http://127.0.0.1:9877/health', { signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
       }
     };
+
+    const checkGpuEncoder = async () => {
+      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          await invoke('request_video_encoder');
+          acquired = true;
+        } catch (err) {
+          console.warn(
+            '[Video Studio] request_video_encoder unavailable (%s) — probing port 9877 directly.',
+            err
+          );
+        }
+      }
+
+      // Sidecar boot + NVENC detection takes a few seconds; retry instead of
+      // failing after a single 2s attempt.
+      const MAX_ATTEMPTS = 10;
+      for (let attempt = 0; attempt < MAX_ATTEMPTS && !cancelled; attempt++) {
+        try {
+          const res = await probeHealth(1500);
+          if (res.ok) {
+            const data = await res.json();
+            if (cancelled) return;
+            setGpuEncoderAvailable(true);
+            setGpuEncoderInfo({
+              encoder: data.encoder,
+              label: data.label,
+              gpu: data.gpu,
+              hardware: data.hardware,
+            });
+            console.log('[Video Studio] GPU encoder detected:', data.label, data.encoder, data.gpu || '');
+            if (!data.hardware) {
+              console.warn(
+                '[Video Studio] Sidecar reached but reports software-only encoder (%s). ' +
+                'NVENC not detected at sidecar startup — check nvidia-smi, ffmpeg -encoders | findstr nvenc.',
+                data.encoder
+              );
+            }
+            return;
+          }
+          console.warn(
+            '[Video Studio] Sidecar /health returned %d %s (attempt %d/%d).',
+            res.status, res.statusText, attempt + 1, MAX_ATTEMPTS
+          );
+        } catch {
+          // Connection refused or timeout while the sidecar boots — retry.
+        }
+        if (!cancelled && attempt < MAX_ATTEMPTS - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 700));
+        }
+      }
+      if (cancelled) return;
+      setGpuEncoderAvailable(false);
+      setGpuEncoderInfo(null);
+      console.warn(
+        '[Video Studio] GPU encoder sidecar unreachable after %d attempts — WASM fallback. ' +
+        'Debug: curl http://127.0.0.1:9877/health; check nvidia-smi and ffmpeg -encoders | findstr nvenc.',
+        MAX_ATTEMPTS
+      );
+    };
+
     checkGpuEncoder();
-    // Timeout the health check after 2 seconds
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    return () => { controller.abort(); clearTimeout(timeout); };
+    return () => {
+      cancelled = true;
+      if (acquired) {
+        import('@tauri-apps/api/core')
+          .then(({ invoke }) => invoke('release_video_encoder'))
+          .catch(() => {});
+      }
+    };
   }, [isOpen]);
 
   // ── Load local system fonts via queryLocalFonts API (Chromium only) ──
@@ -500,7 +531,15 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
         console.log('[Video Studio] Using WASM FFmpeg');
         if (!ffmpegRef.current) {
           await loadFFmpeg();
-          if (!ffmpegRef.current) return;
+          if (!ffmpegRef.current) {
+            // Encoder load failed (alert already shown by loadFFmpeg). Reset
+            // render state so the panel stays actionable instead of sticking
+            // at "Rendering frames 0%". (Handoff 2026-06-07.)
+            setIsExporting(false);
+            setExportStage('idle');
+            setExportProgress(0);
+            return;
+          }
         }
         await renderOffline();
       }
@@ -3190,6 +3229,13 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                      ? `${gpuEncoderInfo?.label}${gpuEncoderInfo?.gpu ? ` • ${gpuEncoderInfo.gpu}` : ''} • `
                      : ffmpegLoaded ? 'WASM encoder ready • ' : ''}Do not close this window while rendering.
                  </p>
+                 {!gpuEncoderAvailable && (
+                   <p className="text-[10px] text-amber-500 text-center">
+                     Native GPU encoder unavailable: the local encoder service did not
+                     respond on port 9877. Export will use the slower in-browser encoder.
+                     Reopen this window to retry.
+                   </p>
+                 )}
             </div>
         </div>
 

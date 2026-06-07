@@ -76,6 +76,7 @@ pub struct KasaiSkill {
     pub status: String,
     pub tag: String,
     pub token_cost: u32,
+    pub safety_class: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -159,45 +160,47 @@ pub async fn send_message(
 
 #[tauri::command]
 pub async fn list_installed_skills() -> Result<Vec<KasaiSkill>, String> {
-    let mymory = inspect_mymory_status();
-    let mymory_live = if mymory.exists { "live" } else { "error" };
-    Ok(vec![
+    let vault = inspect_everywear_vault_status();
+    let vault_live = if vault.exists { "live" } else { "error" };
+    let mut skills = vec![
         KasaiSkill {
             id: "mymory-recall".into(),
             name: "MyMory Recall".into(),
             path: "mymory://skills/recall".into(),
             icon: "M".into(),
-            summary: "Vault-first retrieval across MKV L1/L2/L3".into(),
+            summary: "Everywear Vault retrieval through the MyMory substrate".into(),
             description:
-                "Reads Project MyMory before an answer, using durable canon, scenarios, atoms, and graph projection as context."
+                "Reads Everywear Vault records through the MyMory-compatible substrate before answering. Reference canon remains separate from the installed user vault."
                     .into(),
-            status: mymory_live.into(),
+            status: vault_live.into(),
             tag: "memory".into(),
             token_cost: 2400,
+            safety_class: "ReadOnly".into(),
         },
         KasaiSkill {
             id: "mymory-remember".into(),
             name: "MyMory Remember".into(),
             path: "mymory://skills/remember".into(),
             icon: "M+".into(),
-            summary: "Append decisions into the MyMory vault".into(),
+            summary: "Append decisions into Everywear Vault".into(),
             description:
-                "Captures durable decisions and session facts into the active Project MyMory wing without requiring an LLM pass."
+                "Captures durable decisions and session facts into Everywear Vault records without importing a development vault."
                     .into(),
-            status: mymory_live.into(),
+            status: vault_live.into(),
             tag: "memory".into(),
             token_cost: 800,
+            safety_class: "Mutation".into(),
         },
         KasaiSkill {
             id: "mymory-graph".into(),
             name: "MyMory Graph".into(),
             path: "mymory://skills/graph".into(),
             icon: "MG".into(),
-            summary: "Refresh the MKV graph projection".into(),
+            summary: "Inspect the Everywear Vault graph projection".into(),
             description:
-                "Uses the 2026-05-24 graph projection contract: L1, L2, and L3 notes feed the agent map; graph output is not source of truth."
+                "Inspects the MyMory-compatible graph projection inside Everywear Vault when present; graph output is not source of truth."
                     .into(),
-            status: if mymory.graph_projection_json.is_some() {
+            status: if vault.graph_projection_json.is_some() {
                 "idle"
             } else {
                 "error"
@@ -205,6 +208,7 @@ pub async fn list_installed_skills() -> Result<Vec<KasaiSkill>, String> {
             .into(),
             tag: "memory".into(),
             token_cost: 1200,
+            safety_class: "ReadOnly".into(),
         },
         KasaiSkill {
             id: "code-review".into(),
@@ -218,8 +222,358 @@ pub async fn list_installed_skills() -> Result<Vec<KasaiSkill>, String> {
             status: "idle".into(),
             tag: "dev".into(),
             token_cost: 3200,
+            safety_class: "ReadOnly".into(),
         },
-    ])
+    ];
+    skills.extend(content_capture_skill_pack());
+    skills.extend(discovered_skill_pack());
+    skills.sort_by(|a, b| {
+        let a_key = skill_sort_key(a);
+        let b_key = skill_sort_key(b);
+        a_key.cmp(&b_key)
+    });
+    Ok(skills)
+}
+
+fn skill_sort_key(skill: &KasaiSkill) -> (u8, String) {
+    let group = match skill.tag.as_str() {
+        "memory" => 0,
+        "dev" => 1,
+        "capture" => 2,
+        _ => 3,
+    };
+    (group, skill.name.to_ascii_lowercase())
+}
+
+fn builtin_skill(
+    id: &str,
+    name: &str,
+    icon: &str,
+    summary: &str,
+    description: &str,
+    output_contract: &str,
+) -> KasaiSkill {
+    KasaiSkill {
+        id: id.into(),
+        name: name.into(),
+        path: format!("builtin://{id}"),
+        icon: icon.into(),
+        summary: summary.into(),
+        description: description.into(),
+        status: "idle".into(),
+        tag: "capture".into(),
+        token_cost: ((description.len() + output_contract.len()) / 4) as u32,
+        safety_class: "ReadOnly".into(),
+    }
+}
+
+fn content_capture_skill_pack() -> Vec<KasaiSkill> {
+    vec![
+        builtin_skill(
+            "capture-yt-executive-summary",
+            "YT -> Executive Summary",
+            "play",
+            "Turn a YouTube video or transcript into a concise executive brief.",
+            "Analyze a YouTube video URL or pasted transcript. Extract the thesis, key points, evidence, caveats, notable quotes, and practical takeaways without adding unsupported facts.",
+            "Return: thesis, executive summary, key points, evidence and examples, caveats or missing context, action notes, and source gaps.",
+        ),
+        builtin_skill(
+            "capture-yt-to-x-thread",
+            "YT -> X Thread",
+            "thread",
+            "Convert a YouTube video or transcript into a clear X thread draft.",
+            "Transform a YouTube video URL or pasted transcript into a concise X thread that preserves the original argument, flags uncertainty, and avoids fake citations.",
+            "Return: hook, 6-10 numbered posts, optional quote cards, suggested title, and claims that need source checking.",
+        ),
+        builtin_skill(
+            "capture-yt-to-linkedin",
+            "YT -> LinkedIn Post",
+            "briefcase",
+            "Repurpose a YouTube video or transcript into a professional LinkedIn post.",
+            "Convert a YouTube video URL or pasted transcript into a LinkedIn post with a useful business or learning angle. Keep the tone grounded and avoid engagement bait.",
+            "Return: post draft, alternate openings, key bullets, useful hashtags, and source gaps.",
+        ),
+        builtin_skill(
+            "capture-article-executive-summary",
+            "Article Executive Summary",
+            "document",
+            "Summarize an article, PDF excerpt, or web page into an executive brief.",
+            "Extract and organize important information from pasted article text, a URL, or a PDF excerpt. Separate what the source says from interpretation.",
+            "Return: headline, source type, executive summary, key claims, named entities, evidence quality, follow-up questions, and practical implications.",
+        ),
+        builtin_skill(
+            "capture-thread-distiller",
+            "Thread Distiller",
+            "thread",
+            "Distill an X, LinkedIn, Reddit, or comment thread into signal.",
+            "Analyze a pasted social thread or comment section. Identify the main argument, strongest replies, disagreement clusters, sentiment, and useful links or entities.",
+            "Return: main thesis, consensus points, disagreement map, notable replies, weak claims, entities to research, and a reusable learning note.",
+        ),
+        builtin_skill(
+            "capture-study-pack",
+            "Study Pack Generator",
+            "book",
+            "Turn a video, article, or thread into notes, flashcards, and quiz prompts.",
+            "Convert source material into a learning pack for retention. Prefer precise definitions, examples, misconceptions, and review questions over generic summaries.",
+            "Return: structured notes, glossary, flashcards, quiz questions with answers, misconceptions, and next resources to look for.",
+        ),
+    ]
+}
+
+fn discovered_skill_pack() -> Vec<KasaiSkill> {
+    let mut skills = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for (root, tag) in discovered_skill_roots() {
+        let Ok(entries) = std::fs::read_dir(root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let Some(id) = path.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            if !seen.insert(id.to_string()) {
+                continue;
+            }
+            if let Some(skill) = skill_from_dir(id, &path, tag) {
+                skills.push(skill);
+            }
+        }
+    }
+    skills
+}
+
+fn discovered_skill_roots() -> Vec<(PathBuf, &'static str)> {
+    let mut roots = Vec::new();
+    if let Some(repo_root) = repo_root_from_process() {
+        roots.push((repo_root.join("skills"), "everywear"));
+    }
+    if let Some(local_appdata) = std::env::var_os("LOCALAPPDATA") {
+        roots.push((
+            PathBuf::from(local_appdata)
+                .join("Kasai-Local")
+                .join("skills"),
+            "donor",
+        ));
+    }
+    roots
+}
+
+fn repo_root_from_process() -> Option<PathBuf> {
+    crate::registry::find_monorepo_root_from_exe().or_else(|| {
+        let mut current = std::env::current_dir().ok()?;
+        loop {
+            if current.join("Cargo.toml").exists() && current.join("applets").is_dir() {
+                return Some(current);
+            }
+            if !current.pop() {
+                return None;
+            }
+        }
+    })
+}
+
+fn skill_from_dir(id: &str, path: &Path, source_tag: &str) -> Option<KasaiSkill> {
+    let manifest_path = path.join("manifest.json");
+    let skill_md_path = path.join("SKILL.md");
+    if manifest_path.exists() {
+        return skill_from_manifest(id, path, &manifest_path, source_tag);
+    }
+    if skill_md_path.exists() {
+        return skill_from_markdown(id, path, &skill_md_path, source_tag);
+    }
+    Some(KasaiSkill {
+        id: id.into(),
+        name: humanize_slug(id),
+        path: path.display().to_string(),
+        icon: "file".into(),
+        summary: "Imported skill folder".into(),
+        description: "Imported skill folder".into(),
+        status: "idle".into(),
+        tag: source_tag.into(),
+        token_cost: 0,
+        safety_class: "ReadOnly".into(),
+    })
+}
+
+fn skill_from_manifest(
+    id: &str,
+    path: &Path,
+    manifest_path: &Path,
+    source_tag: &str,
+) -> Option<KasaiSkill> {
+    let content = std::fs::read_to_string(manifest_path).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&content).ok()?;
+    let description = value
+        .get("description")
+        .and_then(|value| value.as_str())
+        .or_else(|| value.get("summary").and_then(|value| value.as_str()))
+        .unwrap_or("Imported skill")
+        .trim();
+    let name = value
+        .get("name")
+        .and_then(|value| value.as_str())
+        .map(humanize_slug)
+        .unwrap_or_else(|| humanize_slug(id));
+    let icon = value
+        .get("icon")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| auto_icon(&name));
+    let tag = value
+        .get("tag")
+        .and_then(|value| value.as_str())
+        .unwrap_or(source_tag);
+    Some(KasaiSkill {
+        id: id.into(),
+        name,
+        path: path.display().to_string(),
+        icon,
+        summary: truncate_summary(description),
+        description: description.into(),
+        status: "idle".into(),
+        tag: tag.into(),
+        token_cost: skill_token_cost(path),
+        safety_class: "ReadOnly".into(),
+    })
+}
+
+fn skill_from_markdown(
+    id: &str,
+    path: &Path,
+    skill_md_path: &Path,
+    source_tag: &str,
+) -> Option<KasaiSkill> {
+    let content = std::fs::read_to_string(skill_md_path).ok()?;
+    let frontmatter = markdown_frontmatter(&content);
+    let name = frontmatter
+        .as_ref()
+        .and_then(|frontmatter| frontmatter_value(frontmatter, "name"))
+        .or_else(|| markdown_heading(&content))
+        .unwrap_or_else(|| humanize_slug(id));
+    let description = frontmatter
+        .as_ref()
+        .and_then(|frontmatter| frontmatter_value(frontmatter, "description"))
+        .or_else(|| first_markdown_sentence(&content))
+        .unwrap_or_else(|| "Imported skill".into());
+    let icon = frontmatter
+        .as_ref()
+        .and_then(|frontmatter| frontmatter_value(frontmatter, "icon"))
+        .unwrap_or_else(|| auto_icon(&name));
+    let tag = frontmatter
+        .as_ref()
+        .and_then(|frontmatter| frontmatter_value(frontmatter, "tag"))
+        .unwrap_or_else(|| source_tag.into());
+    Some(KasaiSkill {
+        id: id.into(),
+        name,
+        path: path.display().to_string(),
+        icon,
+        summary: truncate_summary(&description),
+        description,
+        status: "idle".into(),
+        tag,
+        token_cost: (content.len() / 4) as u32,
+        safety_class: "ReadOnly".into(),
+    })
+}
+
+fn markdown_frontmatter(content: &str) -> Option<String> {
+    let rest = content.strip_prefix("---\n")?;
+    let end = rest.find("\n---")?;
+    Some(rest[..end].to_string())
+}
+
+fn frontmatter_value(frontmatter: &str, key: &str) -> Option<String> {
+    let prefix = format!("{key}:");
+    frontmatter.lines().find_map(|line| {
+        let trimmed = line.trim();
+        let value = trimmed.strip_prefix(&prefix)?.trim();
+        Some(value.trim_matches('"').trim_matches('\'').to_string())
+    })
+}
+
+fn markdown_heading(content: &str) -> Option<String> {
+    content.lines().find_map(|line| {
+        line.trim()
+            .strip_prefix("# ")
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string)
+    })
+}
+
+fn first_markdown_sentence(content: &str) -> Option<String> {
+    content.lines().find_map(|line| {
+        let trimmed = line.trim();
+        if trimmed.is_empty()
+            || trimmed.starts_with("---")
+            || trimmed.starts_with('#')
+            || trimmed.starts_with("name:")
+            || trimmed.starts_with("description:")
+        {
+            return None;
+        }
+        Some(trimmed.to_string())
+    })
+}
+
+fn truncate_summary(value: &str) -> String {
+    const LIMIT: usize = 118;
+    let trimmed = value.trim();
+    if trimmed.len() <= LIMIT {
+        return trimmed.into();
+    }
+    format!(
+        "{}...",
+        trimmed.chars().take(LIMIT).collect::<String>().trim()
+    )
+}
+
+fn skill_token_cost(path: &Path) -> u32 {
+    let skill_md_path = path.join("SKILL.md");
+    std::fs::metadata(skill_md_path)
+        .map(|metadata| (metadata.len() / 4) as u32)
+        .unwrap_or(0)
+}
+
+fn humanize_slug(value: &str) -> String {
+    value
+        .replace(['_', '-'], " ")
+        .split_whitespace()
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn auto_icon(name: &str) -> String {
+    let lower = name.to_ascii_lowercase();
+    if lower.contains("memory") || lower.contains("mymory") || lower.contains("vault") {
+        "memory".into()
+    } else if lower.contains("graph") {
+        "graph".into()
+    } else if lower.contains("code") || lower.contains("review") {
+        "code".into()
+    } else if lower.contains("video") || lower.contains("youtube") {
+        "play".into()
+    } else if lower.contains("thread") {
+        "thread".into()
+    } else if lower.contains("study") || lower.contains("teacher") {
+        "book".into()
+    } else if lower.contains("file") {
+        "file".into()
+    } else {
+        "skill".into()
+    }
 }
 
 #[tauri::command]
@@ -247,33 +601,38 @@ pub async fn list_watched_projects() -> Result<Vec<WatchedProject>, String> {
         },
     }];
 
-    let mymory_root = everywear_paths::mymory_root();
-    if mymory_root.exists() {
-        projects.push(WatchedProject {
-            id: "proj-mymory".into(),
-            name: "Project MyMory".into(),
-            path: mymory_root.display().to_string(),
-            wing: "mymory".into(),
-            watch_enabled: true,
-            structure: WatchedProjectStructure {
-                project_type: "obsidian-vault".into(),
-                docs: vec![
-                    "CONTEXT.md".into(),
-                    "AGENTS.md".into(),
-                    "mymory_pipeline_spec.md".into(),
-                ],
-                source_roots: vec!["mymory".into(), "_graph".into(), "_templates".into()],
-                package_files: vec!["kks_manifest.yaml".into()],
-            },
-        });
-    }
+    let vault_root = everywear_paths::vault_root();
+    projects.push(WatchedProject {
+        id: "proj-everywear-vault".into(),
+        name: "Everywear Vault".into(),
+        path: vault_root.display().to_string(),
+        wing: "vault".into(),
+        watch_enabled: vault_root.exists(),
+        structure: WatchedProjectStructure {
+            project_type: "everywear-vault".into(),
+            docs: vec!["_templates".into()],
+            source_roots: vec![
+                "Audio".into(),
+                "Images".into(),
+                "Videos".into(),
+                "Contexts".into(),
+                "Conversations".into(),
+                "Maits".into(),
+                "Shards".into(),
+            ],
+            package_files: vec![],
+        },
+    });
 
     Ok(projects)
 }
 
 #[tauri::command]
 pub async fn get_mymory_status() -> Result<MymoryStatus, String> {
-    Ok(inspect_mymory_status())
+    // Compatibility command name for the Kasai donor UI. In Everywear this
+    // reports the installed Everywear Vault, powered by MyMory-compatible
+    // records, not Sean's development Project Mymory vault.
+    Ok(inspect_everywear_vault_status())
 }
 
 // CLAUDE_INTERFACE: Updated kasai_forward_chat response
@@ -295,6 +654,39 @@ pub async fn kasai_forward_chat(
     let session_id = session_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
     let first_candidate = next_kasai_tool_call_index(&state.kasai_tool_calls).await;
 
+    // Inject the shell's detected runtime state as the system prompt so chat
+    // answers cannot contradict the side rail. Without this, the model answers
+    // from base weights and claims to be a cloud service with no local models
+    // or vault. (Handoff 2026-06-07: My Mait local contract.)
+    let system_prompt = {
+        let (gpu_name, vram_mb) = {
+            let gpu = state.gpu.lock().await;
+            (
+                gpu.primary_gpu
+                    .clone()
+                    .unwrap_or_else(|| "local GPU".into()),
+                gpu.total_vram_mb,
+            )
+        };
+        let loaded_models = query_kasai_status(&state)
+            .await
+            .map(|status| {
+                status
+                    .slots
+                    .into_iter()
+                    .filter(|slot| slot.status == "loaded")
+                    .filter_map(|slot| {
+                        slot.model_name.map(|name| {
+                            format!("{name} ({})", portable_slot_label(&slot.slot_id))
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        let vault = inspect_everywear_vault_status();
+        build_my_mait_system_prompt(&gpu_name, vram_mb, &loaded_models, &vault)
+    };
+
     let job = serde_json::json!({
         "job_id": uuid::Uuid::new_v4().to_string(),
         "requesting_applet": "shell",
@@ -305,6 +697,7 @@ pub async fn kasai_forward_chat(
             "message": message.clone(),
             "session_id": session_id.clone(),
         },
+        "system": system_prompt,
         "messages": [
             { "role": "user", "content": message }
         ],
@@ -395,6 +788,41 @@ async fn query_kasai_status(
     }
 }
 
+fn build_my_mait_system_prompt(
+    gpu_name: &str,
+    vram_mb: u64,
+    loaded_models: &[String],
+    vault: &MymoryStatus,
+) -> String {
+    let models_line = if loaded_models.is_empty() {
+        "Local models are managed by the Everywear shell and load on demand.".to_string()
+    } else {
+        format!("Loaded local models: {}.", loaded_models.join(", "))
+    };
+    let vault_line = if vault.exists {
+        let sections = if vault.wings.is_empty() {
+            "no sections yet".to_string()
+        } else {
+            vault.wings.join(", ")
+        };
+        format!(
+            "The Everywear Vault is installed at {} (sections: {sections}; {} notes).",
+            vault.root, vault.markdown_files
+        )
+    } else {
+        "The Everywear Vault is not installed yet on this machine.".to_string()
+    };
+    format!(
+        "You are My Mait, the local AI companion built into Everywear OS. \
+You run entirely on the user's own machine ({gpu_name}, {} GB VRAM). \
+You are not a cloud service and must never describe yourself as one. \
+{models_line} {vault_line} \
+When asked about your hardware, models, vault, or where you run, answer \
+from this context only.",
+        vram_mb / 1024,
+    )
+}
+
 fn portable_slot_label(slot_id: &str) -> &'static str {
     match slot_id {
         "orchestrator" => "Primary",
@@ -404,11 +832,11 @@ fn portable_slot_label(slot_id: &str) -> &'static str {
     }
 }
 
-fn inspect_mymory_status() -> MymoryStatus {
-    let root = everywear_paths::mymory_root();
+fn inspect_everywear_vault_status() -> MymoryStatus {
+    let root = everywear_paths::vault_root();
     let exists = root.is_dir();
     let wings = if exists {
-        discover_mymory_wings(&root)
+        discover_vault_sections(&root)
     } else {
         Vec::new()
     };
@@ -417,9 +845,18 @@ fn inspect_mymory_status() -> MymoryStatus {
     } else {
         0
     };
-    let graph_json = root.join("_graph").join("mkv_projection.json");
-    let graph_mmd = root.join("_graph").join("mkv_projection.mmd");
-    let schema = root.join("_templates").join("mkv_memory_unit_schema.md");
+    let graph_json = first_existing_path(&[
+        root.join(".mymory").join("mkv_projection.json"),
+        root.join("_graph").join("mkv_projection.json"),
+    ]);
+    let graph_mmd = first_existing_path(&[
+        root.join(".mymory").join("mkv_projection.mmd"),
+        root.join("_graph").join("mkv_projection.mmd"),
+    ]);
+    let schema = first_existing_path(&[
+        root.join("_templates").join("mkv_memory_unit_schema.md"),
+        root.join(".mymory").join("mkv_memory_unit_schema.md"),
+    ]);
 
     MymoryStatus {
         root: root.display().to_string(),
@@ -427,21 +864,31 @@ fn inspect_mymory_status() -> MymoryStatus {
         wings,
         markdown_files,
         memory_layers: vec![
-            "MKV-L0 raw evidence".into(),
-            "MKV-L1 atoms".into(),
-            "MKV-L2 scenarios".into(),
-            "MKV-L3 canon".into(),
+            "Everywear Vault records".into(),
+            "MyMory-compatible metadata".into(),
+            "Applet-scoped indexes".into(),
+            "User-approved ingest".into(),
         ],
-        graph_projection_json: graph_json
-            .exists()
-            .then(|| graph_json.display().to_string()),
-        graph_projection_mermaid: graph_mmd.exists().then(|| graph_mmd.display().to_string()),
-        schema_template: schema.exists().then(|| schema.display().to_string()),
+        graph_projection_json: graph_json.map(|path| path.display().to_string()),
+        graph_projection_mermaid: graph_mmd.map(|path| path.display().to_string()),
+        schema_template: schema.map(|path| path.display().to_string()),
     }
 }
 
-fn discover_mymory_wings(root: &Path) -> Vec<String> {
-    let preferred = ["strands", "uddin", "claude", "ace", "fintrek", "mymory"];
+fn first_existing_path(paths: &[PathBuf]) -> Option<PathBuf> {
+    paths.iter().find(|path| path.exists()).cloned()
+}
+
+fn discover_vault_sections(root: &Path) -> Vec<String> {
+    let preferred = [
+        "Audio",
+        "Images",
+        "Videos",
+        "Contexts",
+        "Conversations",
+        "Maits",
+        "Shards",
+    ];
     let mut wings = preferred
         .iter()
         .filter(|wing| root.join(wing).is_dir())

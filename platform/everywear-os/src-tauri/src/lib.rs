@@ -1468,6 +1468,11 @@ pub fn run() {
             commands::profile::update_profile,
             commands::profile::set_preference,
             commands::profile::get_preference,
+            commands::educ8::educ8_get_content_manifest,
+            commands::educ8::educ8_get_content_plan,
+            commands::educ8::educ8_get_download_root,
+            commands::educ8::educ8_set_download_root,
+            commands::educ8::educ8_download_packs,
             // Wallet
             commands::wallet::wallet_generate,
             commands::wallet::wallet_info,
@@ -1514,6 +1519,14 @@ pub fn run() {
             commands::kasai::kasai_forward_chat,
             commands::kasai::kasai_get_status,
             commands::kasai::kasai_get_tool_calls,
+            commands::my_mait::get_my_mait_settings,
+            commands::my_mait::set_my_mait_model_preference,
+            commands::my_mait::clear_my_mait_model_preference,
+            commands::my_mait::set_my_mait_residency_policy,
+            commands::my_mait::get_my_mait_vram_status,
+            commands::my_mait::set_my_mait_companion_state,
+            commands::my_mait::list_mait_manifests,
+            commands::my_mait::import_character_studio_avatar,
             // Video encoder sidecar
             commands::video_encoder::request_video_encoder,
             commands::video_encoder::release_video_encoder,
@@ -1538,6 +1551,9 @@ pub fn run() {
             // Platform
             commands::platform::platform_status,
             commands::system::get_system_info,
+            commands::system::save_bug_report,
+            commands::system::get_default_output_dir,
+            commands::system::get_character_studio_asset_root,
             crash::take_pending_crash_report,
             // Auth (Supabase session + licence tier)
             auth::push_auth_state,

@@ -500,7 +500,8 @@ fn entitlement_satisfies_tier(
         model_manager::LicenceTier::Gener8Pro => &["gener8_pro", "creator_studio"],
         model_manager::LicenceTier::CreatorStudio => &["creator_studio", "creator_pro"],
     };
-    keys.iter().any(|key| entitlements.get(*key).copied().unwrap_or(false))
+    keys.iter()
+        .any(|key| entitlements.get(*key).copied().unwrap_or(false))
 }
 
 async fn ensure_ace_ready(engine: Gener8Engine) -> Result<(), String> {

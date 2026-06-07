@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { layerUWorldviewUrl } from './sonBridge';
 import { useLayerUOsint } from './useLayerUOsint';
 import './styles/layer-u-osint.css';
@@ -19,6 +19,14 @@ export function LayerUOsintApplet() {
   const statusLabel = snapshot.online
     ? health?.sweepInProgress ? 'sweeping' : 'online'
     : 'offline';
+
+  // Report real readiness to the shell so the window chrome cannot show
+  // READY while the SON dependency is offline. (Handoff 2026-06-07.)
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('everywear:applet-status', {
+      detail: { appletId: 'layeru-osint', status: snapshot.online ? 'online' : 'offline' },
+    }));
+  }, [snapshot.online]);
 
   const handlePullLive = async () => {
     try {
@@ -110,6 +118,9 @@ export function LayerUOsintApplet() {
           <div className="lu-worldview__offline">
             <h3>Project SON service offline</h3>
             <p>Start the local SON server on port 3117 to serve the worldview and live OSINT panes.</p>
+            <button type="button" onClick={refresh} disabled={isRefreshing}>
+              {isRefreshing ? 'Checking...' : 'Retry connection'}
+            </button>
           </div>
         )}
         <iframe

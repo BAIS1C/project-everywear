@@ -5,12 +5,21 @@ import path from 'path';
 
 const characterStudioPublicRoot = path.resolve(__dirname, '../../applets/character-studio/public');
 const contentTypes: Record<string, string> = {
+  '.css': 'text/css',
   '.fbx': 'application/octet-stream',
+  '.glb': 'model/gltf-binary',
+  '.gltf': 'model/gltf+json',
   '.hdr': 'image/vnd.radiance',
+  '.html': 'text/html',
   '.js': 'text/javascript',
+  '.jpg': 'image/jpeg',
   '.json': 'application/json',
+  '.ktx2': 'image/ktx2',
   '.mp3': 'audio/mpeg',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
   '.wav': 'audio/wav',
+  '.webp': 'image/webp',
 };
 
 export default defineConfig({

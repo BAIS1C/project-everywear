@@ -25,9 +25,11 @@ import { ProfilePanel } from '../panels/ProfilePanel';
 import { GpuPanel } from '../panels/GpuPanel';
 import { SettingsPanel } from '../panels/SettingsPanel';
 import { HeadlessAppletView } from '../panels/HeadlessAppletView';
-import { AppletViewRouter, isRegisteredApplet } from '../components/AppletViewRouter';
+import { AppletViewRouter, AppletErrorBoundary, isRegisteredApplet } from '../components/AppletViewRouter';
 import AppletIcon, { ThemedIconGlyph } from '../components/AppletIcon';
 import { VaultProvider } from '@applets/gener8/web/src/context/VaultProvider';
+import { ShellAudioProvider } from '@applets/gener8/web/src/shell/ShellAudioPlayer';
+import { ToastHost, showToast } from '@applets/gener8/web/src/components/ToastHost';
 
 const VaultLibraryView = lazy(() => import('@applets/gener8/web/src/views/LibraryView'));
 
@@ -46,9 +48,16 @@ const SYSTEM_ICONS: SystemIcon[] = [
 type PanelView = 'profile' | 'gpu' | 'settings' | 'vault' | null;
 type VaultSection = 'media' | 'logs';
 type InferencePhase = 'idle' | 'opening' | 'purging' | 'ready' | 'error';
-const S3_FOLDER_APPLET_IDS = new Set(['1magen', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '3nvizen']);
-const S3_FOLDER_ORDER = ['1magen', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '3nvizen'];
+// 1magen and 3nvizen are desktop-level applets, not S3 folder members.
+// Locked 2026-06-07 per visual bugfix handoff. Entitlement gating unchanged.
+const S3_FOLDER_APPLET_IDS = new Set(['gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw']);
+const S3_FOLDER_ORDER = ['gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw'];
+// Suite lifecycle: only one S3 suite applet window may be active at a time.
+// Opening one closes the current one (handoff context travels via intentBus/Vault).
+const S3_SUITE_APPLET_IDS = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw']);
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
+const LOCAL_MODEL_APPLET_IDS = new Set(['1magen', 'gener8-4ever', 'gener8-pro', 'ai-director', 'daw', '3nvizen', 'kasai']);
+const GENER8_SHARED_ENGINE_APPLET_IDS = new Set(['gener8-4ever', 'gener8-pro', 'ai-director', 'daw']);
 const TIER_RANK: Record<string, number> = {
   demo: 0,
   gener8: 1,
@@ -123,6 +132,8 @@ function appletLaunchBlocked(
 
 function VaultPanel() {
   const [section, setSection] = useState<VaultSection>('media');
+  // Remount key for the error boundary's Retry action.
+  const [mediaMountKey, setMediaMountKey] = useState(0);
 
   return (
     <div className="ew-vault-panel">
@@ -148,11 +159,24 @@ function VaultPanel() {
       </div>
       <div className="ew-vault-panel__body">
         {section === 'media' ? (
-          <VaultProvider>
-            <Suspense fallback={<div className="ew-vault-panel__loading">Loading vault...</div>}>
-              <VaultLibraryView />
-            </Suspense>
-          </VaultProvider>
+          // LibraryView calls useShellAudio(); mounting it without
+          // ShellAudioProvider crashed the whole shell render to a black
+          // screen, with no boundary to catch it. Vault black screen fix,
+          // handoff 2026-06-07.
+          <AppletErrorBoundary
+            key={mediaMountKey}
+            appletId="vault"
+            displayName="Vault"
+            onRetry={() => setMediaMountKey((value) => value + 1)}
+          >
+            <ShellAudioProvider>
+              <VaultProvider>
+                <Suspense fallback={<div className="ew-vault-panel__loading">Loading vault...</div>}>
+                  <VaultLibraryView />
+                </Suspense>
+              </VaultProvider>
+            </ShellAudioProvider>
+          </AppletErrorBoundary>
         ) : (
           <LogViewerPanel />
         )}
@@ -216,11 +240,18 @@ function windowRuntimeLabel(
   activeInferenceAppletId: string | null,
   launchingId: string | null,
   inferencePhase: InferencePhase,
+  health?: 'online' | 'offline' | 'checking',
 ) {
   if (content.kind === 'panel') return '● READY';
 
   const applet = content.applet;
-  if (!isModelBackedApplet(applet)) return '● READY';
+  // Status truthfulness: never show READY for an applet whose runtime health
+  // check says it is offline. Avatar Studio and Layer U displayed READY while
+  // their content was black/offline. (Handoff 2026-06-07.)
+  if (health === 'offline') return '● OFFLINE';
+  if (!isModelBackedApplet(applet)) {
+    return health === 'checking' ? '● CHECKING' : '● READY';
+  }
   if (launchingId === applet.id || inferencePhase === 'opening' || inferencePhase === 'purging') {
     return '● LOADING';
   }
@@ -583,12 +614,28 @@ function isModelBackedApplet(applet: AppletEntry | null | undefined) {
   return !!applet && MODEL_BACKED_ENGINE_TYPES.has(applet.engine_type);
 }
 
+function usesLocalModelLifecycle(applet: AppletEntry | null | undefined) {
+  return !!applet && LOCAL_MODEL_APPLET_IDS.has(applet.id);
+}
+
+function formatVram(mb: number | null | undefined) {
+  if (!mb || mb <= 0) return null;
+  if (mb >= 1024) return `${(mb / 1024).toFixed(mb >= 10240 ? 0 : 1)} GB`;
+  return `${mb} MB`;
+}
+
 function modelLabelFor(applet: AppletEntry | null | undefined, assessments: ModelAssessment[]) {
   if (!applet) return null;
   const assessment = assessments.find((item) => item.applet_id === applet.id);
   return assessment?.recommended_primary_model
     || assessment?.recommended_group
-    || (isModelBackedApplet(applet) ? `${applet.engine_type} model` : null);
+    || (usesLocalModelLifecycle(applet) || isModelBackedApplet(applet) ? `${applet.engine_type} model` : null);
+}
+
+function modelVramLabelFor(applet: AppletEntry | null | undefined, assessments: ModelAssessment[]) {
+  if (!applet) return null;
+  const assessment = assessments.find((item) => item.applet_id === applet.id);
+  return formatVram(assessment?.recommended_vram_mb ?? applet.min_vram_mb);
 }
 
 function backendLabelForDesktop(gpu: SystemGpuState | null) {
@@ -620,9 +667,12 @@ function buildInferenceReadout({
 
   if ((phase === 'opening' || launchingApplet) && launchingApplet) {
     const targetModel = modelLabelFor(launchingApplet, assessments);
+    const vramTarget = modelVramLabelFor(launchingApplet, assessments);
     return {
       value: `opening ${launchingApplet.name}`,
-      detail: targetModel ? `target: ${targetModel}` : 'starting applet engine',
+      detail: targetModel
+        ? `target: ${targetModel}${vramTarget ? ` / ${vramTarget}` : ''}`
+        : 'starting applet engine',
     };
   }
 
@@ -634,9 +684,10 @@ function buildInferenceReadout({
   }
 
   if (activeApplet && isModelBackedApplet(activeApplet)) {
+    const vramTarget = modelVramLabelFor(activeApplet, assessments);
     return {
       value: 'model loaded',
-      detail: modelLabelFor(activeApplet, assessments) || `${activeApplet.name} engine warm`,
+      detail: `${modelLabelFor(activeApplet, assessments) || `${activeApplet.name} engine warm`}${vramTarget ? ` / ${vramTarget}` : ''}`,
     };
   }
 
@@ -650,8 +701,33 @@ function buildInferenceReadout({
 
   return {
     value: gpu?.backend?.type === 'Cuda' || gpu?.backend?.type === 'Vulkan' ? 'standby' : 'idle',
-    detail: backendLabelForDesktop(gpu),
+    detail: gpu?.total_free_mb ? `${backendLabelForDesktop(gpu)} / ${formatVram(gpu.total_free_mb)} free` : backendLabelForDesktop(gpu),
   };
+}
+
+function modelLifecycleLoadMessage(applet: AppletEntry, assessments: ModelAssessment[]) {
+  const model = modelLabelFor(applet, assessments);
+  const vram = modelVramLabelFor(applet, assessments);
+  if (applet.id === 'gener8-pro') {
+    return `Loading the Pro audio model for Gener8 Pro${vram ? `, ${vram}` : ''}. Everywear selected the available model size for this GPU.`;
+  }
+  if (applet.id === 'daw') {
+    return `Preparing the Pro Model for DAW stem separation${vram ? `, ${vram}` : ''}. Everywear owns the model size; the applet requests the pack.`;
+  }
+  if (applet.id === '3nvizen') {
+    return `Preparing the local video model stack${vram ? `, ${vram}` : ''}. Everywear will pick the VRAM-fit execution profile.`;
+  }
+  if (applet.id === '1magen') {
+    return `Preparing the local image model${vram ? `, ${vram}` : ''}. Everywear will pick the VRAM-fit model group.`;
+  }
+  return `Preparing ${model || `${applet.name} model`}${vram ? `, ${vram}` : ''}. Everywear owns provisioning and VRAM accounting.`;
+}
+
+function modelLifecycleCloseMessage(applet: AppletEntry) {
+  if (applet.id === 'daw') {
+    return 'Closing DAW will unload stem-separation models and return VRAM to the desktop pool.';
+  }
+  return `Closing ${applet.name} will unload its local models and return VRAM to the desktop pool.`;
 }
 
 function DesktopCanvas({
@@ -818,6 +894,11 @@ export function ShellLayout() {
     [authUser?.entitlements],
   );
 
+  const refreshRuntimeReadouts = useCallback(() => {
+    getGpuStatus().then(setGpu).catch(console.error);
+    listModelAssessments().then(setAssessments).catch(console.error);
+  }, []);
+
   // Bug report + error badge
   const [bugReportOpen, setBugReportOpen] = useState(false);
   const [bugReportSeed, setBugReportSeed] = useState<BugReportSeed | null>(null);
@@ -936,19 +1017,46 @@ export function ShellLayout() {
     });
   }, []);
 
+  const unloadInlineAppletModels = useCallback(async (applet: AppletEntry) => {
+    if (!GENER8_SHARED_ENGINE_APPLET_IDS.has(applet.id)) return;
+    try {
+      await fetch('http://127.0.0.1:3001/api/engine/unload-models', {
+        method: 'POST',
+        credentials: 'omit',
+      });
+    } catch (err) {
+      console.warn(`Failed to request inline model unload for ${applet.id}:`, err);
+    } finally {
+      refreshRuntimeReadouts();
+    }
+  }, [refreshRuntimeReadouts]);
+
   const closeShellWindow = useCallback((id: string) => {
-    setWindows(prev => {
-      const closing = prev.find(win => win.id === id);
-      if (closing?.content.kind === 'applet') {
-        const { applet, renderMode } = closing.content;
-        if (renderMode === 'embedded' || applet.launch_binary) {
-          closeAppletWebview(applet.id).catch(() => {});
-        }
-        setActiveInferenceAppletId((current) => current === applet.id ? null : current);
-        if (activeInferenceAppletId === applet.id) {
-          setInferencePhase('idle');
-        }
+    const closing = windows.find(win => win.id === id);
+    if (closing?.content.kind === 'applet') {
+      const { applet, renderMode } = closing.content;
+      if (usesLocalModelLifecycle(applet)) {
+        showToast({
+          kind: 'info',
+          eyebrow: 'Everywear · model lifecycle',
+          message: modelLifecycleCloseMessage(applet),
+          durationMs: 7000,
+        });
       }
+      if (renderMode === 'embedded' || applet.launch_binary) {
+        closeAppletWebview(applet.id)
+          .catch(() => {})
+          .finally(refreshRuntimeReadouts);
+      } else {
+        void unloadInlineAppletModels(applet);
+      }
+      setActiveInferenceAppletId((current) => current === applet.id ? null : current);
+      if (activeInferenceAppletId === applet.id) {
+        setInferencePhase('idle');
+      }
+    }
+
+    setWindows(prev => {
       const remaining = prev.filter(win => win.id !== id);
       setActiveWindowId(current =>
         current === id
@@ -957,7 +1065,7 @@ export function ShellLayout() {
       );
       return remaining;
     });
-  }, [activeInferenceAppletId]);
+  }, [activeInferenceAppletId, refreshRuntimeReadouts, unloadInlineAppletModels, windows]);
 
   const openAppletEntries = useCallback((exceptId?: string) => {
     const byId = new Map<string, AppletEntry>();
@@ -977,16 +1085,30 @@ export function ShellLayout() {
     return Array.from(byId.values());
   }, [activeInferenceAppletId, registryApplets, tauriApplet, windows]);
 
-  const closeOpenApplets = useCallback(async (exceptId?: string) => {
-    const appletsToClose = openAppletEntries(exceptId);
+  const closeOpenApplets = useCallback(async (exceptId?: string, onlyIds?: Set<string>) => {
+    const appletsToClose = openAppletEntries(exceptId)
+      .filter((applet) => !onlyIds || onlyIds.has(applet.id));
     if (appletsToClose.length === 0) return;
+
+    appletsToClose
+      .filter(usesLocalModelLifecycle)
+      .forEach((applet) => {
+        showToast({
+          kind: 'info',
+          eyebrow: 'Everywear · model lifecycle',
+          message: modelLifecycleCloseMessage(applet),
+          durationMs: 7000,
+        });
+      });
 
     setInferencePhase('purging');
     await Promise.all(
       appletsToClose.map((applet) =>
-        closeAppletWebview(applet.id).catch((err) => {
-          console.warn(`Failed to close applet ${applet.id}:`, err);
-        }),
+        GENER8_SHARED_ENGINE_APPLET_IDS.has(applet.id)
+          ? unloadInlineAppletModels(applet)
+          : closeAppletWebview(applet.id).catch((err) => {
+              console.warn(`Failed to close applet ${applet.id}:`, err);
+            }),
       ),
     );
 
@@ -997,7 +1119,8 @@ export function ShellLayout() {
     setTauriApplet((current) => current && closingIds.has(current.applet_id) ? null : current);
     setActiveInferenceAppletId((current) => current && closingIds.has(current) ? null : current);
     setInferencePhase('idle');
-  }, [openAppletEntries]);
+    refreshRuntimeReadouts();
+  }, [openAppletEntries, refreshRuntimeReadouts, unloadInlineAppletModels]);
 
   const minimizeShellWindow = useCallback((id: string) => {
     setWindows(prev => prev.map(win => win.id === id ? { ...win, isMinimized: true } : win));
@@ -1062,8 +1185,7 @@ export function ShellLayout() {
   // ── Load registry on mount ──
   useEffect(() => {
     getProfile().then(setProfile).catch(console.error);
-    getGpuStatus().then(setGpu).catch(console.error);
-    listModelAssessments().then(setAssessments).catch(console.error);
+    refreshRuntimeReadouts();
     listApplets()
       .then((applets) => {
         log.info('ui', `Registry loaded: ${applets.length} applets`);
@@ -1072,7 +1194,7 @@ export function ShellLayout() {
       .catch((err) => {
         console.error('Failed to load applet registry:', err);
       });
-  }, []);
+  }, [refreshRuntimeReadouts]);
 
   useEffect(() => {
     if (!authUser) return;
@@ -1113,6 +1235,23 @@ export function ShellLayout() {
     healthTimerRef.current = setInterval(checkHealth, 10000);
     return () => { if (healthTimerRef.current) clearInterval(healthTimerRef.current); };
   }, [checkHealth, registryApplets]);
+
+  // Applet self-reported readiness. Portless inline applets (Layer U, Avatar
+  // Studio) are assumed online by the port poll, which let the window chrome
+  // show READY over offline content. Applets dispatch
+  // `everywear:applet-status` with { appletId, status } to override.
+  // (Handoff 2026-06-07: applet status truthfulness.)
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ appletId?: string; status?: 'online' | 'offline' | 'checking' }>).detail;
+      if (!detail?.appletId || !detail.status) return;
+      setIconHealth((prev) =>
+        prev[detail.appletId!] === detail.status ? prev : { ...prev, [detail.appletId!]: detail.status! }
+      );
+    };
+    window.addEventListener('everywear:applet-status', handler);
+    return () => window.removeEventListener('everywear:applet-status', handler);
+  }, []);
 
   // ── Tauri applet webview lifecycle events ──
   useEffect(() => {
@@ -1157,9 +1296,57 @@ export function ShellLayout() {
     };
   }, [activeInferenceAppletId, markAppletReady, registryApplets, openShellWindow, tauriApplet]);
 
+  useEffect(() => {
+    if (!hasShellRuntime()) return;
+
+    const unlistenProgress = listen<{ stage?: string; message?: string }>('applet-switch-progress', (event) => {
+      refreshRuntimeReadouts();
+      const stage = event.payload?.stage ?? 'Model lifecycle';
+      const message = event.payload?.message;
+      if (!message) return;
+      const kind = stage === 'Failed' ? 'error' : stage === 'Downloading' ? 'info' : 'info';
+      showToast({
+        kind,
+        eyebrow: 'Everywear · model lifecycle',
+        message,
+        durationMs: stage === 'Downloading' ? 9000 : 5000,
+        id: `applet-switch-${stage}-${message}`,
+      });
+    });
+
+    const unlistenDownload = listen<{ model_key?: string; downloaded?: number; total?: number; pct?: number }>('download-progress', (event) => {
+      refreshRuntimeReadouts();
+      const pct = typeof event.payload?.pct === 'number'
+        ? `${Math.round(event.payload.pct)}%`
+        : 'in progress';
+      showToast({
+        kind: 'info',
+        eyebrow: 'Everywear · model download',
+        message: `${event.payload?.model_key || 'Model'} download ${pct}.`,
+        durationMs: 3500,
+        id: `download-${event.payload?.model_key || 'model'}`,
+      });
+    });
+
+    return () => {
+      unlistenProgress.then(fn => fn());
+      unlistenDownload.then(fn => fn());
+    };
+  }, [refreshRuntimeReadouts]);
+
   const handleCloseTauriApplet = async () => {
     if (tauriApplet) {
+      const entry = registryApplets.find((applet) => applet.id === tauriApplet.applet_id);
+      if (entry && usesLocalModelLifecycle(entry)) {
+        showToast({
+          kind: 'info',
+          eyebrow: 'Everywear · model lifecycle',
+          message: modelLifecycleCloseMessage(entry),
+          durationMs: 7000,
+        });
+      }
       try { await closeAppletWebview(tauriApplet.applet_id); } catch (err) { console.error(err); }
+      refreshRuntimeReadouts();
       setTauriApplet(null);
     }
   };
@@ -1173,8 +1360,25 @@ export function ShellLayout() {
       return;
     }
 
+    // S3 suite lifecycle: only one suite applet window at a time. Opening a
+    // suite applet silently closes any other open suite applet first; handoff
+    // context (e.g. selected song into Vid) travels via intentBus/Vault, not
+    // process memory, so it survives the close. (Handoff 2026-06-07.)
+    let suiteClosedIds: Set<string> | null = null;
+    if (S3_SUITE_APPLET_IDS.has(applet.id)) {
+      const openSuite = openAppletEntries(applet.id)
+        .filter((entry) => S3_SUITE_APPLET_IDS.has(entry.id));
+      if (openSuite.length > 0) {
+        await closeOpenApplets(applet.id, S3_SUITE_APPLET_IDS);
+        // openAppletEntries reads this render's stale window snapshot, so
+        // remember what we closed and exclude it from the switch prompt below.
+        suiteClosedIds = new Set(openSuite.map((entry) => entry.id));
+      }
+    }
+
     if (!options?.skipSwitchPrompt) {
-      const closing = openAppletEntries(applet.id);
+      const closing = openAppletEntries(applet.id)
+        .filter((entry) => !suiteClosedIds?.has(entry.id));
       if (closing.length > 0) {
         setPendingAppletSwitch({ incoming: applet, closing });
         return;
@@ -1182,10 +1386,21 @@ export function ShellLayout() {
     }
 
     markAppletOpening(applet);
+    refreshRuntimeReadouts();
+
+    if (usesLocalModelLifecycle(applet)) {
+      showToast({
+        kind: 'info',
+        eyebrow: 'Everywear · model lifecycle',
+        message: modelLifecycleLoadMessage(applet, assessments),
+        durationMs: applet.id === 'daw' || applet.id === 'gener8-pro' ? 9000 : 6500,
+      });
+    }
 
     if (applet.launch_kind === 'FrontendInline' && isRegisteredApplet(applet.id)) {
       openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
       markAppletReady(applet);
+      refreshRuntimeReadouts();
       return;
     }
 
@@ -1193,6 +1408,7 @@ export function ShellLayout() {
       log.info('ui', `Opening web applet internally: ${applet.id} at ${applet.launch_url}`);
       openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
       markAppletReady(applet);
+      refreshRuntimeReadouts();
       return;
     }
 
@@ -1209,6 +1425,7 @@ export function ShellLayout() {
       if (isShellNativeBridgeApplet(applet)) {
         openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
         markAppletReady(applet);
+        refreshRuntimeReadouts();
       }
       if (!hasShellRuntime()) {
         if (applet.frontend_port) {
@@ -1219,6 +1436,7 @@ export function ShellLayout() {
           }
         }
         markAppletReady(applet);
+        refreshRuntimeReadouts();
       }
       // The runtime bridge will emit 'applet-webview-opened' when ready.
       // Our event listener above handles the rest.
@@ -1362,6 +1580,12 @@ export function ShellLayout() {
     () => !!launchingId || !!tauriApplet || windows.some((win) => win.content.kind === 'applet'),
     [launchingId, tauriApplet, windows],
   );
+
+  useEffect(() => {
+    if (!hasOpenApplet && inferencePhase === 'idle') return;
+    const interval = setInterval(refreshRuntimeReadouts, 3000);
+    return () => clearInterval(interval);
+  }, [hasOpenApplet, inferencePhase, refreshRuntimeReadouts]);
 
   useEffect(() => {
     if (hasOpenApplet) setS3FolderOpen(false);
@@ -1514,7 +1738,13 @@ export function ShellLayout() {
               onMinimize={() => minimizeShellWindow(win.id)}
               onMaximize={() => maximizeShellWindow(win.id)}
               onMove={(x, y) => moveShellWindow(win.id, x, y)}
-              runtimeLabel={windowRuntimeLabel(win.content, activeInferenceAppletId, launchingId, inferencePhase)}
+              runtimeLabel={windowRuntimeLabel(
+                win.content,
+                activeInferenceAppletId,
+                launchingId,
+                inferencePhase,
+                win.content.kind === 'applet' ? iconHealth[win.content.applet.id] : undefined,
+              )}
             >
               {renderWindowContent(win)}
             </ShellWindowFrame>
@@ -1634,6 +1864,7 @@ export function ShellLayout() {
         </div>
       )}
 
+      <ToastHost />
       <BugReportModal open={bugReportOpen} onClose={closeBugReport} seed={bugReportSeed} />
     </>
   );

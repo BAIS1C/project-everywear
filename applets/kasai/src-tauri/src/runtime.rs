@@ -301,7 +301,24 @@ impl KasaiRuntime {
             .unwrap_or(0.7) as f32;
 
         let engine = self.ensure_loaded(SlotId::Orchestrator)?;
-        let messages = build_messages_from_job(&job, prompt.as_deref());
+        let mut messages = build_messages_from_job(&job, prompt.as_deref());
+        // When the job carries a messages array AND a top-level system prompt,
+        // build_messages_from_job returns only the array; inject the system
+        // prompt here so the single-model path matches the swap path, where
+        // route_prompt prepends it. (Handoff 2026-06-07: My Mait local contract.)
+        if !messages.iter().any(|m| m.role == "system") {
+            if let Some(system) = job.get("system").and_then(Value::as_str) {
+                messages.insert(
+                    0,
+                    InferenceChatMessage {
+                        role: "system".into(),
+                        content: system.to_string(),
+                        tool_calls: None,
+                        tool_call_id: None,
+                    },
+                );
+            }
+        }
 
         let inference_result = engine
             .generate(messages, max_tokens, temperature, None)

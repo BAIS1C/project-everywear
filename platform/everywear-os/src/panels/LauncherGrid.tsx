@@ -58,21 +58,9 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
   const daw = byId.get('daw');
   if (daw) s3Children.push({ type: 'applet', applet: daw });
 
-  const creatorChildren: FolderItem[] = [];
-  const onemagen = byId.get('1magen');
-  if (onemagen) creatorChildren.push({ type: 'applet', applet: onemagen });
-  const envizen = byId.get('3nvizen');
-  if (envizen) creatorChildren.push({ type: 'applet', applet: envizen });
-
-  if (creatorChildren.length > 0) {
-    s3Children.push({
-      type: 'folder',
-      id: 'creator-studio',
-      name: 'Creator Studio',
-      icon: 'CS',
-      children: creatorChildren,
-    });
-  }
+  // 1magen and 3nvizen are desktop-level applets, not S3 suite members.
+  // Locked 2026-06-07 per visual bugfix handoff: do not bury them in S3 Studio.
+  // Entitlement gating still applies via resolveAppletStatus.
 
   const items: DesktopItem[] = [];
 
@@ -86,7 +74,7 @@ function buildDesktopLayout(applets: AppletEntry[]): DesktopItem[] {
     });
   }
 
-  const grouped = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw', '1magen', '3nvizen']);
+  const grouped = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw']);
   for (const applet of applets) {
     if (!grouped.has(applet.id)) {
       items.push({ type: 'applet', applet });

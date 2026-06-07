@@ -10,6 +10,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { getTransport, type MymoryStatus, type WatchedProject } from '../lib/transport';
 import { ToolCallGroup, type ToolCallInfo, type ToolCallStatus, type AuditResult } from './ToolCallCard';
 import { SlotStatusPanel } from './SlotStatusPanel';
+import { MyMaitSkillIcon } from './MyMaitSkillIcon';
+import { MyMaitSettings } from './MyMaitSettings';
 import '../styles/agent-hub.css';
 
 const HIDDEN_BLOCK_REGEX = /<(think|thinking|tool_code)>[\s\S]*?<\/\1>/gi;
@@ -98,6 +100,7 @@ interface Skill {
   status: 'live' | 'idle' | 'error';
   tag: string;
   token_cost: number;
+  safety_class?: string;
 }
 
 interface Connection {
@@ -218,7 +221,7 @@ function normalizeToolCallPayload(raw: unknown, fallbackIndex: number): ToolCall
 }
 
 const CONNECTIONS: Connection[] = [
-  { id: 'mymory', name: 'MyMory', status: 'on', tone: 'primary' },
+  { id: 'mymory', name: 'Everywear Vault', status: 'on', tone: 'primary' },
   { id: 'files', name: 'Local Files', status: 'on', tone: 'text' },
   { id: 'browser', name: 'Browser', status: 'pending', tone: 'warm' },
 ];
@@ -260,6 +263,7 @@ function Sidebar({
   runningSkillId,
   activeSkillId,
   onSelectSkill,
+  onOpenSettings,
 }: {
   skills: Skill[];
   chatCount: number;
@@ -268,6 +272,7 @@ function Sidebar({
   runningSkillId: string | null;
   activeSkillId: string | null;
   onSelectSkill: (id: string | null) => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <aside className="ah-side">
@@ -285,7 +290,7 @@ function Sidebar({
               onClick={() => onSelectSkill(skill.id === activeSkillId ? null : skill.id)}
               title={`${skill.name}\n\n${skill.description}`}
             >
-              <span className="ah-skill-icon">{skill.icon || safeInitial(skill.name)}</span>
+              <MyMaitSkillIcon skill={skill} />
               <span className="ah-skill-info">
                 <span className="ah-skill-name">{skill.name}</span>
                 <span className="ah-skill-desc">{skill.summary}</span>
@@ -338,13 +343,21 @@ function Sidebar({
             HOME-NODE ONLINE
           </div>
           <div className="ah-node-machine">{nodeInfo.gpu} / {nodeInfo.ram}</div>
-          <div className="ah-node-stats">
+          <div className="ah-node-models">
             {nodeInfo.models.map(model => (
-              <React.Fragment key={model.slot}>
+              <button
+                key={model.slot}
+                type="button"
+                className="ah-node-model"
+                onClick={onOpenSettings}
+                title="Open My Mait settings to choose and manage local models"
+              >
                 <span>{model.slot}</span>
                 <b>{model.name}</b>
-              </React.Fragment>
+              </button>
             ))}
+          </div>
+          <div className="ah-node-stats">
             <span>VRAM</span>
             <b>{nodeInfo.vramUsed} / {nodeInfo.vramTotal}</b>
             <span>Uptime</span>
@@ -475,7 +488,7 @@ function RightPane({
   mymoryStatus: MymoryStatus | null;
   watchedProjects: WatchedProject[];
 }) {
-  const mymoryProject = watchedProjects.find(project => project.id === 'proj-mymory');
+  const vaultProject = watchedProjects.find(project => project.id === 'proj-everywear-vault');
   const activeSkillRunning = Boolean(skill && skill.id === runningSkillId);
 
   if (!skill) {
@@ -506,10 +519,10 @@ function RightPane({
             </div>
             <div className="ah-toggle on" />
           </div>
-          <div className="ah-r-section">MYMORY STATUS</div>
+          <div className="ah-r-section">EVERYWEAR VAULT</div>
           <div className="ah-fact-list">
             <div className="ah-fact">
-              <div className="ah-fact-lbl">Vault</div>
+              <div className="ah-fact-lbl">Status</div>
               <div className="ah-fact-val">{mymoryStatus?.exists ? 'Live' : 'Unavailable'}</div>
             </div>
             <div className="ah-fact">
@@ -517,8 +530,12 @@ function RightPane({
               <div className="ah-fact-val">{mymoryStatus?.root || 'Not mounted'}</div>
             </div>
             <div className="ah-fact">
-              <div className="ah-fact-lbl">Markdown</div>
-              <div className="ah-fact-val">{mymoryStatus ? mymoryStatus.markdown_files.toLocaleString() : 'Unknown'}</div>
+              <div className="ah-fact-lbl">Records</div>
+              <div className="ah-fact-val">{mymoryStatus ? `${mymoryStatus.markdown_files.toLocaleString()} markdown` : 'Unknown'}</div>
+            </div>
+            <div className="ah-fact">
+              <div className="ah-fact-lbl">Engine</div>
+              <div className="ah-fact-val">Powered by MyMory</div>
             </div>
             <div className="ah-fact">
               <div className="ah-fact-lbl">Layers</div>
@@ -532,11 +549,11 @@ function RightPane({
             </div>
             <div className="ah-fact">
               <div className="ah-fact-lbl">Schema</div>
-              <div className="ah-fact-val">{mymoryStatus?.schema_template ? 'Memory unit schema found' : 'Schema missing'}</div>
+              <div className="ah-fact-val">{mymoryStatus?.schema_template ? 'Vault schema found' : 'Schema pending'}</div>
             </div>
             <div className="ah-fact">
-              <div className="ah-fact-lbl">Handoff</div>
-              <div className="ah-fact-val">{mymoryProject?.path || 'Project MyMory not discovered'}</div>
+              <div className="ah-fact-lbl">Install vault</div>
+              <div className="ah-fact-val">{vaultProject?.path || 'Everywear Vault not discovered'}</div>
             </div>
           </div>
         </div>
@@ -548,7 +565,7 @@ function RightPane({
     <aside className="ah-right">
       <div className="ah-right-head">
         <div className="ah-right-kicker">
-          <span className="ah-skill-icon ah-skill-icon-inline">{skill.icon || safeInitial(skill.name)}</span>
+          <MyMaitSkillIcon skill={skill} inline />
           SKILL
         </div>
         <h2 className="ah-right-title">{skill.name}</h2>
@@ -584,11 +601,11 @@ function RightPane({
         <div className="ah-fact-list">
           <div className="ah-fact">
             <div className="ah-fact-lbl">Status</div>
-            <div className="ah-fact-val">{mymoryStatus?.exists ? 'MyMory live' : 'MyMory unavailable'}</div>
+            <div className="ah-fact-val">{mymoryStatus?.exists ? 'Everywear Vault live' : 'Everywear Vault unavailable'}</div>
           </div>
           <div className="ah-fact">
-            <div className="ah-fact-lbl">Handoff</div>
-            <div className="ah-fact-val">{mymoryProject?.path || 'Project MyMory not discovered'}</div>
+            <div className="ah-fact-lbl">Root</div>
+            <div className="ah-fact-val">{vaultProject?.path || mymoryStatus?.root || 'Everywear Vault not discovered'}</div>
           </div>
         </div>
       </div>
@@ -610,6 +627,7 @@ export function KasaiCore() {
   const [watchedProjects, setWatchedProjects] = useState<WatchedProject[]>([]);
   const [runningSkillId, setRunningSkillId] = useState<string | null>(null);
   const [toolCalls, setToolCalls] = useState<Map<number, ToolCallInfo>>(new Map());
+  const [showSettings, setShowSettings] = useState(false);
   const assistantResponseCommittedRef = useRef(false);
   const syntheticToolIndexRef = useRef(0);
 
@@ -669,6 +687,7 @@ export function KasaiCore() {
           status: string;
           tag: string;
           token_cost: number;
+          safety_class?: string;
         }>>('list_installed_skills');
 
         if (installed) {
@@ -681,6 +700,7 @@ export function KasaiCore() {
             status: (skill.status as 'live' | 'idle' | 'error') || 'idle',
             tag: skill.tag,
             token_cost: skill.token_cost || 0,
+            safety_class: skill.safety_class,
           })));
         }
       } catch {
@@ -887,8 +907,33 @@ export function KasaiCore() {
         runningSkillId={runningSkillId}
         activeSkillId={activeSkillId}
         onSelectSkill={setActiveSkillId}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
+      {showSettings ? (
+        <main className="ah-center">
+          <header className="ah-center-head">
+            <div className="ah-crumbs">
+              HOME <span className="ah-sep">/</span>
+              MY MAIT <span className="ah-sep">/</span> <span className="ah-crumb-current">SETTINGS</span>
+            </div>
+            <div className="ah-chat-tools">
+              <button
+                type="button"
+                className="ah-mini-action ah-settings-btn"
+                onClick={() => setShowSettings(false)}
+                aria-label="Close settings and return to chat"
+              >
+                BACK TO CHAT
+              </button>
+            </div>
+          </header>
+          <div className="ah-settings-host">
+            <MyMaitSettings />
+          </div>
+        </main>
+      ) : (
+        <>
       <main className="ah-center">
         <header className="ah-center-head">
           <div className="ah-crumbs">
@@ -902,6 +947,19 @@ export function KasaiCore() {
             <span className={`ah-history-state ${transport.mode === 'tauri' ? 'saved' : 'loading'}`}>
               {transport.mode === 'tauri' ? 'Platform IPC' : 'Browser preview'}
             </span>
+            <button
+              type="button"
+              className="ah-mini-action ah-settings-btn"
+              onClick={() => setShowSettings(true)}
+              aria-label="Open My Mait settings"
+              title="Model selection, residency, and Mait settings"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              SETTINGS
+            </button>
           </div>
         </header>
 
@@ -955,6 +1013,8 @@ export function KasaiCore() {
         mymoryStatus={mymoryStatus}
         watchedProjects={watchedProjects}
       />
+        </>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@
 import React, { Suspense, Component } from 'react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { getLogger } from '@everywear/shared';
 import { AppletLoadingSkeleton } from './AppletLoadingSkeleton';
 import type { BugReportSeed } from './BugReportModal';
@@ -27,14 +28,20 @@ declare global {
   }
 }
 
-function resolveCharacterStudioAssetBase(): string {
-  if (import.meta.env.DEV) return '/cs-assets';
-  return import.meta.env.VITE_ASSET_PATH || '';
-}
-
-function setCharacterStudioAssetBase(): void {
+async function setCharacterStudioAssetBase(): Promise<void> {
   if (typeof window === 'undefined') return;
-  window.__EVERYWEAR_ASSET_BASE__ = resolveCharacterStudioAssetBase();
+  if (import.meta.env.DEV) {
+    window.__EVERYWEAR_ASSET_BASE__ = '/cs-assets';
+    return;
+  }
+
+  try {
+    const root = await invoke<string>('get_character_studio_asset_root');
+    window.__EVERYWEAR_ASSET_BASE__ = convertFileSrc(root);
+  } catch (error) {
+    console.warn('[character-studio] Falling back to /cs-assets asset base:', error);
+    window.__EVERYWEAR_ASSET_BASE__ = '/cs-assets';
+  }
 }
 
 // ── Lazy applet registry ──────────────────────────────────────────
@@ -128,8 +135,8 @@ const APPLET_COMPONENTS: Record<string, {
     displayName: '3nvizen',
   },
   'character-studio': {
-    component: React.lazy(() => {
-      setCharacterStudioAssetBase();
+    component: React.lazy(async () => {
+      await setCharacterStudioAssetBase();
       return import('@applets/character-studio/src/index');
     }),
     displayName: 'Character Studio',
@@ -156,7 +163,7 @@ interface ErrorBoundaryState {
   componentStack: string | null;
 }
 
-class AppletErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class AppletErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null, componentStack: null };

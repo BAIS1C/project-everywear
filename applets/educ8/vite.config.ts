@@ -12,7 +12,7 @@ export default defineConfig({
       fileName: 'index',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', '@everywear/ewds'],
+      external: ['react', 'react-dom', '@everywear/ewds', '@tauri-apps/api/core', '@tauri-apps/api/event', '@tauri-apps/plugin-dialog'],
     },
   },
   server: {

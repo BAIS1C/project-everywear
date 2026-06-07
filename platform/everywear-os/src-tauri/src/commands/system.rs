@@ -1,5 +1,7 @@
 use crate::{gpu, state::AppState};
 use serde::Serialize;
+use std::path::PathBuf;
+use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SystemInfoReport {
@@ -12,6 +14,84 @@ pub struct SystemInfoReport {
     pub session_duration_seconds: u64,
     pub models_available: Vec<String>,
     pub sidecars_running: Vec<String>,
+}
+
+/// 1magen UI compatibility: when 1magen is inline-mounted in the shell
+/// webview, its invokes hit the shell process, which previously did not
+/// register this command ("Command get_default_output_dir not found" in QA).
+/// Mirrors applets/1magen/src-tauri default_output_dir() semantics.
+/// (Handoff 2026-06-07.)
+#[tauri::command]
+pub async fn get_default_output_dir() -> Result<String, String> {
+    let base = dirs::picture_dir()
+        .or_else(dirs::home_dir)
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let dir = base.join("Everywear");
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    Ok(dir.display().to_string())
+}
+
+/// Save a bug report to local disk for QA capture, with no external send
+/// path. Writes to ~/.everywear/reports/ and returns the absolute path.
+/// (Handoff 2026-06-07: bug report modal needs safe local QA capture.)
+#[tauri::command]
+pub async fn save_bug_report(report_text: String) -> Result<String, String> {
+    let reports_dir = everywear_paths::root().join("reports");
+    std::fs::create_dir_all(&reports_dir)
+        .map_err(|error| format!("Failed to create reports directory: {error}"))?;
+    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H%M%S");
+    let path = reports_dir.join(format!("bug-report-{timestamp}.txt"));
+    std::fs::write(&path, report_text)
+        .map_err(|error| format!("Failed to write bug report: {error}"))?;
+    Ok(path.display().to_string())
+}
+
+/// Return a local Avatar Studio asset root. The frontend converts this path
+/// with Tauri's asset protocol so the 3D payload stays local without being
+/// embedded into the web dist or fetched from runtime CDN/R2.
+#[tauri::command]
+pub async fn get_character_studio_asset_root(app: tauri::AppHandle) -> Result<String, String> {
+    let root = character_studio_asset_candidates(&app)
+        .into_iter()
+        .find(|path| path.join("manifest.json").is_file())
+        .ok_or_else(|| {
+            "Avatar Studio local assets are missing. Expected manifest.json under ~/.everywear/data/character-studio, app resources, or the repo public asset tree.".to_string()
+        })?;
+    Ok(root.display().to_string())
+}
+
+fn character_studio_asset_candidates(app: &tauri::AppHandle) -> Vec<PathBuf> {
+    let mut candidates = vec![
+        everywear_paths::data_dir("character-studio").join("public"),
+        everywear_paths::data_dir("character-studio"),
+    ];
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("character-studio"));
+        candidates.push(resource_dir.join("cs-assets"));
+    }
+
+    if let Some(repo_public) = repo_character_studio_public() {
+        candidates.push(repo_public);
+    }
+
+    candidates
+}
+
+fn repo_character_studio_public() -> Option<PathBuf> {
+    let mut current = std::env::current_dir().ok()?;
+    loop {
+        let candidate = current
+            .join("applets")
+            .join("character-studio")
+            .join("public");
+        if candidate.join("manifest.json").is_file() {
+            return Some(candidate);
+        }
+        if !current.pop() {
+            return None;
+        }
+    }
 }
 
 #[tauri::command]

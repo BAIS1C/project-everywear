@@ -173,6 +173,11 @@ body[data-skin="carbon"] .educ8-syllabus {
   cursor: pointer;
 }
 
+.educ8-action:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 body[data-skin="graphite"] .educ8-action,
 body[data-skin="anodized"] .educ8-action,
 body[data-skin="carbon"] .educ8-action,
@@ -206,6 +211,43 @@ body[data-skin="carbon"] .educ8-module-tabs button.active {
   line-height: 1.4;
 }
 
+.educ8-storage,
+.educ8-progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(247, 244, 236, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 9px 11px;
+  color: rgba(247, 244, 236, 0.78);
+  font-size: 12px;
+}
+
+.educ8-storage span,
+.educ8-progress span,
+.educ8-progress em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.educ8-storage strong,
+.educ8-progress strong {
+  color: #69d2c6;
+}
+
+.educ8-progress {
+  border-color: rgba(105, 210, 198, 0.32);
+}
+
+.educ8-progress em {
+  color: #9fb6c7;
+  font-style: normal;
+}
+
 .educ8-plan-state {
   color: var(--ew-primary, #69d2c6);
   font-weight: 700;
@@ -214,6 +256,12 @@ body[data-skin="carbon"] .educ8-module-tabs button.active {
 body[data-skin="graphite"] .educ8-notice,
 body[data-skin="anodized"] .educ8-notice,
 body[data-skin="carbon"] .educ8-notice,
+body[data-skin="graphite"] .educ8-storage,
+body[data-skin="anodized"] .educ8-storage,
+body[data-skin="carbon"] .educ8-storage,
+body[data-skin="graphite"] .educ8-progress,
+body[data-skin="anodized"] .educ8-progress,
+body[data-skin="carbon"] .educ8-progress,
 body[data-skin="graphite"] .educ8-module-tabs button,
 body[data-skin="anodized"] .educ8-module-tabs button,
 body[data-skin="carbon"] .educ8-module-tabs button,
@@ -360,6 +408,11 @@ body[data-skin="carbon"] .educ8-syllabus li {
 
 .educ8-pack__resolver {
   color: #9fb6c7;
+}
+
+.educ8-pack__resources {
+  color: rgba(247, 244, 236, 0.68);
+  overflow-wrap: anywhere;
 }
 
 .educ8-principles {

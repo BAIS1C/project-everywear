@@ -1,14 +1,19 @@
 <#
-Uploads the Character Studio runtime asset set to Cloudflare R2.
+DEPRECATED, 2026-06-07.
 
-Default mode is a dry run. Fill the variables below, export the credential env
-vars, then run with -Execute when the object list looks sane.
+Sean vetoed runtime R2/CDN streaming for Avatar Studio. The runtime asset
+contract is local-first: the Everywear shell serves /cs-assets in dev and
+copies applets/character-studio/public into its production bundle. Future
+remote storage may be used only as a one-time install-pack source with local
+size/checksum receipts, never as the applet runtime origin.
 #>
 
 [CmdletBinding()]
 param(
   [switch]$Execute
 )
+
+throw "Deprecated: Avatar Studio runtime assets must be local. Do not upload/use R2 as the runtime asset origin."
 
 # Cloudflare R2 target. No secrets live here.
 $Bucket = "everywear-assets"
@@ -18,9 +23,8 @@ $Account = "3407fcb4405b38b6d3b5237f08fa391f"
 $ApiTokenEnvVar = "CLOUDFLARE_API_TOKEN"
 $AccountIdEnvVar = "CLOUDFLARE_ACCOUNT_ID"
 
-# Object layout. This matches VITE_ASSET_PATH=https://assets.everywear.id/character-studio.
-# Until custom-domain SSL/ownership finishes, the managed fallback is:
-# https://pub-59c29c1388024e9f836e42baca32e6a7.r2.dev/character-studio
+# Historical object layout retained only for archive context. This script exits
+# before upload planning and is not part of the current runtime asset contract.
 $R2KeyPrefix = "character-studio"
 
 # Source paths.

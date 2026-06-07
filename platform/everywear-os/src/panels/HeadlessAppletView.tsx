@@ -93,8 +93,23 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
           &#8592; Back to Launcher
         </button>
         <span className="hav-toolbar__name">{applet.name}</span>
-        <span className="hav-toolbar__port">:{port}</span>
+        {!isRemoteUrl && <span className="hav-toolbar__port">:{port}</span>}
         <div className="hav-toolbar__actions">
+          {isRemoteUrl && (
+            <button
+              className="hav-toolbar__btn"
+              title="Open in browser"
+              onClick={() => {
+                // Live-site applets (e.g. Strands Nation) may refuse framing
+                // or be offline; give the user an external escape hatch.
+                import('@tauri-apps/plugin-shell')
+                  .then(({ open }) => open(url!))
+                  .catch(() => window.open(url!, '_blank'));
+              }}
+            >
+              &#8599;
+            </button>
+          )}
           <button className="hav-toolbar__btn" onClick={handleReload} title="Reload">
             &#8635;
           </button>

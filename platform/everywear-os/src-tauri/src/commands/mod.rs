@@ -1,7 +1,9 @@
 #[cfg(feature = "discourse-native")]
 pub mod discourse;
+pub mod educ8;
 pub mod gpu;
 pub mod kasai;
+pub mod my_mait;
 pub mod platform;
 pub mod profile;
 pub mod registry;

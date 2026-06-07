@@ -1,11 +1,15 @@
 import React from 'react';
-import { CONTENT_PACKS, IGCSE_MODULES, PEDAGOGY } from './learningContent';
+import { CONTENT_PACKS, ContentPack, IGCSE_MODULES, PEDAGOGY } from './learningContent';
 import { MY_MAITS_LITE_HOST_CONTRACTS } from '@everywear/transport';
 
 export interface Educ8CoreProps {
   skin?: string;
   mode?: string;
 }
+
+// Internal implementation-status panels (migration phases, source maps, port rules)
+// are diagnostics only. Keep this false for the user-facing build.
+const SHOW_DEV_STATUS = false;
 
 type PhaseState = 'active' | 'planned' | 'blocked';
 
@@ -88,6 +92,87 @@ const DOCS = [
   'Loom_Transfer_07_notes_and_datatools.md',
 ];
 
+interface NativeEduc8Resource {
+  id: string;
+  title: string;
+  url?: string | null;
+  filename?: string | null;
+  sizeBytes: number;
+  sha256?: string | null;
+}
+
+interface NativeEduc8Pack {
+  id: string;
+  module: string;
+  title: string;
+  packType: ContentPack['type'];
+  status: ContentPack['status'];
+  source: string;
+  resolver: string;
+  tooltip: string;
+  resources: NativeEduc8Resource[];
+}
+
+interface NativeEduc8Plan {
+  packs: NativeEduc8Pack[];
+  downloadRoot: string;
+  canonicalLink: string;
+  linkStatus: string;
+  totalSizeBytes: number;
+  downloadableSizeBytes: number;
+  missingDownloadRoot: boolean;
+}
+
+interface NativeEduc8Root {
+  downloadRoot: string;
+  canonicalLink: string;
+  linkStatus: string;
+}
+
+interface Educ8Progress {
+  packId: string;
+  resourceId: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  pct: number;
+}
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`;
+}
+
+function packSize(pack: Pick<NativeEduc8Pack, 'resources'>) {
+  return pack.resources.reduce((total, resource) => total + resource.sizeBytes, 0);
+}
+
+function nativeToContentPack(pack: NativeEduc8Pack): ContentPack {
+  return {
+    id: pack.id,
+    module: pack.module,
+    title: pack.title,
+    type: pack.packType,
+    status: pack.status,
+    size: formatBytes(packSize(pack)),
+    source: pack.source,
+    resolver: pack.resolver,
+    tooltip: pack.tooltip,
+    resources: pack.resources,
+  };
+}
+
+async function invokeEduc8<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<T>(command, args);
+}
+
 function stateLabel(state: PhaseState) {
   if (state === 'active') return 'Active';
   if (state === 'planned') return 'Plan first';
@@ -96,23 +181,71 @@ function stateLabel(state: PhaseState) {
 
 export function Educ8Core({ skin, mode }: Educ8CoreProps) {
   const teacherContract = MY_MAITS_LITE_HOST_CONTRACTS.loom_teacher;
+  const [contentPacks, setContentPacks] = React.useState<ContentPack[]>(CONTENT_PACKS);
   const [selectedPacks, setSelectedPacks] = React.useState<Set<string>>(
     () => new Set(CONTENT_PACKS.filter((pack) => pack.status !== 'optional').map((pack) => pack.id)),
   );
   const [activeModuleId, setActiveModuleId] = React.useState(IGCSE_MODULES[0]?.id ?? '');
   const [setupMessage, setSetupMessage] = React.useState('Ready to build an offline IGCSE teacher pack.');
   const [planAccepted, setPlanAccepted] = React.useState(false);
+  const [nativePlan, setNativePlan] = React.useState<NativeEduc8Plan | null>(null);
+  const [downloadRoot, setDownloadRoot] = React.useState<NativeEduc8Root | null>(null);
+  const [progress, setProgress] = React.useState<Educ8Progress | null>(null);
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const active = PHASES.filter((phase) => phase.state === 'active').length;
   const planned = PHASES.filter((phase) => phase.state === 'planned').length;
   const blocked = PHASES.filter((phase) => phase.state === 'blocked').length;
   const activeModule = IGCSE_MODULES.find((module) => module.id === activeModuleId) ?? IGCSE_MODULES[0];
   const activePackIds = new Set(activeModule?.packIds ?? []);
-  const modulePacks = CONTENT_PACKS.filter((pack) => activePackIds.has(pack.id));
+  const modulePacks = contentPacks.filter((pack) => activePackIds.has(pack.id));
+  const selectedPackIds = React.useMemo(() => Array.from(selectedPacks), [selectedPacks]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    invokeEduc8<NativeEduc8Pack[]>('educ8_get_content_manifest')
+      .then((packs) => {
+        if (cancelled) return;
+        setContentPacks(packs.map(nativeToContentPack));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSetupMessage('Desktop content manager unavailable; showing the built-in Educ8 content plan.');
+        }
+      });
+    invokeEduc8<NativeEduc8Root>('educ8_get_download_root')
+      .then((root) => {
+        if (!cancelled) setDownloadRoot(root);
+      })
+      .catch(() => undefined);
+    import('@tauri-apps/api/event')
+      .then(({ listen }) => listen<Educ8Progress>('educ8-download-progress', (event) => {
+        if (!cancelled) setProgress(event.payload);
+      }))
+      .then((unlisten) => {
+        if (cancelled) unlisten();
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    invokeEduc8<NativeEduc8Plan>('educ8_get_content_plan', { packIds: selectedPackIds })
+      .then((plan) => {
+        if (!cancelled) setNativePlan(plan);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPackIds]);
 
   function togglePack(id: string) {
     setSelectedPacks((current) => {
       const next = new Set(current);
-      const pack = CONTENT_PACKS.find((item) => item.id === id);
+      const pack = contentPacks.find((item) => item.id === id);
       if (pack?.status === 'required') return next;
       if (next.has(id)) {
         next.delete(id);
@@ -126,19 +259,44 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
   }
 
   function planDownload() {
-    const selected = CONTENT_PACKS.filter((pack) => selectedPacks.has(pack.id));
+    const selected = contentPacks.filter((pack) => selectedPacks.has(pack.id));
+    const bytes = nativePlan?.downloadableSizeBytes ?? selected.reduce((sum, pack) => {
+      const resources = pack.resources ?? [];
+      return sum + resources.reduce((inner, resource) => inner + resource.sizeBytes, 0);
+    }, 0);
     setSetupMessage(
-      `Planned ${selected.length} item${selected.length === 1 ? '' : 's'}: resolve manifests, check disk, show sizes, then ask before downloading.`,
+      `Planned ${selected.length} item${selected.length === 1 ? '' : 's'}: ${formatBytes(bytes)} downloadable via ${downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot ?? 'the Educ8 content root'}.`,
     );
     setPlanAccepted(false);
   }
 
   function acceptPlan() {
-    const selected = CONTENT_PACKS.filter((pack) => selectedPacks.has(pack.id));
+    const selected = contentPacks.filter((pack) => selectedPacks.has(pack.id));
     setPlanAccepted(true);
     setSetupMessage(
-      `Accepted ${selected.length} item${selected.length === 1 ? '' : 's'} for manifest review. Downloads stay blocked until exact URLs, sizes, and checksums are visible.`,
+      `Accepted ${selected.length} item${selected.length === 1 ? '' : 's'} for download review. Exact URLs, sizes, and the symlink target are visible before transfer.`,
     );
+  }
+
+  async function chooseDownloadRoot() {
+    const { open } = await import('@tauri-apps/plugin-dialog');
+    const selected = await open({ directory: true, multiple: false, title: 'Choose Educ8 download location' });
+    if (typeof selected !== 'string') return;
+    const root = await invokeEduc8<NativeEduc8Root>('educ8_set_download_root', { path: selected });
+    setDownloadRoot(root);
+    setSetupMessage(`Educ8 content root linked: ${root.canonicalLink}`);
+  }
+
+  async function downloadSelected() {
+    setIsDownloading(true);
+    try {
+      await invokeEduc8('educ8_download_packs', { request: { packIds: selectedPackIds } });
+      setSetupMessage('Educ8 downloads complete and visible through the canonical content link.');
+    } catch (error) {
+      setSetupMessage(`Educ8 download blocked: ${String(error)}`);
+    } finally {
+      setIsDownloading(false);
+    }
   }
 
   return (
@@ -149,35 +307,39 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
           <h1>Educ8</h1>
           <p className="educ8-tagline">Weaving Agentic Education into your Home.</p>
         </div>
-        <div className="educ8-meter" aria-label="Migration status">
-          <span><strong>{active}</strong> active</span>
-          <span><strong>{planned}</strong> planned</span>
-          <span><strong>{blocked}</strong> blocked</span>
-        </div>
+        {SHOW_DEV_STATUS && (
+          <div className="educ8-meter" aria-label="Diagnostics: implementation status">
+            <span><strong>{active}</strong> active</span>
+            <span><strong>{planned}</strong> planned</span>
+            <span><strong>{blocked}</strong> blocked</span>
+          </div>
+        )}
       </section>
 
-      <section className="educ8-grid" aria-label="Migration phases">
-        {PHASES.map((phase) => (
-          <article className={`educ8-phase educ8-phase--${phase.state}`} key={phase.id}>
-            <header className="educ8-phase__header">
-              <span className="educ8-phase__id">{phase.id}</span>
-              <span className="educ8-phase__state">{stateLabel(phase.state)}</span>
-            </header>
-            <h2>{phase.title}</h2>
-            <dl>
-              <div>
-                <dt>From</dt>
-                <dd>{phase.source}</dd>
-              </div>
-              <div>
-                <dt>To</dt>
-                <dd>{phase.target}</dd>
-              </div>
-            </dl>
-            <p className="educ8-phase__next">{phase.nextStep}</p>
-          </article>
-        ))}
-      </section>
+      {SHOW_DEV_STATUS && (
+        <section className="educ8-grid" aria-label="Diagnostics: implementation phases">
+          {PHASES.map((phase) => (
+            <article className={`educ8-phase educ8-phase--${phase.state}`} key={phase.id}>
+              <header className="educ8-phase__header">
+                <span className="educ8-phase__id">{phase.id}</span>
+                <span className="educ8-phase__state">{stateLabel(phase.state)}</span>
+              </header>
+              <h2>{phase.title}</h2>
+              <dl>
+                <div>
+                  <dt>From</dt>
+                  <dd>{phase.source}</dd>
+                </div>
+                <div>
+                  <dt>To</dt>
+                  <dd>{phase.target}</dd>
+                </div>
+              </dl>
+              <p className="educ8-phase__next">{phase.nextStep}</p>
+            </article>
+          ))}
+        </section>
+      )}
 
       <section className="educ8-setup" aria-label="IGCSE setup and content selection">
         <div className="educ8-panel-head">
@@ -196,12 +358,47 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
           <button
             type="button"
             className="educ8-action educ8-action--secondary"
+            onClick={chooseDownloadRoot}
+            title="Chooses where large Educ8 files are stored. Everywear creates a canonical symlink to this location."
+          >
+            Choose Location
+          </button>
+          <button
+            type="button"
+            className="educ8-action educ8-action--secondary"
             onClick={acceptPlan}
             title="Accepts the visible plan for manifest review only. It does not download files yet."
           >
             Accept Plan
           </button>
+          <button
+            type="button"
+            className="educ8-action"
+            onClick={downloadSelected}
+            disabled={!planAccepted || isDownloading}
+            title="Starts shell-owned downloads for accepted content packs."
+          >
+            {isDownloading ? 'Downloading' : 'Download'}
+          </button>
         </div>
+
+        {(nativePlan || downloadRoot) && (
+          <div className="educ8-storage">
+            <span>
+              <strong>{formatBytes(nativePlan?.downloadableSizeBytes ?? 0)}</strong> downloadable
+            </span>
+            <span>{downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot}</span>
+            <span>{downloadRoot?.linkStatus ?? nativePlan?.linkStatus}</span>
+          </div>
+        )}
+
+        {progress && (
+          <div className="educ8-progress" aria-label="Download progress">
+            <span>{progress.resourceId}</span>
+            <strong>{progress.pct}%</strong>
+            <em>{formatBytes(progress.downloadedBytes)} / {formatBytes(progress.totalBytes)}</em>
+          </div>
+        )}
 
         <div className="educ8-notice" role="status">
           <strong>Educ8 says:</strong> {setupMessage}
@@ -262,6 +459,11 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
                 </span>
                 <span>{pack.module} · {pack.type.toUpperCase()} · {pack.size}</span>
                 <span className="educ8-pack__resolver">{pack.resolver}</span>
+                {pack.resources && pack.resources.length > 0 && (
+                  <span className="educ8-pack__resources">
+                    {pack.resources.map((resource) => `${resource.title}: ${formatBytes(resource.sizeBytes)}`).join(' · ')}
+                  </span>
+                )}
               </span>
             </label>
           ))}
@@ -271,7 +473,7 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
       <section className="educ8-teacher" aria-label="Teacher pedagogy model">
         <div className="educ8-panel-head">
           <div>
-            <p className="educ8-kicker">{teacherContract.label}</p>
+            <p className="educ8-kicker">{SHOW_DEV_STATUS ? teacherContract.label : 'AI Tutor'}</p>
             <h2>Pedagogy Model</h2>
           </div>
         </div>
@@ -280,7 +482,7 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
             <article
               key={principle.title}
               className="educ8-principle"
-              title={`My Maits Lite uses this principle when planning lessons, feedback, and revision prompts: ${principle.summary}`}
+              title={`Your AI tutor uses this principle when planning lessons, feedback, and revision prompts: ${principle.summary}`}
             >
               <h3>{principle.title}</h3>
               <p>{principle.summary}</p>
@@ -289,23 +491,25 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
         </div>
       </section>
 
-      <aside className="educ8-rail" aria-label="Migration sources and rules">
-        <section>
-          <h2>Source Maps</h2>
-          <ul>
-            {DOCS.map((doc) => (
-              <li key={doc}>{doc}</li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h2>Port Rules</h2>
-          <p>
-            Single binary bias, offline-first storage, My Maits Lite for teacher-agent planning, SQLite for durable state,
-            usearch for vectors, ZIM files as primary content packs, and Everywear owns the applet boundary.
-          </p>
-        </section>
-      </aside>
+      {SHOW_DEV_STATUS && (
+        <aside className="educ8-rail" aria-label="Diagnostics: sources and rules">
+          <section>
+            <h2>Source Maps</h2>
+            <ul>
+              {DOCS.map((doc) => (
+                <li key={doc}>{doc}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h2>Port Rules</h2>
+            <p>
+              Single binary bias, offline-first storage, My Maits Lite for teacher-agent planning, SQLite for durable state,
+              usearch for vectors, ZIM files as primary content packs, and Everywear owns the applet boundary.
+            </p>
+          </section>
+        </aside>
+      )}
     </main>
   );
 }

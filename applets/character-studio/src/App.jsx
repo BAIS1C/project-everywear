@@ -35,24 +35,28 @@ const centerCameraPositionOther = new THREE.Vector3(
   2.2612065299409223,
 ) // note: get from `moveCamera({ targetY: 0.8, distance: 3.2 })`
 async function fetchManifest(location) {
-  try {
-    const response = await fetch(location);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch manifest. Status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error fetching manifest: ${error.message}`);
-    return [];
+  const response = await fetch(location);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch manifest. Status: ${response.status}`);
   }
+
+  return response.json();
 }
 
 
 async function fetchAll() {
-  const initialManifest = await fetchManifest(assetImportPath)
+  let initialManifest
+  try {
+    initialManifest = await fetchManifest(assetImportPath)
+  } catch (error) {
+    console.error(`[character-studio] Error fetching manifest from ${assetImportPath}:`, error)
+    const detail = error?.message ? ` (${error.message})` : ""
+    throw new Error(
+      `Could not load the avatar asset library from ${assetImportPath}${detail}. ` +
+      `Check your connection and asset configuration, then retry.`
+    )
+  }
   const effectManager = new EffectManager()
 
   return {
@@ -89,7 +93,15 @@ const fetchData = () => {
   }
 }
 
-const resource = fetchData()
+let resource = fetchData()
+
+/**
+ * Re-arms the suspense resource so the next render re-fetches the manifest.
+ * Called by the studio error boundary's Retry button (CharacterStudioCore).
+ */
+export function retryManifestLoad() {
+  resource = fetchData()
+}
 
 export default function App() {
   const {

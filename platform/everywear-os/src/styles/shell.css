@@ -482,7 +482,18 @@ body[data-mode="light"] .ew-folder-icon__badge {
   gap: 2px;
 }
 .ew-folder-tray .ew-desktop-icon {
-  flex: 0 0 88px;
+  /* 88px clipped "AI Director" to "AI Direc"; widen the slot and let labels
+     wrap to two lines instead of ellipsizing. (Handoff 2026-06-07.) */
+  flex: 0 0 96px;
+  height: auto;
+  min-height: 96px;
+}
+.ew-folder-tray .ew-desktop-icon__label {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 body[data-mode="light"] .ew-folder-tray {
   background:
