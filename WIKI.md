@@ -1,8 +1,21 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.41
-Last updated: 2026-06-09 (S3 folder native theme sweep and tray repair)
+Version: 1.1.42
+Last updated: 2026-06-09 (Profile native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.42: native Profile panel visual/theme
+> coverage now has per-theme evidence. The taskbar Profile control was opened
+> in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon, with
+> top identity, lower subscription/session, and Edit Profile states captured.
+> No code patch was required; `.ew-profile-panel` is the correct scroll
+> container. Screenshots and manifest live at
+> `screenshots/2026-06-09-everywear-full-tour/native-profile-theme-*.png`,
+> `native-profile-theme-*-lower.png`, `native-profile-theme-*-edit.png`, and
+> `native-profile-theme-sweep.json`. Boundary: this proves Profile visibility,
+> edit controls, scroll behavior, and theme readability for Sean's authenticated
+> Creator Studio session, not fresh auth/signup, profile-save persistence, or
+> sign-out recovery.
 
 > Current-state note, 2026-06-09 v1.1.41: the native S3 Studio folder
 > first-open tray now shows all five child tools across Light, Classic,
@@ -4587,3 +4600,24 @@ Verification:
 Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all show the S3 Studio folder tray with Gener8 4ever, Gener8 Pro, Vid Studio Pro, AI Director, and DAW visible on first open. Manifest checks confirm `children=5`, child IDs `gener8-4ever,gener8-pro,vid,ai-director,daw`, all center hit-tests true, all child rects inside the tray, no failed-load text, and no bug modal.
 
 Tutorial boundary: the platform first-run tour can now teach S3 Studio as the folder containing five Creator Studio tools without requiring a horizontal scroll just to discover DAW. Generation/export/playback/Vault behavior remains owned by each child applet's separate QA slice.
+
+---
+
+## Addendum 2026-06-09 07:27 SGT: Profile native theme sweep
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+Profile remains a shell-owned system panel rendered by `platform/everywear-os/src/panels/ProfilePanel.tsx` and opened from the taskbar profile control in `platform/everywear-os/src/shell/ShellLayout.tsx`.
+
+The native full-tour pass covered the authenticated Creator Studio account state across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+
+Verification:
+
+- Native Tauri runtime from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Settings UI used to select each theme
+- Taskbar profile button used to open Profile
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-profile-theme-*.png`, `native-profile-theme-*-lower.png`, `native-profile-theme-*-edit.png`, and `native-profile-theme-sweep.json`
+
+Current surface truth: every theme shows Profile, avatar initials, display name, alias, Identity, Everywear ID, Display Name, Alias, Email, Bio, Edit Profile, Subscription, Tier, Status, Provider, Next Billing, Session, and Sign Out. Edit Profile mode shows display name input, alias input, read-only email input, bio textarea, Save, and Cancel. No failed-load text or bug modal appeared.
+
+Tutorial boundary: Profile can be taught as the first-run identity/account stop: confirm Everywear ID, explain immutable ID versus editable display name/alias/bio, verify subscription status, then point to Sign Out as the session recovery control. Fresh unauthenticated sign-in/signup, OTP, failed-auth states, profile save persistence, Supabase write/read round trip, and sign-out recovery remain separate auth QA gates.

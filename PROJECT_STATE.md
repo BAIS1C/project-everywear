@@ -1,6 +1,6 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:19+08 SGT (Codex: S3 folder native theme sweep and tray repair).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:27+08 SGT (Codex: Profile native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
@@ -553,3 +553,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED VISUALS: every theme now shows the S3 folder tray with Gener8 4ever, Gener8 Pro, Vid Studio Pro, AI Director, and DAW visible inside the tray on first open. DOM checks confirm `children=5`, child IDs `gener8-4ever,gener8-pro,vid,ai-director,daw`, center hit-tests true, child rects within the tray, no failed-load text, and no bug modal.
 - TUTORIAL STATUS: the platform first-run tour can teach S3 Studio as a folder containing five Creator Studio tools without needing the user to horizontally scroll or guess that DAW exists offscreen.
 - BOUNDARY: this proves shell folder visibility/readability and child launch target presence, not the child applets' generation/export paths. Those remain covered by the separate Gener8 4ever, Gener8 Pro, Vid, AI Director, and DAW slices.
+
+---
+
+## 2026-06-09 07:27 SGT: Profile native theme sweep
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCH STATUS: no code patch required. The initial lower-panel check was an automation mistake: `.ew-profile-panel` is the scroll container, not `.ew-window__body`.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-profile-theme-*.png`, `native-profile-theme-*-lower.png`, and `native-profile-theme-*-edit.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-profile-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; taskbar profile button opened the Profile panel in each theme.
+- PASSED VISUALS: every theme showed Profile, avatar initials, display name, alias, Identity section, Everywear ID, Display Name, Alias, Email, Bio, Edit Profile, Subscription, Tier, Status, Provider, Next Billing, Session, Sign Out, and no failed-load text or bug modal.
+- PASSED EDIT STATE: every theme entered Edit Profile mode with four controls: display name input, alias input, read-only email input, bio textarea, plus Save and Cancel buttons.
+- TUTORIAL STATUS: Profile can be taught as the account/identity first-run stop: confirm Everywear ID, explain immutable ID versus editable display profile, show subscription status, then leave Sign Out as the recovery/session control.
+- BOUNDARY: this proves native Profile visibility, edit controls, scroll behavior, and theme readability for Sean's authenticated Creator Studio session. It does not prove fresh unauthenticated sign-in/signup, OTP, failed-auth states, profile save persistence, Supabase round trip, or sign-out recovery flow.
