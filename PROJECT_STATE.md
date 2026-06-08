@@ -452,3 +452,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - MAJOR FINDING: 1magen launch path reports `Command get_recommended_stack not found`.
 - MAJOR FINDING: Strands Nation opens to a blank/blocked browser surface instead of the game shell.
 - MINOR FINDINGS: My Mait skill catalog polluted with repeated internal `zsh-compatible` entries; Settings About domain typo; Educ8 Choose Location starts in `Project Layer U`; Layer U SON service offline on port `3117`; 3nvizen LTX sidecar offline.
+
+---
+
+## 2026-06-09 05:44 SGT: AI Director native theme sweep and Light contrast repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCHED: `applets/gener8/web/src/views/AIDirectorView.tsx` now uses dark-surface contrast classes for the AI Director sidebar, shot plan, package card, and Creator Studio gate card. Root cause was Light-mode EWDS text tokens rendering inside dark `ew-card` / `ew-v2-bevel` panels.
+- BUILD VERIFICATION PASSED: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-ai-director-theme-*.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-ai-director-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 folder opened; `button[data-applet-id="ai-director"]` opened AI Director in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED: every theme showed AI Director, Creator Studio label, Draft Plan, six deterministic shot rows, Package card, Planner Route `SAPI: lm studio, ollama, external API`, Vid Studio handoff, no failed-load text, and no bug modal.
+- TUTORIAL STATUS: AI Director can be taught as the Creator Studio shot-planning surface across all shell themes, with model lifecycle toast visible during launch.
+- BOUNDARY: this proves the native visual route and deterministic fallback plan surface only. It does not prove provider-routed SAPI success, Draft Plan API execution, Vid/3nvizen handoff, render/export, or Vault registration.

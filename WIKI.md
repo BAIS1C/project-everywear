@@ -4392,3 +4392,27 @@ The static `everywear.id` website now has a Google-powered Everywear ID CTA and 
 > on Windows: npm install && npm run build -w @everywear/educ8 (sandbox cannot run
 > win32 esbuild). package-lock retains one "extraneous" applets/loom block that
 > native npm install will prune.
+
+---
+
+## Addendum 2026-06-09 05:44 SGT: AI Director native theme sweep
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+AI Director remains a virtual launcher over the shared Gener8 bundle at `/director`, Creator Studio gated through `creator_studio` / `ai_director.planner`, with SAPI provider routing when reachable and deterministic fallback planning when no provider succeeds.
+
+The native full-tour pass found a Light-theme readability defect: the AI Director route used Light-mode EWDS text tokens inside dark `ew-card` / `ew-v2-bevel` panels. The result was dark or muted text on dark cards in Light mode, especially the shot plan and package card.
+
+Patch: `applets/gener8/web/src/views/AIDirectorView.tsx` now gives the dark panels explicit dark-surface contrast classes for sidebar tracks, empty state, Creator Studio gate copy, shot titles/descriptions, package labels/values, and Vid Studio handoff copy. The main Light header still uses normal EWDS tokens.
+
+Verification:
+
+- `npm run build --workspace @everywear/gener8-web`
+- `npm run build --workspace everywear-os`
+- `cargo build -p everywear-os`
+- Native Tauri launch from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-ai-director-theme-*.png` and `native-ai-director-theme-sweep.json`
+
+Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all open AI Director from the S3 folder and show Creator Studio, Draft Plan, six deterministic shot rows, Package, Planner Route `SAPI: lm studio, ollama, external API`, Vid Studio handoff, no failed-load text, and no bug modal.
+
+Boundary: this is visual route and deterministic fallback-plan coverage only. Provider-routed SAPI success, Draft Plan API execution, Vid/3nvizen handoff, render/export, and Vault registration remain separate functional QA gates.
