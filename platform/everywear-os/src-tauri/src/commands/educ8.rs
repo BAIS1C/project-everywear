@@ -431,7 +431,7 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
         Educ8ContentPack {
             id: "teacher-skill".into(),
             module: "Teacher Agent".into(),
-            title: "My Maits Lite IGCSE Teacher Skill".into(),
+            title: "Educ8 IGCSE Teacher Skill".into(),
             pack_type: "skill".into(),
             status: "required".into(),
             source: "Everywear skills/igcse-teacher".into(),
@@ -446,19 +446,19 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             pack_type: "database".into(),
             status: "required".into(),
             source: "~/.everywear/data/loom/loom.db".into(),
-            resolver: "loom-db setup phase".into(),
+            resolver: "Educ8 learning-store setup".into(),
             tooltip: "Stores learner profile, selected syllabus, progress, retrieval schedule, notes, and teacher feedback.".into(),
             resources: vec![local_resource("loom-db", "Starter learning database", mb(50))],
         },
         Educ8ContentPack {
             id: "mymaits-lite-model".into(),
             module: "Teacher Agent".into(),
-            title: "My Maits Lite headless model slot".into(),
+            title: "Local AI tutor model slot".into(),
             pack_type: "model".into(),
             status: "required".into(),
             source: "Everywear shared model registry".into(),
-            resolver: "My Maits Lite runtime planner".into(),
-            tooltip: "Uses the shared My Maits Lite runtime; model downloads remain owned by the shell model manager.".into(),
+            resolver: "Everywear model planner".into(),
+            tooltip: "Uses a suitable local model from the Everywear shell model manager instead of downloading a separate tutor model when one already fits.".into(),
             resources: vec![local_resource("mymaits-lite-model", "Shared teacher runtime model", 0)],
         },
         Educ8ContentPack {
@@ -467,7 +467,7 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             title: "Wikipedia Quick Reference".into(),
             pack_type: "zim".into(),
             status: "recommended".into(),
-            source: "Project NOMAD curated Wikipedia selector".into(),
+            source: "Educ8 curated Wikipedia selector".into(),
             resolver: "Kiwix ZIM, top-mini profile".into(),
             tooltip: "Compact general reference base for offline explanations, vocabulary, historical context, and quick fact checks.".into(),
             resources: vec![resource(
@@ -484,7 +484,7 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             title: "Science Reference ZIM Set".into(),
             pack_type: "zim".into(),
             status: "recommended".into(),
-            source: "Project NOMAD education collection".into(),
+            source: "Educ8 education collection".into(),
             resolver: "LibreTexts physics, chemistry, and biology ZIM archives".into(),
             tooltip: "Supports Biology, Chemistry, and Physics lessons with offline concept pages and examples.".into(),
             resources: vec![
@@ -517,7 +517,7 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             title: "Wikibooks Mathematics".into(),
             pack_type: "zim".into(),
             status: "recommended".into(),
-            source: "Project NOMAD education collection".into(),
+            source: "Educ8 education collection".into(),
             resolver: "Wikibooks all-nopic ZIM archive".into(),
             tooltip: "Adds step-by-step written explanations and practice-friendly worked examples for mathematics topics.".into(),
             resources: vec![resource(
@@ -534,7 +534,7 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             title: "Project Gutenberg Literature".into(),
             pack_type: "zim".into(),
             status: "optional".into(),
-            source: "Project NOMAD curated collection".into(),
+            source: "Educ8 curated collection".into(),
             resolver: "Project Gutenberg literature ZIM archive".into(),
             tooltip: "Optional offline reading library for vocabulary, comprehension, style analysis, and extended English practice.".into(),
             resources: vec![resource(
@@ -551,9 +551,9 @@ fn content_manifest() -> Vec<Educ8ContentPack> {
             title: "Computing Reference ZIM Set".into(),
             pack_type: "zim".into(),
             status: "optional".into(),
-            source: "Project NOMAD technology collection".into(),
+            source: "Educ8 technology collection".into(),
             resolver: "FreeCodeCamp plus DevDocs Python/JS/HTML/CSS".into(),
-            tooltip: "Optional programming explanations. My Maits Lite still aligns answers to the syllabus, not forum style.".into(),
+            tooltip: "Optional programming explanations. The AI tutor still aligns answers to the syllabus, not forum style.".into(),
             resources: vec![
                 resource(
                     "freecodecamp_en_all",

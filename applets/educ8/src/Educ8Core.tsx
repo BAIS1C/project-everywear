@@ -179,6 +179,15 @@ function stateLabel(state: PhaseState) {
   return 'Blocked';
 }
 
+function displayContentRoot(root?: string | null) {
+  if (!root) return 'the Educ8 content root';
+  const normalized = root.replaceAll('\\', '/').toLowerCase();
+  if (normalized.includes('/.everywear/data/loom/')) {
+    return 'Default Everywear Educ8 content store';
+  }
+  return root;
+}
+
 export function Educ8Core({ skin, mode }: Educ8CoreProps) {
   const teacherContract = MY_MAITS_LITE_HOST_CONTRACTS.loom_teacher;
   const [contentPacks, setContentPacks] = React.useState<ContentPack[]>(CONTENT_PACKS);
@@ -265,7 +274,7 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
       return sum + resources.reduce((inner, resource) => inner + resource.sizeBytes, 0);
     }, 0);
     setSetupMessage(
-      `Planned ${selected.length} item${selected.length === 1 ? '' : 's'}: ${formatBytes(bytes)} downloadable via ${downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot ?? 'the Educ8 content root'}.`,
+      `Planned ${selected.length} item${selected.length === 1 ? '' : 's'}: ${formatBytes(bytes)} downloadable via ${displayContentRoot(downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot)}.`,
     );
     setPlanAccepted(false);
   }
@@ -284,7 +293,7 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
     if (typeof selected !== 'string') return;
     const root = await invokeEduc8<NativeEduc8Root>('educ8_set_download_root', { path: selected });
     setDownloadRoot(root);
-    setSetupMessage(`Educ8 content root linked: ${root.canonicalLink}`);
+    setSetupMessage(`Educ8 content root linked through Everywear. Downloads will use ${displayContentRoot(root.downloadRoot)}.`);
   }
 
   async function downloadSelected() {
@@ -387,7 +396,9 @@ export function Educ8Core({ skin, mode }: Educ8CoreProps) {
             <span>
               <strong>{formatBytes(nativePlan?.downloadableSizeBytes ?? 0)}</strong> downloadable
             </span>
-            <span>{downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot}</span>
+            <span title={downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot}>
+              {displayContentRoot(downloadRoot?.downloadRoot ?? nativePlan?.downloadRoot)}
+            </span>
             <span>{downloadRoot?.linkStatus ?? nativePlan?.linkStatus}</span>
           </div>
         )}

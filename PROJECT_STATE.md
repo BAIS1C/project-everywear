@@ -496,3 +496,18 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon show My Mait hub, Agent Hub surface, chat composer, right panel, settings button, Everywear Vault connection, slot state, safety rails, model/residency settings, no failed-load text, and no bug modal. Light settings panel text color verified as `rgb(229, 238, 246)`.
 - TUTORIAL DEBT: first-run skill list still exposes raw internal registry noise: `EVERYWEAR SKILLS 71`, repeated `zsh-compatible` entries, and MyMory-labeled skill names. Summaries are mostly Everywear Vault aligned, but the first-run tutorial should not present raw skill registry internals as the default user experience.
 - BOUNDARY: this proves native launch, hub visibility, settings visibility, and theme readability. It does not prove a fresh-user curated onboarding flow, real local chat inference beyond the existing loaded surface, tool execution, approval-loop audit, Avatar Studio handoff, or Vault write path from My Mait.
+
+---
+
+## 2026-06-09 06:45 SGT: Educ8 native theme sweep and donor-copy repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCHED: `platform/everywear-os/src-tauri/src/commands/educ8.rs` now keeps Tier B wire/data ids intact while replacing user-facing content manifest copy that leaked donor/runtime language: `My Maits Lite IGCSE Teacher Skill`, `My Maits Lite headless model slot`, `loom-db setup phase`, and `Project NOMAD` source labels.
+- PATCHED: `applets/educ8/src/Educ8Core.tsx` now displays the default internal `~/.everywear/data/loom/downloads` path as `Default Everywear Educ8 content store` in the visible setup UI. The raw path remains available as metadata, and the actual `loom` applet id/data path is unchanged by design.
+- BUILD VERIFICATION PASSED: `npm run build --workspace @everywear/educ8`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-educ8-theme-*.png` and `native-educ8-theme-*-lower.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-educ8-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; `button[data-applet-id="loom"]` opened Educ8 in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED: every theme showed Educ8, Learner Setup, IGCSE Teacher Pack, Plan Downloads, Choose Location, Accept Plan, Download, subject tabs, five Mathematics content cards, lower Pedagogy Model view, no failed-load text, no bug modal, no visible `My Maits Lite`, no visible `Project NOMAD`, no visible `loom-db setup`, and no visible raw default `data\loom` path.
+- TUTORIAL STATUS: Educ8 can be taught as the first-run offline IGCSE tutor setup: choose learner subject, review required/recommended content, press Plan Downloads, inspect size/location/status, press Accept Plan, then only download after explicit consent.
+- BOUNDARY: this proves native visual route, plan/accept flow, copy hygiene, and lower pedagogy visibility. It does not prove actual ZIM transfer, checksum validation, symlink creation after Choose Location, offline reader/indexing, local tutor inference, learner progress persistence, or Vault registration.
