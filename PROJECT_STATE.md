@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:22+08 SGT (Codex: Strands Nation external-state fallback).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:32+08 SGT (Codex: 1magen shell styling fixed).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:32 SGT - 1magen Shell Styling Fixed (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: native 1magen no longer opens as a raw unstyled document flow or trips a lazy CSS preload failure. The shell now loads 1magen workbench CSS from the shell entry bundle, while standalone 1magen keeps its own `main.tsx` CSS import.
+- ROOT CAUSE: `ImagenCore` is lazy-mounted directly by `AppletViewRouter`. Importing `imagen.css` from that lazy component emitted a separate `ImagenCore-*.css` asset; native WebView could fetch it afterward, but Vite's CSS preload path could throw `Unable to preload CSS for /assets/ImagenCore-*.css` and wedge the applet error boundary. Importing the applet CSS from `platform/everywear-os/src/main.tsx` removes the lazy CSS preload path.
+- PATCH: `platform/everywear-os/src/main.tsx` imports `@applets/1magen/src/styles/imagen.css`; `applets/1magen/src/styles/imagen.css` scopes background/color/overflow to `.imagen-workbench` instead of `body`; `ImagenCore.tsx` stays component-only.
+- VERIFICATION PASSED: `npm run build --workspace onemagen`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP; clicked `button.ew-desktop-icon[data-applet-id="1magen"]`; verified `.imagen-workbench`, `.imagen-controls`, and `.imagen-output` present, `bodyDisplay=grid`, no preload failure, no bug modal, no launch hang.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-postfix-1magen-styled-shell.png`.
+- STATUS: 1magen is tutorial-safe as a styled setup/generation surface. Successful image generation, model provisioning, output save path, and Vault registration are still unproven and must be tested in the next QA pass.
+
+---
 
 ## 2026-06-09 04:22 SGT - Strands Nation External-State Fallback Fixed (Codex)
 

@@ -1,8 +1,29 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.33
-Last updated: 2026-06-09 (Strands Nation external-state fallback)
+Version: 1.1.34
+Last updated: 2026-06-09 (1magen shell styling)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.34: 1magen native shell styling is
+> fixed. Root cause: `ImagenCore` is lazy-mounted directly by the shell, but
+> its CSS was previously reachable only through standalone `main.tsx`; moving
+> the CSS import into `ImagenCore` produced a separate lazy CSS asset that
+> native WebView could fetch after failure but Vite could still reject during
+> preload (`Unable to preload CSS for /assets/ImagenCore-*.css`). Final fix:
+> standalone `applets/1magen/src/main.tsx` keeps `./styles/imagen.css`, while
+> `platform/everywear-os/src/main.tsx` imports
+> `@applets/1magen/src/styles/imagen.css` into the shell's initial CSS bundle.
+> `imagen.css` now scopes background, text color, and overflow to
+> `.imagen-workbench`, not global `body`. Verification passed:
+> `npm run build --workspace onemagen`, `npm run build --workspace
+> everywear-os`, `cargo build -p everywear-os`, then native WebView CDP click
+> on `button.ew-desktop-icon[data-applet-id="1magen"]`. Result:
+> `.imagen-workbench`, `.imagen-controls`, and `.imagen-output` present,
+> `bodyDisplay=grid`, no preload failure, no bug modal, no launch hang.
+> Screenshot:
+> `screenshots/2026-06-09-everywear-full-tour/native-postfix-1magen-styled-shell.png`.
+> Boundary: generation/provisioning, output save path, and Vault registration
+> remain unproven.
 
 > Current-state note, 2026-06-09 v1.1.33: Strands Nation native blank embed
 > is no longer treated as an Everywear iframe bug. Current live headers from

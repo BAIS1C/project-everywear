@@ -8,6 +8,7 @@ import { initLogger, getLogger } from '@everywear/shared';
 import '@everywear/ewds/css/global.css';
 import '@everywear/ewds/css/window-frame.css';
 import '@applets/gener8/web/src/styles/app.css';
+import '@applets/1magen/src/styles/imagen.css';
 import './styles/shell.css';
 
 // ── Logger bootstrap ────────────────────────────────────────────────
