@@ -1,8 +1,28 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.38
-Last updated: 2026-06-09 (Gener8 4ever native theme sweep)
+Version: 1.1.39
+Last updated: 2026-06-09 (Gener8 Pro native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.39: native Gener8 Pro visual/theme
+> coverage now has per-theme evidence. For each theme, the native shell was
+> reloaded, the S3 folder button was awaited, `button[data-applet-id="gener8-pro"]`
+> was clicked, and the active Pro window was captured. Swept Light, Classic,
+> Refined, Terminal, Graphite, Anodized, and Carbon. WebView checks confirmed
+> Gener8 Pro window, S3 brand, Title, Lyrics, Style of Music, Vocal Language,
+> Reference, Cover, Create, My Workspace, model lifecycle toast, no failed-load
+> text, and no bug modal. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-gener8-pro-theme-light.png`,
+> `native-gener8-pro-theme-classic.png`,
+> `native-gener8-pro-theme-refined.png`,
+> `native-gener8-pro-theme-terminal.png`,
+> `native-gener8-pro-theme-graphite.png`,
+> `native-gener8-pro-theme-anodized.png`,
+> `native-gener8-pro-theme-carbon.png`, plus
+> `native-gener8-pro-theme-sweep.json`. Boundary: this proves native
+> Reference/Cover entry visibility and model lifecycle messaging, not
+> Reference/Cover generation, Pro model download completion, route/API health,
+> playback, or save-to-Vault behavior.
 
 > Current-state note, 2026-06-09 v1.1.38: native Gener8 4ever visual/input
 > coverage now has per-theme evidence. Opened through the native S3 folder

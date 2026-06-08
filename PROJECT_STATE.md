@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:08+08 SGT (Codex: Gener8 4ever native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:12+08 SGT (Codex: Gener8 Pro native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 05:12 SGT - Gener8 Pro Native Theme Sweep Captured (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- QA PASSED: native Gener8 Pro was captured across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- VERIFICATION: reloaded each shell theme, waited for the S3 folder button, opened the S3 folder, clicked `button[data-applet-id="gener8-pro"]`, and captured the active native Pro window. WebView checks confirmed Gener8 Pro window, S3 brand, Title, Lyrics, Style of Music, Vocal Language, Reference, Cover, Create, My Workspace, model lifecycle toast, no failed-load text, and no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-gener8-pro-theme-light.png`, `native-gener8-pro-theme-classic.png`, `native-gener8-pro-theme-refined.png`, `native-gener8-pro-theme-terminal.png`, `native-gener8-pro-theme-graphite.png`, `native-gener8-pro-theme-anodized.png`, `native-gener8-pro-theme-carbon.png`, plus `native-gener8-pro-theme-sweep.json`.
+- STATUS: Gener8 Pro visual/theme coverage is captured for the native shell. This proves the Pro Reference/Cover entry surface and model lifecycle messaging are visible across themes; it does not prove Reference/Cover generation, Pro model download completion, route/API health, playback, or save-to-Vault behavior.
+
+---
 
 ## 2026-06-09 05:08 SGT - Gener8 4ever Native Theme Sweep Captured (Codex)
 
