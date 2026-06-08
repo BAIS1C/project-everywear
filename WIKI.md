@@ -1,8 +1,19 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.43
-Last updated: 2026-06-09 (Settings native theme sweep)
+Version: 1.1.44
+Last updated: 2026-06-09 (Bug report modal native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.44: native bug-report modal visual/theme
+> coverage now has per-theme evidence. The taskbar bell opened the manual
+> Report a Problem modal in Light, Classic, Refined, Terminal, Graphite,
+> Anodized, and Carbon. No code patch was required. Screenshots and manifest
+> live at `screenshots/2026-06-09-everywear-full-tour/native-bug-report-theme-*.png`
+> and `native-bug-report-theme-sweep.json`. Boundary: this proves modal
+> visibility, textarea, log-category controls, target choices, copy/send
+> actions, and theme readability, not clipboard write, mail client launch,
+> local file save, Kasai diagnostic handoff, backend submission, or report
+> persistence.
 
 > Current-state note, 2026-06-09 v1.1.43: native Settings panel visual/theme
 > coverage now has per-theme evidence. The shell Settings tile was opened in
@@ -4654,3 +4665,24 @@ Verification:
 Current surface truth: every theme shows Settings, Appearance, Theme choices for Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; Accent choices for Cyan, Amber, Acid, Crimson, and Bone; EWDS-v2 density preview; Chrome, Wallpaper, and Bevel sliders; Traffic Lights side controls; Surface Treatment controls for Cut, Rounded, and Square; About; Everywear OS v0.1.0; PT Metafintek AI Studios; Lombok, Indonesia; and the `everywear.id` link. Corrected lower captures scroll `.ew-settings` by roughly 411-413px and show the lower controls and About section. No failed-load text or bug modal appeared.
 
 Tutorial boundary: Settings can be taught as the first-run personalization stop: choose the theme, choose accent, adjust chrome/wallpaper/bevel density, choose traffic-light side, choose surface treatment, and locate product/about details. Persistence across native restart for every setting, external link opening, and keyboard traversal remain separate QA gates.
+
+---
+
+## Addendum 2026-06-09 07:39 SGT: Bug report modal native theme sweep
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+Bug reporting remains shell-owned through `platform/everywear-os/src/components/BugReportModal.tsx`, opened manually from the taskbar bell in `platform/everywear-os/src/shell/ShellLayout.tsx` and also reachable from crash/report buttons.
+
+The native full-tour pass covered the manual Report a Problem path across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+
+Verification:
+
+- Native Tauri runtime from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Settings UI used to select each theme
+- Taskbar bell used to open the manual Report a Problem modal
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-bug-report-theme-*.png` and `native-bug-report-theme-sweep.json`
+
+Current surface truth: every theme shows Report a Problem, close control, What went wrong textarea, Include in report, ten log categories, six default-checked categories, per-category entry counts, Estimated size, Send to, Everywear Team via Email, Local Kasai for diagnostics, Save to this computer only, Copy to Clipboard, and Send Report. No failed-load text appeared.
+
+Tutorial boundary: the first-run platform tutorial can teach the bell as the recovery/reporting path: describe what went wrong, include relevant logs, choose team/Kasai/local destination, copy the report if needed, then send. Clipboard write, email client launch, local file save, Kasai diagnostic handoff, backend `submit_bug_report`, and report persistence remain separate functional QA gates.

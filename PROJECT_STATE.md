@@ -1,6 +1,6 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:34+08 SGT (Codex: Settings native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:39+08 SGT (Codex: Bug report modal native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
@@ -581,3 +581,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED SCROLL STATE: corrected lower captures scrolled `.ew-settings` by roughly 411-413px and confirmed Traffic Lights, Surface Treatment, and About are reachable without failed-load text or bug modal.
 - TUTORIAL STATUS: Settings can be taught as the first-run personalization stop: choose visual theme, choose accent, tune chrome/wallpaper/bevel density, pick traffic-light side, choose widget surface treatment, and find product/about link.
 - BOUNDARY: this proves native Settings visibility, scroll behavior, control presence, and theme readability. It does not prove persistence across app restart for every setting, external `everywear.id` link opening, or accessibility keyboard traversal.
+
+---
+
+## 2026-06-09 07:39 SGT: Bug report modal native theme sweep
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCH STATUS: no code patch required.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-bug-report-theme-*.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-bug-report-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; taskbar bell opened the manual Report a Problem modal in each theme.
+- PASSED VISUALS: every theme showed Report a Problem, close control, What went wrong textarea with QA text, Include in report, ten log categories, six default-checked categories, per-category entry counts, Estimated size, Send to, three send targets, Copy to Clipboard, and Send Report.
+- VERIFIED TARGETS: send targets were Everywear Team via Email, Local Kasai for diagnostics, and Save to this computer only. No failed-load text appeared.
+- TUTORIAL STATUS: the first-run platform tutorial can teach the bell as the recovery/reporting path: describe the problem, include relevant logs, choose team/Kasai/local target, copy report if needed, then send.
+- BOUNDARY: this proves modal visibility, log-category controls, target choices, and action buttons across themes. It does not prove clipboard write, email client launch, local-file save, Kasai diagnostic handoff, backend `submit_bug_report`, or report persistence.
