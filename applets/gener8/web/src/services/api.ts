@@ -59,6 +59,12 @@ export function getApiBase(): string {
 
   const host = window.location.hostname;
 
+  // Native Everywear embeds the Gener8 bundle at tauri.localhost; local-engine
+  // routes still live on the Gener8 shim, not the shell document origin.
+  if (host === 'tauri.localhost') {
+    return LOCAL_ENGINE;
+  }
+
   // Hosted UI — calls back to user's local engine.
   if (host.includes('strandsnation.xyz') || host.includes('s3studio.xyz') || host.includes('vercel.app')) {
     return LOCAL_ENGINE;

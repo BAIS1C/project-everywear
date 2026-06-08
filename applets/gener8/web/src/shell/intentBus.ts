@@ -76,7 +76,7 @@ export async function ensureModel(model: string): Promise<boolean> {
     showToast({
       kind: 'error',
       eyebrow: 'Everywear · model lifecycle',
-      message: err instanceof Error ? err.message : 'Could not verify the Pro Model.',
+      message: 'Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.',
       durationMs: 8000,
     });
     return false;

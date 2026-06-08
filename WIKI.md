@@ -4416,3 +4416,30 @@ Verification:
 Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all open AI Director from the S3 folder and show Creator Studio, Draft Plan, six deterministic shot rows, Package, Planner Route `SAPI: lm studio, ollama, external API`, Vid Studio handoff, no failed-load text, and no bug modal.
 
 Boundary: this is visual route and deterministic fallback-plan coverage only. Provider-routed SAPI success, Draft Plan API execution, Vid/3nvizen handoff, render/export, and Vault registration remain separate functional QA gates.
+
+---
+
+## Addendum 2026-06-09 05:55 SGT: DAW native theme sweep and engine-origin repair
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+DAW remains a virtual launcher over the shared Gener8 bundle at `/daw`, Creator Studio gated through `creator_studio` / `daw_pro`. Its Pro Model and stem-separation path depend on the Gener8 local shim routes at `localhost:3001`.
+
+The native full-tour DAW pass found that `getApiBase()` returned `''` on `tauri.localhost`, so DAW's Pro Model lifecycle probe fetched `/api/engine/pack-status` from the shell document origin. The shell returned HTML, producing the user-facing toast `Unexpected token '<', '<!DOCTYPE ... is not valid JSON`.
+
+Patch:
+
+- `applets/gener8/web/src/services/api.ts` now returns `http://localhost:3001` for native `tauri.localhost` engine API calls.
+- `applets/gener8/web/src/shell/intentBus.ts` now reports local Gener8 engine offline state directly when Pro Model verification cannot reach the shim.
+
+Verification:
+
+- `npm run build --workspace @everywear/gener8-web`
+- `npm run build --workspace everywear-os`
+- `cargo build -p everywear-os`
+- Native Tauri launch from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-daw-theme-*.png` and `native-daw-theme-sweep.json`
+
+Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all open DAW from the S3 folder and show the Stems entry surface, S3 DAW header, Load a Track empty state, Upload Audio File, From Library, and transport bar. The old HTML/JSON parse toast is gone.
+
+Boundary: DAW still does not pass functional QA because the local Gener8 shim is not listening on `localhost:3001`; Pro Model verification, model download, stem extraction, timeline/mixer population, playback, and Vault registration remain separate blockers.

@@ -466,3 +466,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED: every theme showed AI Director, Creator Studio label, Draft Plan, six deterministic shot rows, Package card, Planner Route `SAPI: lm studio, ollama, external API`, Vid Studio handoff, no failed-load text, and no bug modal.
 - TUTORIAL STATUS: AI Director can be taught as the Creator Studio shot-planning surface across all shell themes, with model lifecycle toast visible during launch.
 - BOUNDARY: this proves the native visual route and deterministic fallback plan surface only. It does not prove provider-routed SAPI success, Draft Plan API execution, Vid/3nvizen handoff, render/export, or Vault registration.
+
+---
+
+## 2026-06-09 05:55 SGT: DAW native theme sweep and engine-origin repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCHED: `applets/gener8/web/src/services/api.ts` now treats native `tauri.localhost` like hosted Everywear surfaces for local-engine calls, returning `http://localhost:3001` instead of `''`. DAW Pro Model checks no longer hit the shell HTML document and no longer throw `Unexpected token '<', '<!DOCTYPE ... is not valid JSON`.
+- PATCHED: `applets/gener8/web/src/shell/intentBus.ts` now reports the real blocker in product language: `Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.`
+- BUILD VERIFICATION PASSED: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-daw-theme-*.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-daw-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 folder opened; `button[data-applet-id="daw"]` opened DAW in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED: every theme showed DAW, Stems tab, S3 DAW header, Load a Track empty state, Upload Audio File, From Library, transport bar, no `Unexpected token` parse error, no failed-load text, and no bug modal.
+- BLOCKED: every theme still reports local engine failure because the Gener8 shim is not listening on `localhost:3001`. DAW Pro Model verification, model download, stem extraction, timeline/mixer population, playback, and Vault registration remain unproven.
