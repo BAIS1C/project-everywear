@@ -1,8 +1,23 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.32
-Last updated: 2026-06-09 (launcher semantic button fix)
+Version: 1.1.33
+Last updated: 2026-06-09 (Strands Nation external-state fallback)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.33: Strands Nation native blank embed
+> is no longer treated as an Everywear iframe bug. Current live headers from
+> `https://strandsnation.xyz` include `X-Frame-Options: DENY` and CSP
+> `frame-ancestors 'none'`, so the site forbids embedded viewing. For
+> `strands-game`, `HeadlessAppletView.tsx` now renders an explicit external
+> launch point instead of mounting a doomed iframe: title, reason, URL, `Open
+> in browser`, and `Check again`. Verified in rebuilt native WebView by
+> clicking `button.ew-desktop-icon[data-applet-id="strands-game"]`:
+> `hasExternalBlockedPane=true`, `hasIframe=false`, `reportModal=false`.
+> Screenshot:
+> `screenshots/2026-06-09-everywear-full-tour/native-postfix-strands-nation-external-state.png`.
+> This supersedes older internal-iframe expectations until the live Strands
+> site allows Everywear framing or Everywear ships a true internal browser
+> path.
 
 > Current-state note, 2026-06-09 v1.1.32: Launcher semantic controls fixed
 > in the native shell. `AppletIcon.tsx` now renders desktop applet tiles as

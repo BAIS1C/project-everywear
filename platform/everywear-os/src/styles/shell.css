@@ -2347,6 +2347,73 @@ body[data-skin="carbon"] .ew-section {
   text-align: center;
   padding: var(--ew-space-6);
 }
+.hav-external-blocked {
+  position: absolute;
+  inset: var(--ew-space-8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ew-space-4);
+  max-width: 620px;
+  margin: auto;
+  color: var(--ew-text);
+  text-align: left;
+}
+.hav-external-blocked__eyebrow {
+  font-family: var(--ew-font-display);
+  font-size: 11px;
+  font-weight: var(--ew-fw-display);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--ew-primary);
+}
+.hav-external-blocked h3 {
+  margin: 0;
+  font-family: var(--ew-font-display);
+  font-size: 24px;
+  font-weight: var(--ew-fw-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hav-external-blocked p {
+  margin: 0;
+  max-width: 56ch;
+  color: var(--ew-text-muted);
+  line-height: 1.55;
+}
+.hav-external-blocked code {
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--ew-space-2) var(--ew-space-3);
+  border: 1px solid var(--ew-border);
+  border-radius: var(--ew-radius);
+  background: var(--ew-surface);
+  color: var(--ew-text-muted);
+  font-family: var(--ew-font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.hav-external-blocked__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ew-space-3);
+}
+.hav-external-blocked__actions .ew-btn {
+  min-height: 34px;
+  padding: var(--ew-space-2) var(--ew-space-5);
+  border-color: color-mix(in oklab, var(--ew-primary) 70%, var(--ew-border));
+  background: color-mix(in oklab, var(--ew-primary) 18%, var(--ew-surface));
+  color: color-mix(in oklab, var(--ew-primary) 82%, white);
+  font-family: var(--ew-font-display);
+  font-size: 11px;
+  font-weight: var(--ew-fw-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.hav-external-blocked__actions .ew-btn:hover {
+  background: color-mix(in oklab, var(--ew-primary) 26%, var(--ew-surface));
+  color: white;
+}
 
 /* ═══════════════════════════════════════════════════════
    AppletViewRouter (avr-*) — React.lazy() applet host

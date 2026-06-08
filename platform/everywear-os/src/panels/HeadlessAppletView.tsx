@@ -28,6 +28,13 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
     && /^https?:\/\//i.test(url)
     && !url.startsWith('http://127.0.0.1')
     && !url.startsWith('http://localhost');
+  const remoteEmbedBlocked = isRemoteUrl && applet.id === 'strands-game';
+
+  const handleOpenExternal = () => {
+    import('@tauri-apps/plugin-shell')
+      .then(({ open }) => open(url!))
+      .catch(() => window.open(url!, '_blank'));
+  };
 
   useEffect(() => {
     if (!url) {
@@ -99,13 +106,7 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
             <button
               className="hav-toolbar__btn"
               title="Open in browser"
-              onClick={() => {
-                // Live-site applets (e.g. Strands Nation) may refuse framing
-                // or be offline; give the user an external escape hatch.
-                import('@tauri-apps/plugin-shell')
-                  .then(({ open }) => open(url!))
-                  .catch(() => window.open(url!, '_blank'));
-              }}
+              onClick={handleOpenExternal}
             >
               &#8599;
             </button>
@@ -134,7 +135,25 @@ export function HeadlessAppletView({ applet, onClose }: Props) {
             </button>
           </div>
         )}
-        {!loading && !error && (
+        {!loading && !error && remoteEmbedBlocked && (
+          <div className="hav-external-blocked">
+            <span className="hav-external-blocked__eyebrow">External site policy</span>
+            <h3>Open {applet.name} externally</h3>
+            <p>
+              The live Strands Nation site currently blocks embedded viewing. Everywear keeps the applet here as a launch point until the internal browser path is ready.
+            </p>
+            <code>{url}</code>
+            <div className="hav-external-blocked__actions">
+              <button className="ew-btn ew-btn--sm" onClick={handleOpenExternal}>
+                Open in browser
+              </button>
+              <button className="ew-btn ew-btn--sm" onClick={handleReload}>
+                Check again
+              </button>
+            </div>
+          </div>
+        )}
+        {!loading && !error && !remoteEmbedBlocked && (
           <iframe
             ref={iframeRef}
             src={url}

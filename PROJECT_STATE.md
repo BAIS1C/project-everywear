@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:14+08 SGT (Codex: launcher semantic button fix).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:22+08 SGT (Codex: Strands Nation external-state fallback).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:22 SGT - Strands Nation External-State Fallback Fixed (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: native Strands Nation no longer opens to a blank embedded iframe. Live `https://strandsnation.xyz` currently returns `X-Frame-Options: DENY` and CSP `frame-ancestors 'none'`, so Everywear now shows an explicit external-open state for `strands-game` instead of mounting an iframe that the site forbids.
+- PATCH: `platform/everywear-os/src/panels/HeadlessAppletView.tsx` detects `strands-game` remote embed policy and renders a launch-point panel with `Open in browser` and `Check again`; `platform/everywear-os/src/styles/shell.css` adds the blocked-state layout and Carbon-visible CTA styling.
+- VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP; clicked `button.ew-desktop-icon[data-applet-id="strands-game"]`; verified `hasExternalBlockedPane=true`, `hasIframe=false`, `reportModal=false`; screenshot `screenshots\2026-06-09-everywear-full-tour\native-postfix-strands-nation-external-state.png`.
+- STATUS: first-run tutorial can include Strands Nation as an external launch point. Do not promise in-shell gameplay until `strandsnation.xyz` allows Everywear framing or Everywear ships a true internal browser path.
+
+---
 
 ## 2026-06-09 04:14 SGT - Launcher Semantic Buttons Fixed (Codex)
 
