@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:32+08 SGT (Codex: 1magen shell styling fixed).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:37+08 SGT (Codex: 1magen theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:37 SGT - 1magen Native Theme Sweep Captured (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- QA PASSED: the fixed native 1magen workbench was captured across every current shell theme target: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- VERIFICATION: live WebView DOM/state per theme confirmed `.imagen-workbench`, `.imagen-controls`, `.imagen-output`, `bodyDisplay=grid`, no `failed to load` text, and no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-1magen-theme-light.png`, `native-1magen-theme-classic.png`, `native-1magen-theme-refined.png`, `native-1magen-theme-terminal.png`, `native-1magen-theme-graphite.png`, `native-1magen-theme-anodized.png`, `native-1magen-theme-carbon.png`, plus `native-1magen-theme-sweep.json`.
+- STATUS: 1magen visual tutorial coverage now has per-theme evidence. The remaining 1magen blocker is functional, not visual: model provisioning, actual image generation, output save path, and Vault registration are still unproven.
+
+---
 
 ## 2026-06-09 04:32 SGT - 1magen Shell Styling Fixed (Codex)
 

@@ -1,8 +1,21 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.34
-Last updated: 2026-06-09 (1magen shell styling)
+Version: 1.1.35
+Last updated: 2026-06-09 (1magen native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.35: 1magen native visual coverage now
+> has per-theme evidence for the styled workbench. Captured in rebuilt native
+> Everywear OS across Light, Classic, Refined, Terminal, Graphite, Anodized,
+> and Carbon. Per-theme WebView checks confirmed `.imagen-workbench`,
+> `.imagen-controls`, `.imagen-output`, `bodyDisplay=grid`, no failed-load
+> text, and no bug modal. Evidence files:
+> `screenshots/2026-06-09-everywear-full-tour/native-1magen-theme-light.png`,
+> `native-1magen-theme-classic.png`, `native-1magen-theme-refined.png`,
+> `native-1magen-theme-terminal.png`, `native-1magen-theme-graphite.png`,
+> `native-1magen-theme-anodized.png`, `native-1magen-theme-carbon.png`, plus
+> `native-1magen-theme-sweep.json`. This proves visual/theming readiness for
+> first-run teaching, not functional generation readiness.
 
 > Current-state note, 2026-06-09 v1.1.34: 1magen native shell styling is
 > fixed. Root cause: `ImagenCore` is lazy-mounted directly by the shell, but
