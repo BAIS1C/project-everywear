@@ -1420,6 +1420,18 @@ export function ShellLayout() {
 
     // BinaryLocal applets go through the runtime bridge.
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
+    const hasIntegratedFrontendFallback = Boolean(applet.frontend_port && isRegisteredApplet(applet.id));
+    if (hasIntegratedFrontendFallback) {
+      openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
+      showToast({
+        kind: 'info',
+        eyebrow: `${applet.name} · runtime handoff`,
+        message: 'Opening the studio surface now. Everywear will finish local engine handoff in the background.',
+        durationMs: 7000,
+      });
+      markAppletReady(applet);
+      refreshRuntimeReadouts();
+    }
     try {
       await requestAppletSwitch(applet.id);
       if (isShellNativeBridgeApplet(applet)) {
