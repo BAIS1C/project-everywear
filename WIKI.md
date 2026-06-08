@@ -1,8 +1,24 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.31
-Last updated: 2026-06-09 (Avatar Studio native asset-protocol scope fix)
+Version: 1.1.32
+Last updated: 2026-06-09 (launcher semantic button fix)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.32: Launcher semantic controls fixed
+> in the native shell. `AppletIcon.tsx` now renders desktop applet tiles as
+> `button.ew-desktop-icon[data-applet-id]` with ARIA labels/titles while
+> preserving the existing visual classes and launch behavior. `ShellLayout.tsx`
+> now renders Settings and Vault system tiles as buttons too; the S3 Studio
+> folder was already a button. `shell.css` owns the button reset, focus-visible
+> outline, and icon pulse keyframes. Verified in the rebuilt native WebView:
+> seven applet buttons, S3 folder, Settings, and Vault present; zero non-button
+> applet/system launcher holdouts; mouse click on
+> `button.ew-desktop-icon[data-applet-id="character-studio"]` opened Avatar
+> Studio with no bug modal. Screenshots:
+> `screenshots/2026-06-09-everywear-full-tour/native-postfix-launcher-semantic-home.png`
+> and `native-postfix-launcher-semantic-buttons.png`. `ShellLayout.tsx` and
+> `shell.css` remain soft split debt but below the hard ceiling; this was a
+> narrow semantic patch, not a shell refactor.
 
 > Current-state note, 2026-06-09 v1.1.31: Avatar Studio native local
 > manifest loading is fixed for the debug/native shell. Root cause: the shell

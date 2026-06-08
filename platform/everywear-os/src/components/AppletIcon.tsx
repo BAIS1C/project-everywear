@@ -469,22 +469,38 @@ function ParticleIcon({ appletId }: { appletId: string }) {
 export default function AppletIcon({ applet, health, isLaunching, onClick }: AppletIconProps) {
   const isLocked = applet.status === 'Locked';
   const isNotBuilt = applet.status === 'NotBuilt';
+  const statusLabel = isLocked
+    ? 'Locked'
+    : isNotBuilt
+      ? 'Not built'
+      : health === 'online'
+        ? 'Online'
+        : health === 'offline'
+          ? 'Offline'
+          : 'Checking status';
+  const actionLabel = isLaunching ? `Opening ${applet.name}` : `Open ${applet.name}`;
 
   return (
-    <div
+    <button
+      type="button"
       className="ew-desktop-icon"
       data-applet-id={applet.id}
       data-status={applet.status}
       data-health={health}
       data-launching={isLaunching || undefined}
+      aria-label={`${actionLabel}. ${statusLabel}.`}
+      aria-disabled={isLocked || isNotBuilt || undefined}
+      aria-busy={isLaunching || undefined}
+      title={applet.name}
       onClick={onClick}
       onDoubleClick={onClick}
     >
       {/* Icon */}
-      <div style={{ position: 'relative' }}>
-        <div
+      <span style={{ position: 'relative', display: 'inline-flex' }}>
+        <span
           style={{
             position: 'relative',
+            display: 'inline-flex',
             opacity: isLocked ? 0.45 : isNotBuilt ? 0.3 : 1,
             animation: isLaunching ? 'ew-icon-pulse 1.2s ease-in-out infinite' : undefined,
           }}
@@ -493,7 +509,7 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
 
           {/* Online pulse indicator */}
           {applet.status === 'Active' && health === 'online' && (
-            <div
+            <span
               style={{
                 position: 'absolute',
                 top: -2,
@@ -502,7 +518,7 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
                 height: 10,
               }}
             >
-              <div
+              <span
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -512,7 +528,7 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
                   opacity: 0.4,
                 }}
               />
-              <div
+              <span
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -520,12 +536,12 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
                   backgroundColor: '#4ade80',
                 }}
               />
-            </div>
+            </span>
           )}
 
           {/* Offline dot */}
           {applet.status === 'Active' && health === 'offline' && (
-            <div
+            <span
               style={{
                 position: 'absolute',
                 top: -2,
@@ -534,7 +550,7 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
                 height: 10,
               }}
             >
-              <div
+              <span
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -542,12 +558,12 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
                   backgroundColor: '#6b7280',
                 }}
               />
-            </div>
+            </span>
           )}
 
           {/* Locked overlay */}
           {isLocked && (
-            <div
+            <span
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -575,24 +591,13 @@ export default function AppletIcon({ applet, health, isLaunching, onClick }: App
               >
                 LOCKED
               </span>
-            </div>
+            </span>
           )}
-        </div>
-      </div>
+        </span>
+      </span>
 
       {/* Label */}
       <span className="ew-desktop-icon__label">{applet.name}</span>
-
-      {/* Keyframe styles injected once */}
-      <style>{`
-        @keyframes ew-ping {
-          75%, 100% { transform: scale(2); opacity: 0; }
-        }
-        @keyframes ew-icon-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(0.96); }
-        }
-      `}</style>
-    </div>
+    </button>
   );
 }

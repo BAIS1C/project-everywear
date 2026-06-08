@@ -254,6 +254,7 @@ body[data-mode="light"] .ew-desktop::after {
 }
 
 .ew-desktop-icon {
+  appearance: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -267,9 +268,14 @@ body[data-mode="light"] .ew-desktop::after {
   background: transparent;
   color: inherit;
   font: inherit;
+  text-align: center;
   cursor: pointer;
   user-select: none;
   transition: background var(--ew-t-fast) var(--ew-ease), transform var(--ew-t-fast) var(--ew-ease);
+}
+.ew-desktop-icon:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ew-primary) 78%, white);
+  outline-offset: 3px;
 }
 .ew-desktop-icon:hover {
   background: color-mix(in oklab, var(--ew-text) 6%, transparent);
@@ -292,6 +298,13 @@ body[data-mode="light"] .ew-desktop::after {
 @keyframes ew-pulse {
   0%, 100% { opacity: 1; box-shadow: none; }
   50% { opacity: 0.7; box-shadow: 0 0 12px var(--ew-primary); }
+}
+@keyframes ew-ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+@keyframes ew-icon-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.96); }
 }
 
 .ew-desktop-icon__badge {

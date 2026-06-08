@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:00+08 SGT (Codex: Avatar Studio native asset-protocol scope fix).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:14+08 SGT (Codex: launcher semantic button fix).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:14 SGT - Launcher Semantic Buttons Fixed (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: desktop applet tiles and shell-owned Settings/Vault tiles are now real `button.ew-desktop-icon` controls with `aria-label`, `title`, focus-visible styling, and preserved visual classes.
+- PATCH: `platform/everywear-os/src/components/AppletIcon.tsx` renders a semantic button instead of a clickable div; `platform/everywear-os/src/shell/ShellLayout.tsx` renders Settings/Vault system icons as buttons; `platform/everywear-os/src/styles/shell.css` resets button chrome and owns the launcher pulse keyframes.
+- VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP; DOM verified 7 applet buttons, S3 folder button, Settings button, Vault button, and zero non-button applet/system launcher holdouts; native mouse click on `button.ew-desktop-icon[data-applet-id="character-studio"]` opened Avatar Studio with no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-postfix-launcher-semantic-home.png` and `native-postfix-launcher-semantic-buttons.png`.
+- STATUS: keyboard/screen-reader first-run navigation is credible at the desktop launcher level. Remaining full-tour blockers are 1magen generation/layout, 3nvizen sidecar/video generation, Strands Nation embedded blank/blocked state, and deeper Avatar Studio Create/Batch/Optimize path verification.
+- NOTE: `ShellLayout.tsx` and `shell.css` remain above the soft context target but below the hard ceiling; this pass was a narrow semantic patch. The next OODA/split debt still includes `ShellLayout.tsx` and `shell.css`.
+
+---
 
 ## 2026-06-09 04:00 SGT - Avatar Studio Native Asset Protocol Scope Fixed (Codex)
 

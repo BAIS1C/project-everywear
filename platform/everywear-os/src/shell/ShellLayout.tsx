@@ -1723,16 +1723,19 @@ export function ShellLayout() {
           ))}
 
           {SYSTEM_ICONS.map((icon) => (
-            <div
+            <button
+              type="button"
               key={icon.id}
               className="ew-desktop-icon ew-desktop-icon--system"
+              aria-label={`Open ${icon.label}`}
+              title={icon.label}
               onClick={() => handleSystemClick(icon.id)}
             >
-              <div className="ew-desktop-icon__glyph-wrap">
+              <span className="ew-desktop-icon__glyph-wrap">
                 <ThemedIconGlyph appletId={icon.glyphId} />
-              </div>
+              </span>
               <span className="ew-desktop-icon__label">{icon.label}</span>
-            </div>
+            </button>
           ))}
         </div>
 
