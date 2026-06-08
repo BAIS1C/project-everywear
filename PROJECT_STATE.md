@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:52+08 SGT (Codex: Vault native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:08+08 SGT (Codex: Gener8 4ever native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 05:08 SGT - Gener8 4ever Native Theme Sweep Captured (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- QA PASSED: native Gener8 4ever was captured across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- VERIFICATION: opened the S3 folder and confirmed child route tiles for Gener8 4ever, Gener8 Pro, Vid, AI Director, and DAW; opened Gener8 4ever in the native shell; WebView checks confirmed active Gener8 4ever window, S3 brand, Title, Lyrics, Style of Music, Vocal Language, Creative Controls, Create, My Workspace, no failed-load text, and no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-gener8-4ever-theme-light.png`, `native-gener8-4ever-theme-classic.png`, `native-gener8-4ever-theme-refined.png`, `native-gener8-4ever-theme-terminal.png`, `native-gener8-4ever-theme-graphite.png`, `native-gener8-4ever-theme-anodized.png`, `native-gener8-4ever-theme-carbon.png`, plus `native-gener8-4ever-theme-sweep.json`.
+- STATUS: Gener8 4ever visual/input-surface coverage is captured for the native shell. No song generation, route/API smoke, save-to-Vault flow, or deeper workspace control accessibility audit was run in this slice; the manifest's high icon-only button count needs a focused follow-up before claiming deep accessibility coverage.
+
+---
 
 ## 2026-06-09 04:52 SGT - Vault Native Theme Sweep Captured (Codex)
 

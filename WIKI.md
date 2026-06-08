@@ -1,8 +1,29 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.37
-Last updated: 2026-06-09 (Vault native theme sweep)
+Version: 1.1.38
+Last updated: 2026-06-09 (Gener8 4ever native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.38: native Gener8 4ever visual/input
+> coverage now has per-theme evidence. Opened through the native S3 folder
+> after confirming child route tiles for Gener8 4ever, Gener8 Pro, Vid, AI
+> Director, and DAW, then captured Light, Classic, Refined, Terminal,
+> Graphite, Anodized, and Carbon. WebView checks confirmed active Gener8
+> 4ever window, S3 brand, Title, Lyrics, Style of Music, Vocal Language,
+> Creative Controls, Create, My Workspace, no failed-load text, and no bug
+> modal. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-gener8-4ever-theme-light.png`,
+> `native-gener8-4ever-theme-classic.png`,
+> `native-gener8-4ever-theme-refined.png`,
+> `native-gener8-4ever-theme-terminal.png`,
+> `native-gener8-4ever-theme-graphite.png`,
+> `native-gener8-4ever-theme-anodized.png`,
+> `native-gener8-4ever-theme-carbon.png`, plus
+> `native-gener8-4ever-theme-sweep.json`. Boundary: this proves native
+> theme/readability and input-surface presence, not song generation,
+> route/API health, save-to-Vault behavior, or deep workspace accessibility.
+> The manifest reported many icon-only workspace controls, so a focused
+> accessibility audit remains owed before deep control claims.
 
 > Current-state note, 2026-06-09 v1.1.37: native Vault visual coverage now
 > has per-theme evidence for Sean's populated QA vault. Opened through
