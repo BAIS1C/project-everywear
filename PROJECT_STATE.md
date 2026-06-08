@@ -511,3 +511,16 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED: every theme showed Educ8, Learner Setup, IGCSE Teacher Pack, Plan Downloads, Choose Location, Accept Plan, Download, subject tabs, five Mathematics content cards, lower Pedagogy Model view, no failed-load text, no bug modal, no visible `My Maits Lite`, no visible `Project NOMAD`, no visible `loom-db setup`, and no visible raw default `data\loom` path.
 - TUTORIAL STATUS: Educ8 can be taught as the first-run offline IGCSE tutor setup: choose learner subject, review required/recommended content, press Plan Downloads, inspect size/location/status, press Accept Plan, then only download after explicit consent.
 - BOUNDARY: this proves native visual route, plan/accept flow, copy hygiene, and lower pedagogy visibility. It does not prove actual ZIM transfer, checksum validation, symlink creation after Choose Location, offline reader/indexing, local tutor inference, learner progress persistence, or Vault registration.
+
+---
+
+## 2026-06-09 06:55 SGT: 3nvizen native theme sweep, offline-sidecar tutorial boundary
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- MODE: native Tauri Everywear OS from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; no 3nvizen code changes in this slice.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-3nvizen-theme-*.png`, `native-3nvizen-theme-*-advanced.png`, `native-3nvizen-theme-*-image-mode.png`, and `native-3nvizen-theme-*-audio-mode.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-3nvizen-theme-sweep.json`.
+- VERIFIED: `button[data-applet-id="3nvizen"]` opened 3nvizen in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED VISUALS: every theme showed the 3nvizen workbench, `LTX sidecar is offline` banner, `Engine Offline` badge, Text to Video / Image to Video / Audio to Video / Retake Soon tabs, prompt field with entered prompt, empty generated-video preview, disabled Generate button with `Engine offline`, advanced controls, IC-LoRA placeholder, Spatial Upscaler placeholder, Image mode source-image dropzone, and Audio mode audio-track dropzone.
+- TUTORIAL STATUS: 3nvizen is tourable as a Creator Studio video workbench in offline-engine state. First-run teaching should say: choose a mode, write a prompt or attach source media, inspect advanced controls, then start generation only after the LTX sidecar/model handoff reports online.
+- BLOCKED FUNCTIONAL QA: LTX sidecar remains offline on `127.0.0.1:8787`. Real model status, model download/load, generation, progress polling, output playback/download, Save to Vault, auto-save, retake, IC-LoRA extraction, upscaling, and folder-open are not proven.
