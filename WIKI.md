@@ -1,8 +1,21 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.44
-Last updated: 2026-06-09 (Bug report modal native theme sweep)
+Version: 1.1.45
+Last updated: 2026-06-09 (Native shell home desktop theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.45: native shell home desktop
+> visual/theme coverage now has per-theme evidence. Light, Classic, Refined,
+> Terminal, Graphite, Anodized, and Carbon all returned to a clean home
+> desktop through the native Tauri runtime with no open windows/modals, seven
+> applet buttons, S3 Studio folder closed, Settings and Vault system buttons,
+> center clock/status/readout cards, GPU label, Light/Dark toggle, profile
+> chip, report bell, and no failed-load text. Screenshots and manifest live at
+> `screenshots/2026-06-09-everywear-full-tour/native-home-theme-*.png` and
+> `native-home-theme-sweep.json`. Boundary: this proves shell home visibility
+> and launch anchors across themes, not fresh auth, restart persistence,
+> weather/geolocation success, report submission, or actual applet launch
+> behavior.
 
 > Current-state note, 2026-06-09 v1.1.44: native bug-report modal visual/theme
 > coverage now has per-theme evidence. The taskbar bell opened the manual
@@ -4686,3 +4699,23 @@ Verification:
 Current surface truth: every theme shows Report a Problem, close control, What went wrong textarea, Include in report, ten log categories, six default-checked categories, per-category entry counts, Estimated size, Send to, Everywear Team via Email, Local Kasai for diagnostics, Save to this computer only, Copy to Clipboard, and Send Report. No failed-load text appeared.
 
 Tutorial boundary: the first-run platform tutorial can teach the bell as the recovery/reporting path: describe what went wrong, include relevant logs, choose team/Kasai/local destination, copy the report if needed, then send. Clipboard write, email client launch, local file save, Kasai diagnostic handoff, backend `submit_bug_report`, and report persistence remain separate functional QA gates.
+
+---
+
+## Addendum 2026-06-09 07:45 SGT: Native shell home desktop theme sweep
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+The shell home desktop remains owned by `platform/everywear-os/src/shell/ShellLayout.tsx`, with launcher applet tiles from the native registry, shell-owned Settings/Vault system tiles, the S3 Studio folder, and taskbar controls for Show Desktop, Light/Dark mode, Profile, and Report a Problem.
+
+Verification:
+
+- Native Tauri runtime from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Settings UI used to select Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon
+- All `.ew-window` windows and bug modals closed before each capture
+- Show Desktop/Start returned the shell to the home desktop before each screenshot
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-home-theme-*.png` and `native-home-theme-sweep.json`
+
+Current surface truth: every theme shows a clean home desktop with no open windows or modal, seven applet buttons for My Mait, 1magen, Strands Nation, Layer U OSINT, 3nvizen, Avatar Studio, and Educ8; S3 Studio folder closed; Settings and Vault system buttons; center clock/status cards; Node, Inference, Network, and weather/signal cards; GPU label; Light/Dark toggle; profile chip; and report bell. No failed-load text appeared.
+
+Tutorial boundary: the platform first-run tour can now teach the home shell as the main orientation surface: launcher column, S3 Studio folder, center status/readouts, bottom taskbar, profile, Settings, Vault, and report bell. Fresh auth/signup, restart persistence, weather/geolocation success, clipboard/email/report submission, and actual applet launch behavior remain separate QA gates.

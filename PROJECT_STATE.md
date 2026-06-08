@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:39+08 SGT (Codex: Bug report modal native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:45+08 SGT (Codex: Native shell home desktop theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 07:45 SGT - Native Shell Home Desktop Theme Sweep (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCH STATUS: no code patch required.
+- ARTIFACTS: screenshots at `screenshots\2026-06-09-everywear-full-tour\native-home-theme-*.png`; manifest `screenshots\2026-06-09-everywear-full-tour\native-home-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; all windows and modals were closed before each capture; Show Desktop/Start returned to the shell home surface.
+- PASSED VISUALS: every theme showed the clean home desktop with no open windows/modals, seven desktop applet buttons (My Mait, 1magen, Strands Nation, Layer U OSINT, 3nvizen, Avatar Studio, Educ8), S3 Studio folder closed, Settings and Vault system buttons, center clock/status cards, Node card, Inference card, Network card, weather/signal card, GPU label, Light/Dark toggle, profile chip, report bell, and no failed-load text.
+- TUTORIAL STATUS: the first-run shell tour can teach the desktop layout: left launcher, S3 folder, center home status/readouts, bottom taskbar, profile, Settings, Vault, and report bell.
+- BOUNDARY: this proves home shell visibility and launch anchors across themes. It does not prove fresh auth gate, restart persistence, actual applet launches, weather/geolocation success, clipboard/email/report submission, or deeper applet flows; those remain owned by separate QA slices.
+
+---
 
 ## 2026-06-09 05:21 SGT - Vid Studio Pro Native Theme Sweep + Light Contrast Fix (Codex)
 
