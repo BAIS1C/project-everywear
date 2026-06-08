@@ -166,9 +166,9 @@ export default function VidApp(_props: VidAppProps = {}) {
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <Film size={40} className="mx-auto mb-3 text-white/10" />
-                  <p className="text-sm text-white/30 font-medium">Select a song to create a video</p>
-                  <p className="text-xs text-white/20 mt-1">Choose from your library on the left</p>
+                  <Film size={40} className="mx-auto mb-3 text-[color:var(--ew-text-faint)]" />
+                  <p className="text-sm text-[color:var(--ew-text-muted)] font-medium">Select a song to create a video</p>
+                  <p className="text-xs text-[color:var(--ew-text-faint)] mt-1">Choose from your library on the left</p>
                 </div>
               </div>
             )

@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:12+08 SGT (Codex: Gener8 Pro native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:21+08 SGT (Codex: Vid Studio Pro native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 05:21 SGT - Vid Studio Pro Native Theme Sweep + Light Contrast Fix (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: Vid Studio Pro's visualiser empty state no longer renders near-white text on the Light theme's cream surface. `applets/gener8/web/src/shell/VidApp.tsx` now uses EWDS text tokens for the empty-state icon, title, and hint, matching the token-safe `VidView.tsx` route.
+- QA PASSED: native Vid Studio Pro was captured across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon after the contrast fix.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace @everywear/vid-web`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP; reloaded each shell theme, opened the S3 folder, clicked `button[data-applet-id="vid"]`, and captured the active native Vid window. WebView checks confirmed Vid Studio Pro window, Visualiser tab, AI Video Soon, Storyboard Soon, Your Songs list, readable empty prompt, no failed-load text, and no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-vid-studio-pro-theme-light.png`, `native-vid-studio-pro-theme-classic.png`, `native-vid-studio-pro-theme-refined.png`, `native-vid-studio-pro-theme-terminal.png`, `native-vid-studio-pro-theme-graphite.png`, `native-vid-studio-pro-theme-anodized.png`, `native-vid-studio-pro-theme-carbon.png`, plus `native-vid-studio-pro-theme-sweep.json`.
+- STATUS: Vid Studio Pro visual/theme coverage is captured for the native shell. This proves the empty/select-a-song Visualiser entry surface and coming-soon tabs are readable across themes; it does not prove video render/export, encoder health, playback, or Vault video registration.
+
+---
 
 ## 2026-06-09 05:12 SGT - Gener8 Pro Native Theme Sweep Captured (Codex)
 

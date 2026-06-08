@@ -1,8 +1,32 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.39
-Last updated: 2026-06-09 (Gener8 Pro native theme sweep)
+Version: 1.1.40
+Last updated: 2026-06-09 (Vid Studio Pro native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.40: native Vid Studio Pro visual/theme
+> coverage now has per-theme evidence, and the Light theme empty-state
+> contrast defect is fixed. `applets/gener8/web/src/shell/VidApp.tsx` now
+> uses EWDS text tokens for the visualiser empty-state icon, title, and hint
+> instead of hardcoded `text-white/*`, matching the token-safe `VidView.tsx`
+> route. Verification passed: `npm run build --workspace @everywear/gener8-web`,
+> `npm run build --workspace @everywear/vid-web`, `npm run build --workspace
+> everywear-os`, `cargo build -p everywear-os`, native relaunch, then CDP
+> capture across Light, Classic, Refined, Terminal, Graphite, Anodized, and
+> Carbon. WebView checks confirmed Vid Studio Pro window, Visualiser tab, AI
+> Video Soon, Storyboard Soon, Your Songs list, readable empty prompt, no
+> failed-load text, and no bug modal. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-vid-studio-pro-theme-light.png`,
+> `native-vid-studio-pro-theme-classic.png`,
+> `native-vid-studio-pro-theme-refined.png`,
+> `native-vid-studio-pro-theme-terminal.png`,
+> `native-vid-studio-pro-theme-graphite.png`,
+> `native-vid-studio-pro-theme-anodized.png`,
+> `native-vid-studio-pro-theme-carbon.png`, plus
+> `native-vid-studio-pro-theme-sweep.json`. Boundary: this proves the
+> Visualiser empty/select-a-song entry surface and coming-soon tabs are
+> readable across themes, not video render/export, encoder health, playback,
+> or Vault video registration.
 
 > Current-state note, 2026-06-09 v1.1.39: native Gener8 Pro visual/theme
 > coverage now has per-theme evidence. For each theme, the native shell was
