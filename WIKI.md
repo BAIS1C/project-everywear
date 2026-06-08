@@ -1,8 +1,19 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.40
-Last updated: 2026-06-09 (Vid Studio Pro native theme sweep)
+Version: 1.1.41
+Last updated: 2026-06-09 (S3 folder native theme sweep and tray repair)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.41: the native S3 Studio folder
+> first-open tray now shows all five child tools across Light, Classic,
+> Refined, Terminal, Graphite, Anodized, and Carbon. The tray was widened
+> from its previous `430px` cap and now uses `--ew-surface-overlay` as its
+> solid skin-aware background layer, avoiding EWDS-v2 gradient-token
+> color-mix invalidation and Carbon label bleed-through. Verification passed:
+> `npm run build --workspace everywear-os`; `cargo build -p everywear-os`;
+> native relaunch from `target\debug\everywear-os.exe`; screenshots and
+> manifest at `screenshots/2026-06-09-everywear-full-tour/native-s3-folder-theme-*.png`
+> and `native-s3-folder-theme-sweep.json`.
 
 > Current-state note, 2026-06-09 v1.1.40: native Vid Studio Pro visual/theme
 > coverage now has per-theme evidence, and the Light theme empty-state
@@ -4546,3 +4557,33 @@ Verification:
 Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all open Layer U OSINT from the native shell. Every theme shows OFFLINE status, posture standby, market placeholders, Map / Feeds / Sources tabs, Project SON service offline, port `3117` instruction, clickable Retry connection button, Feeds empty state, Sources rollup, Refresh, Pull Live, and Reload Map. The fresh manifest verifies Retry connection has `pointer-events: auto` on both button and parent in every theme.
 
 Tutorial boundary: Layer U can now be taught as the free OSINT bridge even while SON is offline: Map explains the worldview dependency, Feeds and Sources show empty/rollup states, and Retry/Refresh/Pull Live/Reload Map are the visible recovery controls. Live Project SON data, iframe map rendering, feed ingestion, source sweep, live pull, geolocation, and downstream My Mait/analysis handoff remain separate functional QA gates.
+
+---
+
+## Addendum 2026-06-09 07:19 SGT: S3 folder native theme sweep and tray repair
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+The S3 Studio folder remains a shell-local desktop folder rendered by `S3StudioFolder` in `platform/everywear-os/src/shell/ShellLayout.tsx`. Its five current children are registry-owned applets: `gener8-4ever`, `gener8-pro`, `vid`, `ai-director`, and `daw`. `1magen` and `3nvizen` remain desktop-level applets, not S3 folder members.
+
+The native full-tour pass found a first-open tutorial defect in the folder tray. The tray opened in every theme and contained the correct five applets, but:
+
+- DAW was clipped out of the initial visible tray because `.ew-folder-tray` was capped at `430px`, while five `96px` child slots plus gaps and padding need roughly `508px`.
+- Carbon let underlying Settings/Vault desktop labels bleed visually through the tray because the background tried to `color-mix()` `--ew-surface-raised`; in EWDS-v2 skins that token is a gradient, which is not valid as a color-mix input.
+
+Patch:
+
+- `platform/everywear-os/src/styles/shell.css` now gives `.ew-folder-tray` `width: min(532px, calc(100vw - 136px))` and `max-width: calc(100vw - 136px)`.
+- `.ew-folder-tray__rail` now uses `min-width: max-content` so child slots keep their intended width.
+- The tray now uses `var(--ew-surface-overlay)` as the second background layer, preserving skin-native V1/V2 surfaces without invalid gradient-token color mixing.
+
+Verification:
+
+- `npm run build --workspace everywear-os`
+- `cargo build -p everywear-os` after stopping the locked QA instance
+- Native Tauri relaunch from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-s3-folder-theme-*.png` and `native-s3-folder-theme-sweep.json`
+
+Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all show the S3 Studio folder tray with Gener8 4ever, Gener8 Pro, Vid Studio Pro, AI Director, and DAW visible on first open. Manifest checks confirm `children=5`, child IDs `gener8-4ever,gener8-pro,vid,ai-director,daw`, all center hit-tests true, all child rects inside the tray, no failed-load text, and no bug modal.
+
+Tutorial boundary: the platform first-run tour can now teach S3 Studio as the folder containing five Creator Studio tools without requiring a horizontal scroll just to discover DAW. Generation/export/playback/Vault behavior remains owned by each child applet's separate QA slice.

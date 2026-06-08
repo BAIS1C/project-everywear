@@ -1,6 +1,6 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T05:21+08 SGT (Codex: Vid Studio Pro native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:19+08 SGT (Codex: S3 folder native theme sweep and tray repair).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
@@ -538,3 +538,18 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED VISUALS: every theme showed Layer U OSINT, OFFLINE status, posture standby, market placeholders, Map / Feeds / Sources tabs, Project SON service offline overlay, port `3117` instruction, visible clickable Retry connection button, Feeds empty state, Sources rollup, Refresh, Pull Live, and Reload Map.
 - TUTORIAL STATUS: Layer U can be taught as the free OSINT shell bridge in offline SON state: the user sees worldview, feeds, and source posture tabs; the app explains that Project SON must be running on port `3117`; Retry/Refresh/Pull Live/Reload Map are visible controls.
 - BOUNDARY: this proves native visual route, theme readability, tab coverage, and clickable offline retry. It does not prove Project SON live data, map iframe rendering, feed ingestion, source sweep, live pull, geolocation, or downstream My Mait/analysis handoff.
+
+---
+
+## 2026-06-09 07:19 SGT: S3 folder native theme sweep and tray repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- FOUND: the native S3 Studio folder opened in every theme and contained the correct five child applets, but the tray was capped at `430px`, clipping DAW out of the first-open view. Carbon also let underlying Settings/Vault desktop labels bleed through the tray because the tray background mixed `--ew-surface-raised`, which is a gradient token in EWDS-v2 skins.
+- PATCHED: `platform/everywear-os/src/styles/shell.css` now sizes the open folder tray to `min(532px, calc(100vw - 136px))`, preserves a max-content rail, and uses `--ew-surface-overlay` as the second background layer instead of invalid color-mixing a gradient token.
+- BUILD VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os` after stopping the locked QA instance. Warnings only after rerun.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-s3-folder-theme-*.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-s3-folder-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS relaunched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; S3 Studio folder opened in each theme.
+- PASSED VISUALS: every theme now shows the S3 folder tray with Gener8 4ever, Gener8 Pro, Vid Studio Pro, AI Director, and DAW visible inside the tray on first open. DOM checks confirm `children=5`, child IDs `gener8-4ever,gener8-pro,vid,ai-director,daw`, center hit-tests true, child rects within the tray, no failed-load text, and no bug modal.
+- TUTORIAL STATUS: the platform first-run tour can teach S3 Studio as a folder containing five Creator Studio tools without needing the user to horizontally scroll or guess that DAW exists offscreen.
+- BOUNDARY: this proves shell folder visibility/readability and child launch target presence, not the child applets' generation/export paths. Those remain covered by the separate Gener8 4ever, Gener8 Pro, Vid, AI Director, and DAW slices.

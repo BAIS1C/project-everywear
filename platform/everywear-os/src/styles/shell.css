@@ -474,13 +474,15 @@ body[data-mode="light"] .ew-folder-icon__badge {
   left: 82px;
   top: -4px;
   z-index: 50;
-  max-width: min(430px, calc(100vw - 120px));
+  box-sizing: border-box;
+  width: min(532px, calc(100vw - 136px));
+  max-width: calc(100vw - 136px);
   padding: 8px 10px;
   border: 1px solid color-mix(in oklab, var(--ew-primary) 30%, var(--ew-border));
   border-radius: var(--ew-radius-lg);
   background:
     linear-gradient(145deg, color-mix(in oklab, var(--ew-primary) 8%, transparent), transparent 62%),
-    color-mix(in oklab, var(--ew-surface-raised) 98%, black 2%);
+    var(--ew-surface-overlay);
   backdrop-filter: blur(22px) saturate(1.08);
   clip-path: var(--ew-clip-card);
   box-shadow: var(--ew-shadow-float);
@@ -493,6 +495,7 @@ body[data-mode="light"] .ew-folder-icon__badge {
   display: flex;
   align-items: flex-start;
   gap: 2px;
+  min-width: max-content;
 }
 .ew-folder-tray .ew-desktop-icon {
   /* 88px clipped "AI Director" to "AI Direc"; widen the slot and let labels
