@@ -741,6 +741,9 @@ pub fn record_allocations(
     applet_id: &str,
     group: &model_manager::ModelGroup,
 ) {
+    // A relaunch replaces an applet's previous reservation; otherwise failed
+    // launch retries can stack stale entries and make the shell think VRAM is full.
+    budget.release_applet(applet_id);
     for req in &group.models {
         budget.allocate(VramAllocation {
             applet_id: applet_id.to_string(),

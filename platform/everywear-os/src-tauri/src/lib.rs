@@ -458,7 +458,7 @@ async fn request_applet_switch(
     drop(budget_lock);
 
     // Launch with IPC channel
-    let applet_proc = launcher::launch_applet_process(
+    let applet_proc = match launcher::launch_applet_process(
         &applet_id,
         applet.launch_binary.as_deref(),
         applet.launch_url.as_deref(),
@@ -466,7 +466,17 @@ async fn request_applet_switch(
         &launch_env,
     )
     .await
-    .map_err(|e| format!("Launch failed: {e}"))?;
+    {
+        Ok(process) => process,
+        Err(error) => {
+            state.budget.lock().await.release_applet(&applet_id);
+            let mut active = state.active_applet.lock().await;
+            if active.as_deref() == Some(&applet_id) {
+                *active = None;
+            }
+            return Err(format!("Launch failed: {error}"));
+        }
+    };
 
     // Store process handle + IPC channel for lifecycle management
     if let Some(mut proc) = applet_proc {
@@ -480,7 +490,7 @@ async fn request_applet_switch(
             .await;
         }
 
-        let start_response = proc
+        let start_response = match proc
             .ipc
             .send_envelope_command(
                 CommandKind::StartInference {
@@ -489,8 +499,23 @@ async fn request_applet_switch(
                 std::time::Duration::from_secs(300),
             )
             .await
-            .map_err(|e| format!("StartInference failed: {e}"))?;
+        {
+            Ok(response) => response,
+            Err(error) => {
+                state.budget.lock().await.release_applet(&applet_id);
+                let mut active = state.active_applet.lock().await;
+                if active.as_deref() == Some(&applet_id) {
+                    *active = None;
+                }
+                return Err(format!("StartInference failed: {error}"));
+            }
+        };
         if start_response.status == ResponseStatus::Error {
+            state.budget.lock().await.release_applet(&applet_id);
+            let mut active = state.active_applet.lock().await;
+            if active.as_deref() == Some(&applet_id) {
+                *active = None;
+            }
             return Err(start_response
                 .detail
                 .unwrap_or_else(|| "StartInference returned an error".to_string()));

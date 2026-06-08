@@ -1542,15 +1542,19 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 }
 
 .mm-settings-panel {
+  --mm-panel-text: #e5eef6;
+  --mm-panel-muted: #aab6c6;
+  --mm-panel-faint: #7f8da3;
   min-width: 0;
   padding: 14px;
   border-radius: var(--ew-radius-md, 6px);
   clip-path: none;
+  color: var(--mm-panel-text);
 }
 
 .mm-settings-panel h2 {
   margin: 0;
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
   font: 900 15px var(--ew-font-display, system-ui);
 }
 
@@ -1566,7 +1570,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 .mm-settings-error p,
 .mm-manifest-empty {
   margin: 0;
-  color: var(--ew-text-muted, #9aa8b5);
+  color: var(--mm-panel-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -1581,12 +1585,12 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 7px 12px;
   align-items: baseline;
-  color: var(--ew-text-muted, #9aa8b5);
+  color: var(--mm-panel-muted);
   font-size: 12px;
 }
 
 .mm-model-summary span {
-  color: var(--ew-text-faint, #7b8794);
+  color: var(--mm-panel-faint);
   font: 800 10px var(--ew-font-display, system-ui);
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1594,7 +1598,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 
 .mm-model-summary b {
   min-width: 0;
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
   overflow-wrap: anywhere;
 }
 
@@ -1629,13 +1633,13 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 
 .mm-model-group-head h3 {
   margin: 0 0 3px;
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
   font: 900 13px var(--ew-font-display, system-ui);
 }
 
 .mm-model-group-head span,
 .mm-model-group-head b {
-  color: var(--ew-text-faint, #7b8794);
+  color: var(--mm-panel-faint);
   font: 800 10px var(--ew-font-mono, monospace);
   text-transform: uppercase;
 }
@@ -1646,7 +1650,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 
 .mm-control-description {
   margin: -2px 0 0;
-  color: var(--ew-text-muted, #9aa8b5);
+  color: var(--mm-panel-muted);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -1665,7 +1669,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 .mm-model-row em,
 .mm-model-row small,
 .mm-manifest-row span {
-  color: var(--ew-text-faint, #7b8794);
+  color: var(--mm-panel-faint);
   font: 800 10px var(--ew-font-mono, monospace);
   text-transform: uppercase;
 }
@@ -1673,7 +1677,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 .mm-model-row b,
 .mm-manifest-row b {
   min-width: 0;
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1701,7 +1705,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
 
 .mm-setting-copy label,
 .mm-setting-copy span {
-  color: var(--ew-text-faint, #7b8794);
+  color: var(--mm-panel-faint);
   font: 900 10px var(--ew-font-display, system-ui);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1729,7 +1733,7 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   padding: 9px 10px;
   border-radius: var(--ew-radius-sm, 4px);
   background: color-mix(in oklab, var(--ew-warning, #f9b960) 12%, transparent);
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
   font-size: 12px;
 }
 
@@ -1761,22 +1765,56 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   gap: 12px;
   padding-top: 8px;
   border-top: 1px solid var(--ew-border, rgba(255,255,255,0.12));
-  color: var(--ew-text-faint, #7b8794);
+  color: var(--mm-panel-faint);
   font: 800 10px var(--ew-font-display, system-ui);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .mm-residency-line b {
-  color: var(--ew-text, #e5eef6);
+  color: var(--mm-panel-text);
 }
 
 .mm-residency-budget {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 6px 12px;
-  color: var(--ew-text-muted, #9aa8b5);
+  color: var(--mm-panel-muted);
   font-size: 12px;
+}
+
+.mm-settings-root .mm-settings-panel,
+.mm-settings-root .mm-model-group {
+  color: var(--mm-panel-text) !important;
+}
+
+.mm-settings-root .mm-settings-panel h2,
+.mm-settings-root .mm-model-summary b,
+.mm-settings-root .mm-model-group-head h3,
+.mm-settings-root .mm-model-row b,
+.mm-settings-root .mm-manifest-row b,
+.mm-settings-root .mm-residency-line b {
+  color: var(--mm-panel-text) !important;
+}
+
+.mm-settings-root .mm-settings-section-head p,
+.mm-settings-root .mm-setting-copy p,
+.mm-settings-root .mm-control-description,
+.mm-settings-root .mm-residency-budget,
+.mm-settings-root .mm-manifest-empty {
+  color: var(--mm-panel-muted) !important;
+}
+
+.mm-settings-root .mm-model-summary span,
+.mm-settings-root .mm-model-group-head span,
+.mm-settings-root .mm-model-row span,
+.mm-settings-root .mm-model-row em,
+.mm-settings-root .mm-model-row small,
+.mm-settings-root .mm-manifest-row span,
+.mm-settings-root .mm-setting-copy label,
+.mm-settings-root .mm-setting-copy span,
+.mm-settings-root .mm-residency-line {
+  color: var(--mm-panel-faint) !important;
 }
 
 .mm-presence-actions {

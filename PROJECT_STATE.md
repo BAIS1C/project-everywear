@@ -480,3 +480,19 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 folder opened; `button[data-applet-id="daw"]` opened DAW in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
 - PASSED: every theme showed DAW, Stems tab, S3 DAW header, Load a Track empty state, Upload Audio File, From Library, transport bar, no `Unexpected token` parse error, no failed-load text, and no bug modal.
 - BLOCKED: every theme still reports local engine failure because the Gener8 shim is not listening on `localhost:3001`. DAW Pro Model verification, model download, stem extraction, timeline/mixer population, playback, and Vault registration remain unproven.
+
+---
+
+## 2026-06-09 06:30 SGT: My Mait native theme sweep, launch-ledger repair, and Light settings contrast repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCHED: `platform/everywear-os/src-tauri/src/launcher.rs` now releases an applet's prior VRAM budget reservation before recording a new reservation for the same applet. This prevents failed or repeated My Mait launches from stacking stale `kasai` model allocations.
+- PATCHED: `platform/everywear-os/src-tauri/src/lib.rs` now releases the applet reservation and clears `active_applet` when BinaryLocal launch or `StartInference` handoff fails after the shell has reserved models. Root cause was stale My Mait ledger state: native status showed real NVML free VRAM around 24.8GB, but shell budget had three `kasai` allocations totaling 28.9GB and only 3.7GB ledger-free.
+- PATCHED: `applets/kasai/src/styles/agent-hub.css` now gives My Mait settings dark inset panels a scoped dark-surface text palette. Light mode no longer renders model and residency settings as dark text on dark panels.
+- BUILD VERIFICATION PASSED: `npm run build --workspace kasai-applet`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-my-mait-theme-*.png` and `native-my-mait-settings-theme-*.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-my-mait-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; My Mait opened without bug modal after the ledger fix; all themes captured hub and settings surfaces.
+- PASSED: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon show My Mait hub, Agent Hub surface, chat composer, right panel, settings button, Everywear Vault connection, slot state, safety rails, model/residency settings, no failed-load text, and no bug modal. Light settings panel text color verified as `rgb(229, 238, 246)`.
+- TUTORIAL DEBT: first-run skill list still exposes raw internal registry noise: `EVERYWEAR SKILLS 71`, repeated `zsh-compatible` entries, and MyMory-labeled skill names. Summaries are mostly Everywear Vault aligned, but the first-run tutorial should not present raw skill registry internals as the default user experience.
+- BOUNDARY: this proves native launch, hub visibility, settings visibility, and theme readability. It does not prove a fresh-user curated onboarding flow, real local chat inference beyond the existing loaded surface, tool execution, approval-loop audit, Avatar Studio handoff, or Vault write path from My Mait.
