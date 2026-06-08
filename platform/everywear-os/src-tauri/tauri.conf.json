@@ -54,7 +54,9 @@
           "$DOCUMENT/Everywear Vault/.thumbnails/**",
           "$HOME/.everywear/data/character-studio/**",
           "$RESOURCE/character-studio/**",
-          "$RESOURCE/cs-assets/**"
+          "$RESOURCE/cs-assets/**",
+          "../../../applets/character-studio/public/**",
+          "applets/character-studio/public/**"
         ]
       }
     }

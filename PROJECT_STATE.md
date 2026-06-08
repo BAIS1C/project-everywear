@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-06T12:48+08 SGT (Codex: Kasai Executive/Swarm stabilization pass, commits + builds + partial video-modal split).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:00+08 SGT (Codex: Avatar Studio native asset-protocol scope fix).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:00 SGT - Avatar Studio Native Asset Protocol Scope Fixed (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: native Avatar Studio local bundle manifest now loads through Tauri's Windows asset protocol. The runtime command already returned the repo-local `applets/character-studio/public` fallback, but `tauri.conf.json` did not include that repo public tree in `assetProtocol.scope`, so `convertFileSrc(root)/manifest.json` returned `asset.localhost` 403 in native.
+- PATCH: added narrow dev/debug asset scopes for `applets/character-studio/public/**` to `platform/everywear-os/src-tauri/tauri.conf.json`, while preserving `$HOME/.everywear/data/character-studio/**`, `$RESOURCE/character-studio/**`, and `$RESOURCE/cs-assets/**` as the packaged/local-install paths.
+- VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP; clicked `[data-applet-id="character-studio"]`; fetched `window.__EVERYWEAR_ASSET_BASE__/manifest.json` and got `200 application/json` with JSON content; screenshot `screenshots\2026-06-09-everywear-full-tour\native-postfix-avatar-studio-local-assets.png`.
+- STATUS: Avatar Studio is no longer blocked on native manifest loading. It still needs first-run/tutorial polish: asset pack status, where created Blanks are saved, My Mait handoff copy, and deeper Create/Batch/Optimize path verification.
+
+---
 
 ## 2026-06-07 10:47 SGT - Avatar Studio Local Asset Runtime Fix (Codex)
 

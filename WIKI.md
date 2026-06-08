@@ -1,8 +1,24 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.30
-Last updated: 2026-06-07 (Avatar Studio local asset doctrine correction)
+Version: 1.1.31
+Last updated: 2026-06-09 (Avatar Studio native asset-protocol scope fix)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.31: Avatar Studio native local
+> manifest loading is fixed for the debug/native shell. Root cause: the shell
+> command could return the repo-local `applets/character-studio/public` asset
+> root, but `assetProtocol.scope` only allowed app-data and resource paths, so
+> `convertFileSrc(root)/manifest.json` 403'd through `asset.localhost`.
+> `platform/everywear-os/src-tauri/tauri.conf.json` now narrowly scopes the
+> repo public tree for dev/debug while preserving the packaged local paths
+> `$HOME/.everywear/data/character-studio/**`, `$RESOURCE/character-studio/**`,
+> and `$RESOURCE/cs-assets/**`. Verified by native WebView click on
+> `[data-applet-id="character-studio"]` and direct manifest fetch returning
+> `200 application/json`. Screenshot:
+> `screenshots/2026-06-09-everywear-full-tour/native-postfix-avatar-studio-local-assets.png`.
+> Remaining Avatar Studio debt is product/tutorial polish, not native manifest
+> transport: local asset-pack status, created Blank save path, My Mait handoff,
+> and Create/Batch/Optimize path verification.
 
 > Current-state note, 2026-06-07 v1.1.29: Visual bugfix handoff repair pass
 > (source: 2026-06-07 Codex Computer Use audit handoff; Claude Cowork repair).
