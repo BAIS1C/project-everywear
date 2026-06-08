@@ -1,8 +1,24 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.36
-Last updated: 2026-06-09 (Avatar Studio native theme sweep)
+Version: 1.1.37
+Last updated: 2026-06-09 (Vault native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.37: native Vault visual coverage now
+> has per-theme evidence for Sean's populated QA vault. Opened through
+> `button.ew-desktop-icon--system[aria-label="Open Vault"]` in rebuilt native
+> Everywear OS, then captured Light, Classic, Refined, Terminal, Graphite,
+> Anodized, and Carbon. WebView checks confirmed active Vault window,
+> `.ew-vault-panel`, Media and Logs tabs, active Media tab, summary
+> `649 items|0 images|638 audio|11 videos|96 stems|3.0 GB`, real record rows,
+> 12 filter buttons, delete controls with ARIA labels, no failed-load text,
+> and no bug modal. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-vault-theme-light.png`,
+> `native-vault-theme-classic.png`, `native-vault-theme-refined.png`,
+> `native-vault-theme-terminal.png`, `native-vault-theme-graphite.png`,
+> `native-vault-theme-anodized.png`, `native-vault-theme-carbon.png`, plus
+> `native-vault-theme-sweep.json`. Boundary: this proves populated Vault
+> readability, not a clean first-user empty-state tour.
 
 > Current-state note, 2026-06-09 v1.1.36: Avatar Studio native landing
 > coverage now has per-theme evidence and first-run anchors. `Landing.jsx`

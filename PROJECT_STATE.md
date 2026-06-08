@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:48+08 SGT (Codex: Avatar Studio theme sweep and tour anchors).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:52+08 SGT (Codex: Vault native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:52 SGT - Vault Native Theme Sweep Captured (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- QA PASSED: native Everywear Vault was captured across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- VERIFICATION: opened Vault via `button.ew-desktop-icon--system[aria-label="Open Vault"]`; WebView checks confirmed active Vault window, `.ew-vault-panel`, Media and Logs tabs, active Media tab, record summary `649 items|0 images|638 audio|11 videos|96 stems|3.0 GB`, real record rows, 12 filter buttons, delete controls with ARIA labels, no failed-load text, and no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-vault-theme-light.png`, `native-vault-theme-classic.png`, `native-vault-theme-refined.png`, `native-vault-theme-terminal.png`, `native-vault-theme-graphite.png`, `native-vault-theme-anodized.png`, `native-vault-theme-carbon.png`, plus `native-vault-theme-sweep.json`.
+- STATUS: Vault visual/theme coverage is captured for Sean's populated QA vault. A true first-user empty Vault state still needs a clean-profile or reset pass before final tutorial copy can claim empty-state behavior.
+
+---
 
 ## 2026-06-09 04:48 SGT - Avatar Studio Native Theme Sweep + Tour Anchors (Codex)
 
