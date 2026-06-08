@@ -248,7 +248,7 @@ body[data-widget-surface="soft"] .lu-status {
   border: 1px solid var(--ew-border);
   background: color-mix(in oklab, var(--ew-bg) 84%, transparent);
   clip-path: var(--ew-clip-card);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .lu-worldview__offline h3 {
@@ -263,6 +263,31 @@ body[data-widget-surface="soft"] .lu-status {
   font-family: var(--ew-font-mono);
   font-size: 11px;
   color: var(--ew-text-muted);
+}
+
+.lu-worldview__offline button {
+  justify-self: center;
+  min-width: 132px;
+  height: 34px;
+  border: 1px solid color-mix(in oklab, var(--ew-primary) 55%, var(--ew-border));
+  background: color-mix(in oklab, var(--ew-primary) 10%, transparent);
+  color: var(--ew-primary);
+  clip-path: var(--ew-clip-button);
+  font-family: var(--ew-font-display);
+  font-size: 10px;
+  font-weight: var(--ew-fw-display);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.lu-worldview__offline button:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--ew-primary) 18%, transparent);
+}
+
+.lu-worldview__offline button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 @media (max-width: 900px) {

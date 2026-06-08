@@ -524,3 +524,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED VISUALS: every theme showed the 3nvizen workbench, `LTX sidecar is offline` banner, `Engine Offline` badge, Text to Video / Image to Video / Audio to Video / Retake Soon tabs, prompt field with entered prompt, empty generated-video preview, disabled Generate button with `Engine offline`, advanced controls, IC-LoRA placeholder, Spatial Upscaler placeholder, Image mode source-image dropzone, and Audio mode audio-track dropzone.
 - TUTORIAL STATUS: 3nvizen is tourable as a Creator Studio video workbench in offline-engine state. First-run teaching should say: choose a mode, write a prompt or attach source media, inspect advanced controls, then start generation only after the LTX sidecar/model handoff reports online.
 - BLOCKED FUNCTIONAL QA: LTX sidecar remains offline on `127.0.0.1:8787`. Real model status, model download/load, generation, progress polling, output playback/download, Save to Vault, auto-save, retake, IC-LoRA extraction, upscaling, and folder-open are not proven.
+
+---
+
+## 2026-06-09 07:06 SGT: Layer U native theme sweep and offline retry repair
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCHED: `platform/everywear-os/src/son/styles/layer-u-osint.css` now makes the Project SON offline overlay pointer-enabled and styles `Retry connection` as a real EWDS button. Before the patch, the button rendered as inert text because `.lu-worldview__offline` had `pointer-events: none`.
+- BUILD VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`. Warnings only.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-layer-u-theme-*.png`, `native-layer-u-theme-*-feeds.png`, and `native-layer-u-theme-*-sources.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-layer-u-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS launched from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; `button[data-applet-id="layeru-osint"]` opened Layer U OSINT in Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED VISUALS: every theme showed Layer U OSINT, OFFLINE status, posture standby, market placeholders, Map / Feeds / Sources tabs, Project SON service offline overlay, port `3117` instruction, visible clickable Retry connection button, Feeds empty state, Sources rollup, Refresh, Pull Live, and Reload Map.
+- TUTORIAL STATUS: Layer U can be taught as the free OSINT shell bridge in offline SON state: the user sees worldview, feeds, and source posture tabs; the app explains that Project SON must be running on port `3117`; Retry/Refresh/Pull Live/Reload Map are visible controls.
+- BOUNDARY: this proves native visual route, theme readability, tab coverage, and clickable offline retry. It does not prove Project SON live data, map iframe rendering, feed ingestion, source sweep, live pull, geolocation, or downstream My Mait/analysis handoff.

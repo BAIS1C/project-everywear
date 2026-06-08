@@ -4520,3 +4520,29 @@ Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, an
 Tutorial boundary: 3nvizen can be taught as the Creator Studio video workbench even while offline: choose a generation mode, add prompt/source media, review advanced video controls, then wait for LTX sidecar/model handoff before Generate becomes available. Do not teach generation/export/Vault-save as working until the sidecar is online.
 
 Functional boundary: LTX sidecar remains offline on `127.0.0.1:8787`. Real model status, model download/load, generation, progress polling, output playback/download, Save to Vault, auto-save, retake, IC-LoRA extraction, upscaling, and folder-open remain unproven gates.
+
+---
+
+## Addendum 2026-06-09 07:06 SGT: Layer U native theme sweep and offline retry repair
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+Layer U remains a shell-local virtual applet at `platform/everywear-os/src/son`, user-facing applet id `layeru-osint`, free tier. Its live worldview, feeds, source posture, and sweep controls depend on Project SON at `127.0.0.1:3117`.
+
+The native full-tour pass found a real offline-state UX bug: the `Retry connection` button rendered inside the Project SON offline overlay but could not be clicked by a user because `.lu-worldview__offline` had `pointer-events: none`.
+
+Patch:
+
+- `platform/everywear-os/src/son/styles/layer-u-osint.css` now sets `.lu-worldview__offline { pointer-events: auto; }`.
+- The overlay retry button now uses explicit EWDS-style button treatment: centered, clipped, primary border/background, hover state, and disabled wait cursor.
+
+Verification:
+
+- `npm run build --workspace everywear-os`
+- `cargo build -p everywear-os`
+- Native Tauri launch from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-layer-u-theme-*.png`, `native-layer-u-theme-*-feeds.png`, `native-layer-u-theme-*-sources.png`, and `native-layer-u-theme-sweep.json`
+
+Current surface truth: Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon all open Layer U OSINT from the native shell. Every theme shows OFFLINE status, posture standby, market placeholders, Map / Feeds / Sources tabs, Project SON service offline, port `3117` instruction, clickable Retry connection button, Feeds empty state, Sources rollup, Refresh, Pull Live, and Reload Map. The fresh manifest verifies Retry connection has `pointer-events: auto` on both button and parent in every theme.
+
+Tutorial boundary: Layer U can now be taught as the free OSINT bridge even while SON is offline: Map explains the worldview dependency, Feeds and Sources show empty/rollup states, and Retry/Refresh/Pull Live/Reload Map are the visible recovery controls. Live Project SON data, iframe map rendering, feed ingestion, source sweep, live pull, geolocation, and downstream My Mait/analysis handoff remain separate functional QA gates.
