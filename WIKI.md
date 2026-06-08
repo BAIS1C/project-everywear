@@ -1,8 +1,30 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.35
-Last updated: 2026-06-09 (1magen native theme sweep)
+Version: 1.1.36
+Last updated: 2026-06-09 (Avatar Studio native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.36: Avatar Studio native landing
+> coverage now has per-theme evidence and first-run anchors. `Landing.jsx`
+> gives the three image-card buttons stable tour IDs and accessible labels:
+> `avatar-create-character`, `avatar-batch-download`, and
+> `avatar-optimize-character`, each with `aria-label`, `title`,
+> `type="button"`, and matching image `alt`. Verification passed:
+> `npm run build --workspace @everywear/character-studio`, `npm run build
+> --workspace everywear-os`, `cargo build -p everywear-os`, then native
+> WebView launch via `button.ew-desktop-icon[data-applet-id="character-studio"]`.
+> Manifest fetch returned `200 application/json`; every theme pass confirmed
+> Avatar window present, 3 loaded card images, 3 tour-card buttons, 1 canvas,
+> no failed-load text, and no bug modal. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-theme-light.png`,
+> `native-avatar-studio-theme-classic.png`,
+> `native-avatar-studio-theme-refined.png`,
+> `native-avatar-studio-theme-terminal.png`,
+> `native-avatar-studio-theme-graphite.png`,
+> `native-avatar-studio-theme-anodized.png`,
+> `native-avatar-studio-theme-carbon.png`, plus
+> `native-avatar-studio-theme-sweep.json`. Remaining Avatar debt: click
+> through Create, Batch Download, Optimize, save path, and My Mait handoff.
 
 > Current-state note, 2026-06-09 v1.1.35: 1magen native visual coverage now
 > has per-theme evidence for the styled workbench. Captured in rebuilt native

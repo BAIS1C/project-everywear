@@ -46,14 +46,44 @@ function Landing() {
   return (
     <div className={styles.container}>
       <div className={styles.buttonContainer}>
-        <button className={styles.button} onClick={createCharacter}>
-          <img src={getAssetUrl("./assets/media/btn_create_character.png")} />
+        <button
+          type="button"
+          className={styles.button}
+          onClick={createCharacter}
+          aria-label="Create Character"
+          title="Create Character"
+          data-tour="avatar-create-character"
+        >
+          <img
+            src={getAssetUrl("./assets/media/btn_create_character.png")}
+            alt="Create Character"
+          />
         </button>
-        <button className={styles.button} onClick={createVRMCharacter}>
-          <img src={getAssetUrl("./assets/media/btn_batch_download_character.png")} />
+        <button
+          type="button"
+          className={styles.button}
+          onClick={createVRMCharacter}
+          aria-label="Batch Download"
+          title="Batch Download"
+          data-tour="avatar-batch-download"
+        >
+          <img
+            src={getAssetUrl("./assets/media/btn_batch_download_character.png")}
+            alt="Batch Download"
+          />
         </button>
-        <button className={styles.button} onClick={optimizeCharacter}>
-          <img src={getAssetUrl("./assets/media/btn_optimize_character.png")} />
+        <button
+          type="button"
+          className={styles.button}
+          onClick={optimizeCharacter}
+          aria-label="Optimize Character"
+          title="Optimize Character"
+          data-tour="avatar-optimize-character"
+        >
+          <img
+            src={getAssetUrl("./assets/media/btn_optimize_character.png")}
+            alt="Optimize Character"
+          />
         </button>
         {
         // opensea_Key && opensea_Key != "" && <button className={styles.button} onClick={getWallet}>

@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:37+08 SGT (Codex: 1magen theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T04:48+08 SGT (Codex: Avatar Studio theme sweep and tour anchors).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-09 04:48 SGT - Avatar Studio Native Theme Sweep + Tour Anchors (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- QA PASSED: Avatar Studio native landing surface was captured across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PATCH: `applets/character-studio/src/pages/Landing.jsx` now gives the three landing image-card buttons stable first-run anchors and accessibility text: `data-tour="avatar-create-character"`, `avatar-batch-download`, `avatar-optimize-character`, with matching `aria-label`, `title`, `type="button"`, and image `alt`.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/character-studio`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched native `target\debug\everywear-os.exe`; opened Avatar Studio through `button.ew-desktop-icon[data-applet-id="character-studio"]`; local manifest fetched `200 application/json`; WebView verified 3 card buttons, 3 loaded card images, 1 canvas, no failed-load text, no bug modal.
+- EVIDENCE: `screenshots\2026-06-09-everywear-full-tour\native-avatar-studio-theme-light.png`, `native-avatar-studio-theme-classic.png`, `native-avatar-studio-theme-refined.png`, `native-avatar-studio-theme-terminal.png`, `native-avatar-studio-theme-graphite.png`, `native-avatar-studio-theme-anodized.png`, `native-avatar-studio-theme-carbon.png`, plus `native-avatar-studio-theme-sweep.json`.
+- STATUS: Avatar Studio landing/tutorial entry is visually covered and now has stable anchors. Deeper Create, Batch Download, Optimize, save path, and My Mait handoff flows remain unverified.
+
+---
 
 ## 2026-06-09 04:37 SGT - 1magen Native Theme Sweep Captured (Codex)
 
