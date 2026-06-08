@@ -1,6 +1,6 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:27+08 SGT (Codex: Profile native theme sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T07:34+08 SGT (Codex: Settings native theme sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
 
@@ -567,3 +567,17 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - PASSED EDIT STATE: every theme entered Edit Profile mode with four controls: display name input, alias input, read-only email input, bio textarea, plus Save and Cancel buttons.
 - TUTORIAL STATUS: Profile can be taught as the account/identity first-run stop: confirm Everywear ID, explain immutable ID versus editable display profile, show subscription status, then leave Sign Out as the recovery/session control.
 - BOUNDARY: this proves native Profile visibility, edit controls, scroll behavior, and theme readability for Sean's authenticated Creator Studio session. It does not prove fresh unauthenticated sign-in/signup, OTP, failed-auth states, profile save persistence, Supabase round trip, or sign-out recovery flow.
+
+---
+
+## 2026-06-09 07:34 SGT: Settings native theme sweep
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- PATCH STATUS: no code patch required. The initial lower Settings check was an automation mistake: `.ew-settings` is the scroll container, not `.ew-window__body`.
+- ARTIFACTS: screenshots at `screenshots/2026-06-09-everywear-full-tour/native-settings-theme-*.png` and `native-settings-theme-*-lower.png`; manifest `screenshots/2026-06-09-everywear-full-tour/native-settings-theme-sweep.json`.
+- VERIFIED: native Tauri Everywear OS running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings tile opened Settings; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+- PASSED VISUALS: every theme showed Settings, Appearance, seven Theme choices, five Accent choices, EWDS-v2 density sample, Chrome/Wallpaper/Bevel sliders, Traffic Lights controls, Surface Treatment controls, About, Everywear OS v0.1.0, PT Metafintek AI Studios, Lombok, Indonesia, and the `everywear.id` link.
+- PASSED SCROLL STATE: corrected lower captures scrolled `.ew-settings` by roughly 411-413px and confirmed Traffic Lights, Surface Treatment, and About are reachable without failed-load text or bug modal.
+- TUTORIAL STATUS: Settings can be taught as the first-run personalization stop: choose visual theme, choose accent, tune chrome/wallpaper/bevel density, pick traffic-light side, choose widget surface treatment, and find product/about link.
+- BOUNDARY: this proves native Settings visibility, scroll behavior, control presence, and theme readability. It does not prove persistence across app restart for every setting, external `everywear.id` link opening, or accessibility keyboard traversal.

@@ -1,8 +1,20 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.42
-Last updated: 2026-06-09 (Profile native theme sweep)
+Version: 1.1.43
+Last updated: 2026-06-09 (Settings native theme sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.43: native Settings panel visual/theme
+> coverage now has per-theme evidence. The shell Settings tile was opened in
+> Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon, with
+> Appearance top controls and lower Traffic Lights / Surface Treatment / About
+> states captured. No code patch was required; `.ew-settings` is the correct
+> scroll container. Screenshots and manifest live at
+> `screenshots/2026-06-09-everywear-full-tour/native-settings-theme-*.png`,
+> `native-settings-theme-*-lower.png`, and `native-settings-theme-sweep.json`.
+> Boundary: this proves Settings visibility, control presence, scroll behavior,
+> and theme readability, not restart persistence, external link opening, or
+> keyboard traversal.
 
 > Current-state note, 2026-06-09 v1.1.42: native Profile panel visual/theme
 > coverage now has per-theme evidence. The taskbar Profile control was opened
@@ -4621,3 +4633,24 @@ Verification:
 Current surface truth: every theme shows Profile, avatar initials, display name, alias, Identity, Everywear ID, Display Name, Alias, Email, Bio, Edit Profile, Subscription, Tier, Status, Provider, Next Billing, Session, and Sign Out. Edit Profile mode shows display name input, alias input, read-only email input, bio textarea, Save, and Cancel. No failed-load text or bug modal appeared.
 
 Tutorial boundary: Profile can be taught as the first-run identity/account stop: confirm Everywear ID, explain immutable ID versus editable display name/alias/bio, verify subscription status, then point to Sign Out as the session recovery control. Fresh unauthenticated sign-in/signup, OTP, failed-auth states, profile save persistence, Supabase write/read round trip, and sign-out recovery remain separate auth QA gates.
+
+---
+
+## Addendum 2026-06-09 07:34 SGT: Settings native theme sweep
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+Settings remains a shell-owned system panel rendered by `platform/everywear-os/src/panels/SettingsPanel.tsx` and opened from the shell-owned Settings desktop tile in `platform/everywear-os/src/shell/ShellLayout.tsx`.
+
+The native full-tour pass covered Settings across Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon.
+
+Verification:
+
+- Native Tauri runtime from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`
+- Settings tile used to open Settings
+- Settings UI used to select each theme
+- Screenshots and manifest: `screenshots/2026-06-09-everywear-full-tour/native-settings-theme-*.png`, `native-settings-theme-*-lower.png`, and `native-settings-theme-sweep.json`
+
+Current surface truth: every theme shows Settings, Appearance, Theme choices for Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; Accent choices for Cyan, Amber, Acid, Crimson, and Bone; EWDS-v2 density preview; Chrome, Wallpaper, and Bevel sliders; Traffic Lights side controls; Surface Treatment controls for Cut, Rounded, and Square; About; Everywear OS v0.1.0; PT Metafintek AI Studios; Lombok, Indonesia; and the `everywear.id` link. Corrected lower captures scroll `.ew-settings` by roughly 411-413px and show the lower controls and About section. No failed-load text or bug modal appeared.
+
+Tutorial boundary: Settings can be taught as the first-run personalization stop: choose the theme, choose accent, adjust chrome/wallpaper/bevel density, choose traffic-light side, choose surface treatment, and locate product/about details. Persistence across native restart for every setting, external link opening, and keyboard traversal remain separate QA gates.
