@@ -1447,6 +1447,25 @@ export function ShellLayout() {
         applet_id: applet.id,
         message,
       });
+      // If launch fails but the applet has a frontend_port, fall through
+      // to headless view (dev mode: sidecar may not be needed)
+      if (applet.frontend_port) {
+        log.warn('ui', `Launch bridge failed for ${applet.id}, falling back to headless iframe`);
+        if (isRegisteredApplet(applet.id)) {
+          openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
+        } else {
+          openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
+        }
+        showToast({
+          kind: 'warning',
+          eyebrow: `${applet.name} · runtime handoff`,
+          message: 'Opened the studio surface while the local engine handoff finishes. Generation may still need model setup.',
+          durationMs: 8000,
+        });
+        markAppletReady(applet);
+        refreshRuntimeReadouts();
+        return;
+      }
       markLaunchError();
       openBugReport({
         source: applet.id,
@@ -1461,17 +1480,6 @@ export function ShellLayout() {
           launch_binary: applet.launch_binary,
         },
       });
-      // If launch fails but the applet has a frontend_port, fall through
-      // to headless view (dev mode: sidecar may not be needed)
-      if (applet.frontend_port) {
-        log.warn('ui', `Launch bridge failed for ${applet.id}, falling back to headless iframe`);
-        if (isRegisteredApplet(applet.id)) {
-          openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
-        } else {
-          openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
-        }
-        markAppletReady(applet);
-      }
     }
   };
 
