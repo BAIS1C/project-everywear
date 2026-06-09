@@ -82,8 +82,8 @@ function Create() {
   }
   
   return (
-    <div className={`${styles.container} horizontalScroll`}>
-      <div className={"sectionTitle"}>{t('pageTitles.chooseClass')}</div>
+    <div className={`${styles.container} horizontalScroll`} data-tour="avatar-create-class-choice">
+      <div className={"sectionTitle"}>Choose a Blank class</div>
       <div className={styles.vrmOptimizerButton}>
       </div>
 
@@ -135,7 +135,7 @@ function Create() {
       <div className={styles.buttonContainer}>
         { <CustomButton
           theme="light"
-          text={t('callToAction.back')}
+          text="Back"
           size={14}
           className={styles.buttonLeft}
           onClick={back}

@@ -1,9 +1,8 @@
-import React, { useContext, useEffect, useState } from "react"
+import React, { useState } from "react"
 import styles from "./Optimizer.module.css"
 import { ViewMode, ViewContext } from "../context/ViewContext"
 import { SceneContext } from "../context/SceneContext"
 import CustomButton from "../components/custom-button"
-import { LanguageContext } from "../context/LanguageContext"
 import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
 import FileDropComponent from "../components/FileDropComponent"
@@ -137,9 +136,6 @@ function BatchManifest() {
     downloadVRMWithIndex(0);
   }
 
-  // Translate hook
-  const { t } = useContext(LanguageContext)
-
   const handleAnimationDrop = async (file) => {
     const curCharacter = characterManager.getCurrentCharacterModel();
     if (curCharacter){
@@ -183,7 +179,7 @@ function BatchManifest() {
             try {
               const jsonContent = JSON.parse(e.target.result);
 
-              const thumbLocation = jsonContent.thumbnail;
+              jsonContent.thumbnail = getAssetUrl(jsonContent.thumbnail);
               jsonContent.manifestName = manifestName;
               // XXX Anata hack to display nft thumbs
               // jsonContent.thumb = thumbLocation;
@@ -261,7 +257,7 @@ function BatchManifest() {
       <div className={styles.buttonContainer}>
         <CustomButton
           theme="light"
-          text={t('callToAction.back')}
+          text="Back"
           size={14}
           className={styles.buttonLeft}
           onClick={back}

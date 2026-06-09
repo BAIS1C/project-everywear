@@ -1,29 +1,10 @@
 .backgroundImg {
-  background: black;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-position: center center;
-  height: 100vh;
-  width: 100vw;
-  background-size: cover;
-  display: fixed;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-  position: absolute;
-  z-index: -100;
+  /* Everywear embeds the live WebGL canvas behind the UI. The legacy black
+     fallback painted over that canvas in WebView2, hiding loaded avatars. */
+  display: none;
 }
 .darkBackground {
-  background-color: var(--ew-bg);
-  height: 100vh;
-  width: 100vw;
-  background-size: cover;
-  display: fixed;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
-  position: absolute;
-  z-index: -100;
+  display: none;
 }
 
 .logo {

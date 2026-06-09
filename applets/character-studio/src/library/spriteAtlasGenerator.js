@@ -30,7 +30,7 @@ export class SpriteAtlasGenerator {
     }
 
     async createSpriteAtlas(spriteObject, exsitingZipFile = null, zipName = ""){
-        const manifestURL = spriteObject.manifest;
+        const manifestURL = getAssetUrl(spriteObject.manifest);
         const spriteFolderName = spriteObject.name ? "spriteData/" + spriteObject.name : "spriteData";
         const manifest = await this._fetchManifest(manifestURL);
         const {

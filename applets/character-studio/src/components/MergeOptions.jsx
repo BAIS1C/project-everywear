@@ -124,7 +124,7 @@ function MergeOptions({showDropToDownload, showCreateAtlas, mergeMenuTitle}) {
 
   return (
     
-    <div className={styles["InformationContainerPos"]}>
+    <div className={styles["InformationContainerPos"]} data-tour="avatar-optimizer-options">
 
       <MenuTitle title={mergeMenuTitle} width={180} left={20}/>
       

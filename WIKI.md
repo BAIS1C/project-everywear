@@ -1,8 +1,195 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.45
-Last updated: 2026-06-09 (Native shell home desktop theme sweep)
+Version: 1.1.54
+Last updated: 2026-06-09 (Avatar Studio Lora/sprite ZIP export verification)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-09 v1.1.54: Avatar Studio BatchManifest now
+> verifies optional Lora and sprite data ZIP export in native Everywear OS.
+> Native replay opened Avatar Studio -> Batch Download -> Manifest, dropped a
+> Drophunter manifest JSON, enabled VRM, Lora data, and sprite data, then
+> clicked the bottom Download action. Before patching, the route wrote a VRM
+> but produced no ZIP because `loraDataGenerator.js` and
+> `spriteAtlasGenerator.js` fetched raw relative manifest URLs and received the
+> shell HTML fallback. Both generators now pass manifest URLs through
+> `getAssetUrl(...)`, matching the local Character Studio asset-base contract.
+> Verification passed: `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo build -p everywear-os`,
+> then fresh native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-batchmanifest-lora-sprite-postfix-02-after-download.png`,
+> `native-avatar-studio-batchmanifest-lora-sprite-postfix-manifest.json`,
+> `avatar-batchmanifest-lora-sprite-postfix/drophunter-lora-sprite-postfix.vrm`,
+> and
+> `avatar-batchmanifest-lora-sprite-postfix/drophunter-lora-sprite-postfix.zip`.
+> Verified: VRM is 11,092,840 bytes with GLB magic `glTF`, version 2, and
+> matching declared length; ZIP is 11,361,795 bytes with `PK` magic and
+> contains 46 Lora PNG files, 46 Lora TXT prompt files, and 40 sprite PNG
+> frames. Boundary: Export to Kasai directory picker, `strands-avatar.json`
+> sidecar, Vault registration, My Mait handoff, randomized trait persistence,
+> full trait matrix, and shared exporter cleanup for non-blocking `Cannot read
+> properties of undefined (reading 'direction')` remain open.
+
+> Current-state note, 2026-06-09 v1.1.53: Avatar Studio BatchManifest and
+> multi-file `Download All` now verify in native Everywear OS. Native replay
+> opened Avatar Studio -> Batch Download -> Manifest, dropped Drophunter and
+> Neurohacker manifest JSON files, and clicked `Download All`. Before patching,
+> the route exported valid VRMs but displayed a broken `Selection Thumbnail`
+> because dropped manifest JSON kept a raw relative `thumbnail` path.
+> `BatchManifest.jsx` now passes dropped manifest thumbnails through
+> `getAssetUrl(...)` before displaying them. Verification passed:
+> `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo build -p everywear-os`,
+> then fresh native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-batchmanifest-downloadall-postfix-02-after-download.png`,
+> `native-avatar-studio-batchmanifest-downloadall-postfix-manifest.json`, and
+> `avatar-batchmanifest-downloadall-postfix/*.vrm`. Verified: Drophunter
+> thumbnail loads at `190x190`; `drophunter-manifest-all-postfix.vrm` is
+> 10,776,676 bytes and `neurohacker-manifest-all-postfix.vrm` is 13,708,792
+> bytes; both have GLB magic `glTF`, version 2, and matching declared length.
+> Boundary: Export to Kasai directory picker, `strands-avatar.json` sidecar,
+> Vault registration, My Mait handoff, randomized trait persistence, and full
+> trait matrix remain unverified. Shared exporter cleanup remains:
+> BatchManifest export also emitted non-blocking `Cannot read
+> properties of undefined (reading 'direction')` despite producing valid VRM
+> containers.
+
+> Current-state note, 2026-06-09 v1.1.52: Avatar Studio Optimizer now verifies
+> a real native export/download after loading a bundled VRM. Native replay
+> opened Avatar Studio -> Optimize Character, dropped
+> `applets/character-studio/public/character-assets/drophunter/body/drophunter.vrm`,
+> loaded `DROPHUNTER` model information, and clicked the bottom Download
+> action. No source patch was required for this slice. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-optimizer-export-final-after-download.png`,
+> `native-avatar-studio-optimizer-export-final-manifest.json`, and
+> `avatar-optimizer-downloads-final/drophunter_merged.vrm`. The exported file
+> is 6,750,672 bytes with GLB magic `glTF`, version 2, and matching declared
+> length. Verified: `SkinnedMeshes: 3`, `Triangles: 9816`, `Bones: 198`,
+> Download after model load, no KTX warning, no bug modal, no failed-load text,
+> and no `data:image` or `blob:` CSP export violation. Boundary: Export to
+> Kasai directory picker, `strands-avatar.json` sidecar, Vault registration,
+> My Mait handoff, randomized trait persistence, and full trait matrix remain
+> unverified. Shared exporter cleanup remains:
+> Optimizer export also
+> emitted non-blocking `Cannot read properties of undefined (reading
+> 'direction')` despite producing a valid VRM container.
+
+> Current-state note, 2026-06-09 v1.1.51: Avatar Studio Batch Download now
+> verifies a single JSON selection export in native Everywear OS. Native replay
+> opened Avatar Studio -> Batch Download -> Drophunter, dropped
+> `screenshots/2026-06-09-everywear-full-tour/avatar-batch-drophunter-selection-final.json`,
+> and clicked the bottom Download action. Before patching, Batch routes leaked
+> raw `CALLTOACTION.BACK` copy, and an earlier replay clicked the Download
+> option checkbox label instead of the export action. `BatchDownload.jsx` and
+> `BatchManifest.jsx` now use plain `Back` copy. Verification passed:
+> `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo build -p everywear-os`,
+> then native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-batch-final-after-download.png`,
+> `native-avatar-studio-batch-final-manifest.json`, and
+> `avatar-batch-downloads-final/drophunter-batch-smoke.vrm`. The exported file
+> is 9,389,472 bytes with GLB magic `glTF`, version 2, and matching declared
+> length. Boundary: Export to Kasai directory picker, `strands-avatar.json`
+> sidecar, Vault registration, My Mait handoff, randomized trait persistence,
+> and full trait matrix remain unverified.
+
+> Current-state note, 2026-06-09 v1.1.50: Avatar Studio Create now verifies
+> direct VRM export/download in native Everywear OS. Native replay opened
+> Avatar Studio -> Create Character -> Drophunter -> Appearance -> Export ->
+> VRM 0. Before patching, the Save screen leaked raw i18n keys
+> `pageTitles.saveCharacter` and `CALLTOACTION.BACK`, and export emitted
+> native CSP errors fetching `data:image/svg+xml` under `connect-src`.
+> `Save.jsx` now uses plain Save/Back copy, and `tauri.conf.json` adds
+> `data:` to `connect-src` for in-memory export assets. Verification passed:
+> `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo build -p everywear-os`,
+> then fresh native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-create-export-postfix-save-screen.png`,
+> `native-avatar-studio-create-export-postfix-vrm0-manifest.json`, and
+> `avatar-create-export-downloads-postfix/Anon.vrm`. The exported file is
+> 10,564,076 bytes with GLB magic `glTF`, version 2, and matching declared
+> length. Boundary: Export to Kasai directory picker, `strands-avatar.json`
+> sidecar, Vault registration, My Mait handoff, randomized trait persistence,
+> full trait matrix, Batch completion, and optimized output inspection remain
+> unverified. Residual exporter cleanup: non-blocking page exception
+> `Cannot read properties of undefined (reading 'direction')` still appears
+> during VRM export even though the output container is valid.
+
+> Current-state note, 2026-06-09 v1.1.49: Avatar Studio Create Character
+> now shows the loaded Drophunter avatar in native Everywear OS. Native replay
+> opened Avatar Studio -> Create Character -> Drophunter -> Appearance -> Body.
+> Before the patch, class choice and trait controls rendered, but the central
+> viewport stayed black because the legacy `Background` fallback layer sat over
+> the live WebGL canvas in WebView2. `Background.module.css` now disables that
+> fallback in the embedded applet, and the local ignored Drophunter asset
+> manifest now points the body thumbnail at existing
+> `_textureCollections/skin/drophunter.png` instead of missing
+> `_textureCollections/body/drophunter.png`. Verification passed:
+> `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo clean -p everywear-os`,
+> `cargo build -p everywear-os`, then fresh native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-create-postfix-final-body-selected.png`
+> and `native-avatar-studio-create-postfix-final-manifest.json`. Verified:
+> class choice, Appearance, visible avatar canvas, Body category, Body trait
+> picker, loaded thumbnail, no raw keys, no character asset failures, no KTX
+> support warning, and no bug modal. Boundary: export/download/save, Vault
+> registration, My Mait handoff, randomized trait persistence, full trait
+> matrix, Batch completion, and optimized output inspection remain unverified.
+
+> Current-state note, 2026-06-09 v1.1.48: Avatar Studio Optimizer now accepts
+> a real bundled VRM in the native shell. Native replay dropped
+> `applets/character-studio/public/character-assets/drophunter/body/drophunter.vrm`
+> into Optimize Character. Before the CSP patch, the UI reached `DROPHUNTER`
+> but native WebView blocked `fetch(blob:http://tauri.localhost/...)` under
+> `connect-src`, leaving a false-positive state with Download visible and zero
+> geometry counts. `platform/everywear-os/src-tauri/tauri.conf.json` now adds
+> `blob:` to `connect-src`. Verification passed: `npm run build --workspace
+> everywear-os`, `cargo clean -p everywear-os`, `cargo build -p everywear-os`,
+> then native CDP replay. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-optimizer-vrm-drop-after-csp.png`
+> and `native-avatar-studio-optimizer-vrm-drop-after-csp-manifest.json`.
+> Verified counts: `SkinnedMeshes: 3`, `Triangles: 9816`, `Bones: 198`,
+> `MTOON opaque: 6`; no premature Download before import, Download appears
+> after model load, no Download All for a single VRM, no blob/KTX CSP violation,
+> and no bug modal. Boundary: export/download, compressed output inspection,
+> Vault registration, My Mait handoff, Create completion, and Batch completion
+> are still unverified.
+
+> Current-state note, 2026-06-09 v1.1.47: Avatar Studio local KTX2 helper
+> transport is fixed in the native shell. The Windows WebView2 asset-protocol
+> rule now applies to local script helpers too: `tauri.conf.json` adds
+> `asset: http://asset.localhost https://asset.localhost` to `script-src`.
+> Verification passed: `npm run build --workspace everywear-os`, `cargo clean
+> -p everywear-os`, `cargo build -p everywear-os`, then native CDP replay into
+> Avatar Studio -> Optimize Character. `ktx2/libktx.js` returned `200` from
+> `http://asset.localhost/...`, with no KTX request failure, no KTX-specific
+> CSP console violation, and no `Failed to load KTX2 support` / `Compressed
+> textures may not decode` warning. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-ktx2-csp-final.png`
+> and `native-avatar-studio-ktx2-csp-final-manifest.json`. Boundary: this
+> proves KTX2 helper script transport, not real compressed-texture decode on an
+> imported/optimized VRM. Separate CSP debt remains for Google Fonts and
+> `http://ipc.localhost/get_current_session_id`.
+
+> Current-state note, 2026-06-09 v1.1.46: Avatar Studio deep-card native
+> QA is now covered for the landing cards. Native WebView replay opened Create
+> Character, Batch Download, and Optimize Character from
+> `button.ew-desktop-icon[data-applet-id="character-studio"]` and the
+> `avatar-*` card anchors. `Create.jsx` and `Claim.jsx` now show plain route
+> labels instead of raw i18n keys, `Optimizer.jsx` hides Download actions
+> until a VRM is loaded, and `MergeOptions.jsx` / `MergeOptions.module.css`
+> anchor the optimizer options panel below the Avatar app chrome. Verification
+> passed: `npm run build --workspace @everywear/character-studio`,
+> `npm run build --workspace everywear-os`, `cargo clean -p everywear-os`,
+> `cargo build -p everywear-os`, and native CDP replay against fresh
+> `index-CE5t7bP7.js`. Evidence lives at
+> `screenshots/2026-06-09-everywear-full-tour/native-avatar-studio-deep-*.png`,
+> `native-avatar-studio-deep-flow-postfix-manifest.json`,
+> `native-avatar-studio-optimizer-final.png`, and
+> `native-avatar-studio-optimizer-final-manifest.json`. Boundary: no actual
+> download/export/save/Vault/My Mait handoff was triggered. Native console
+> still reports CSP blocking local KTX2 support from
+> `asset.localhost/.../ktx2/libktx.js`, so compressed texture decode remains
+> a separate runtime-risk lane.
 
 > Current-state note, 2026-06-09 v1.1.45: native shell home desktop
 > visual/theme coverage now has per-theme evidence. Light, Classic, Refined,
@@ -166,6 +353,27 @@ Maintainer: Sean Uddin / Somo Kasane
 > `native-avatar-studio-theme-carbon.png`, plus
 > `native-avatar-studio-theme-sweep.json`. Remaining Avatar debt: click
 > through Create, Batch Download, Optimize, save path, and My Mait handoff.
+
+> Current-state note, 2026-06-09 v1.1.36: native 1magen generation QA exposed
+> a runtime-command mismatch in the integrated shell route. The wiki contract
+> remains: `1magen` is `BinaryLocal` and the applet process owns
+> `list_models`, `download_model`, `load_model`, `generate_image`, and
+> `save_image`. Current native Everywear OS opens the shell-integrated
+> `ImagenCore` fallback while the `onemagen` runtime handoff is still not
+> connected; the shell only exposes read-only compatibility commands for
+> `get_status`, `get_recommended_stack`, and `get_default_output_dir`.
+> `applets/1magen/src/shell/ImagenCore.tsx` now probes `list_models` and
+> fails closed when the active Tauri process lacks the real engine commands:
+> it shows `Runtime handoff pending`, disables `Generate Image`, and avoids
+> the previous `Command download_model not found` dead click. Verification:
+> `npm run build --workspace onemagen`, `npm run build --workspace
+> everywear-os`, `cargo clean -p everywear-os`, `cargo build -p
+> everywear-os`, native launch with WebView CDP. Evidence:
+> `screenshots/2026-06-09-everywear-full-tour/native-1magen-generate-gated-final.png`
+> and `native-1magen-generate-gated-final-manifest.json`. Boundary: this is a
+> user-facing guardrail, not a generation fix. Actual model provisioning,
+> image generation, file save, and Vault image registration still require the
+> BinaryLocal runtime bridge to connect the real `onemagen` commands.
 
 > Current-state note, 2026-06-09 v1.1.35: 1magen native visual coverage now
 > has per-theme evidence for the styled workbench. Captured in rebuilt native
@@ -4278,7 +4486,7 @@ On **Windows (WebView2)**, Tauri v2 does NOT serve `convertFileSrc()` over the `
 2. **Asset-protocol scope.** `app.security.assetProtocol = { "enable": true, "scope": ["$HOME/Documents/Everywear Vault/**", "$DOCUMENT/Everywear Vault/**", ...] }` in `tauri.conf.json`. This is SEPARATE from `fs:scope` in `capabilities/default.json` — `fs:scope` governs the fs plugin read/write API, NOT `convertFileSrc`. Without the asset-protocol scope, the protocol 403s.
 3. **CSP origin.** The CSP `media-src` (and `img-src` for asset-served images, `connect-src` for any fetch/range probe) must include `http://asset.localhost https://asset.localhost`. Listing only `asset:` is the macOS/Linux form and is NOT sufficient on Windows. Without the origin, the WebView blocks the media load before `loadedmetadata` fires → duration `0:00` → silence.
 
-Current good values (`tauri.conf.json` CSP): `media-src 'self' asset: http://asset.localhost https://asset.localhost data: blob: http://127.0.0.1:*` (and the same origins added to `img-src` and `connect-src`).
+Current good values (`tauri.conf.json` CSP): `media-src 'self' asset: http://asset.localhost https://asset.localhost data: blob: http://127.0.0.1:*` (and the same origins added to `img-src` and `connect-src` where applicable). For local applet helper scripts such as Avatar Studio `ktx2/libktx.js`, `script-src` must also include `asset: http://asset.localhost https://asset.localhost`; do not use broad external script origins as a shortcut. For local file/object URL model loaders such as Avatar Studio VRM import, `connect-src` must include `blob:` because GLTF/VRM loaders fetch `blob:http://tauri.localhost/...`. For in-memory export assets such as SVG/data textures used during Avatar Studio VRM export, `connect-src` must include `data:` because exporter helpers fetch `data:image/svg+xml,...` URLs while building the output container.
 
 ### Why it was hard to find
 
@@ -4288,7 +4496,7 @@ Current good values (`tauri.conf.json` CSP): `media-src 'self' asset: http://ass
 
 ### Reusable rule
 
-Any new media element (audio, video, image) that points at a vault file via `convertFileSrc` on Windows must have its URL origin (`http://asset.localhost`) present in the relevant CSP directive, the path inside `assetProtocol.scope`, and the `protocol-asset` feature on. This rule also lives in `docs/wiki/gener8/vault-library.md`.
+Any new media element (audio, video, image), local helper script, or local object-URL model loader that points at a vault/app-data/resource file via `convertFileSrc` or `URL.createObjectURL()` on Windows must have its URL origin (`http://asset.localhost`) or `blob:` scheme present in the relevant CSP directive, the path inside `assetProtocol.scope` when asset-served, and the `protocol-asset` feature on. This rule also lives in `docs/wiki/gener8/vault-library.md`.
 
 ---
 

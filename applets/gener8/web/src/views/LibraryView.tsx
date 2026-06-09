@@ -45,6 +45,11 @@ const SORT_OPTIONS: { value: VaultSortBy; label: string }[] = [
 
 const SKIP_DELETE_CONFIRM_KEY = 's3studio:skip_delete_confirm';
 
+const subtlePanel = 'color-mix(in oklab, var(--ew-text) 4%, var(--ew-surface, var(--ew-bg)))';
+const subtlePanelHover = 'color-mix(in oklab, var(--ew-text) 7%, var(--ew-surface, var(--ew-bg)))';
+const selectedPanel = 'color-mix(in oklab, var(--ew-primary) 14%, var(--ew-surface, var(--ew-bg)))';
+const subtleBorder = 'color-mix(in oklab, var(--ew-text) 10%, transparent)';
+
 // ── Helpers ─────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -144,6 +149,62 @@ function normalizeVaultItem(item: VaultItem): VaultItem {
   };
 }
 
+function normalizedPathValue(value?: string): string {
+  return (value || '').replace(/\\/g, '/').toLowerCase();
+}
+
+function dedupeVaultItemKey(item: VaultItem): string {
+  const sha = item.sha256?.trim();
+  if (sha) return `sha:${sha}`;
+  return [
+    'fallback',
+    item.media_type,
+    item.asset_kind || '',
+    displayItemTitle(item).trim().toLowerCase(),
+    String(item.file_size_bytes || 0),
+  ].join(':');
+}
+
+function vaultPathScore(item: VaultItem): number {
+  const pathValue = `${normalizedPathValue(item.file_path)} ${normalizedPathValue(item.vault_path)}`;
+  const idPrefix = item.id.slice(0, 8).toLowerCase();
+  let score = 0;
+
+  if (idPrefix && pathValue.includes(idPrefix)) score += 100;
+  if (item.vault_path && item.file_path === item.vault_path) score += 10;
+  if (item.storage_mode === 'vault_copy' || item.storage_mode === 'vault_move') score += 8;
+  if (item.lyrics_text) score += 6;
+  if (item.genre && item.genre !== 'Gener8') score += 3;
+  score += Math.min(pathValue.length / 80, 8);
+
+  return score;
+}
+
+function preferVaultItem(current: VaultItem, candidate: VaultItem): VaultItem {
+  const currentScore = vaultPathScore(current);
+  const candidateScore = vaultPathScore(candidate);
+  if (candidateScore !== currentScore) return candidateScore > currentScore ? candidate : current;
+  return candidate.updated_at > current.updated_at ? candidate : current;
+}
+
+function dedupeVaultItems(items: VaultItem[]): VaultItem[] {
+  const bestByKey = new Map<string, VaultItem>();
+  const order: string[] = [];
+
+  items.forEach((item) => {
+    const key = dedupeVaultItemKey(item);
+    const current = bestByKey.get(key);
+    if (!current) {
+      bestByKey.set(key, item);
+      order.push(key);
+      return;
+    }
+    bestByKey.set(key, preferVaultItem(current, item));
+  });
+
+  return order.map((key) => bestByKey.get(key)).filter((item): item is VaultItem => Boolean(item));
+}
+
 function isPlayableAudioItem(item: VaultItem): boolean {
   return item.media_type === 'audio' && Boolean(item.file_path);
 }
@@ -197,27 +258,36 @@ function VaultItemRow({
   const title = displayItemTitle(item);
   const isGallery = variant === 'gallery';
   const tags = item.tags;
+  const rowBackground = isActive ? selectedPanel : subtlePanel;
 
   return (
     <div
       className={
         isGallery
-          ? `flex flex-col gap-3 rounded-lg border p-3 cursor-pointer transition-colors group ${
-              isActive ? 'border-white/25 bg-white/[0.08]' : 'border-white/10 bg-white/[0.035] hover:bg-white/[0.06]'
-            }`
-          : `flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors group ${
-              isActive ? 'bg-white/10' : 'hover:bg-white/5'
-            }`
+          ? 'flex flex-col gap-3 rounded-lg border p-3 cursor-pointer transition-colors group'
+          : 'flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors group'
       }
+      style={{
+        background: rowBackground,
+        borderColor: isGallery ? subtleBorder : 'transparent',
+        color: 'var(--ew-text)',
+      }}
+      onMouseEnter={(event) => {
+        if (!isActive) event.currentTarget.style.background = subtlePanelHover;
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.background = rowBackground;
+      }}
       onClick={onClick}
     >
       {/* Thumbnail / Icon */}
       <div
         className={
           isGallery
-            ? 'w-full aspect-video rounded-md overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center relative'
-            : 'w-10 h-10 rounded overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center relative'
+            ? 'w-full aspect-video rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center relative'
+            : 'w-10 h-10 rounded overflow-hidden flex-shrink-0 flex items-center justify-center relative'
         }
+        style={{ background: 'color-mix(in oklab, var(--ew-text) 7%, transparent)' }}
       >
         {showThumb && !thumbError ? (
           <>
@@ -234,7 +304,7 @@ function VaultItemRow({
             )}
           </>
         ) : (
-          <span className="text-s3-text-muted opacity-40">
+          <span className="opacity-70" style={{ color: 'var(--ew-text-muted)' }}>
             {isPlayable && isActive && isPlaying
               ? <Music size={14} style={{ color: 'var(--ew-accent, var(--ew-text))' }} />
               : mediaIcon(item.media_type)}
@@ -244,11 +314,11 @@ function VaultItemRow({
 
       {/* Info */}
       <div className={isGallery ? 'w-full min-w-0' : 'flex-1 min-w-0'}>
-        <div className="text-sm font-medium text-s3-text-primary truncate flex items-center gap-1.5">
+        <div className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: 'var(--ew-text)' }}>
           {item.favorite && <Star size={10} className="text-amber-400 fill-amber-400 flex-shrink-0" />}
           {title}
         </div>
-        <div className="text-xs text-s3-text-muted truncate flex items-center gap-2">
+        <div className="text-xs truncate flex items-center gap-2" style={{ color: 'var(--ew-text-muted)' }}>
           <span className="flex items-center gap-1">{mediaIcon(item.media_type)} {itemKindLabel(item)}</span>
           {item.applet_id && <span>{item.applet_id}</span>}
           {isPlayable && isActive && (
@@ -262,7 +332,11 @@ function VaultItemRow({
         {tags.slice(0, 2).map((tag) => (
           <span
             key={tag}
-            className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded bg-white/5 text-s3-text-muted"
+            className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded"
+            style={{
+              background: 'color-mix(in oklab, var(--ew-text) 6%, transparent)',
+              color: 'var(--ew-text-muted)',
+            }}
           >
             {tag}
           </span>
@@ -271,18 +345,24 @@ function VaultItemRow({
 
       {/* Duration (audio/video) */}
       {item.duration_seconds != null && !isGallery && (
-        <span className="text-xs text-s3-text-muted tabular-nums w-12 text-right">
+        <span className="text-xs tabular-nums w-12 text-right" style={{ color: 'var(--ew-text-muted)' }}>
           {formatDuration(item.duration_seconds)}
         </span>
       )}
 
       {/* Size */}
-      <span className={isGallery ? 'text-xs text-s3-text-muted tabular-nums' : 'text-xs text-s3-text-muted tabular-nums w-16 text-right hidden lg:block'}>
+      <span
+        className={isGallery ? 'text-xs tabular-nums' : 'text-xs tabular-nums w-16 text-right hidden lg:block'}
+        style={{ color: 'var(--ew-text-muted)' }}
+      >
         {formatBytes(item.file_size_bytes)}
       </span>
 
       {/* Date */}
-      <span className={isGallery ? 'text-xs text-s3-text-muted' : 'text-xs text-s3-text-muted w-20 text-right hidden lg:block'}>
+      <span
+        className={isGallery ? 'text-xs' : 'text-xs w-20 text-right hidden lg:block'}
+        style={{ color: 'var(--ew-text-muted)' }}
+      >
         {formatDate(item.created_at)}
       </span>
 
@@ -292,10 +372,13 @@ function VaultItemRow({
           event.stopPropagation();
           onDelete();
         }}
-        className="p-1.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-white/5 transition"
+        className="p-1.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
         title="Delete item"
         aria-label={`Delete ${title}`}
-        style={{ color: 'var(--ew-status-red)' }}
+        style={{
+          color: 'var(--ew-status-red)',
+          background: 'color-mix(in oklab, var(--ew-status-red) 5%, transparent)',
+        }}
       >
         <Trash2 size={14} />
       </button>
@@ -375,7 +458,10 @@ function StatsBar() {
   if (!stats) return null;
 
   return (
-    <div className="flex items-center gap-3 text-[10px] text-s3-text-muted px-6 py-2 border-b border-white/5">
+    <div
+      className="flex items-center gap-3 text-[10px] px-6 py-2 border-b"
+      style={{ color: 'var(--ew-text-muted)', borderColor: 'var(--ew-border)' }}
+    >
       <span>{stats.total_items} items</span>
       <span className="opacity-40">|</span>
       <span>{stats.images} images</span>
@@ -405,20 +491,29 @@ function SortDropdown({ value, onChange }: { value: VaultSortBy; onChange: (v: V
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-xs text-s3-text-muted hover:text-s3-text-primary px-2 py-1.5 rounded hover:bg-white/5 transition-colors"
+        className="flex items-center gap-1 text-xs px-2 py-1.5 rounded transition-colors"
+        style={{ color: 'var(--ew-text-muted)' }}
       >
         {current?.label || 'Sort'}
         <ChevronDown size={12} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 rounded-md border border-white/10 bg-black/90 py-1 min-w-[120px]">
+        <div
+          className="absolute right-0 top-full mt-1 z-20 rounded-md border py-1 min-w-[120px]"
+          style={{
+            background: 'var(--ew-surface-overlay, var(--ew-surface, var(--ew-bg)))',
+            borderColor: 'var(--ew-border)',
+          }}
+        >
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                opt.value === value ? 'text-s3-text-primary bg-white/5' : 'text-s3-text-muted hover:bg-white/5'
-              }`}
+              className="w-full text-left px-3 py-1.5 text-xs transition-colors"
+              style={{
+                color: opt.value === value ? 'var(--ew-text)' : 'var(--ew-text-muted)',
+                background: opt.value === value ? selectedPanel : 'transparent',
+              }}
             >
               {opt.label}
             </button>
@@ -436,7 +531,7 @@ export default function LibraryView() {
   const audio = useShellAudio();
   const [deleteTarget, setDeleteTarget] = useState<VaultItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const items = useMemo(() => vault.items.map(normalizeVaultItem), [vault.items]);
+  const items = useMemo(() => dedupeVaultItems(vault.items.map(normalizeVaultItem)), [vault.items]);
   const selectedItem = vault.selectedItem ? normalizeVaultItem(vault.selectedItem) : null;
 
   const totalPages = Math.max(1, Math.ceil(vault.total / vault.pageSize));
@@ -496,20 +591,27 @@ export default function LibraryView() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ background: 'var(--ew-bg)', color: 'var(--ew-text)' }}>
       {/* Stats bar */}
       <StatsBar />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+      <div
+        className="flex items-center justify-between px-6 py-3 border-b"
+        style={{ borderColor: 'var(--ew-border)' }}
+      >
         <div className="flex items-center gap-3">
-          <h1 className="font-display text-xl tracking-wide text-s3-text-primary">
+          <h1 className="font-display text-xl tracking-wide" style={{ color: 'var(--ew-text)' }}>
             Everywear Vault
           </h1>
           <button
             onClick={() => void vault.refetch()}
-            className="p-1.5 rounded hover:bg-white/5 transition-colors text-s3-text-muted"
+            className="p-1.5 rounded transition-colors"
             title="Refresh vault"
+            style={{
+              color: 'var(--ew-text-muted)',
+              background: 'color-mix(in oklab, var(--ew-text) 4%, transparent)',
+            }}
           >
             <RefreshCw size={14} className={vault.isLoading ? 'animate-spin' : ''} />
           </button>
@@ -518,7 +620,11 @@ export default function LibraryView() {
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-s3-text-muted" />
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2"
+              style={{ color: 'var(--ew-text-muted)' }}
+            />
             <input
               type="text"
               className="ew-input pl-8 text-sm w-48"
@@ -538,11 +644,11 @@ export default function LibraryView() {
           <button
             key={tab.id}
             onClick={() => vault.setFilter(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-              vault.filter === tab.id
-                ? 'bg-white/10 text-s3-text-primary'
-                : 'text-s3-text-muted hover:text-s3-text-primary hover:bg-white/5'
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+            style={{
+              background: vault.filter === tab.id ? selectedPanel : subtlePanel,
+              color: vault.filter === tab.id ? 'var(--ew-text)' : 'var(--ew-text-muted)',
+            }}
           >
             {tab.icon}
             {tab.label}
@@ -557,24 +663,24 @@ export default function LibraryView() {
           <div className="flex flex-col gap-2 animate-pulse">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-2">
-                <div className="w-10 h-10 rounded bg-white/5" />
+                <div className="w-10 h-10 rounded" style={{ background: subtlePanel }} />
                 <div className="flex-1">
-                  <div className="h-3 w-32 bg-white/5 rounded mb-1.5" />
-                  <div className="h-2 w-20 bg-white/5 rounded" />
+                  <div className="h-3 w-32 rounded mb-1.5" style={{ background: subtlePanel }} />
+                  <div className="h-2 w-20 rounded" style={{ background: subtlePanel }} />
                 </div>
-                <div className="h-3 w-10 bg-white/5 rounded" />
+                <div className="h-3 w-10 rounded" style={{ background: subtlePanel }} />
               </div>
             ))}
           </div>
         ) : items.length === 0 ? (
           /* Empty state */
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-            <Music size={48} className="text-s3-text-muted opacity-30" />
+            <Music size={48} className="opacity-30" style={{ color: 'var(--ew-text-muted)' }} />
             <div>
-              <h2 className="text-lg font-semibold text-s3-text-primary mb-1">
+              <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--ew-text)' }}>
                 {vault.searchQuery ? 'No results' : 'Your vault is empty'}
               </h2>
-              <p className="text-sm text-s3-text-muted max-w-xs">
+              <p className="text-sm max-w-xs" style={{ color: 'var(--ew-text-muted)' }}>
                 {vault.searchQuery
                   ? `No items match "${vault.searchQuery}". Try a different search.`
                   : 'Generate content in any Everywear applet and save it to the vault. Images, audio, and videos will all appear here.'}
@@ -613,25 +719,30 @@ export default function LibraryView() {
 
       {/* Pagination footer */}
       {vault.total > vault.pageSize && (
-        <div className="flex items-center justify-between px-6 py-3 border-t border-white/5">
-          <span className="text-xs text-s3-text-muted">
+        <div
+          className="flex items-center justify-between px-6 py-3 border-t"
+          style={{ borderColor: 'var(--ew-border)' }}
+        >
+          <span className="text-xs" style={{ color: 'var(--ew-text-muted)' }}>
             Showing {showingFrom}-{showingTo} of {vault.total}
           </span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => vault.setPage(vault.page - 1)}
               disabled={vault.page === 0}
-              className="p-1.5 rounded hover:bg-white/5 text-s3-text-muted disabled:opacity-30 transition-colors"
+              className="p-1.5 rounded disabled:opacity-30 transition-colors"
+              style={{ color: 'var(--ew-text-muted)', background: subtlePanel }}
             >
               <ChevronLeft size={14} />
             </button>
-            <span className="text-xs text-s3-text-muted tabular-nums px-2">
+            <span className="text-xs tabular-nums px-2" style={{ color: 'var(--ew-text-muted)' }}>
               {vault.page + 1} / {totalPages}
             </span>
             <button
               onClick={() => vault.setPage(vault.page + 1)}
               disabled={vault.page >= totalPages - 1}
-              className="p-1.5 rounded hover:bg-white/5 text-s3-text-muted disabled:opacity-30 transition-colors"
+              className="p-1.5 rounded disabled:opacity-30 transition-colors"
+              style={{ color: 'var(--ew-text-muted)', background: subtlePanel }}
             >
               <ChevronRight size={14} />
             </button>

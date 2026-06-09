@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@everywear/ewds": "*",
+    "@tauri-apps/api": "^2.0.0",
     "axios": "^1.13.6",
     "buffer": "^6.0.3",
     "classnames": "^2.5.1",

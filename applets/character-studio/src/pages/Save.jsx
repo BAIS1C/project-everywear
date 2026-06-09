@@ -1,10 +1,9 @@
-import React, { useContext, useState } from "react"
+import React, { useState } from "react"
 import styles from "./Save.module.css"
 import { ExportMenu } from "../components/ExportMenu"
 import { SceneContext } from "../context/SceneContext"
 import { ViewMode, ViewContext } from "../context/ViewContext"
 import CustomButton from "../components/custom-button"
-import { LanguageContext } from "../context/LanguageContext"
 import { SoundContext } from "../context/SoundContext"
 import { AudioContext } from "../context/AudioContext"
 import MessageWindow from "../components/MessageWindow"
@@ -15,8 +14,6 @@ import PurchaseMenu from "../components/PurchaseMenu"
 
 function Save() {
 
-  // Translate hook
-  const { t } = useContext(LanguageContext);
   const { playSound } = React.useContext(SoundContext)
   const { isMute } = React.useContext(AudioContext)
   const { setViewMode } = React.useContext(ViewContext);
@@ -74,14 +71,14 @@ function Save() {
   return (
     <div className={styles.container}>
       
-      <div className={"sectionTitle"}>{t("pageTitles.saveCharacter")}</div>
+      <div className={"sectionTitle"}>Save Your Character</div>
       <div className={styles.buttonContainer}>
         <FileDropComponent 
           onFilesDrop={handleFilesDrop}
         />
         <CustomButton
           theme="light"
-          text={t('callToAction.back')}
+          text="Back"
           size={14}
           className={styles.buttonLeft}
           onClick={back}

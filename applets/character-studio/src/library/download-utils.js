@@ -175,6 +175,11 @@ export async function exportToStrands(model, avatar, fileName, options, traitSum
     },
   }
 
+  const nativeExport = await exportToEverywearKasai(buffer, safeName, manifest)
+  if (nativeExport) {
+    return nativeExport
+  }
+
   // Try File System Access API (Chromium browsers)
   if (window.showDirectoryPicker) {
     try {
@@ -208,6 +213,49 @@ export async function exportToStrands(model, avatar, fileName, options, traitSum
   const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" })
   save(manifestBlob, "strands-avatar.json")
   return { success: true, method: "download", manifest }
+}
+
+async function exportToEverywearKasai(buffer, safeName, manifest) {
+  if (!isTauriRuntime()) return null
+
+  try {
+    const { invoke } = await import("@tauri-apps/api/core")
+    return await invoke("export_character_studio_avatar", {
+      request: {
+        name: safeName,
+        vrm_base64: arrayBufferToBase64(buffer),
+        manifest,
+        target_dir: getAvatarExportTargetDir(),
+      },
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes("Command export_character_studio_avatar not found")) {
+      console.warn("Native Avatar export bridge missing; falling back to browser export.")
+      return null
+    }
+    throw error
+  }
+}
+
+function isTauriRuntime() {
+  return Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__)
+}
+
+function getAvatarExportTargetDir() {
+  const target = window.__EVERYWEAR_AVATAR_EXPORT_DIR__
+  return typeof target === "string" && target.trim() ? target : null
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+  let binary = ""
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    const chunk = bytes.subarray(index, index + chunkSize)
+    binary += String.fromCharCode(...chunk)
+  }
+  return btoa(binary)
 }
 
 function getOptimizedGLB(model, avatar, options){

@@ -15,6 +15,7 @@ export const ExportMenu = ({currentPrice, onPurchaseClick}) => {
   // Translate hook
   const { t } = useContext(LanguageContext);
   const [name] = React.useState(localStorage.getItem("name") || defaultName)
+  const [exportStatus, setExportStatus] = React.useState("")
   const { model, characterManager } = useContext(SceneContext)
 
 
@@ -53,13 +54,20 @@ export const ExportMenu = ({currentPrice, onPurchaseClick}) => {
     const options = getOptions();
     options.isVrm0 = Object.values(characterManager.avatar)[0].vrm.meta.metaVersion == '0'
     options.outputVRM0 = true
+    setExportStatus("Exporting to Kasai...")
     try {
       const result = await characterManager.exportToStrands(name, options)
       if (result.success) {
-        console.log(`Exported to Kasai via ${result.method}:`, result.manifest)
+        console.log(`Exported to Kasai via ${result.method}:`, result)
+        setExportStatus("Exported to My Mait")
+      } else if (result.method === "cancelled") {
+        setExportStatus("Export cancelled")
+      } else {
+        setExportStatus("Export did not complete")
       }
     } catch (err) {
       console.error("Export to Kasai failed:", err)
+      setExportStatus("Export failed")
     }
   }
 
@@ -97,6 +105,11 @@ export const ExportMenu = ({currentPrice, onPurchaseClick}) => {
             className={styles.button}
             onClick={() => exportToKasai()}
           />
+          {exportStatus && (
+            <div className={styles.status} role="status">
+              {exportStatus}
+            </div>
+          )}
         </>
       ) : (
         <CustomButton

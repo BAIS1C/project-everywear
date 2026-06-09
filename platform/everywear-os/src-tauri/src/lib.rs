@@ -1552,6 +1552,7 @@ pub fn run() {
             commands::my_mait::set_my_mait_companion_state,
             commands::my_mait::list_mait_manifests,
             commands::my_mait::import_character_studio_avatar,
+            commands::my_mait::export_character_studio_avatar,
             // Video encoder sidecar
             commands::video_encoder::request_video_encoder,
             commands::video_encoder::release_video_encoder,

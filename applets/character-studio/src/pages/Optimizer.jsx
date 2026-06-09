@@ -199,7 +199,7 @@ function Optimizer() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-tour="avatar-optimizer-panel">
       <div className={`loadingIndicator ${isLoading ? "active" : ""}`}>
         <img className={"rotate"} src={getAssetUrl("ui/loading.svg")} />
       </div>
@@ -224,7 +224,7 @@ function Optimizer() {
       <div className={styles.buttonContainer}>
         <CustomButton
           theme="light"
-          text={t('callToAction.back')}
+          text="Back"
           size={14}
           className={styles.buttonLeft}
           onClick={back}
@@ -236,7 +236,7 @@ function Optimizer() {
           className={styles.buttonCenter}
           onClick={debugMode}
         /> */}
-        {(vrmFiles?.length > 1 != "")&&(
+        {vrmFiles?.length > 1 && (
           <CustomButton
           theme="light"
           text="Download All"
@@ -244,7 +244,7 @@ function Optimizer() {
           className={styles.buttonRight}
           onClick={downloadAll}
         />)}   
-        {(model != "")&&(
+        {model && (
           <CustomButton
           theme="light"
           text="Download"

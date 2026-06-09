@@ -64,8 +64,8 @@ function Claim() {
   }
   
   return (
-    <div className={`${styles.container} horizontalScroll`}>
-      <div className={"sectionTitle"}>{t('pageTitles.chooseClass')}</div>
+    <div className={`${styles.container} horizontalScroll`} data-tour="avatar-batch-class-choice">
+      <div className={"sectionTitle"}>Choose a batch source</div>
       <div className={styles.vrmOptimizerButton}>
       </div>
       <div className={styles.topLine} />
@@ -150,7 +150,7 @@ function Claim() {
       <div className={styles.buttonContainer}>
         { <CustomButton
           theme="light"
-          text={t('callToAction.back')}
+          text="Back"
           size={14}
           className={styles.buttonLeft}
           onClick={back}

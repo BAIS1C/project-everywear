@@ -38,6 +38,8 @@ export function ImagenCore() {
   const [savedPath, setSavedPath] = useState<string | null>(null);
   const [vaultSaveState, setVaultSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [vaultSaveError, setVaultSaveError] = useState<string | null>(null);
+  const [runtimeCommandsReady, setRuntimeCommandsReady] = useState<boolean | null>(null);
+  const [runtimeBridgeError, setRuntimeBridgeError] = useState<string | null>(null);
   const [autoSaveToVault, setAutoSaveToVault] = useState<boolean>(() => {
     try { return localStorage.getItem('1magen:auto_save_vault') === '1'; } catch { return false; }
   });
@@ -61,6 +63,29 @@ export function ImagenCore() {
       setError(err instanceof Error ? err.message : String(err));
     });
   }, [refreshRecommendation, refreshStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listModels()
+      .then(() => {
+        if (cancelled) return;
+        setRuntimeCommandsReady(true);
+        setRuntimeBridgeError(null);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setRuntimeCommandsReady(false);
+        setRuntimeBridgeError(
+          message.includes('Command list_models not found')
+            ? 'The 1magen engine handoff is not connected yet. Generation will unlock when the local runtime process is active.'
+            : message,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -160,6 +185,10 @@ export function ImagenCore() {
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || !outputDir || generating) return;
+    if (runtimeCommandsReady === false) {
+      setError(runtimeBridgeError || 'The 1magen engine handoff is not connected yet.');
+      return;
+    }
     setGenerating(true);
     setError(null);
     setSavedPath(null);
@@ -238,7 +267,7 @@ export function ImagenCore() {
     } finally {
       setGenerating(false);
     }
-  }, [ensureModelLoaded, generating, negativePrompt, outputDir, prompt, resolution, seedText, sourceImagePath]);
+  }, [ensureModelLoaded, generating, negativePrompt, outputDir, prompt, resolution, runtimeBridgeError, runtimeCommandsReady, seedText, sourceImagePath]);
 
   const modeLabel = sourceImagePath ? 'Image to Image / Edit' : 'Text to Image';
 
@@ -254,7 +283,11 @@ export function ImagenCore() {
         </div>
         <div className="imagen-workbench__status">
           <span className={`imagen-badge ${stackReady ? 'imagen-badge--ready' : 'imagen-badge--warn'}`}>
-            {stackReady ? 'Local stack ready' : provisioning ? 'Provisioning local stack' : 'Will auto-provision'}
+            {runtimeCommandsReady === false
+              ? 'Runtime handoff pending'
+              : runtimeCommandsReady === null
+                ? 'Checking runtime'
+                : stackReady ? 'Local stack ready' : provisioning ? 'Provisioning local stack' : 'Will auto-provision'}
           </span>
           <span className="imagen-badge">{modeLabel}</span>
         </div>
@@ -367,12 +400,17 @@ export function ImagenCore() {
             <button
               className="imagen-primary-btn imagen-primary-btn--hero"
               onClick={handleGenerate}
-              disabled={generating || !prompt.trim() || !outputDir}
+              disabled={generating || !prompt.trim() || !outputDir || runtimeCommandsReady !== true}
             >
               {generating ? 'Generating...' : sourceImagePath ? 'Transform Image' : 'Generate Image'}
             </button>
           </div>
 
+          {runtimeBridgeError && (
+            <div className="imagen-field__hint" style={{ color: 'var(--ew-status-amber, var(--ew-text-muted))' }}>
+              {runtimeBridgeError}
+            </div>
+          )}
           {recommended && (
             <div className="imagen-field__hint">
               {recommended.rationale}

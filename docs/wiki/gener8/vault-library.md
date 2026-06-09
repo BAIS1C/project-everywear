@@ -82,8 +82,13 @@
   generation requests must keep the raw Vault file path so the Rust engine can
   resolve the source audio on disk.
 - Vault-backed audio and image previews require both Tauri CSP support for
-  `asset:` URLs and `app.security.assetProtocol.enable = true` with the
-  Everywear Vault directory in `assetProtocol.scope`. The Everywear OS Tauri
+  asset URLs and `app.security.assetProtocol.enable = true` with the
+  Everywear Vault directory in `assetProtocol.scope`. On Windows WebView2,
+  Tauri v2 serves `convertFileSrc()` through `http://asset.localhost/...`,
+  so the relevant CSP directives must include that origin, not only the
+  `asset:` scheme. Local file/model loaders that fetch `URL.createObjectURL()`
+  URLs must also have `blob:` in the relevant CSP directive, for example
+  Avatar Studio VRM import needs `connect-src blob:`. The Everywear OS Tauri
   crate must also enable the `tauri/protocol-asset` feature.
 - The shell audio element must not set `crossOrigin = 'anonymous'` for
   Tauri `asset:` / local Vault URLs. Restrict CORS mode to HTTP(S) media.

@@ -1,9 +1,11 @@
 use crate::{gpu, mait_bridge::MaitStoreState, registry, state::AppState};
+use base64::{engine::general_purpose, Engine as _};
 use model_manager::{AppletManifest, ManifestModelRequirement, ModelRole, ResolutionStatus};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
 use tauri::State;
+use tauri_plugin_dialog::DialogExt;
 
 const APPLET_ID: &str = "kasai";
 const PREF_MODEL_GROUP_ID: &str = "my_mait.model.preferred_group_id";
@@ -119,6 +121,25 @@ pub struct MaitManifestSummary {
     pub display_name: String,
     pub shard_count: usize,
     pub source_schema: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CharacterStudioAvatarExportRequest {
+    pub name: String,
+    pub vrm_base64: String,
+    pub manifest: serde_json::Value,
+    pub target_dir: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CharacterStudioAvatarExportResponse {
+    pub success: bool,
+    pub method: String,
+    pub export_dir: Option<String>,
+    pub vrm_path: Option<String>,
+    pub manifest_path: Option<String>,
+    pub imported_manifest: Option<MaitManifestSummary>,
+    pub settings: Option<MyMaitSettingsState>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -330,6 +351,98 @@ pub async fn import_character_studio_avatar(
     build_settings_state(&state, &mait_store).await
 }
 
+#[tauri::command]
+pub async fn export_character_studio_avatar(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    mait_store: State<'_, MaitStoreState>,
+    request: CharacterStudioAvatarExportRequest,
+) -> Result<CharacterStudioAvatarExportResponse, String> {
+    let export_dir = match request.target_dir.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+        Some(target_dir) => PathBuf::from(target_dir),
+        None => {
+            let picked = app
+                .dialog()
+                .file()
+                .set_title("Export Avatar to Kasai")
+                .blocking_pick_folder();
+            match picked {
+                Some(path) => path
+                    .into_path()
+                    .map_err(|error| format!("Failed to read selected export folder: {error}"))?,
+                None => {
+                    return Ok(CharacterStudioAvatarExportResponse {
+                        success: false,
+                        method: "cancelled".into(),
+                        export_dir: None,
+                        vrm_path: None,
+                        manifest_path: None,
+                        imported_manifest: None,
+                        settings: None,
+                    });
+                }
+            }
+        }
+    };
+
+    std::fs::create_dir_all(&export_dir)
+        .map_err(|error| format!("Failed to create avatar export directory: {error}"))?;
+
+    let safe_name = sanitize_avatar_export_name(&request.name);
+    let vrm_path = export_dir.join(format!("{safe_name}.vrm"));
+    let manifest_path = export_dir.join("strands-avatar.json");
+    let vrm_bytes = general_purpose::STANDARD
+        .decode(request.vrm_base64.as_bytes())
+        .map_err(|error| format!("Failed to decode avatar VRM payload: {error}"))?;
+
+    std::fs::write(&vrm_path, vrm_bytes)
+        .map_err(|error| format!("Failed to write avatar VRM: {error}"))?;
+
+    let mut manifest = request.manifest;
+    enrich_character_studio_manifest(&mut manifest, &safe_name, &vrm_path);
+    let manifest_json = serde_json::to_string_pretty(&manifest)
+        .map_err(|error| format!("Failed to serialize avatar sidecar: {error}"))?;
+    std::fs::write(&manifest_path, manifest_json)
+        .map_err(|error| format!("Failed to write avatar sidecar: {error}"))?;
+
+    let imported = {
+        let store = mait_store.lock().await;
+        store
+            .import_strands_avatar_file(&manifest_path)
+            .map_err(|error| error.to_string())?
+    };
+
+    {
+        let profile = state.profile.lock().await;
+        profile
+            .set_pref(PREF_COMPANION_ACTIVE_MANIFEST_ID, &imported.id)
+            .map_err(|error| error.to_string())?;
+    }
+
+    let settings = build_settings_state(&state, &mait_store).await?;
+    let imported_manifest = settings
+        .manifests
+        .iter()
+        .find(|manifest| manifest.id == imported.id)
+        .cloned()
+        .unwrap_or(MaitManifestSummary {
+            id: imported.id,
+            display_name: imported.display_name,
+            shard_count: imported.aesthetic_shards.len(),
+            source_schema: imported.source.map(|source| source.schema),
+        });
+
+    Ok(CharacterStudioAvatarExportResponse {
+        success: true,
+        method: "tauri-kasai-import".into(),
+        export_dir: Some(export_dir.display().to_string()),
+        vrm_path: Some(vrm_path.display().to_string()),
+        manifest_path: Some(manifest_path.display().to_string()),
+        imported_manifest: Some(imported_manifest),
+        settings: Some(settings),
+    })
+}
+
 async fn build_settings_state(
     state: &State<'_, AppState>,
     mait_store: &State<'_, MaitStoreState>,
@@ -362,6 +475,55 @@ fn load_kasai_manifest() -> Result<AppletManifest, String> {
         .join("applet.toml");
     AppletManifest::load(&manifest_path)
         .map_err(|error| format!("Failed to load My Mait manifest: {error}"))
+}
+
+fn sanitize_avatar_export_name(value: &str) -> String {
+    let sanitized: String = value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let sanitized = sanitized.trim_matches('_');
+    if sanitized.is_empty() {
+        "kasai-avatar".into()
+    } else {
+        sanitized.into()
+    }
+}
+
+fn enrich_character_studio_manifest(
+    manifest: &mut serde_json::Value,
+    safe_name: &str,
+    vrm_path: &std::path::Path,
+) {
+    if let serde_json::Value::Object(map) = manifest {
+        map.entry("schema")
+            .or_insert_with(|| serde_json::Value::String("strands-avatar-v1".into()));
+        map.entry("name")
+            .or_insert_with(|| serde_json::Value::String(safe_name.into()));
+        map.insert(
+            "vrm_path".into(),
+            serde_json::Value::String(vrm_path.display().to_string()),
+        );
+        map.insert(
+            "model_path".into(),
+            serde_json::Value::String(vrm_path.display().to_string()),
+        );
+        let assets = map
+            .entry("assets")
+            .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+        if let serde_json::Value::Object(assets) = assets {
+            assets.insert(
+                "vrm".into(),
+                serde_json::Value::String(vrm_path.display().to_string()),
+            );
+        }
+    }
 }
 
 fn monorepo_root() -> PathBuf {
