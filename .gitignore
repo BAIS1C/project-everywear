@@ -71,6 +71,7 @@ npm-debug.log*
 /*PROMPTPACK*.md
 /QA_TOUR_FINDINGS_*.md
 /TUTORIAL_SCRIPT_FULL_SYSTEM_*.md
+/screenshots/
 /.codex/
 /.codex-run/
 
