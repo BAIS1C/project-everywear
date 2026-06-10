@@ -90,6 +90,39 @@ pub enum SwitchStage {
 }
 
 // ---------------------------------------------------------------------------
+// Provisioning progress contract v2 (2026-06-10)
+//
+// `provision-manifest` is emitted once per provisioning phase BEFORE the
+// first byte moves, carrying the full model set with sizes so the UI can
+// render every row up front. `download-progress` keeps its legacy fields
+// (model_key, downloaded, total, pct) via #[serde(flatten)] so existing
+// listeners (1magen ImagenCore) stay compatible, and gains switch-session
+// identity plus set position so the shell Lifecycle HUD can show
+// "model 2 of 4" with client-computed rate/ETA.
+// ---------------------------------------------------------------------------
+
+/// Emitted as `provision-manifest` before a phase of model downloads begins.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProvisionManifestPayload {
+    pub session_id: String,
+    pub applet_id: String,
+    pub models: Vec<ModelDownloadInfo>,
+    pub total_bytes: u64,
+}
+
+/// Emitted as `download-progress`. Superset of the legacy payload.
+#[derive(Debug, Clone, Serialize)]
+pub struct DownloadProgressV2 {
+    pub session_id: String,
+    pub applet_id: String,
+    /// 1-based position within this provisioning phase.
+    pub model_index: usize,
+    pub model_count: usize,
+    #[serde(flatten)]
+    pub progress: model_manager::DownloadProgress,
+}
+
+// ---------------------------------------------------------------------------
 // Gate check (step 1)
 // ---------------------------------------------------------------------------
 
@@ -401,19 +434,69 @@ pub fn provision_upgrade_packs(
 // Provision (step 5)
 // ---------------------------------------------------------------------------
 
-/// Download all missing models for a model group. Emits progress events.
+/// Download all missing models for a model group.
+///
+/// Emits `provision-manifest` once (full model set + sizes) before the first
+/// byte, then `download-progress` (contract v2) at ~1% increments per model.
+/// `session_id` ties every event in one applet switch together across the
+/// base and upgrade-pack provisioning phases.
 pub async fn provision_models(
     app: &tauri::AppHandle,
     model_mgr: &mut ModelManager,
     missing_keys: &[String],
+    session_id: &str,
+    applet_id: &str,
 ) -> Result<()> {
-    for key in missing_keys {
-        info!(model = %key, "Provisioning model");
+    if missing_keys.is_empty() {
+        return Ok(());
+    }
+
+    // Preflight manifest: the UI renders all rows before any download starts.
+    let available = model_mgr.list_available();
+    let models: Vec<ModelDownloadInfo> = missing_keys
+        .iter()
+        .map(|key| {
+            let info = available.iter().find(|m| &m.key == key);
+            ModelDownloadInfo {
+                key: key.clone(),
+                name: info
+                    .map(|m| m.name.clone())
+                    .unwrap_or_else(|| key.clone()),
+                size_bytes: info.map(|m| m.size_bytes).unwrap_or(0),
+            }
+        })
+        .collect();
+    let total_bytes = models.iter().map(|m| m.size_bytes).sum();
+    let _ = app.emit(
+        "provision-manifest",
+        &ProvisionManifestPayload {
+            session_id: session_id.to_string(),
+            applet_id: applet_id.to_string(),
+            models,
+            total_bytes,
+        },
+    );
+
+    let model_count = missing_keys.len();
+    for (i, key) in missing_keys.iter().enumerate() {
+        info!(model = %key, index = i + 1, count = model_count, "Provisioning model");
 
         let app_handle = app.clone();
+        let sid = session_id.to_string();
+        let aid = applet_id.to_string();
+        let model_index = i + 1;
         model_mgr
             .download(key, move |progress| {
-                let _ = app_handle.emit("download-progress", &progress);
+                let _ = app_handle.emit(
+                    "download-progress",
+                    &DownloadProgressV2 {
+                        session_id: sid.clone(),
+                        applet_id: aid.clone(),
+                        model_index,
+                        model_count,
+                        progress,
+                    },
+                );
             })
             .await
             .with_context(|| format!("failed to download model {key}"))?;

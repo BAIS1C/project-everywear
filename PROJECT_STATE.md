@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T01:49+08 SGT (Codex: first-run tour host first slice).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T09:21+08 SGT (Claude Cowork: provisioning contract v2 + Lifecycle HUD).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 09:21 SGT - Provisioning Contract v2 + Lifecycle HUD (Claude Cowork)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: post-commit (7029aaa) audit session moved to the ranked punch list item 2 from `ARCH_REPORT_MODEL_LIFECYCLE_UX_2026-06-10.md`: kill the announce-then-silence toast disease at the root.
+- FILES CHANGED: `platform/everywear-os/src-tauri/src/launcher.rs` (ProvisionManifestPayload + DownloadProgressV2, provision_models signature + manifest preflight emit); `platform/everywear-os/src-tauri/src/lib.rs` (switch_session uuid, two provision_models call sites); added `platform/everywear-os/src/components/LifecycleHud.tsx`; `platform/everywear-os/src/styles/shell.css` (HUD styles appended); `platform/everywear-os/src/shell/ShellLayout.tsx` (mount HUD, demote toasts to Failed-only, remove per-percent download toast + its readout churn).
+- COMPAT: `download-progress` keeps legacy fields via serde flatten; 1magen's listener unaffected. `provision-manifest` is a new additive event.
+- VERIFICATION PASSED: `tsc --noEmit -p platform/everywear-os` clean in session sandbox.
+- OWED: `cargo check -p everywear-os` + `npm run build --workspace everywear-os` + native download replay on the dev machine (sandbox has no CUDA toolchain); follow-up from report: Vid render silent no-op (9877), shell announcer truthfulness gate, VideoGeneratorModal split.
+- TOOLING INCIDENT: host-side file edits that grow a file were truncated at original byte length by the Cowork mount this session (hit ShellLayout.tsx, lib.rs, launcher.rs); recovered via `git show HEAD:` restore + scripted re-apply through the sandbox layer, verified by byte size + tsc. Use sandbox-layer writes for this repo until explained.
+
+---
 
 ## 2026-06-10 01:49 SGT - First-Run Tour Host First Slice (Codex)
 

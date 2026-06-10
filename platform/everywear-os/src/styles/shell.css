@@ -2670,3 +2670,184 @@ body[data-skin="carbon"] .avr-viewport {
 /* ═══════════════════════════════════════════════════════
    END — Desktop paradigm shell styles
    ═══════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════
+   Lifecycle HUD (2026-06-10) — persistent model
+   provisioning progress. Docked bottom-left above the
+   taskbar; ToastHost owns bottom-right. Replaces
+   download-progress toasts.
+   ═══════════════════════════════════════════════════════ */
+
+.ew-lifecycle-hud {
+  position: fixed;
+  left: 16px;
+  bottom: 56px;
+  width: 332px;
+  max-height: 46vh;
+  overflow-y: auto;
+  z-index: 9400; /* below --ew-z-toast (9500) */
+  padding: 12px 14px;
+  border-radius: var(--ew-radius-lg, 10px);
+  border: 1px solid var(--ew-border);
+  background: color-mix(in oklab, var(--ew-surface) 92%, black);
+  color: var(--ew-text);
+  box-shadow: 0 18px 38px color-mix(in oklab, black 35%, transparent);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ew-lifecycle-hud--failed {
+  border-color: color-mix(in oklab, var(--ew-danger, #d05050) 55%, var(--ew-border));
+}
+
+.ew-lifecycle-hud--done {
+  border-color: color-mix(in oklab, var(--ew-success, var(--ew-primary)) 45%, var(--ew-border));
+}
+
+.ew-lifecycle-hud__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.ew-lifecycle-hud__eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ew-text-muted);
+}
+
+.ew-lifecycle-hud__head-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.ew-lifecycle-hud__head-btn {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--ew-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ew-text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.ew-lifecycle-hud__head-btn:hover {
+  color: var(--ew-text);
+  border-color: var(--ew-text-muted);
+}
+
+.ew-lifecycle-hud__headline {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ew-lifecycle-hud__message {
+  color: var(--ew-text-muted);
+  margin-top: 2px;
+}
+
+.ew-lifecycle-hud__aggregate {
+  margin-top: 10px;
+}
+
+.ew-lifecycle-hud__bar {
+  height: 6px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--ew-border) 60%, transparent);
+}
+
+.ew-lifecycle-hud__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--ew-primary);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.ew-lifecycle-hud--failed .ew-lifecycle-hud__bar > span {
+  background: var(--ew-danger, #d05050);
+}
+
+.ew-lifecycle-hud__aggregate-meta,
+.ew-lifecycle-hud__row-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--ew-text-muted);
+  font-size: 11px;
+}
+
+.ew-lifecycle-hud__rows {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ew-lifecycle-hud__row-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.ew-lifecycle-hud__row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ew-lifecycle-hud__row-pct {
+  color: var(--ew-text-muted);
+  flex-shrink: 0;
+}
+
+.ew-lifecycle-hud__bar--row {
+  height: 4px;
+}
+
+.ew-lifecycle-hud__row--done {
+  opacity: 0.62;
+}
+
+.ew-lifecycle-hud--pill {
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.ew-lifecycle-hud__pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ew-primary);
+  animation: ew-lifecycle-pulse 1.6s ease-in-out infinite;
+}
+
+.ew-lifecycle-hud--failed .ew-lifecycle-hud__pill-dot {
+  background: var(--ew-danger, #d05050);
+  animation: none;
+}
+
+@keyframes ew-lifecycle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+body[data-skin="terminal"] .ew-lifecycle-hud {
+  border-radius: 0;
+  border-width: 2px;
+}

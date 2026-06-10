@@ -27,6 +27,7 @@ import { SettingsPanel } from '../panels/SettingsPanel';
 import { HeadlessAppletView } from '../panels/HeadlessAppletView';
 import { AppletViewRouter, AppletErrorBoundary, isRegisteredApplet } from '../components/AppletViewRouter';
 import AppletIcon, { ThemedIconGlyph } from '../components/AppletIcon';
+import { LifecycleHud } from '../components/LifecycleHud';
 import { FirstRunTourHost } from '../tour/FirstRunTourHost';
 import { VaultProvider } from '@applets/gener8/web/src/context/VaultProvider';
 import { ShellAudioProvider } from '@applets/gener8/web/src/shell/ShellAudioPlayer';
@@ -1300,38 +1301,29 @@ export function ShellLayout() {
   useEffect(() => {
     if (!hasShellRuntime()) return;
 
+    // Toast policy (2026-06-10): progress lives in the LifecycleHud, not in
+    // toasts. Toasts carry state transitions only — Failed here as an error
+    // toast; stage strip, per-model rows, rate, and ETA render in the HUD.
+    // The old per-percent `download-progress` toast listener is gone; it also
+    // called refreshRuntimeReadouts() at ~1% increments (two IPC calls per
+    // percent per model). The 3s readout poll that runs while a launch or
+    // open applet is active covers readout freshness instead.
     const unlistenProgress = listen<{ stage?: string; message?: string }>('applet-switch-progress', (event) => {
       refreshRuntimeReadouts();
-      const stage = event.payload?.stage ?? 'Model lifecycle';
+      const stage = event.payload?.stage ?? '';
       const message = event.payload?.message;
-      if (!message) return;
-      const kind = stage === 'Failed' ? 'error' : stage === 'Downloading' ? 'info' : 'info';
+      if (!message || stage !== 'Failed') return;
       showToast({
-        kind,
+        kind: 'error',
         eyebrow: 'Everywear · model lifecycle',
         message,
-        durationMs: stage === 'Downloading' ? 9000 : 5000,
+        durationMs: 8000,
         id: `applet-switch-${stage}-${message}`,
-      });
-    });
-
-    const unlistenDownload = listen<{ model_key?: string; downloaded?: number; total?: number; pct?: number }>('download-progress', (event) => {
-      refreshRuntimeReadouts();
-      const pct = typeof event.payload?.pct === 'number'
-        ? `${Math.round(event.payload.pct)}%`
-        : 'in progress';
-      showToast({
-        kind: 'info',
-        eyebrow: 'Everywear · model download',
-        message: `${event.payload?.model_key || 'Model'} download ${pct}.`,
-        durationMs: 3500,
-        id: `download-${event.payload?.model_key || 'model'}`,
       });
     });
 
     return () => {
       unlistenProgress.then(fn => fn());
-      unlistenDownload.then(fn => fn());
     };
   }, [refreshRuntimeReadouts]);
 
@@ -1600,6 +1592,10 @@ export function ShellLayout() {
   const hasOpenApplet = useMemo(
     () => !!launchingId || !!tauriApplet || windows.some((win) => win.content.kind === 'applet'),
     [launchingId, tauriApplet, windows],
+  );
+  const appletNameMap = useMemo(
+    () => Object.fromEntries(registryApplets.map((applet) => [applet.id, applet.name])),
+    [registryApplets],
   );
 
   useEffect(() => {
@@ -1889,6 +1885,7 @@ export function ShellLayout() {
       )}
 
       <ToastHost />
+      <LifecycleHud appletNames={appletNameMap} />
       <FirstRunTourHost />
       <BugReportModal open={bugReportOpen} onClose={closeBugReport} seed={bugReportSeed} />
     </>

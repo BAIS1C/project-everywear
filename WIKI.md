@@ -1,8 +1,39 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.63
-Last updated: 2026-06-10 (first-run tour host first slice)
+Version: 1.1.64
+Last updated: 2026-06-10 (provisioning contract v2 + Lifecycle HUD)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.64: model provisioning progress
+> contract v2 and the shell Lifecycle HUD are implemented (sandbox
+> TS-verified; native build verify owed). `launcher.rs` now emits
+> `provision-manifest` (session_id, applet_id, models[key,name,size_bytes],
+> total_bytes) before each provisioning phase, and `download-progress`
+> gained session_id, applet_id, model_index, model_count while keeping the
+> legacy fields via serde flatten, so 1magen's existing listener is
+> unaffected. `request_applet_switch` mints one uuid switch_session shared
+> by the base and upgrade-pack phases. New shell module
+> `platform/everywear-os/src/components/LifecycleHud.tsx` is mounted in
+> `ShellLayout` beside ToastHost (styles appended to `styles/shell.css`),
+> docked bottom-left above the taskbar; ToastHost keeps bottom-right. It
+> renders a stage strip from `applet-switch-progress`, per-model rows with
+> bytes plus client-side EMA rate and ETA, an aggregate bar, a collapse
+> pill, 4s auto-hide on Ready, and a sticky dismissible Failed state.
+> Toast policy is demoted: `applet-switch-progress` toasts only on Failed;
+> the per-percent `download-progress` toast listener is removed, which also
+> removes its refreshRuntimeReadouts-per-percent IPC churn (the 3s readout
+> poll during launches covers freshness). Verification: `tsc --noEmit -p
+> platform/everywear-os` passed in the session sandbox; `cargo check -p
+> everywear-os`, `npm run build --workspace everywear-os`, and a native
+> download replay are OWED on the dev machine. Tooling note: host-side
+> file edits that grow a file were truncated by the Cowork mount this
+> session; the final files were written via the sandbox layer and verified
+> by byte size and tsc. Also documenting the previously unwikied 2026-06-10
+> commit: the video-encoder sidecar was relocated to
+> `platform/everywear-os/src-tauri/sidecar/video-encoder` with
+> monorepo-root dev path candidates added in `video_encoder.rs`; `dist/`
+> is gitignored, so fresh clones must build the sidecar before the native
+> encoder path works.
 
 > Current-state note, 2026-06-10 v1.1.63: first-run tour host first slice
 > is implemented and native-smoked. Added

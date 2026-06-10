@@ -135,6 +135,11 @@ async fn request_applet_switch(
     state: tauri::State<'_, AppState>,
     applet_id: String,
 ) -> Result<(), String> {
+    // Switch session id: ties provision-manifest + download-progress (v2)
+    // events from every provisioning phase of this switch together for the
+    // shell Lifecycle HUD.
+    let switch_session = uuid::Uuid::new_v4().to_string();
+
     let _ = app.emit(
         "applet-switch-progress",
         launcher::SwitchProgressPayload {
@@ -360,9 +365,15 @@ async fn request_applet_switch(
         );
 
         let mut model_mgr_mut = state.model_mgr.lock().await;
-        launcher::provision_models(&app, &mut model_mgr_mut, &check.needs_download)
-            .await
-            .map_err(|e| format!("Provisioning failed: {e}"))?;
+        launcher::provision_models(
+            &app,
+            &mut model_mgr_mut,
+            &check.needs_download,
+            &switch_session,
+            &applet_id,
+        )
+        .await
+        .map_err(|e| format!("Provisioning failed: {e}"))?;
         drop(model_mgr_mut);
     }
 
@@ -400,9 +411,15 @@ async fn request_applet_switch(
                 },
             );
 
-            launcher::provision_models(&app, &mut model_mgr_mut, &upgrade_missing)
-                .await
-                .map_err(|e| format!("Upgrade pack provisioning failed: {e}"))?;
+            launcher::provision_models(
+                &app,
+                &mut model_mgr_mut,
+                &upgrade_missing,
+                &switch_session,
+                &applet_id,
+            )
+            .await
+            .map_err(|e| format!("Upgrade pack provisioning failed: {e}"))?;
         }
         drop(model_mgr_mut);
     }
