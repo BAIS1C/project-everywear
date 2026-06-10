@@ -72,6 +72,30 @@ Artifact: `screenshots/2026-06-10-proof-pass/h4-lock-discipline-scan.json`
 | H4-003 | Launcher structural lock debt | `request_applet_switch` still holds `budget_lock` across purge/provision/launch-adjacent async work and mixes budget/model/process/active state in one long command. This is the real deadlock and latency risk. | `platform/everywear-os/src-tauri/src/lib.rs:278-477` scan/readback. | Tier 1 | Carded. Needs dedicated launcher refactor, not a drive-by patch. |
 | H4-004 | Canonical order missing | The repo had no explicit lock-order standard for `gpu`, `registry`, `budget`, `model_mgr`, runtime process maps, and engine scheduler state. | WIKI before v1.1.73. | Tier 2 | Fixed: WIKI now documents the one-lock snapshot rule and fallback order. |
 
+## Phase 2 H5 - Fresh Machine Manifest
+
+Artifact: `screenshots/2026-06-10-proof-pass/h5-fresh-machine-manifest.json`
+
+| ID | Class | Finding | Evidence | Installer action | Tier | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| H5-001 | Gitignored runtime artifact | Video encoder `dist/` exists locally but is ignored; release resource copy is missing. | Local `platform/everywear-os/src-tauri/sidecar/video-encoder/dist/index.js` exists; `platform/everywear-os/src-tauri/resources/sidecar/video-encoder/dist/index.js` missing. | Build `@s3/video-encoder` and copy `dist/` into Tauri resources before packaging. | Tier 1 | Blocker logged. Installer/resource workstream, not fixed in H5. |
+| H5-002 | Missing portable runtime | `node.exe` is missing from Tauri resources. Debug can use PATH fallback; release cannot. | `platform/everywear-os/src-tauri/resources/node.exe` missing; `video_encoder.rs` requires bundled Node outside debug fallback. | Bundle a known Node runtime or replace encoder sidecar with a compiled binary. | Tier 1 | Blocker logged. |
+| H5-003 | Host absolute ACE path | ACE-Step sidecar discovery still contains Sean-machine paths. | `applets/gener8/applet.toml`; `gener8_engine.rs`; `ace_server.rs` point at `C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release`. | Provision ACE binaries and companions into `~/.everywear/bin/ace-server` or app resources. | Tier 1 | Blocker logged. |
+| H5-004 | FFmpeg env dependency | FFmpeg discovery relies on PATH/standard install paths and one Sean-specific Scoop path. | `platform/everywear-os/src-tauri/src/video_encoder.rs:35-43`. | Bundle FFmpeg or first-run bootstrap it, then pass explicit `FFMPEG_PATH`. | Tier 2 | Logged. |
+| H5-005 | CWD/dev checkout fallback | Some resolvers still use `current_dir`, repo-root walking, or dev candidates. | `video_encoder.rs`; `assessment.rs`; `3nvizen runtime_ipc.rs`. | Release should validate `current_exe/resources` and `~/.everywear` roots only, then fail visibly with repair guidance. | Tier 2 | Logged. |
+| H5-006 | 3nvizen sidecar packaging | 3nvizen LTX runtime packaging remains undecided. | `applets/3nvizen/src-tauri/build.rs` contains sidecar packaging TODO; LTX config defaults to `~/.everywear`. | Decide Python runtime bundle vs managed bootstrap before beta machine install. | Tier 2 | Logged. |
+
+First-run beta machine checklist:
+
+- `platform/everywear-os/src-tauri/resources/node.exe` or Node-free encoder binary present.
+- `resources/sidecar/video-encoder/dist/index.js` present in packaged app.
+- FFmpeg available with expected encoder support or explicit bundled `FFMPEG_PATH`.
+- `~/.everywear/bin/ace-server` contains `ace-server.exe` and companion DLL/exe files.
+- ACE models resolve under `~/.everywear/models` without Sean's local caches.
+- 3nvizen LTX sidecar install/bootstrap path decided and health check visible.
+- No release path depends on `C:\Users\MAG MSI\...` absolute directories.
+- No release path depends on running from `target\debug` or repo cwd.
+
 ## Decision Cards
 
 CARD: P1 cache mutation or seeded test model

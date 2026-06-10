@@ -1,8 +1,22 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:41+08 SGT (Codex: Phase 2 H4 lock discipline sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:43+08 SGT (Codex: Phase 2 H5 fresh-machine manifest).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:43 SGT - Phase 2 H5 Fresh-Machine Manifest (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H5 ARTIFACT: `screenshots/2026-06-10-proof-pass/h5-fresh-machine-manifest.json` records the installer/bootstrap trap list.
+- H5 TIER 1 BLOCKER: `platform/everywear-os/src-tauri/resources/node.exe` is missing and the `resources` directory does not exist in this tree. Debug can fall back to PATH Node; release cannot assume that.
+- H5 TIER 1 BLOCKER: video encoder `dist/index.js` exists locally under ignored `platform/everywear-os/src-tauri/sidecar/video-encoder/dist/`, but the packaged resource path `resources/sidecar/video-encoder/dist/index.js` is missing.
+- H5 TIER 1 BLOCKER: ACE-Step sidecar discovery still has Sean-machine absolute fallbacks in `applets/gener8/applet.toml`, `platform/everywear-os/src-tauri/src/gener8_engine.rs`, and `applets/gener8/src-tauri/src/ace_server.rs`.
+- H5 TIER 2 BLOCKERS: FFmpeg is PATH/standard-path/Scoop-discovered, 3nvizen LTX sidecar packaging is undecided, and some runtime resolvers still fall back to repo cwd/dev candidates.
+- BETA MACHINE VERDICT: installer/bootstrap workstream must bundle or provision Node, video encoder dist, ACE server companions, FFmpeg or explicit FFmpeg bootstrap, ACE models, and the 3nvizen LTX sidecar before a fresh trusted-user machine can be called ready.
+- VERIFICATION: audit-only docs pass. No installer build was attempted; prompt explicitly excluded building the installer in H5.
+
+---
 
 ## 2026-06-10 16:41 SGT - Phase 2 H4 Rust Lock Discipline Sweep (Codex)
 

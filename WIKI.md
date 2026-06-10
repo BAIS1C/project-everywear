@@ -1,8 +1,17 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.73
-Last updated: 2026-06-10 (H4 lock discipline standard)
+Version: 1.1.74
+Last updated: 2026-06-10 (H5 fresh-machine manifest)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.74: Phase 2 H5 fresh-machine trap
+> sweep generated
+> `screenshots/2026-06-10-proof-pass/h5-fresh-machine-manifest.json`.
+> Installer blockers are now explicit: no `src-tauri/resources/node.exe`, no
+> packaged `resources/sidecar/video-encoder/dist/index.js`, and ACE-Step still
+> has Sean-machine absolute path fallbacks in the Gener8 sidecar contract and
+> discovery code. H5 did not build the installer by design; it records the
+> beta-machine bootstrap manifest and checklist.
 
 > Current-state note, 2026-06-10 v1.1.73: Phase 2 H4 lock discipline
 > scan generated
@@ -103,6 +112,30 @@ If a multi-lock path cannot be avoided, use this order and keep the guarded sect
 8. User state: `profile`, `wallet`, `discourse`, `user_session`
 
 Known debt: `request_applet_switch` currently spans entitlement check, model requirement check, purge, provisioning, sidecar provisioning, allocation recording, active-applet mutation, process launch, and cleanup in one command. It still holds `budget_lock` across async purge/provision/launch-adjacent work. Treat this as a dedicated launcher refactor: split planning from mutation, return immutable launch plans, then reacquire budget only for final allocation or rollback.
+
+## Phase 2 H5 Fresh Machine Manifest
+
+Source artifact: `screenshots/2026-06-10-proof-pass/h5-fresh-machine-manifest.json`
+
+Installer blockers:
+
+| Item | Required for beta machine | Current state |
+| --- | --- | --- |
+| Portable Node runtime | `platform/everywear-os/src-tauri/resources/node.exe` or a Node-free compiled encoder binary | Missing. Debug can fall back to PATH, release cannot assume it. |
+| Video encoder sidecar bundle | `resources/sidecar/video-encoder/dist/index.js` in packaged app | Missing. Local ignored `sidecar/video-encoder/dist/index.js` exists only because this machine built it. |
+| ACE-Step server bundle | `~/.everywear/bin/ace-server/ace-server.exe` plus `ggml*.dll`, `neural-codec.exe`, `mp3-codec.exe` | Still relies on Sean-machine absolute dev paths as fallback. |
+| FFmpeg | Bundled ffmpeg or explicit first-run bootstrap with `FFMPEG_PATH` | Currently PATH/standard-path/Scoop discovery. |
+| 3nvizen LTX sidecar | Decided Python runtime bundle or managed bootstrap | Packaging strategy still open. |
+
+First-run beta machine checklist:
+
+- Resources directory exists and is packaged with portable runtime assets.
+- Video encoder health passes without repo cwd, local `dist/`, or PATH Node.
+- ACE server boots from `~/.everywear/bin/ace-server`, not `C:\Users\MAG MSI\Project Ace\...`.
+- ACE model ladder resolves from `~/.everywear/models`.
+- FFmpeg/NVENC health reports actionable failure if unavailable.
+- 3nvizen LTX install/bootstrap has a visible health gate.
+- No release path depends on `target\debug` or the source checkout cwd.
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and
