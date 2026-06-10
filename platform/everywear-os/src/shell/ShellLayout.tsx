@@ -27,6 +27,7 @@ import { SettingsPanel } from '../panels/SettingsPanel';
 import { HeadlessAppletView } from '../panels/HeadlessAppletView';
 import { AppletViewRouter, AppletErrorBoundary, isRegisteredApplet } from '../components/AppletViewRouter';
 import AppletIcon, { ThemedIconGlyph } from '../components/AppletIcon';
+import { FirstRunTourHost } from '../tour/FirstRunTourHost';
 import { VaultProvider } from '@applets/gener8/web/src/context/VaultProvider';
 import { ShellAudioProvider } from '@applets/gener8/web/src/shell/ShellAudioPlayer';
 import { ToastHost, showToast } from '@applets/gener8/web/src/components/ToastHost';
@@ -1888,6 +1889,7 @@ export function ShellLayout() {
       )}
 
       <ToastHost />
+      <FirstRunTourHost />
       <BugReportModal open={bugReportOpen} onClose={closeBugReport} seed={bugReportSeed} />
     </>
   );
