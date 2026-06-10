@@ -1234,7 +1234,8 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
     });
 
     audio.addEventListener("error", () => {
-      alert("Could not load audio file. Ensure it's a valid MP3, WAV, FLAC, OGG, or M4A.");
+      setPhase("error");
+      setExtractError("Could not load audio file. Ensure it's a valid MP3, WAV, FLAC, OGG, or M4A.");
     });
   }, [token]);
 

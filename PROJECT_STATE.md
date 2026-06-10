@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:23+08 SGT (Codex: Phase 1 P4 VRAM release proof).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:31+08 SGT (Codex: Phase 2 H1 silent-failure sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:31 SGT - Phase 2 H1 Silent-Failure Sweep (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H1 FIXED: `platform/everywear-os/src/shell/ShellLayout.tsx` no longer swallows `closeAppletWebview` failures. Close failure now logs and shows an `Everywear · applet lifecycle` error toast.
+- H1 FIXED: `packages/video-modal/src/components/VideoGeneratorModal.tsx` no longer silently ignores `release_video_encoder` failure on modal close. It now logs a targeted GPU encoder release warning.
+- H1 FIXED: `applets/gener8/web/src/components/studio/StemStudio.tsx` no longer uses browser `alert()` for invalid/unloadable uploaded audio. It now sets error phase and the existing inline `extractError` surface.
+- H1 FINDINGS RECORDED: legacy Gener8 alert/confirm surfaces, swallowed DAW mutations, and best-effort empty catches requiring comments are recorded in `BUGHUNT_FINDINGS_2026-06-10.md`.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/video-modal`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`.
+
+---
 
 ## 2026-06-10 16:23 SGT - Phase 1 P4 BinaryLocal VRAM Release Proof (Codex)
 

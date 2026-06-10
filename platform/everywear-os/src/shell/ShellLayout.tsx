@@ -1106,7 +1106,15 @@ export function ShellLayout() {
       }
       if (renderMode === 'embedded' || applet.launch_binary) {
         closeAppletWebview(applet.id)
-          .catch(() => {})
+          .catch((err) => {
+            console.warn(`Failed to close applet ${applet.id}:`, err);
+            showToast({
+              kind: 'error',
+              eyebrow: 'Everywear · applet lifecycle',
+              message: `${applet.name} did not close cleanly. Check the running applet state before relaunching.`,
+              durationMs: 7000,
+            });
+          })
           .finally(refreshRuntimeReadouts);
       } else {
         void unloadInlineAppletModels(applet);

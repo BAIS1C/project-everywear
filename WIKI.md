@@ -1,8 +1,21 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.69
-Last updated: 2026-06-10 (P4 BinaryLocal VRAM release proof)
+Version: 1.1.70
+Last updated: 2026-06-10 (H1 silent-failure sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.70: Phase 2 H1 silent-failure sweep
+> landed the first truthfulness fixes. `ShellLayout.tsx` no longer swallows
+> `closeAppletWebview` failures; it logs and shows an applet-lifecycle error
+> toast. `packages/video-modal` no longer silently ignores
+> `release_video_encoder` failures; it logs a targeted GPU encoder release
+> warning. `StemStudio.tsx` no longer uses a browser `alert()` for invalid
+> uploaded audio; it routes the failure into the existing inline
+> `extractError` surface. Verification passed: `npm run build --workspace
+> @everywear/video-modal`, `npm run build --workspace @everywear/gener8-web`,
+> and `npm run build --workspace everywear-os`. Remaining H1 findings are
+> recorded in `BUGHUNT_FINDINGS_2026-06-10.md`: legacy Gener8 alert/confirm
+> cleanup, swallowed DAW mutations, and best-effort catch comments.
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and

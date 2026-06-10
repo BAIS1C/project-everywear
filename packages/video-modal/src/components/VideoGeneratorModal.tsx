@@ -360,7 +360,9 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
       if (acquired) {
         import('@tauri-apps/api/core')
           .then(({ invoke }) => invoke('release_video_encoder'))
-          .catch(() => {});
+          .catch((err) => {
+            console.warn('[Video Studio] Failed to release GPU encoder sidecar:', err);
+          });
       }
     };
   }, [isOpen]);
