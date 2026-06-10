@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:36+08 SGT (Codex: Phase 2 H3 port/URL literal sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:41+08 SGT (Codex: Phase 2 H4 lock discipline sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:41 SGT - Phase 2 H4 Rust Lock Discipline Sweep (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H4 ARTIFACT: `screenshots/2026-06-10-proof-pass/h4-lock-discipline-scan.json` records the lock/await scan over `src/lib.rs` and `src/commands/`.
+- H4 FIXED: `platform/everywear-os/src-tauri/src/commands/platform.rs` no longer holds many unrelated guards while building `platform_status`; it snapshots one mutex at a time before producing JSON.
+- H4 FIXED: `platform/everywear-os/src-tauri/src/commands/registry.rs` no longer holds the applet registry while awaiting tier/entitlement locks. It snapshots tier and entitlements before registry access.
+- H4 WIKI LOCKED: WIKI v1.1.73 now documents the canonical lock discipline: prefer one lock at a time, never hold guards across IPC/HTTP/provisioning/process-launch/file-heavy work, and use the documented fallback order only for unavoidable non-async guarded sections.
+- H4 CARDED: `request_applet_switch` remains the structural lock debt. It holds VRAM budget state across purge/provision/launch-adjacent async work and needs a dedicated plan/commit launcher refactor.
+- VERIFICATION PASSED: `cargo check -p everywear-os`. Existing workspace profile and dead-code warnings only.
+
+---
 
 ## 2026-06-10 16:36 SGT - Phase 2 H3 Port/URL Literal Sweep (Codex)
 

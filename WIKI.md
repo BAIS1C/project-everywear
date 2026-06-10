@@ -1,8 +1,20 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.72
-Last updated: 2026-06-10 (H3 port/URL literal sweep)
+Version: 1.1.73
+Last updated: 2026-06-10 (H4 lock discipline standard)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.73: Phase 2 H4 lock discipline
+> scan generated
+> `screenshots/2026-06-10-proof-pass/h4-lock-discipline-scan.json`.
+> Canonical rule is now documented: commands should snapshot one mutex at a
+> time and drop guards before taking unrelated locks or awaiting IPC, HTTP,
+> provisioning, process launch, or filesystem-heavy work. Small snapshot
+> violations were removed from `commands/platform.rs` and
+> `commands/registry.rs`. The big structural debt remains
+> `request_applet_switch` in `lib.rs`, which holds the VRAM budget guard
+> across purge/provision/launch phases and must be refactored as its own
+> launcher slice, not patched casually.
 
 > Current-state note, 2026-06-10 v1.1.72: Phase 2 H3 port/URL literal
 > sweep generated
@@ -72,6 +84,25 @@ Allowed categories: applet vite/dev config, Tauri `devUrl`/CSP, applet IPC rando
 | `8787` LTX sidecar | `engine_health.rs` health row for shell. | 3nvizen standalone TS/Rust fallback transport. | Tier 2 logged. Standalone compatibility is legitimate, but shell-mounted UI should keep using shell health state. |
 | `3117` Project SON / Layer U | Layer U `sonBridge.ts`. | Layer U only. | Tier 2 logged. Decide whether SON becomes an engine-health endpoint or remains Layer U owned. |
 | `8081` Character Studio donor API | Legacy donor Character Studio contract files. | Character Studio donor components. | Tier 2 logged. Needs Character Studio donor cleanup, not generic endpoint migration. |
+
+## Phase 2 H4 Rust Lock Discipline
+
+Source artifact: `screenshots/2026-06-10-proof-pass/h4-lock-discipline-scan.json`
+
+Canonical rule: prefer no nested locks. For read-only command snapshots, copy or clone the needed values from one mutex, drop the guard, then take the next mutex. Never hold a `tokio::Mutex` guard across IPC calls, HTTP calls, model provisioning, process launch, sidecar startup, filesystem-heavy work, or another unrelated state-family mutation.
+
+If a multi-lock path cannot be avoided, use this order and keep the guarded section non-async beyond mutex acquisition:
+
+1. Entitlement inputs: `licence_tier`, `entitlement_flags`
+2. Applet metadata: `registry`
+3. Machine state: `gpu`
+4. VRAM and model selection: `budget`, then `model_mgr`, then `model_resolver`
+5. Runtime ownership: `active_applet`, then `applet_processes`
+6. Engine runtime: `engine_registry`, then `vram_scheduler`
+7. App-local logs/services: `kasai_tool_calls`, `video_encoder`
+8. User state: `profile`, `wallet`, `discourse`, `user_session`
+
+Known debt: `request_applet_switch` currently spans entitlement check, model requirement check, purge, provisioning, sidecar provisioning, allocation recording, active-applet mutation, process launch, and cleanup in one command. It still holds `budget_lock` across async purge/provision/launch-adjacent work. Treat this as a dedicated launcher refactor: split planning from mutation, return immutable launch plans, then reacquire budget only for final allocation or rollback.
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and

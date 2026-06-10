@@ -61,6 +61,17 @@ Artifact: `screenshots/2026-06-10-proof-pass/h3-port-url-literal-sweep.json`
 | H3-005 | Character Studio 8081 | Character Studio donor contract files still point at `localhost:8081`. This looks like legacy donor API wiring, not an Everywear-owned engine endpoint. | `applets/character-studio/src/services/contract.jsx:1`; `applets/character-studio/src/components/Contract.jsx:3`. | Tier 2 | Logged. Needs Character Studio donor cleanup, not H3 migration. |
 | H3-006 | Allowed literals | Applet vite/dev configs, Tauri `devUrl`/CSP, applet IPC random-port wiring, frontend-port assembly, local auth hostname checks, and documentation/schema/marketing literals were excluded from the defect list. | Filtered artifact allowed bucket plus raw grep session. | Tier 3 | OK. Keep excluded unless they become runtime consumers. |
 
+## Phase 2 H4 - Rust Lock Discipline Sweep
+
+Artifact: `screenshots/2026-06-10-proof-pass/h4-lock-discipline-scan.json`
+
+| ID | Class | Finding | Evidence | Tier | Status |
+| --- | --- | --- | --- | --- | --- |
+| H4-001 | Snapshot command lock stack | `platform_status` held many unrelated guards while building a JSON response, then awaited `engine_registry.lock()` while those guards were still live. | `platform/everywear-os/src-tauri/src/commands/platform.rs` pre-H4. | Tier 2 | Fixed: command now snapshots one mutex at a time before building JSON. |
+| H4-002 | Registry command nested locks | `list_applets` and `get_applet` held the applet registry while waiting for tier and entitlement locks. | `platform/everywear-os/src-tauri/src/commands/registry.rs` pre-H4. | Tier 2 | Fixed: commands now snapshot tier/entitlements first, then take registry. |
+| H4-003 | Launcher structural lock debt | `request_applet_switch` still holds `budget_lock` across purge/provision/launch-adjacent async work and mixes budget/model/process/active state in one long command. This is the real deadlock and latency risk. | `platform/everywear-os/src-tauri/src/lib.rs:278-477` scan/readback. | Tier 1 | Carded. Needs dedicated launcher refactor, not a drive-by patch. |
+| H4-004 | Canonical order missing | The repo had no explicit lock-order standard for `gpu`, `registry`, `budget`, `model_mgr`, runtime process maps, and engine scheduler state. | WIKI before v1.1.73. | Tier 2 | Fixed: WIKI now documents the one-lock snapshot rule and fallback order. |
+
 ## Decision Cards
 
 CARD: P1 cache mutation or seeded test model
@@ -77,4 +88,12 @@ RECOMMEND: Treat shell encoder boot as the next Tier 1 slice before calling P3 f
 ALTERNATIVE: Keep using manual encoder for local QA only, but label P3 as encoder-up save-path coverage rather than complete shell lifecycle coverage.
 COST OF DELAY: First-run users can still hit GPU-unavailable fallback or dead-start behavior even though the encoder and Vault save code are now capable.
 REVERSAL: Easy; lifecycle fix should be isolated to `video_encoder.rs` / command wiring, not the modal.
+-> "ok" locks it; one-line redirect re-routes it
+
+CARD: H4 launcher lock refactor
+CONTEXT: `request_applet_switch` still spans applet gate checks, requirement planning, purge, download provisioning, sidecar provisioning, allocation recording, active-applet mutation, process launch, and cleanup while carrying the VRAM budget guard through async work. The small command snapshots are fixed; this one is architectural.
+RECOMMEND: Split launcher into plan and commit phases. Build immutable launch/purge/provision plans without holding budget, perform IPC/download/process work with no global guards, then reacquire budget only to commit allocations or rollback.
+ALTERNATIVE: Add tactical drops around the existing command, but that risks state drift between check and commit without a launch transaction.
+COST OF DELAY: Rare deadlocks and long stalls remain possible during applet switching, especially around purge/download/launch failure paths.
+REVERSAL: Medium. A plan/commit split is invasive but local to shell launcher ownership.
 -> "ok" locks it; one-line redirect re-routes it

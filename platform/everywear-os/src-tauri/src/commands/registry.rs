@@ -7,9 +7,9 @@ use tauri::Manager;
 pub async fn list_applets(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<registry::AppletEntry>, String> {
-    let reg = state.registry.lock().await;
     let tier = *state.licence_tier.lock().await;
-    let entitlements = state.entitlement_flags.lock().await;
+    let entitlements = state.entitlement_flags.lock().await.clone();
+    let reg = state.registry.lock().await;
     Ok(reg.launchable_for_tier(tier, &entitlements))
 }
 
@@ -18,9 +18,9 @@ pub async fn get_applet(
     state: tauri::State<'_, AppState>,
     id: String,
 ) -> Result<Option<registry::AppletEntry>, String> {
-    let reg = state.registry.lock().await;
     let tier = *state.licence_tier.lock().await;
-    let entitlements = state.entitlement_flags.lock().await;
+    let entitlements = state.entitlement_flags.lock().await.clone();
+    let reg = state.registry.lock().await;
     Ok(reg.get(&id).cloned().map(|entry| {
         if registry::applet_entitlement_error(&entry, tier, &entitlements).is_some()
             && entry.status == registry::AppletStatus::Active
