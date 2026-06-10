@@ -12,6 +12,7 @@ mod commands;
 mod crash;
 #[cfg(feature = "discourse-native")]
 mod discourse;
+mod engine_health;
 mod engine_registry;
 mod engine_router;
 mod gener8_engine;
@@ -436,7 +437,8 @@ async fn request_applet_switch(
                 ),
             },
         );
-        launcher::provision_sidecar(&manifest)
+        launcher::provision_sidecar(&app, &manifest, &switch_session, &applet_id)
+            .await
             .map_err(|e| format!("Sidecar provisioning failed: {e}"))?;
     }
 
@@ -1488,6 +1490,13 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // Single shell-owned engine health prober (slice 1, 2026-06-10):
+            // one sweep over the known engine ports every 10s emits one
+            // `engine-health` event. See engine_health.rs for the seed list.
+            engine_health::spawn_engine_health_prober(app.handle().clone());
+            Ok(())
+        })
         .manage(AppState {
             gpu: Arc::new(Mutex::new(gpu_state)),
             profile: Arc::new(Mutex::new(profile_mgr)),
