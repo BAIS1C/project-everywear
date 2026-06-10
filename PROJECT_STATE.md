@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T09:21+08 SGT (Claude Cowork: provisioning contract v2 + Lifecycle HUD).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T09:51+08 SGT (Claude Cowork: punch-list wave 1).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 09:51 SGT - Punch-List Wave 1 (Claude Cowork, parallel scouts + single writer)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: Vid render silent no-op (exportError surface, loud guards, alert() removed: unreliable in Tauri WebView); Kasai/applet VRAM stacking (orphan child kill on IPC accept failure in launcher.rs; event-pump close now releases budget + active_applet + process entry + emits applet-webview-closed); 3nvizen registry NotBuilt->Active (native/browser agreement); announcer truthfulness (educational launch toast gated off for runtime-owned 1magen/3nvizen).
+- ADDED: 3nvizen data-tour anchors (8, vid/daw convention); CODEX_PROMPTPACK_VIDEO_MODAL_SPLIT_2026-06-10.md (7-step staged split of packages/video-modal 3,465-line monolith; gener8 copy already a 74-line wrapper, stale OODA premise corrected).
+- VERIFICATION PASSED: tsc --noEmit clean for everywear-os, @everywear/video-modal, 3nvizen (session sandbox).
+- OWED: cargo check -p everywear-os + workspace builds + native replay (Vid export smoke with sidecar down AND up; 3nvizen desktop launch via native registry; kill-an-applet VRAM release check). Remaining punch list: engine port registry, sidecar URL provisioning Phase 2, download path consolidation, llama-server migration, video-modal split execution.
+- METHOD: 5 parallel read-only scouts (4 Explore + 1 Plan) -> single-writer scripted patches via sandbox layer (host edit-tool grow-truncation bug still active), 24 replacement pairs, all count==1 asserted.
+
+---
 
 ## 2026-06-10 09:21 SGT - Provisioning Contract v2 + Lifecycle HUD (Claude Cowork)
 

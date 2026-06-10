@@ -1,8 +1,36 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.64
-Last updated: 2026-06-10 (provisioning contract v2 + Lifecycle HUD)
+Version: 1.1.65
+Last updated: 2026-06-10 (punch-list wave 1: render visibility, VRAM cleanup, 3nvizen reconcile, announcer gate)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.65: punch-list wave 1 landed
+> (sandbox TS-verified across everywear-os, video-modal, 3nvizen; native
+> cargo/build verify owed). Four fixes: (1) Vid render silent no-op:
+> `packages/video-modal/src/components/VideoGeneratorModal.tsx` gained an
+> `exportError` surface rendered with role="alert" under the render CTA;
+> the silent `startRecording` guard (!canvasRef || !song), the
+> `loadFFmpeg` failure, the `renderOffline` guard, and the render catch
+> all report there. alert() was unreliable in the Tauri WebView, which is
+> why every failure was invisible. (2) VRAM reservation stacking:
+> `launcher.rs` now kills the orphan child process when IPC accept fails,
+> and the applet event pump close path in `lib.rs` releases the budget,
+> clears active_applet, removes the process entry, and emits
+> applet-webview-closed (release is idempotent with graceful close).
+> (3) 3nvizen registry drift: `registry.rs` status NotBuilt -> Active
+> (frontend exists on 3004; entitlement/tier gates unchanged), so native
+> list_applets and the browser fallback now agree. (4) Announcer
+> truthfulness: shell stage emissions audited truthful; the lying surface
+> was the educational launch toast, now gated off for runtime-owned-model
+> applets (1magen, 3nvizen) via RUNTIME_OWNED_MODEL_APPLET_IDS in
+> `ShellLayout.tsx`; LifecycleHud reports actual stages. Also: 3nvizen
+> gained data-tour anchors (3nvizen.root/.prompt/.duration/.aspect/.seed/
+> .generate/.engine-status/.preview) following the vid/daw convention, and
+> the video-modal split plan is filed at
+> `CODEX_PROMPTPACK_VIDEO_MODAL_SPLIT_2026-06-10.md` (corrected premise:
+> the live monolith is packages/video-modal at 3,465 lines; the gener8
+> copy is already a 74-line wrapper). Export smoke gate applies before the
+> split's step 6.
 
 > Current-state note, 2026-06-10 v1.1.64: model provisioning progress
 > contract v2 and the shell Lifecycle HUD are implemented (sandbox
