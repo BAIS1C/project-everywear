@@ -120,6 +120,10 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStage, setExportStage] = useState<'idle' | 'capturing' | 'encoding'>('idle');
   const [exportEta, setExportEta] = useState<string>('');
+  // Visible export failure surface. alert() is unreliable inside the Tauri
+  // WebView, which made every render failure invisible (Vid render silent
+  // no-op, native QA 2026-06-10). All export paths report here.
+  const [exportError, setExportError] = useState<string | null>(null);
   const [ffmpegLoaded, setFfmpegLoaded] = useState(false);
   const [ffmpegLoading, setFfmpegLoading] = useState(false);
 
@@ -358,7 +362,10 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
       setFfmpegLoaded(true);
     } catch (error) {
       console.error('Failed to load FFmpeg:', error);
-      alert('Failed to load video encoder. Please refresh and try again.');
+      setExportError(
+        `In-browser encoder failed to load (${error instanceof Error ? error.message : 'network or CSP error'}). ` +
+        'Check connectivity, then reopen this window to retry.',
+      );
     } finally {
       setFfmpegLoading(false);
     }
@@ -515,7 +522,16 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   };
 
   const startRecording = async () => {
-    if (!canvasRef.current || !song) return;
+    if (!canvasRef.current || !song) {
+      // Status truthfulness: this guard used to return silently, leaving an
+      // enabled render CTA that did nothing (native QA blocker 2026-06-10).
+      console.warn('[Video Studio] Render blocked:', { hasCanvas: !!canvasRef.current, hasSong: !!song });
+      setExportError(!song
+        ? 'No song is loaded into the renderer. Select a song, then try again.'
+        : 'The preview canvas is not mounted yet. Open the preview, then try again.');
+      return;
+    }
+    setExportError(null);
 
     setIsExporting(true);
     setExportStage('capturing');
@@ -532,7 +548,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
         if (!ffmpegRef.current) {
           await loadFFmpeg();
           if (!ffmpegRef.current) {
-            // Encoder load failed (alert already shown by loadFFmpeg). Reset
+            // Encoder load failed (error surfaced by loadFFmpeg via exportError). Reset
             // render state so the panel stays actionable instead of sticking
             // at "Rendering frames 0%". (Handoff 2026-06-07.)
             setIsExporting(false);
@@ -545,7 +561,10 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
       }
     } catch (error) {
       console.error('Rendering failed:', error);
-      alert('Video rendering failed. Please try again.');
+      setExportError(
+        `Rendering failed: ${error instanceof Error ? error.message : String(error)}. ` +
+        'Nothing was saved. Try again; if it persists, file a bug report.',
+      );
       setIsExporting(false);
       setExportStage('idle');
     }
@@ -612,7 +631,10 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   };
 
   const renderOffline = async () => {
-    if (!song || !ffmpegRef.current) return;
+    if (!song || !ffmpegRef.current) {
+      setExportError('Renderer lost its inputs (song or encoder). Reopen the window and try again.');
+      return;
+    }
 
     // Create a separate clean canvas to avoid tainted canvas issues
     const canvas = document.createElement('canvas');
@@ -3223,6 +3245,11 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                           : `Render ${renderRes.label} (WASM)`}
                     </button>
                     </>
+                 )}
+                 {exportError && (
+                   <p className="text-[11px] text-red-400 text-center" role="alert">
+                     {exportError}
+                   </p>
                  )}
                  <p className="text-[10px] text-zinc-600 text-center">
                    {gpuEncoderAvailable
