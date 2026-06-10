@@ -997,6 +997,26 @@ fn spawn_applet_event_pump(
             .await
             .unregister_connection(&applet_id);
         tracing::warn!(applet = %applet_id, "Applet IPC event stream closed");
+
+        // The applet process is gone (exit or crash). Release everything the
+        // shell still holds for it, or stale VRAM reservations stack up and
+        // corrupt purge decisions. release_applet is idempotent, so the
+        // graceful-close path doing its own release is harmless. (VRAM
+        // reservation stacking fix, 2026-06-10.)
+        applet_processes.lock().await.remove(&applet_id);
+        {
+            let mut active = active_applet.lock().await;
+            if active.as_deref() == Some(applet_id.as_str()) {
+                *active = None;
+            }
+        }
+        if let Some(state) = app.try_state::<AppState>() {
+            state.budget.lock().await.release_applet(&applet_id);
+        }
+        let _ = app.emit(
+            "applet-webview-closed",
+            serde_json::json!({ "applet_id": applet_id }),
+        );
     });
 }
 

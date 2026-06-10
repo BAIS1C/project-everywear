@@ -1032,9 +1032,25 @@ pub async fn launch_applet_process(
 
         // 5. Wait for applet to connect (10 second timeout)
         let connect_timeout = std::time::Duration::from_secs(10);
-        ipc.accept(connect_timeout)
-            .await
-            .context("applet did not connect to IPC channel")?;
+        match ipc.accept(connect_timeout).await {
+            Ok(_) => {}
+            Err(error) => {
+                // The spawned child never connected. Kill it before
+                // propagating, otherwise it lingers as an orphan process the
+                // shell no longer accounts for. (VRAM reservation stacking
+                // fix, 2026-06-10.)
+                let mut child = child;
+                if let Err(kill_err) = child.kill() {
+                    warn!(
+                        applet = applet_id,
+                        error = %kill_err,
+                        "Failed to kill orphan applet process after IPC accept failure"
+                    );
+                }
+                let _ = child.wait();
+                return Err(error).context("applet did not connect to IPC channel");
+            }
+        }
 
         let advertisement = match ipc.await_advertisement(connect_timeout).await {
             Ok(capabilities) => {
