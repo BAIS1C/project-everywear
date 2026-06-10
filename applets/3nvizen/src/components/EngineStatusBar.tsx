@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import type { EngineHealthEndpoint } from '@everywear/shared';
 import type { GpuInfo, ModelStatusResponse } from '../transport';
 import * as api from '../transport';
 
 export interface EngineStatusBarProps {
   online: boolean;
+  engineEndpoint?: EngineHealthEndpoint | null;
+  checkedAtMs?: number | null;
 }
 
-export function EngineStatusBar({ online }: EngineStatusBarProps) {
+export function EngineStatusBar({ online, engineEndpoint, checkedAtMs }: EngineStatusBarProps) {
   const [gpuInfo, setGpuInfo] = useState<GpuInfo | null>(null);
   const [modelStatus, setModelStatus] = useState<ModelStatusResponse | null>(null);
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
@@ -77,13 +80,18 @@ export function EngineStatusBar({ online }: EngineStatusBarProps) {
 
   const currentModel = modelStatus?.current_model;
   const models = modelStatus?.models ?? [];
+  const checkedLabel = checkedAtMs
+    ? new Date(checkedAtMs).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' })
+    : null;
 
   return (
     <div className="tv-engine-bar" data-tour="3nvizen.engine-status">
       {/* GPU Badge */}
       <div className="tv-engine-bar__gpu">
         {!online ? (
-          <span className="tv-badge tv-badge--danger">Engine Offline</span>
+          <span className="tv-badge tv-badge--danger">
+            Engine Offline{checkedLabel ? ` · checked ${checkedLabel}` : ''}
+          </span>
         ) : gpuInfo ? (
           <span className={`tv-badge ${gpuInfo.cuda_available ? "tv-badge--ok" : "tv-badge--danger"}`}>
             {gpuInfo.cuda_available
@@ -91,7 +99,9 @@ export function EngineStatusBar({ online }: EngineStatusBarProps) {
               : "CPU Mode"}
           </span>
         ) : (
-          <span className="tv-badge">GPU: loading...</span>
+          <span className="tv-badge">
+            {engineEndpoint ? `Engine online · ${engineEndpoint.latency_ms ?? '?'}ms` : 'GPU: loading...'}
+          </span>
         )}
       </div>
 

@@ -16,7 +16,16 @@ import {
 } from '../lib/transport';
 import { useAuth } from './AuthContext';
 import { useTheme } from '@everywear/ewds';
-import { getLogger, getErrorCount } from '@everywear/shared';
+import {
+  findEngineEndpoint,
+  formatEngineLastChecked,
+  getLogger,
+  getErrorCount,
+  publishEngineHealth,
+  readEngineHealth,
+  type EngineHealthEndpoint,
+  type EngineHealthPayload,
+} from '@everywear/shared';
 import { LogViewerPanel } from '../components/LogViewerPanel';
 import { BugReportModal, type BugReportSeed } from '../components/BugReportModal';
 
@@ -72,6 +81,37 @@ const TIER_RANK: Record<string, number> = {
   creator_studio: 3,
 };
 const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+function engineEndpointForApplet(
+  payload: EngineHealthPayload | null,
+  appletId: string | null | undefined,
+): EngineHealthEndpoint | null {
+  if (!payload || !appletId) return null;
+  const direct = payload.endpoints.find((endpoint) => endpoint.applet_id === appletId);
+  if (direct) return direct;
+  if (appletId === 'gener8-pro' || appletId === 'ai-director') {
+    return findEngineEndpoint(payload, 'ace-server');
+  }
+  return null;
+}
+
+function engineHealthStatusFor(
+  payload: EngineHealthPayload | null,
+  appletId: string | null | undefined,
+): 'online' | 'offline' | 'checking' | null {
+  const endpoint = engineEndpointForApplet(payload, appletId);
+  if (!endpoint) return null;
+  return endpoint.online ? 'online' : 'offline';
+}
+
+function engineStatusDetail(payload: EngineHealthPayload | null, endpoint: EngineHealthEndpoint | null) {
+  if (!payload || !endpoint) return null;
+  const checked = formatEngineLastChecked(payload);
+  const latency = endpoint.online && endpoint.latency_ms !== null && endpoint.latency_ms !== undefined
+    ? `, ${endpoint.latency_ms}ms`
+    : '';
+  return `${endpoint.id}: ${endpoint.online ? 'online' : 'offline'}${latency}${checked ? `, checked ${checked}` : ''}`;
+}
 
 function ChromeBarcode({ seed = 42, width = 72, height = 12 }: { seed?: number; width?: number; height?: number }) {
   let next = seed;
@@ -248,14 +288,17 @@ function windowRuntimeLabel(
   launchingId: string | null,
   inferencePhase: InferencePhase,
   health?: 'online' | 'offline' | 'checking',
+  engineHealth?: EngineHealthPayload | null,
 ) {
   if (content.kind === 'panel') return '● READY';
 
   const applet = content.applet;
+  const engineStatus = engineHealthStatusFor(engineHealth ?? null, applet.id);
   // Status truthfulness: never show READY for an applet whose runtime health
   // check says it is offline. Avatar Studio and Layer U displayed READY while
   // their content was black/offline. (Handoff 2026-06-07.)
   if (health === 'offline') return '● OFFLINE';
+  if (engineStatus === 'offline') return '● ENGINE OFFLINE';
   if (!isModelBackedApplet(applet)) {
     return health === 'checking' ? '● CHECKING' : '● READY';
   }
@@ -658,12 +701,14 @@ function buildInferenceReadout({
   launchingApplet,
   activeApplet,
   phase,
+  engineHealth,
 }: {
   gpu: SystemGpuState | null;
   assessments: ModelAssessment[];
   launchingApplet: AppletEntry | null;
   activeApplet: AppletEntry | null;
   phase: InferencePhase;
+  engineHealth: EngineHealthPayload | null;
 }) {
   if (phase === 'purging' && launchingApplet) {
     return {
@@ -675,11 +720,12 @@ function buildInferenceReadout({
   if ((phase === 'opening' || launchingApplet) && launchingApplet) {
     const targetModel = modelLabelFor(launchingApplet, assessments);
     const vramTarget = modelVramLabelFor(launchingApplet, assessments);
+    const engineDetail = engineStatusDetail(engineHealth, engineEndpointForApplet(engineHealth, launchingApplet.id));
     return {
       value: `opening ${launchingApplet.name}`,
       detail: targetModel
-        ? `target: ${targetModel}${vramTarget ? ` / ${vramTarget}` : ''}`
-        : 'starting applet engine',
+        ? `target: ${targetModel}${vramTarget ? ` / ${vramTarget}` : ''}${engineDetail ? ` / ${engineDetail}` : ''}`
+        : engineDetail ?? 'starting applet engine',
     };
   }
 
@@ -692,23 +738,27 @@ function buildInferenceReadout({
 
   if (activeApplet && isModelBackedApplet(activeApplet)) {
     const vramTarget = modelVramLabelFor(activeApplet, assessments);
+    const engineDetail = engineStatusDetail(engineHealth, engineEndpointForApplet(engineHealth, activeApplet.id));
     return {
       value: 'model loaded',
-      detail: `${modelLabelFor(activeApplet, assessments) || `${activeApplet.name} engine warm`}${vramTarget ? ` / ${vramTarget}` : ''}`,
+      detail: `${modelLabelFor(activeApplet, assessments) || `${activeApplet.name} engine warm`}${vramTarget ? ` / ${vramTarget}` : ''}${engineDetail ? ` / ${engineDetail}` : ''}`,
     };
   }
 
   const preferredModel = assessments.find((item) => item.recommended_primary_model);
+  const engineSummary = engineHealth?.endpoints.length
+    ? `engines: ${engineHealth.endpoints.filter((endpoint) => endpoint.online).length}/${engineHealth.endpoints.length} online`
+    : null;
   if (preferredModel?.recommended_primary_model) {
     return {
       value: 'standby',
-      detail: `ready target: ${preferredModel.recommended_primary_model}`,
+      detail: `ready target: ${preferredModel.recommended_primary_model}${engineSummary ? ` / ${engineSummary}` : ''}`,
     };
   }
 
   return {
     value: gpu?.backend?.type === 'Cuda' || gpu?.backend?.type === 'Vulkan' ? 'standby' : 'idle',
-    detail: gpu?.total_free_mb ? `${backendLabelForDesktop(gpu)} / ${formatVram(gpu.total_free_mb)} free` : backendLabelForDesktop(gpu),
+    detail: `${gpu?.total_free_mb ? `${backendLabelForDesktop(gpu)} / ${formatVram(gpu.total_free_mb)} free` : backendLabelForDesktop(gpu)}${engineSummary ? ` / ${engineSummary}` : ''}`,
   };
 }
 
@@ -744,6 +794,7 @@ function DesktopCanvas({
   launchingApplet,
   activeApplet,
   inferencePhase,
+  engineHealth,
   widgetsEnabled,
 }: {
   theme: string;
@@ -752,6 +803,7 @@ function DesktopCanvas({
   launchingApplet: AppletEntry | null;
   activeApplet: AppletEntry | null;
   inferencePhase: InferencePhase;
+  engineHealth: EngineHealthPayload | null;
   widgetsEnabled: boolean;
 }) {
   const isLight = theme === 'light';
@@ -763,6 +815,7 @@ function DesktopCanvas({
     launchingApplet,
     activeApplet,
     phase: inferencePhase,
+    engineHealth,
   });
 
   if (isLight || isTerminal || theme === 'classic' || theme === 'refined' || isV2) {
@@ -887,6 +940,7 @@ export function ShellLayout() {
   const [gpu, setGpu] = useState<SystemGpuState | null>(null);
   const [assessments, setAssessments] = useState<ModelAssessment[]>([]);
   const [iconHealth, setIconHealth] = useState<Record<string, 'online' | 'offline' | 'checking'>>({});
+  const [engineHealth, setEngineHealth] = useState<EngineHealthPayload | null>(() => readEngineHealth());
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [s3FolderOpen, setS3FolderOpen] = useState(false);
   const { user: authUser, tier } = useAuth();
@@ -1242,6 +1296,19 @@ export function ShellLayout() {
     healthTimerRef.current = setInterval(checkHealth, 10000);
     return () => { if (healthTimerRef.current) clearInterval(healthTimerRef.current); };
   }, [checkHealth, registryApplets]);
+
+  useEffect(() => {
+    if (!hasShellRuntime()) return;
+
+    const unlistenEngineHealth = listen<EngineHealthPayload>('engine-health', (event) => {
+      setEngineHealth(event.payload);
+      publishEngineHealth(event.payload);
+    });
+
+    return () => {
+      unlistenEngineHealth.then((fn) => fn());
+    };
+  }, []);
 
   // Applet self-reported readiness. Portless inline applets (Layer U, Avatar
   // Studio) are assumed online by the port poll, which let the window chrome
@@ -1691,6 +1758,7 @@ export function ShellLayout() {
           launchingApplet={launchingApplet}
           activeApplet={activeInferenceApplet}
           inferencePhase={inferencePhase}
+          engineHealth={engineHealth}
           widgetsEnabled={!hasOpenApplet}
         />
 
@@ -1769,6 +1837,7 @@ export function ShellLayout() {
                 launchingId,
                 inferencePhase,
                 win.content.kind === 'applet' ? iconHealth[win.content.applet.id] : undefined,
+                engineHealth,
               )}
             >
               {renderWindowContent(win)}

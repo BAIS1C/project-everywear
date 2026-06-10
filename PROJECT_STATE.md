@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T10:24+08 SGT (Claude Cowork: punch-list wave 2).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T15:28+08 SGT (Codex: Phase 0 backfill for lane-A engine-health consumer migration).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 15:28 SGT - Phase 0 Backfill: Lane-A Engine-Health Consumer Migration (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- BACKFILLED: the lane-A engine-health consumer migration was present in the dirty tree without a PROJECT_STATE entry. This entry is an honest Phase 0 receipt before committing that work.
+- DOCTRINE LINE RELIED ON: WIKI v1.1.67 says engine-health consumers migrate in slice 2 while engine ports remain owned by `engine_health.rs` until manifest-driven registration.
+- FILES CHANGED: `packages/shared/src/engineHealth.ts` plus shared exports; `platform/everywear-os/src/shell/ShellLayout.tsx` listens once to Rust `engine-health`, republishes browser context, and merges endpoint state into runtime labels and the desktop Inference card; `applets/3nvizen` consumes the shell `ltx-sidecar` endpoint when shell-mounted; `packages/video-modal` consumes the shell `video-encoder` endpoint with standalone probing as fallback; `applets/gener8/web/src/shell/intentBus.ts` uses the honest-down `gener8-shim` endpoint for DAW Pro Model copy.
+- VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo check -p everywear-os`. Warnings only: existing Vite large chunk/dynamic import warning and existing Rust dead-code warnings.
+- OWED: Phase 1 native proof pass: provisioning replay, engine-health devtools smoke, Vid export both worlds, and VRAM release on child kill x3.
+
+---
 
 ## 2026-06-10 10:24 SGT - Punch-List Wave 2 (Claude Cowork)
 

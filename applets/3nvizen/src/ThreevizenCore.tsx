@@ -8,8 +8,15 @@ import { VideoPreview } from './components/VideoPreview';
 import type { VideoPreviewState } from './components/VideoPreview';
 import { EngineStatusBar } from './components/EngineStatusBar';
 import { getLogger } from '@everywear/shared';
+import {
+  findEngineEndpoint,
+  readEngineHealth,
+  subscribeEngineHealth,
+  type EngineHealthPayload,
+} from '@everywear/shared';
 
 const log = getLogger('3nvizen');
+const hasShellRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 // ── Props from shell's HeadlessAppletView ──
 
@@ -22,8 +29,12 @@ export interface ThreevizenCoreProps {
 
 export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCoreProps) {
   // ── Engine state ──
-  const [online, setOnline] = useState(false);
+  const [localOnline, setLocalOnline] = useState(false);
+  const [shellHealth, setShellHealth] = useState<EngineHealthPayload | null>(() => readEngineHealth());
   const healthTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shellRuntime = hasShellRuntime();
+  const shellLtxEndpoint = findEngineEndpoint(shellHealth, 'ltx-sidecar');
+  const online = shellRuntime ? shellLtxEndpoint?.online === true : localOnline;
 
   // ── Mode ──
   const [genMode, setGenMode] = useState<GenerationMode>("text-to-video");
@@ -40,7 +51,7 @@ export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCore
   // ── Health check on mount + retry every 5s ──
   const checkHealth = useCallback(async () => {
     const healthy = await api.getHealth();
-    setOnline(prev => {
+    setLocalOnline(prev => {
       if (prev !== healthy) {
         log.info('sidecar', `LTX health check: ${healthy ? 'online' : 'offline'}`, { online: healthy });
       }
@@ -50,6 +61,7 @@ export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCore
   }, []);
 
   useEffect(() => {
+    if (shellRuntime) return;
     checkHealth();
     healthTimerRef.current = setInterval(checkHealth, 5000);
     return () => {
@@ -58,7 +70,14 @@ export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCore
         healthTimerRef.current = null;
       }
     };
-  }, [checkHealth]);
+  }, [checkHealth, shellRuntime]);
+
+  useEffect(() => {
+    if (!shellRuntime) return;
+    const current = readEngineHealth();
+    if (current) setShellHealth(current);
+    return subscribeEngineHealth(setShellHealth);
+  }, [shellRuntime]);
 
   // ── Cleanup progress polling on unmount ──
   useEffect(() => {
@@ -214,7 +233,11 @@ export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCore
       )}
 
       {/* Engine status bar */}
-      <EngineStatusBar online={online} />
+      <EngineStatusBar
+        online={online}
+        engineEndpoint={shellLtxEndpoint}
+        checkedAtMs={shellHealth?.checked_at_ms ?? null}
+      />
 
       {/* Mode selector */}
       <ModeSelector mode={genMode} onChange={setGenMode} disabled={generating} />

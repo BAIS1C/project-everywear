@@ -9,6 +9,12 @@ import { drawAlbumArt, drawCenterWave, drawDigitalRain, drawDualMirror, drawHexa
 import { BASE_DEFAULT_INDEX, DEFAULT_EFFECTS, DEFAULT_INTENSITIES, DEFAULT_VISUALIZER_CONFIG, RENDER_PRESETS, defaultShowToast, useResponsive } from './videoModalDefaults';
 import { PRESETS } from './videoModalPresets';
 import type { EffectConfig, EffectIntensities, PexelsPhoto, PexelsVideo, TextLayer, VideoGeneratorModalProps, VideoModalTier, VisualizerConfig } from './videoModalTypes';
+import {
+  findEngineEndpoint,
+  readEngineHealth,
+  subscribeEngineHealth,
+  type EngineHealthEndpoint,
+} from '@everywear/shared';
 
 export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   isOpen,
@@ -231,8 +237,41 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
       }
     };
 
+    const readEncoderInfo = async (timeoutMs: number) => {
+      try {
+        const res = await probeHealth(timeoutMs);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    };
+
+    const waitForShellEncoder = async (timeoutMs: number): Promise<EngineHealthEndpoint | null> => {
+      const current = findEngineEndpoint(readEngineHealth(), 'video-encoder');
+      if (current?.online) return current;
+
+      return new Promise((resolve) => {
+        let last = current;
+        const timer = window.setTimeout(() => {
+          unsubscribe();
+          resolve(last);
+        }, timeoutMs);
+        const unsubscribe = subscribeEngineHealth((payload) => {
+          const endpoint = findEngineEndpoint(payload, 'video-encoder');
+          if (endpoint) last = endpoint;
+          if (endpoint?.online) {
+            window.clearTimeout(timer);
+            unsubscribe();
+            resolve(endpoint);
+          }
+        });
+      });
+    };
+
     const checkGpuEncoder = async () => {
-      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+      const shellRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+      if (shellRuntime) {
         try {
           const { invoke } = await import('@tauri-apps/api/core');
           await invoke('request_video_encoder');
@@ -243,6 +282,29 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
             err
           );
         }
+      }
+
+      if (shellRuntime) {
+        const endpoint = await waitForShellEncoder(12000);
+        if (cancelled) return;
+        if (endpoint?.online) {
+          const data = await readEncoderInfo(750);
+          if (cancelled) return;
+          setGpuEncoderAvailable(true);
+          setGpuEncoderInfo({
+            encoder: data?.encoder ?? 'video-encoder',
+            label: data?.label ?? 'Local video encoder sidecar',
+            gpu: data?.gpu ?? null,
+            hardware: data?.hardware ?? true,
+          });
+          return;
+        }
+        setGpuEncoderAvailable(false);
+        setGpuEncoderInfo(null);
+        console.warn(
+          '[Video Studio] GPU encoder sidecar is offline in shell engine-health; WASM fallback.'
+        );
+        return;
       }
 
       // Sidecar boot + NVENC detection takes a few seconds; retry instead of

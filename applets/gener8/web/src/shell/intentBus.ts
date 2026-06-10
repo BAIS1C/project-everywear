@@ -2,6 +2,7 @@
 import { intentBus } from '../context/intentBus';
 import { showToast } from '../components/ToastHost';
 import { getApiBase } from '../services/api';
+import { findEngineEndpoint, formatEngineLastChecked, readEngineHealth } from '@everywear/shared';
 
 export { intentBus, openVidWithSong } from '../context/intentBus';
 
@@ -15,6 +16,14 @@ export function sendToStudio(sourceApp: string, songId: string, songTitle?: stri
 }
 
 const PRO_PACK_ID = 'pro_base';
+
+function gener8ShimDownMessage(): string | null {
+  const payload = readEngineHealth();
+  const endpoint = findEngineEndpoint(payload, 'gener8-shim');
+  if (!payload || !endpoint || endpoint.online) return null;
+  const checked = formatEngineLastChecked(payload);
+  return `Could not verify the Pro Model because the local Gener8 shim is offline on localhost:3001${checked ? `, last checked ${checked}` : ''}.`;
+}
 
 async function proModelPresent(): Promise<boolean> {
   const response = await fetch(`${getApiBase()}/api/engine/pack-status?pack_id=${PRO_PACK_ID}`, {
@@ -61,6 +70,16 @@ async function pullProModel(): Promise<boolean> {
 
 export async function ensureModel(model: string): Promise<boolean> {
   if (model !== 'base' && model !== 'pro_base') return true;
+  const shimDown = gener8ShimDownMessage();
+  if (shimDown) {
+    showToast({
+      kind: 'error',
+      eyebrow: 'Everywear · model lifecycle',
+      message: shimDown,
+      durationMs: 8000,
+    });
+    return false;
+  }
   try {
     if (await proModelPresent()) {
       showToast({
@@ -76,7 +95,8 @@ export async function ensureModel(model: string): Promise<boolean> {
     showToast({
       kind: 'error',
       eyebrow: 'Everywear · model lifecycle',
-      message: 'Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.',
+      message: gener8ShimDownMessage()
+        ?? 'Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.',
       durationMs: 8000,
     });
     return false;

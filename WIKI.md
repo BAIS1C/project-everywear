@@ -1,8 +1,25 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.66
-Last updated: 2026-06-10 (punch-list wave 2: engine health prober, sidecar Phase 2, download consolidation)
+Version: 1.1.67
+Last updated: 2026-06-10 (punch-list lane A: engine-health consumer migration)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.67: punch-list Lane A landed.
+> `platform/everywear-os/src/shell/ShellLayout.tsx` now listens once to the
+> Rust `engine-health` event, stores the latest payload, republishes it through
+> the shared browser context in `packages/shared/src/engineHealth.ts`, and
+> merges endpoint state into the shell runtime labels plus the desktop
+> Inference card. Frontend-port polling remains for applet frontend reachability;
+> engine ports still belong only in `engine_health.rs` until manifest-driven
+> registration lands. `applets/3nvizen` now reads the `ltx-sidecar` endpoint
+> when shell-mounted and keeps its direct 8787 polling only for standalone
+> mode. `packages/video-modal` still acquires/releases the shell-owned encoder
+> but uses the `video-encoder` endpoint as the shell truth for availability,
+> leaving direct 9877 probing as standalone fallback. DAW Pro Model copy now
+> consumes the `gener8-shim` honest-down endpoint and includes the last checked
+> time instead of guessing from a failed fetch. Verification owed: `cargo check
+> -p everywear-os`, `npm run build --workspace everywear-os`, and the Lane A
+> native devtools smoke.
 
 > Current-state note, 2026-06-10 v1.1.66: punch-list wave 2 landed
 > (sandbox TS-verified; native cargo verify owed, includes a NEW dependency
