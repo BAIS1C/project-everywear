@@ -48,6 +48,19 @@ Artifact: `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json`
 | `SIGTERM` | Process signal, not an app bus event. | Node sidecar process handlers. | Excluded. | OK. |
 | DOM/browser events (`click`, `resize`, `keydown`, `message`, pointer/mouse/touch events, etc.) | Browser/runtime-owned. | App UI listeners. | Excluded. | OK. Not part of Tauri emit/listen contract. |
 
+## Phase 2 H3 - Port/URL Literal Sweep
+
+Artifact: `screenshots/2026-06-10-proof-pass/h3-port-url-literal-sweep.json`
+
+| ID | Literal class | Finding | Evidence | Tier | Status |
+| --- | --- | --- | --- | --- | --- |
+| H3-001 | Legacy Gener8 shim 3001 | Multiple consumers still call or describe the phantom Gener8 shim directly, even though `engine_health.rs` now owns the `gener8-shim` expected-down row. This is the same surface that made P3 save fail before the native Vault path fix. | `platform/everywear-os/src/shell/ShellLayout.tsx:1084`; `applets/vid/web/src/context/SongStoreContext.tsx:15`; `applets/gener8/web/src/services/api.ts:54`; `DawTransportBar.tsx:17`; `BetterModelsBanner.tsx:48`. | Tier 1 | Logged. Do not migrate in H3. Next slice should replace consumer calls with shell/registry-owned routes or explicitly retire the shim contract. |
+| H3-002 | Video encoder 9877 | Encoder health is centralized in `engine_health.rs`, but the new native save path still fetches `/download/{session_id}` from literal `127.0.0.1:9877`. Health and artifact-download ownership are now split. | `platform/everywear-os/src-tauri/src/vault_commands.rs:559`; `platform/everywear-os/src-tauri/src/video_encoder.rs:286`; sidecar docs in `platform/everywear-os/src-tauri/sidecar/video-encoder/src/index.ts`. | Tier 1 | Logged. Keep for H3; migrate to a single encoder endpoint helper/config with the shell-owned lifecycle fix. |
+| H3-003 | LTX sidecar 8787 | 3nvizen standalone transport hardcodes `127.0.0.1:8787` while shell health owns `ltx-sidecar`. The applet already has comments explaining standalone adapter default, so this is compatibility debt rather than a fresh silent bug. | `applets/3nvizen/src/transport.ts:14`; Rust runtime fallback in `applets/3nvizen/src-tauri/src/runtime_ipc.rs`. | Tier 2 | Logged. Keep standalone fallback, but shell-mounted 3nvizen should continue preferring shell engine-health state. |
+| H3-004 | Layer U SON 3117 | Layer U uses `127.0.0.1:3117` directly. This is a Project SON service boundary, not currently represented in `engine_health.rs`. | `platform/everywear-os/src/son/sonBridge.ts:3`. | Tier 2 | Logged. Decide whether SON becomes a formal engine-health endpoint or remains a Layer U owned service dependency. |
+| H3-005 | Character Studio 8081 | Character Studio donor contract files still point at `localhost:8081`. This looks like legacy donor API wiring, not an Everywear-owned engine endpoint. | `applets/character-studio/src/services/contract.jsx:1`; `applets/character-studio/src/components/Contract.jsx:3`. | Tier 2 | Logged. Needs Character Studio donor cleanup, not H3 migration. |
+| H3-006 | Allowed literals | Applet vite/dev configs, Tauri `devUrl`/CSP, applet IPC random-port wiring, frontend-port assembly, local auth hostname checks, and documentation/schema/marketing literals were excluded from the defect list. | Filtered artifact allowed bucket plus raw grep session. | Tier 3 | OK. Keep excluded unless they become runtime consumers. |
+
 ## Decision Cards
 
 CARD: P1 cache mutation or seeded test model

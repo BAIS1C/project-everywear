@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:34+08 SGT (Codex: Phase 2 H2 event contract audit).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:36+08 SGT (Codex: Phase 2 H3 port/URL literal sweep).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:36 SGT - Phase 2 H3 Port/URL Literal Sweep (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H3 ARTIFACT: `screenshots/2026-06-10-proof-pass/h3-port-url-literal-sweep.json` records the filtered source/runtime literal sweep.
+- H3 RULE APPLIED: allowed literals are applet vite/dev config, Tauri `devUrl`/CSP, applet IPC random-port wiring, frontend-port assembly from registry metadata, and local hostname checks. Docs, generated schemas, archives, and marketing harnesses were excluded from defect classification.
+- H3 LOGGED TIER 1: legacy Gener8 shim `3001` consumers remain in shell/Gener8/Vid/DAW paths even though `engine_health.rs` owns the `gener8-shim` expected-down row. P3 already proved direct 3001 save-path dependency is dangerous.
+- H3 LOGGED TIER 1: video encoder `9877` is health-owned in `engine_health.rs`, but `vault_commands.rs` still downloads encoder artifacts by literal URL. Keep until shell-owned encoder lifecycle is repaired, then centralize endpoint ownership.
+- H3 LOGGED TIER 2: 3nvizen LTX `8787`, Layer U SON `3117`, and Character Studio donor API `8081` remain documented endpoint debts with distinct ownership decisions.
+- VERIFICATION: audit-only docs pass. No endpoint consumers were migrated in H3 by prompt constraint.
+
+---
 
 ## 2026-06-10 16:34 SGT - Phase 2 H2 Event Contract Audit (Codex)
 

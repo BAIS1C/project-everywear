@@ -1,8 +1,18 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.71
-Last updated: 2026-06-10 (H2 event contract audit)
+Version: 1.1.72
+Last updated: 2026-06-10 (H3 port/URL literal sweep)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.72: Phase 2 H3 port/URL literal
+> sweep generated
+> `screenshots/2026-06-10-proof-pass/h3-port-url-literal-sweep.json`.
+> Allowed literals are applet vite/dev config, Tauri devUrl/CSP, applet IPC
+> random-port wiring, frontend-port assembly, and local hostname checks.
+> Runtime consumer debt remains concentrated in legacy Gener8 shim `3001`,
+> video encoder artifact fetch `9877`, 3nvizen LTX fallback `8787`, Layer U
+> SON service `3117`, and donor Character Studio API `8081`. H3 was a
+> comment-and-log pass only, no endpoint migration.
 
 > Current-state note, 2026-06-10 v1.1.71: Phase 2 H2 event contract audit
 > generated `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json`
@@ -48,6 +58,20 @@ Source artifact: `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.js
 | `everywear:launch-applet` | No in-repo emitter found | `ShellLayout.tsx` | Open product-origin decision. Browser custom-event hook, not Rust event bus. |
 | `s3:skin` | No in-repo emitter found | `character-studio/src/lib/skinSync.js` | Open product-origin decision. Decide whether donor S3 skin sync still belongs. |
 | `SIGTERM` | OS/process signal | Node sidecar handlers | Excluded from Tauri event contract. |
+
+## Phase 2 H3 Endpoint Literal Debt Registry
+
+Source artifact: `screenshots/2026-06-10-proof-pass/h3-port-url-literal-sweep.json`
+
+Allowed categories: applet vite/dev config, Tauri `devUrl`/CSP, applet IPC random-port wiring, frontend-port assembly from registry metadata, local auth hostname checks, docs, generated schemas, and marketing harnesses.
+
+| Endpoint | Current owner | Out-of-owner runtime consumers | H3 status |
+| --- | --- | --- | --- |
+| `3001` Gener8 shim | `engine_health.rs` owns expected-down health row. | `ShellLayout.tsx`, Vid song store, Gener8 web API/DAW/banner paths. | Tier 1 logged. This is the dangerous one: P3 already proved direct 3001 dependency breaks native save paths. |
+| `9877` video encoder | `engine_health.rs` health row plus video encoder sidecar. | `vault_commands.rs` downloads encoded MP4 by literal URL. | Tier 1 logged. Consolidate with shell-owned encoder lifecycle fix. |
+| `8787` LTX sidecar | `engine_health.rs` health row for shell. | 3nvizen standalone TS/Rust fallback transport. | Tier 2 logged. Standalone compatibility is legitimate, but shell-mounted UI should keep using shell health state. |
+| `3117` Project SON / Layer U | Layer U `sonBridge.ts`. | Layer U only. | Tier 2 logged. Decide whether SON becomes an engine-health endpoint or remains Layer U owned. |
+| `8081` Character Studio donor API | Legacy donor Character Studio contract files. | Character Studio donor components. | Tier 2 logged. Needs Character Studio donor cleanup, not generic endpoint migration. |
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and
