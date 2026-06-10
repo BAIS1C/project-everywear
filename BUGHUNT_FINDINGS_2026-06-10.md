@@ -26,6 +26,28 @@ Location: `C:\Users\MAG MSI\Project Everywear`
 | H1-005 | Swallowed DAW mutations | DAW view paths swallow undo/redo/track volume/pan failures with `.catch(() => {})`, so transport failures can leave controls lying about state. | `applets/gener8/web/src/views/DawView.tsx:791,792,815,821`; `components/studio/DawPage.tsx:764,768`. | Tier 2 | Open. Needs DAW-local status/toast surface, avoid mixing with event-contract audit. |
 | H1-006 | Best-effort local persistence/cleanup | Several empty catches are acceptable best-effort localStorage, clipboard, audio autoplay, FFmpeg temp cleanup, or channel-send cleanup, but many lack comments marking that intent. | H1 grep output: localStorage catches in 1magen/3nvizen/Gener8, clipboard copy in `ShareModal`, FFmpeg delete catches in `VideoGeneratorModal`, Rust channel `let _ = ...send`. | Tier 3 | Carded. Comment best-effort paths opportunistically when touched; no broad churn in this pass. |
 
+## Phase 2 H2 - Event Contract Audit
+
+Artifact: `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json`
+
+| Event | Emitters | Listeners | Verdict | Status |
+| --- | --- | --- | --- | --- |
+| `agent-event` | Mock transport emits in `applets/kasai/src/lib/transport.ts`. | `KasaiCore.tsx`. | Paired. | OK. Browser/mock transport only. |
+| `applet-switch-progress` | Rust shell launcher/lib emits during applet lifecycle. | `LifecycleHud.tsx`, `ShellLayout.tsx`. | Paired. | OK. |
+| `applet-webview-opened` / `applet-webview-closed` | Rust shell emits on applet webview/process state changes. | `ShellLayout.tsx`. | Paired. | OK. |
+| `download-progress` | Rust model/download/provisioning paths emit shared progress. | Lifecycle HUD and applet consumers. | Paired. | OK. Mixed legacy/v2 payloads are documented compatibility debt, not an orphan. |
+| `educ8-download-progress` | Educ8 emits legacy inline download progress. | Educ8 inline UI. | Paired. | OK. Mirrored onto shared `download-progress` separately. |
+| `engine-health` | `engine_health.rs` emits one endpoint-health sweep. | `ShellLayout.tsx`. | Paired. | OK. |
+| `kasai://slot-event` | Rust Kasai IPC bridge emits slot status. | `SlotStatusPanel.tsx`. | Paired. | OK. |
+| `kasai://tool-call/update` / `kasai://tool-call/complete` | Rust Kasai command bridge emits tool-call lifecycle events. | `KasaiCore.tsx` and tool UI. | Paired. | OK. |
+| `provision-manifest` | Rust launcher/provisioning paths emit provision plan metadata. | `LifecycleHud.tsx`. | Paired. | OK. |
+| `kasai://reasoning-trace` | Rust Kasai IPC bridge emits reasoning traces. | `KasaiCore.tsx`. | Was orphan emitter. | Fixed: `KasaiCore.tsx` now normalizes the payload and renders it as assistant reasoning. |
+| `everywear:applet-status` | No in-repo emitter found. | `ShellLayout.tsx` browser custom-event listener. | Orphan listener. | Open Tier 3. Likely external/browser self-report hook; needs origin decision before removal. |
+| `everywear:launch-applet` | No in-repo emitter found. | `ShellLayout.tsx` browser custom-event listener. | Orphan listener. | Open Tier 3. Likely external/deep-link hook; needs origin decision before removal. |
+| `s3:skin` | No in-repo emitter found. | `character-studio/src/lib/skinSync.js`. | Orphan listener. | Open Tier 3. Decide whether S3 donor skin sync is still live or stale. |
+| `SIGTERM` | Process signal, not an app bus event. | Node sidecar process handlers. | Excluded. | OK. |
+| DOM/browser events (`click`, `resize`, `keydown`, `message`, pointer/mouse/touch events, etc.) | Browser/runtime-owned. | App UI listeners. | Excluded. | OK. Not part of Tauri emit/listen contract. |
+
 ## Decision Cards
 
 CARD: P1 cache mutation or seeded test model

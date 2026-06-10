@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:31+08 SGT (Codex: Phase 2 H1 silent-failure sweep).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:34+08 SGT (Codex: Phase 2 H2 event contract audit).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:34 SGT - Phase 2 H2 Event Contract Audit (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H2 ARTIFACT: `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json` records the post-fix emit/listen table.
+- H2 FIXED: `kasai://reasoning-trace` was a real orphan emitter. Rust forwarded it from the Kasai IPC bridge, but the Kasai UI did not listen. `applets/kasai/src/shell/KasaiCore.tsx` now listens, normalizes malformed payloads, and renders traces as assistant reasoning.
+- H2 VERIFIED PAIRED: `agent-event`, `applet-switch-progress`, `applet-webview-opened`, `applet-webview-closed`, `download-progress`, `educ8-download-progress`, `engine-health`, `kasai://slot-event`, `kasai://tool-call/update`, `kasai://tool-call/complete`, `provision-manifest`, and `kasai://reasoning-trace`.
+- H2 OPEN DECISIONS: `everywear:applet-status`, `everywear:launch-applet`, and `s3:skin` are orphan browser/custom-event listeners with no in-repo emitters. Decide whether they are external hooks to document or stale donor hooks to remove.
+- VERIFICATION PASSED: `npm run build --workspace kasai-applet`; `npm run build --workspace everywear-os`. Existing Vite dynamic import and large chunk warnings only.
+
+---
 
 ## 2026-06-10 16:31 SGT - Phase 2 H1 Silent-Failure Sweep (Codex)
 

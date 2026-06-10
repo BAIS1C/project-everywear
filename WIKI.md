@@ -1,8 +1,19 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.70
-Last updated: 2026-06-10 (H1 silent-failure sweep)
+Version: 1.1.71
+Last updated: 2026-06-10 (H2 event contract audit)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.71: Phase 2 H2 event contract audit
+> generated `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json`
+> and closed the real orphan emitter. Rust already forwarded
+> `kasai://reasoning-trace` from the Kasai IPC bridge, but no UI listener
+> existed. `applets/kasai/src/shell/KasaiCore.tsx` now listens for that event,
+> normalizes malformed payloads defensively, and renders the trace as assistant
+> reasoning. Verification passed: `npm run build --workspace kasai-applet` and
+> `npm run build --workspace everywear-os`. Remaining orphan listeners are
+> browser/custom-event hooks requiring product-origin decisions, not broken Rust
+> emitters: `everywear:applet-status`, `everywear:launch-applet`, and `s3:skin`.
 
 > Current-state note, 2026-06-10 v1.1.70: Phase 2 H1 silent-failure sweep
 > landed the first truthfulness fixes. `ShellLayout.tsx` no longer swallows
@@ -16,6 +27,27 @@ Maintainer: Sean Uddin / Somo Kasane
 > and `npm run build --workspace everywear-os`. Remaining H1 findings are
 > recorded in `BUGHUNT_FINDINGS_2026-06-10.md`: legacy Gener8 alert/confirm
 > cleanup, swallowed DAW mutations, and best-effort catch comments.
+
+## Phase 2 H2 Event Contract Registry
+
+Source artifact: `screenshots/2026-06-10-proof-pass/h2-event-contract-postfix.json`
+
+| Event | Emitters | Listeners | Contract status |
+| --- | --- | --- | --- |
+| `agent-event` | Kasai mock/browser transport | `KasaiCore.tsx` | Paired. |
+| `applet-switch-progress` | Rust shell launcher/lib lifecycle paths | `LifecycleHud.tsx`, `ShellLayout.tsx` | Paired. |
+| `applet-webview-opened` / `applet-webview-closed` | Rust shell applet lifecycle paths | `ShellLayout.tsx` | Paired. |
+| `download-progress` | Rust download/provisioning paths | Lifecycle HUD and applet consumers | Paired. Payload has legacy/v2 compatibility debt, but is not orphaned. |
+| `educ8-download-progress` | Educ8 inline download path | Educ8 inline UI | Paired. Legacy event intentionally kept while mirrored to `download-progress`. |
+| `engine-health` | `engine_health.rs` | `ShellLayout.tsx` | Paired. |
+| `kasai://slot-event` | Rust Kasai IPC bridge | `SlotStatusPanel.tsx` | Paired. |
+| `kasai://tool-call/update` / `kasai://tool-call/complete` | Rust Kasai command bridge | `KasaiCore.tsx` and tool UI | Paired. |
+| `provision-manifest` | Rust launcher/provisioning paths | `LifecycleHud.tsx` | Paired. |
+| `kasai://reasoning-trace` | Rust Kasai IPC bridge | `KasaiCore.tsx` | Fixed in H2. Was orphan emitter; now rendered as assistant reasoning. |
+| `everywear:applet-status` | No in-repo emitter found | `ShellLayout.tsx` | Open product-origin decision. Browser custom-event hook, not Rust event bus. |
+| `everywear:launch-applet` | No in-repo emitter found | `ShellLayout.tsx` | Open product-origin decision. Browser custom-event hook, not Rust event bus. |
+| `s3:skin` | No in-repo emitter found | `character-studio/src/lib/skinSync.js` | Open product-origin decision. Decide whether donor S3 skin sync still belongs. |
+| `SIGTERM` | OS/process signal | Node sidecar handlers | Excluded from Tauri event contract. |
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and

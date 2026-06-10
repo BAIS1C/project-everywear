@@ -136,6 +136,17 @@ interface AgentEvent {
   turn?: { id?: string; assistant_response?: string; tokens_per_second?: number };
 }
 
+interface ReasoningTracePayload {
+  event?: string;
+  reasoning?: string;
+  trace?: string;
+  content?: string;
+  message?: string;
+  turn_id?: string;
+  session_id?: string;
+  timestamp?: number;
+}
+
 interface ToolCallEventPayload {
   index: number;
   session_id: string;
@@ -174,6 +185,28 @@ function normalizeAudit(value: unknown): AuditResult | undefined {
 
 function normalizeToolArgs(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : { malformedArgs: value ?? null };
+}
+
+function normalizeReasoningTracePayload(raw: unknown): ReasoningTracePayload {
+  if (!isRecord(raw)) {
+    return { message: `Malformed reasoning trace payload: ${String(raw ?? 'empty payload')}` };
+  }
+  return {
+    event: typeof raw.event === 'string' ? raw.event : undefined,
+    reasoning: typeof raw.reasoning === 'string' ? raw.reasoning : undefined,
+    trace: typeof raw.trace === 'string' ? raw.trace : undefined,
+    content: typeof raw.content === 'string' ? raw.content : undefined,
+    message: typeof raw.message === 'string' ? raw.message : undefined,
+    turn_id: typeof raw.turn_id === 'string' ? raw.turn_id : undefined,
+    session_id: typeof raw.session_id === 'string' ? raw.session_id : undefined,
+    timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : undefined,
+  };
+}
+
+function reasoningTraceText(payload: ReasoningTracePayload): string {
+  const direct = payload.reasoning || payload.trace || payload.content || payload.message;
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  return JSON.stringify(payload, null, 2);
 }
 
 function normalizeToolCallPayload(raw: unknown, fallbackIndex: number): ToolCallInfo {
@@ -829,10 +862,24 @@ export function KasaiCore() {
       });
     });
 
+    const unlistenReasoningTrace = transport.listen<unknown>('kasai://reasoning-trace', (rawPayload) => {
+      const payload = normalizeReasoningTracePayload(rawPayload);
+      const reasoning = reasoningTraceText(payload);
+      setMessages(prev => [...prev, {
+        type: 'assistant',
+        id: `reasoning-trace-${payload.turn_id || payload.session_id || crypto.randomUUID()}-${Date.now()}`,
+        role: 'agent',
+        content: 'Reasoning trace received from local runtime.',
+        timestamp: typeof payload.timestamp === 'number' && payload.timestamp > 0 ? payload.timestamp : Date.now(),
+        reasoning,
+      }]);
+    });
+
     return () => {
       unlistenAgent();
       unlistenUpdate();
       unlistenComplete();
+      unlistenReasoningTrace();
     };
   }, [ensureToolCallMessage, transport]);
 
