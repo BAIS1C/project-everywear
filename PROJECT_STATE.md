@@ -1,8 +1,21 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T15:28+08 SGT (Codex: Phase 0 backfill for lane-A engine-health consumer migration).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T15:47+08 SGT (Codex: Phase 1 P1/P2 proof pass).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 15:47 SGT - Phase 1 Proof Pass P1/P2 (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- P1 PROVISIONING REPLAY VERDICT: BLOCKED, not faked. Gener8 4ever opened natively but emitted zero `provision-manifest` / `download-progress` events because local compatible models satisfy the selected ACE ladder. `resolve_all_models` showed missing 1magen/3nvizen model IDs, but those missing requirements do not currently carry complete downloadable HF repo/file metadata, so they cannot exercise `download_with_resume_and_progress` without moving/deleting model cache files. No model cache mutation was performed.
+- P1 RECEIPTS: `screenshots/2026-06-10-proof-pass/p1-before-gener8-switch.png`, `p1-gener8-download-25s.png`, `p1-gener8-provisioning-25s.json`.
+- P2 ENGINE-HEALTH VERDICT: PASS after rebuilding the native EXE. The stale 01:47 debug binary initially produced no engine-health events; `cargo build -p everywear-os` was run, the rebuilt native app was relaunched, and `window.__EVERYWEAR_ENGINE_HEALTH__` then published all four endpoints every sweep.
+- P2 PROVEN: baseline `ace-server` online on 8080, `ltx-sidecar` down on 8787, `video-encoder` down on 9877, `gener8-shim` expected/down on 3001; `Stop-Process -Id` killed `ace-server`, port 8080 disappeared, the next sweep flipped `ace-server` offline; restarting `ace-server.exe --models "%USERPROFILE%\.everywear\models" --host 127.0.0.1 --port 8080` flipped it back online. DAW opened with the honest `gener8-shim` / `localhost:3001` offline copy visible.
+- P2 RECEIPTS: `screenshots/2026-06-10-proof-pass/p2c-engine-health-kill-restart.json`, `p2c-engine-health-baseline.png`, `p2c-engine-health-after-ace-kill.png`, `p2c-engine-health-after-ace-restart.png`, `p2-daw-gener8-shim-honest-down.json`, `p2-daw-gener8-shim-honest-down.png`.
+- FINDINGS TO CARRY: direct JS invoke `request_applet_switch('gener8-4ever')` returns `FrontendInline applet is missing frontend_port`, while the visible UI can open Gener8 4ever. Treat as a bug-hunt finding, not a P2 blocker. P1 needs either a safe cache-mutation approval or a seeded downloadable test requirement before it can prove resume/failure.
+
+---
 
 ## 2026-06-10 15:28 SGT - Phase 0 Backfill: Lane-A Engine-Health Consumer Migration (Codex)
 
