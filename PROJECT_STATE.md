@@ -1,8 +1,127 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-09T14:38+08 SGT (Codex: Avatar Studio Export to Kasai / My Mait handoff verification).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T01:49+08 SGT (Codex: first-run tour host first slice).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 01:49 SGT - First-Run Tour Host First Slice (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: coded the first tour slice after the architecture lock.
+- FILES CHANGED: added `platform/everywear-os/src/tour/tourManifests.ts`; added `platform/everywear-os/src/tour/FirstRunTourHost.tsx`; mounted `<FirstRunTourHost />` in `platform/everywear-os/src/shell/ShellLayout.tsx`.
+- IMPLEMENTED: shell-level first-run overlay using existing EWDS `.ew-tour-*` primitives; verified manifest copy/selector steps; halo geometry; missing-target fallback; Start/Back/Next/Skip/Done controls; keyboard Escape/Enter/Arrow navigation; native preference persistence through `getPreference` / `setPreference`; browser localStorage fallback.
+- VERIFICATION PASSED: `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; relaunched `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; native DOM confirmed `.ew-tour-host`, `.ew-tour-card`, `.ew-tour-halo`, step `1/8 Home Node`, enabled Skip and Start Tour, disabled Back, and no bug modal.
+- NAVIGATION VERIFIED: native CDP clicked Start Tour and reached `2/8 Companion` with a My Mait halo, then Back returned to `1/8 Home Node`; host remained open and usable.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-first-run-tour-host-2026-06-10.png`, `native-first-run-tour-host-2026-06-10.json`, `native-first-run-tour-navigation-2026-06-10.png`, and `native-first-run-tour-navigation-2026-06-10.json`.
+- BOUNDARY: this is the shell host and first verified manifest slice only. It does not launch applets, add Settings replay/reset, add 3nvizen anchors, or guide any generation/export side effects.
+
+---
+
+## 2026-06-10 01:45 SGT - First-Run Tour Architecture Lock (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: completed original visual QA manifest lane through Gener8, DAW, Vid, and 3nvizen sheets, then moved to tour architecture.
+- OODA / CONTEXT STATUS: `ShellLayout.tsx` is 1,894 lines, `main.tsx` is 52 lines, `transport.ts` is 658 lines, and `packages/ewds/src/css/components.css` is 656 lines. `ShellLayout.tsx` remains below hard ceiling but should not absorb tour engine logic.
+- ARCHITECTURE LOCKED: add `platform/everywear-os/src/tour/FirstRunTourHost.tsx` for overlay state, geometry, navigation, and preference persistence; add `platform/everywear-os/src/tour/tourManifests.ts` for verified selector/copy manifests; mount only `<FirstRunTourHost />` in `ShellLayout`.
+- PERSISTENCE LOCKED: use existing shell preference IPC through `getPreference` / `setPreference` keys `tour.firstRun.completed` and `tour.firstRun.step`. Browser fallback may use `localStorage`.
+- SELECTOR LOCKED: phase one uses verified stable selectors only: desktop applet ids, S3 folder aria label, Gener8/DAW/Vid `data-tour` anchors, Settings/Vault system buttons, and text/class selectors only for 3nvizen until anchors are added.
+- PRODUCT BOUNDARY: first tour copy must teach verified promises only: Gener8 4ever create -> Vault -> playback, S3 Library as receipt surface, Avatar Studio -> My Mait verified path, 1magen setup-safe, DAW/Vid/3nvizen as orientation surfaces with explicit blockers.
+- NEXT CODE MOVE: implement a shell-level host and initial manifest with Start/Next/Back/Skip/Done controls; do not add applet generation actions or mutate applet internals in the first slice except optional 3nvizen anchors if needed later.
+
+---
+
+## 2026-06-10 01:42 SGT - 3nvizen Offline Setup Sheet (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: continued original visual QA manifest lane after Vid; target was 3nvizen as an offline/setup tour sheet.
+- PATCH STATUS: no code patch required in this slice.
+- VERIFICATION PASSED: native Everywear OS remained live from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; desktop `button[data-applet-id="3nvizen"]` launched 3nvizen; the applet showed `OFFLINE`, LTX sidecar offline banner, Engine Offline badge, Text to Video, Image to Video, Audio to Video, Retake Soon, prompt field, duration slider, aspect-ratio select, seed field/random button, IC-LoRA conditioning placeholder, spatial upscaler placeholder, audio source dropzone, disabled Generate button, generated-video empty preview, no failed-load text, and no bug modal.
+- RUNTIME BOUNDARY CONFIRMED: `http://127.0.0.1:8787/health` refused connection, matching the visible LTX sidecar offline state.
+- TOUR ANCHOR GAP: applet-local `data-tour` anchor count is `0`; current first-run automation must use shell applet id plus visible text/class selectors until anchors are added.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-3nvizen-offline-setup-sheet-2026-06-10.png` and `native-3nvizen-offline-setup-sheet-2026-06-10.json`.
+- BOUNDARY: 3nvizen is tourable as an offline local-video setup surface, but sidecar readiness, model status/download/load, generation, progress polling, output playback/download, Save to Vault, retake, IC-LoRA, upscaling, and folder-open remain unverified.
+- NEXT ORIGINAL VISUAL QA MOVE: original tour sheets are now sufficiently manifested for the first tour architecture stage. Code should start with shell-level tour host plus stable manifest/anchor coverage, not with generation claims.
+
+---
+
+## 2026-06-10 01:39 SGT - Vid Seeded-Song Render/Export Blocker Sheet (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: continued original visual QA manifest lane after DAW; target was Vid Studio Pro with the fresh Gener8 4ever Vault MP3 as seeded input.
+- PATCH STATUS: no code patch required in this slice.
+- VERIFICATION PASSED: native Everywear OS remained live from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 Studio folder opened; `button[data-applet-id="vid"]` launched Vid Studio Pro; the song sidebar loaded 121 rows and selected `Codex QA Gener8 Smoke 2026-06-10 0114`; Visualiser rendered a preview canvas at `960x540`; no failed-load text and no bug modal appeared.
+- TOUR ANCHORS VERIFIED: Vid exposes applet-local anchors `vid.applet-root`, `vid.song-list`, `vid.subtab.visualiser`, `vid.tab.presets`, `vid.tab.style`, `vid.tab.text`, `vid.tab.effects`, `vid.tab.render`, `vid.preview`, and `vid.render-cta`.
+- RENDER SURFACE VERIFIED: Render tab exposed enabled CTA text `RENDER 540P (16:9) (WASM)` and readiness copy `WASM encoder ready`; native GPU encoder health check failed with connection refused on `127.0.0.1:9877`, so the page showed the fallback copy `Native GPU encoder unavailable... Export will use the slower in-browser encoder.`
+- BLOCKER CONFIRMED: programmatic DOM click and trusted CDP mouse click on the enabled render CTA did not start export, did not change CTA state, did not surface an error, did not create MP4/WebM output under Everywear Vault, Videos, or Downloads, and did not register a Vault video.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-vid-seeded-song-preflight-2026-06-10.png`, `native-vid-seeded-song-preflight-2026-06-10.json`, `native-vid-seeded-song-render-tab-2026-06-10.png`, `native-vid-seeded-song-render-tab-2026-06-10.json`, `native-vid-seeded-song-render-attempt-2026-06-10.png`, `native-vid-seeded-song-render-attempt-2026-06-10.json`, `native-vid-seeded-song-render-trusted-click-2026-06-10.png`, and `native-vid-seeded-song-render-trusted-click-2026-06-10.json`.
+- BOUNDARY: Vid is tourable as a selected-song visualiser with preview and render-tab orientation, but render/export completion, native encoder boot, MP4 download, shim save, and Everywear Vault video registration remain unverified and currently blocked.
+- NEXT ORIGINAL VISUAL QA MOVE: continue with 3nvizen offline/setup sheet and remaining tour manifests before first-run tour architecture/coding.
+
+---
+
+## 2026-06-10 01:26 SGT - DAW Functional Blocker Sheet (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: continued original visual QA manifest lane after the Gener8 4ever new-song Vault playback smoke; target was DAW with the fresh Vault MP3 context.
+- PATCH STATUS: no code patch required in this slice.
+- VERIFICATION PASSED: native Everywear OS remained live from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 Studio folder opened; `button[data-applet-id="daw"]` launched DAW; the active window showed DAW, `READY`, Stems, Timeline, MixLens, Lego, Complete, S3 DAW header, Load a Track, Upload Audio File, From Library, transport bar, no failed-load text, and no bug modal.
+- TOUR ANCHORS VERIFIED: DAW exposes applet-local anchors `daw.root`, `daw.tab.stems`, `daw.tab.timeline`, `daw.tab.analysis`, `daw.tab.lego`, `daw.tab.complete`, `daw.stems-panel`, `daw.load`, `daw.upload`, and `daw.library`.
+- BLOCKER CONFIRMED: DAW still reports the real functional blocker in product copy: `Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.` Current listeners show ACE on `127.0.0.1:8080`, but no Gener8 shim on `3001`.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-daw-functional-blocker-2026-06-10.png` and `native-daw-functional-blocker-2026-06-10.json`.
+- BOUNDARY: DAW is tourable as a Creator Studio stem/timeline entry surface and can teach the From Library starting point, but Pro Model verification, model download, stem extraction, timeline/mixer population from a separated track, playback, export, and Vault registration remain blocked until the local Gener8 shim is running on `localhost:3001`.
+- NEXT ORIGINAL VISUAL QA MOVE: continue with Vid seeded-song render/export, then 3nvizen offline/setup sheet and remaining tour manifests before first-run tour architecture/coding.
+
+---
+
+## 2026-06-10 01:16 SGT - Gener8 4ever New-Song Vault Playback Smoke (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: continued original visual QA functional smoke lane after 1magen runtime guard; target was Gener8 4ever generation, Vault registration, and playback for a new output.
+- PATCH STATUS: no code patch required in this slice.
+- VERIFICATION PASSED: native Everywear OS was running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; S3 Studio folder -> Gener8 4ever opened as `LIVE`; local `ace-server.exe` was running from `C:\Users\MAG MSI\.everywear\bin\ace-server\ace-server.exe` on `127.0.0.1:8080`; `/props` returned ACE model inventory and defaults.
+- NATIVE UX VERIFIED: the Create panel accepted title `Codex QA Gener8 Smoke 2026-06-10 0114` and style `short cinematic synth pulse, clean local QA smoke, warm bass, subtle drums, thirty second instrumental`; clicking Create produced a new My Workspace row and selected detail panel with Vault metadata.
+- VAULT VERIFIED: generated MP3 exists at `C:\Users\MAG MSI\Documents\Everywear Vault\Audio\Codex QA Gener8 Smoke 2026-06-10 0114-704107cff46f1960-288e4410.mp3`, length `480000` bytes, last written `2026-06-10T01:12:46+08`. Detail panel exposed `vault_id=vault-20eee1aed6eec467`, `source_app=gener8`, `library_scope=songs`, and `storage=vault_move`.
+- PLAYBACK VERIFIED: clicking the new track playback control requested `http://asset.localhost/...Codex%20QA%20Gener8%20Smoke...mp3`, WebView returned `206` with `audio/mpeg`, metadata loaded, waveform rendered, and the bottom player advanced to `0:06 / 0:30`.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-gener8-4ever-generation-preflight-2026-06-10.png`, `native-gener8-4ever-generation-preflight-2026-06-10.json`, `native-gener8-4ever-create-smoke-final-2026-06-10.png`, `native-gener8-4ever-create-smoke-final-2026-06-10.json`, `native-gener8-4ever-new-track-playback-2026-06-10.png`, and `native-gener8-4ever-new-track-playback-2026-06-10.json`.
+- BOUNDARY: this proves the native Gener8 4ever song path: create -> Vault record -> MP3 file -> asset playback. Still unverified: Pro Reference/Cover, delete persistence, search/filter correctness, pagination behavior, stale-index cleanup, DAW handoff, Vid handoff/render, and broad library mutation flows.
+- NEXT ORIGINAL VISUAL QA MOVE: continue with DAW with shim online, Vid render/export, 3nvizen/remaining applets, then manifest final tour sheets before tour architecture/coding.
+
+---
+
+## 2026-06-10 01:03 SGT - 1magen Runtime Guard Visual Fix (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: continued the original visual QA functional smoke lane after S3 Library seven-theme sweep; target was the 1magen runtime/generation guard found during native smoke.
+- FINDING BEFORE PATCH: native 1magen correctly disabled `Generate Image` while the BinaryLocal runtime handoff was not connected, but the disabled CTA still looked active, still read `Generate Image`, and the controls pane could show model recommendation/download language that implied provisioning was ready. Shell launch toasts also said `Checking requirements...` and `Downloading 3 models...` before the local engine handoff existed.
+- FIXED: `applets/1magen/src/shell/ImagenCore.tsx` now derives explicit runtime-blocked/checking action state, labels the disabled hero CTA as `Runtime Handoff Pending`, blocks provisioning while runtime commands are absent, hides recommendation/download labels during runtime-blocked state, and keeps the runtime handoff note out of the sticky action bar. `applets/1magen/src/styles/imagen.css` styles the blocked primary action and runtime note.
+- VERIFICATION PASSED: `npm run build --workspace onemagen`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; rebuilt native Everywear OS from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; opened 1magen from the desktop.
+- NATIVE UX VERIFIED: 1magen opens its workbench, badge reads `Runtime handoff pending`, hero CTA reads `Runtime Handoff Pending`, button is disabled with `imagen-primary-btn--blocked`, cursor is `not-allowed`, no bug modal appears, and no model recommendation/download label appears in the 1magen controls while the runtime bridge is absent.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-1magen-runtime-guard-layout-final-2026-06-10.png` and `native-1magen-runtime-guard-layout-final-2026-06-10.json`.
+- BOUNDARY: this is an applet-level setup-safe visual guard, not a generation/runtime bridge fix. Residual shell-level bug: global model lifecycle toasts still announce `Checking requirements...` and `Downloading 3 models...` during 1magen launch before the BinaryLocal handoff is actually connected.
+- NEXT ORIGINAL VISUAL QA MOVE: continue functional smokes in parked order: Avatar remaining debt, Gener8 4ever generation/playback/save, DAW with shim online, Vid render/export, and remaining applets; then manifest final tour sheets before tour architecture/coding.
+
+---
+
+## 2026-06-10 00:47 SGT - S3 Library Seven-Theme Sweep Verification (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- CONTINUATION POINT: returned from Avatar Studio Export to Kasai / My Mait handoff closeout to the original visual QA lane. Sean's parked order was S3 Library seven-theme sweep first, then functional smokes.
+- PATCH STATUS: no code patch required in this slice.
+- VERIFICATION PASSED: native Everywear OS was running from `target\debug\everywear-os.exe` with WebView CDP on `127.0.0.1:9223`; Settings UI selected Light, Classic, Refined, Terminal, Graphite, Anodized, and Carbon; each pass opened S3 Studio folder -> Gener8 4ever -> Library via the visible `button[title="Library"]`.
+- NATIVE UX VERIFIED: every theme showed Gener8 4ever, Everywear Vault, media counts, search, sort, filters, populated rows including `Moving to the Sun`, record tags, row sizes/dates, scroll rail, no failed-load text, and no bug modal. Pixel spot-checks on Light and Carbon showed readable rows and no obvious overlap or contrast failure.
+- ARTIFACTS: `screenshots\2026-06-09-everywear-full-tour\native-s3-library-theme-light.png`, `native-s3-library-theme-classic.png`, `native-s3-library-theme-refined.png`, `native-s3-library-theme-terminal.png`, `native-s3-library-theme-graphite.png`, `native-s3-library-theme-anodized.png`, `native-s3-library-theme-carbon.png`, and `native-s3-library-theme-sweep.json`.
+- BOUNDARY: this proves S3 Library / Everywear Vault visibility and theme readability across all seven shell themes. Playback remains proven by the earlier `Moving to the Sun (3)` native playback slice, but delete persistence, search/filter correctness, pagination behavior, stale-index cleanup, and save-to-Vault from a new generation remain separate functional QA gates.
+- NEXT ORIGINAL VISUAL QA MOVE: continue functional smokes in parked order: 1magen generation/runtime handoff, Avatar remaining debt, Gener8 4ever generation/playback/save, DAW with shim online, Vid render/export, and remaining applets.
+
+---
 
 ## 2026-06-09 14:38 SGT - Avatar Studio Export to Kasai / My Mait Handoff Verification (Codex)
 

@@ -83,3 +83,5 @@ npm-debug.log*
 
 # Cowork temp archives
 /zi??????
+
+/ARCH_REPORT_*.md

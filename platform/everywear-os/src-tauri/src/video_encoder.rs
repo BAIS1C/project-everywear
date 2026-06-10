@@ -202,6 +202,8 @@ fn find_encoder_entry() -> Result<PathBuf> {
     let candidates = [
         "sidecar/video-encoder/dist/index.js",
         "src-tauri/sidecar/video-encoder/dist/index.js",
+        // Everywear monorepo root dev launch path
+        "platform/everywear-os/src-tauri/sidecar/video-encoder/dist/index.js",
         // Monorepo: sidecar lives in the Gener8 applet tree during dev
         "../../applets/gener8/src-tauri/sidecar/video-encoder/dist/index.js",
         "../applets/gener8/src-tauri/sidecar/video-encoder/dist/index.js",
@@ -241,6 +243,7 @@ fn find_node() -> Result<PathBuf> {
     let dev_candidates = [
         "resources/node.exe",
         "src-tauri/resources/node.exe",
+        "platform/everywear-os/src-tauri/resources/node.exe",
         "../resources/node.exe",
         // Monorepo dev: node.exe in Gener8's tree
         "../../applets/gener8/src-tauri/resources/node.exe",
