@@ -80,7 +80,7 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
   // ── Idle ──
   if (state.kind === "idle") {
     return (
-      <div className="tv-preview tv-preview--idle">
+      <div className="tv-preview tv-preview--idle" data-tour="3nvizen.preview">
         <div className="tv-preview__empty">
           <div className="tv-preview__empty-icon">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,7 +106,7 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
       : null;
 
     return (
-      <div className="tv-preview tv-preview--generating">
+      <div className="tv-preview tv-preview--generating" data-tour="3nvizen.preview">
         <div className="tv-preview__progress-wrap">
           {/* Phase */}
           <div className="tv-preview__progress-row">
@@ -163,7 +163,7 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
     const videoSrc = getVideoSrc(state.outputPath);
 
     return (
-      <div className="tv-preview tv-preview--done">
+      <div className="tv-preview tv-preview--done" data-tour="3nvizen.preview">
         <video
           className="tv-preview__video"
           src={videoSrc}
@@ -215,7 +215,7 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
   // ── Error ──
   if (state.kind === "error") {
     return (
-      <div className="tv-preview tv-preview--error">
+      <div className="tv-preview tv-preview--error" data-tour="3nvizen.preview">
         <div className="tv-preview__error-banner">
           <div className="tv-preview__error-message">{state.message}</div>
           <button className="tv-btn tv-btn--primary" onClick={onRetry}>

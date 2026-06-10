@@ -202,7 +202,7 @@ export default function ThreevizenCore({ skin, mode: shellMode }: ThreevizenCore
   }, []);
 
   return (
-    <div className="tv-workbench" data-skin={skin}>
+    <div className="tv-workbench" data-skin={skin} data-tour="3nvizen.root">
       {/* Offline banner */}
       {!online && (
         <div className="tv-offline-banner">

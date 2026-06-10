@@ -379,7 +379,12 @@ impl AppletRegistry {
                 description: "AI video generation with Wan 2.2 and LTX".into(),
                 version: "0.1.0".into(),
                 icon: "3nvizen".into(),
-                status: AppletStatus::NotBuilt,
+                // 2026-06-10: was NotBuilt, which made native list_applets
+                // hide 3nvizen while the browser entitlement fallback showed
+                // it Active/Locked (registry drift, CONTEXT 2026-06-07). The
+                // frontend exists on port 3004 and native QA opened it
+                // 2026-06-10; entitlement/tier gates still apply.
+                status: AppletStatus::Active,
                 launch_kind: AppletLaunchKind::BinaryLocal,
                 engine_type: "diffusion".into(),
                 min_vram_mb: 12288,

@@ -59,6 +59,11 @@ const S3_FOLDER_ORDER = ['gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'da
 const S3_SUITE_APPLET_IDS = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw']);
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
 const LOCAL_MODEL_APPLET_IDS = new Set(['1magen', 'gener8-4ever', 'gener8-pro', 'ai-director', 'daw', '3nvizen', 'kasai']);
+// Applets whose models are provisioned by their OWN runtime (onemagen binary,
+// LTX sidecar), not by the shell pipeline. Shell-side "preparing model" copy
+// for these promises work the shell does not do (the "Downloading 3 models"
+// ghost, WIKI v1.1.57). The LifecycleHud reports actual stages instead.
+const RUNTIME_OWNED_MODEL_APPLET_IDS = new Set(['1magen', '3nvizen']);
 const GENER8_SHARED_ENGINE_APPLET_IDS = new Set(['gener8-4ever', 'gener8-pro', 'ai-director', 'daw']);
 const TIER_RANK: Record<string, number> = {
   demo: 0,
@@ -1381,7 +1386,7 @@ export function ShellLayout() {
     markAppletOpening(applet);
     refreshRuntimeReadouts();
 
-    if (usesLocalModelLifecycle(applet)) {
+    if (usesLocalModelLifecycle(applet) && !RUNTIME_OWNED_MODEL_APPLET_IDS.has(applet.id)) {
       showToast({
         kind: 'info',
         eyebrow: 'Everywear · model lifecycle',

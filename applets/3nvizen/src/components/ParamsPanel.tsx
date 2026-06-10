@@ -96,6 +96,7 @@ export function ParamsPanel({
         <label className="tv-field__label">Prompt</label>
         <textarea
           className="tv-textarea"
+          data-tour="3nvizen.prompt"
           value={params.prompt}
           onChange={(e) => update({ prompt: e.target.value })}
           placeholder="Describe the video you want to create..."
@@ -143,6 +144,7 @@ export function ParamsPanel({
         <input
           type="range"
           className="tv-range"
+          data-tour="3nvizen.duration"
           min={2}
           max={10}
           step={0.5}
@@ -157,6 +159,7 @@ export function ParamsPanel({
         <label className="tv-field__label">Aspect Ratio</label>
         <select
           className="tv-select"
+          data-tour="3nvizen.aspect"
           value={params.aspectIndex}
           onChange={(e) => update({ aspectIndex: parseInt(e.target.value, 10) })}
           disabled={generating}
@@ -174,6 +177,7 @@ export function ParamsPanel({
           <input
             type="text"
             className="tv-input"
+            data-tour="3nvizen.seed"
             value={params.seed}
             onChange={(e) => update({ seed: e.target.value })}
             placeholder="Random"
@@ -295,7 +299,7 @@ export function ParamsPanel({
       )}
 
       {/* Generate / Cancel button */}
-      <div className="tv-action-bar">
+      <div className="tv-action-bar" data-tour="3nvizen.generate">
         {generating ? (
           <button
             className="tv-btn tv-btn--danger tv-btn--hero"

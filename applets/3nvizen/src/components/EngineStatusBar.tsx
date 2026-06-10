@@ -79,7 +79,7 @@ export function EngineStatusBar({ online }: EngineStatusBarProps) {
   const models = modelStatus?.models ?? [];
 
   return (
-    <div className="tv-engine-bar">
+    <div className="tv-engine-bar" data-tour="3nvizen.engine-status">
       {/* GPU Badge */}
       <div className="tv-engine-bar__gpu">
         {!online ? (
