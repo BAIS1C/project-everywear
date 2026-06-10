@@ -1,8 +1,35 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.65
-Last updated: 2026-06-10 (punch-list wave 1: render visibility, VRAM cleanup, 3nvizen reconcile, announcer gate)
+Version: 1.1.66
+Last updated: 2026-06-10 (punch-list wave 2: engine health prober, sidecar Phase 2, download consolidation)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.66: punch-list wave 2 landed
+> (sandbox TS-verified; native cargo verify owed, includes a NEW dependency
+> `zip = 2.4` in src-tauri Cargo.toml). Three changes: (1) Engine health
+> slice 1: new module `platform/everywear-os/src-tauri/src/engine_health.rs`
+> sweeps the known engine ports (ace 8080 /props, LTX 8787 /health,
+> video-encoder 9877 /health, and the phantom DAW Gener8 shim on 3001,
+> reported honestly as down) every 10s with a 2s timeout and emits one
+> `engine-health` event; spawned from a new `.setup()` hook in lib.rs.
+> Consumers migrate in slice 2; the static seed moves to manifest-driven
+> registration in slice 3. Do not add engine ports anywhere else.
+> (2) Sidecar URL provisioning Phase 2: `provision_sidecar` is now async
+> and `provision_sidecar_from_url` in launcher.rs implements resumable
+> archive download (model-manager machinery), zip-slip-safe extraction,
+> executable SHA256 verification against `[engine.sidecar].sha256`
+> (warn-and-install when the manifest omits it), staging under
+> `~/.everywear/bin/.staging/`, and a clear-then-rename swap into
+> `~/.everywear/bin/<name>/`. Progress rides the contract-v2 events, so
+> engine downloads render in the Lifecycle HUD. The launcher.rs:563 TODO
+> stub is gone. (3) Download path consolidation: educ8 keeps its legacy
+> `educ8-download-progress` event for its inline UI and now mirrors every
+> update onto the shared `download-progress` bus (session educ8-<pack>),
+> so the HUD sees Educ8 resource downloads; 1magen is left alone by design
+> (separate binary, events stay in its own webview, already shares the
+> model-manager crate). LifecycleHud gained an all-rows-done auto-settle
+> (1.5s quiet + 4s hide) so standalone sessions without a Ready stage do
+> not pin the HUD open.
 
 > Current-state note, 2026-06-10 v1.1.65: punch-list wave 1 landed
 > (sandbox TS-verified across everywear-os, video-modal, 3nvizen; native

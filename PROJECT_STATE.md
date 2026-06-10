@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T09:51+08 SGT (Claude Cowork: punch-list wave 1).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T10:24+08 SGT (Claude Cowork: punch-list wave 2).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 10:24 SGT - Punch-List Wave 2 (Claude Cowork)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- ADDED: `engine_health.rs` (single prober, `engine-health` event, honest-down reporting of the DAW 3001 phantom; spawned via new lib.rs `.setup()` hook). Port literals must now only be added to KNOWN_ENDPOINTS.
+- IMPLEMENTED: sidecar URL provisioning Phase 2 (`provision_sidecar_from_url`): resumable download -> zip-slip-safe extract -> exe SHA256 verify -> staging + clear-then-rename swap; HUD progress via contract-v2 events; launcher.rs TODO stub removed; `provision_sidecar` now async (call site updated). NEW DEP: zip 2.4 (deflate only) in src-tauri Cargo.toml.
+- CONSOLIDATED: educ8 downloads mirror onto the `download-progress` v2 bus (legacy event kept for its inline UI); 1magen untouched by design (separate binary, own webview bus, already on model-manager crate). LifecycleHud auto-settles standalone sessions (all rows done, 1.5s quiet -> done -> 4s hide).
+- VERIFICATION PASSED: tsc --noEmit clean (everywear-os).
+- OWED: cargo check -p everywear-os (new zip dep compiles here), native sweep watch (engine-health event in devtools), a real source_url sidecar pull test when a CI archive exists. Remaining list: engine-health consumer migration (slice 2), llama-server migration, video-modal split execution (promptpack filed).
+
+---
 
 ## 2026-06-10 09:51 SGT - Punch-List Wave 1 (Claude Cowork, parallel scouts + single writer)
 
