@@ -1722,16 +1722,46 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
       .replace(/\s*\((reference|cover)\)/gi, '')
       .replace(/\s*\(\d+\)\s*$/, '')
       .trim();
-    let saveRes: Response;
+    let saveRes: Response | null = null;
+    let saveData: { path?: string; file_path?: string; size?: number; size_bytes?: number; file_size_bytes?: number } | null = null;
+    let vaultAlreadyRegistered = false;
     if (gpuSaveMode === 'save-from-encoder') {
       const encoderSessionId = downloadUrl.split('/').filter(Boolean).pop();
       if (!encoderSessionId) {
         throw new Error('Encoder did not return a usable download session.');
       }
-      saveRes = await fetch(
-        `${apiBase}/api/video/save-from-encoder?session_id=${encodeURIComponent(encoderSessionId)}&title=${encodeURIComponent(videoTitle)}`,
-        { method: 'POST' }
-      );
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const vaultItem = await invoke<{
+          file_path?: string;
+          file_size_bytes?: number;
+        }>('vault_register_video_from_encoder', {
+          sessionId: encoderSessionId,
+          title: videoTitle,
+          durationSeconds: typeof song.duration === 'number' ? song.duration : undefined,
+          width: renderRes.w,
+          height: renderRes.h,
+          frameRate: 24,
+          generationMode: 'video_visualizer',
+          prompt: song.title,
+          hasAudio: true,
+          tags: [vaultTag, 'video', 'gpu-encode'],
+          sourceAppId: vaultTag,
+          appletScope: vaultTag,
+          libraryScope: 'videos',
+        });
+        saveData = {
+          path: vaultItem.file_path,
+          size_bytes: vaultItem.file_size_bytes,
+        };
+        vaultAlreadyRegistered = true;
+      } catch (nativeSaveErr) {
+        console.warn('[GPU Encode] Native encoder-to-vault save unavailable, falling back to legacy API:', nativeSaveErr);
+        saveRes = await fetch(
+          `${apiBase}/api/video/save-from-encoder?session_id=${encodeURIComponent(encoderSessionId)}&title=${encodeURIComponent(videoTitle)}`,
+          { method: 'POST' }
+        );
+      }
     } else {
       const mp4Response = await fetch(`http://127.0.0.1:9877${downloadUrl}`);
       const mp4Blob = await mp4Response.blob();
@@ -1740,21 +1770,25 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
         { method: 'POST', body: mp4Blob, headers: { 'Content-Type': 'video/mp4' } }
       );
     }
-    if (!saveRes.ok) {
+    if (!saveData && saveRes && !saveRes.ok) {
       const errText = await saveRes.text();
       console.error('[GPU Encode] Save failed:', errText);
       showToast({ kind: 'error', message: 'Video save failed. Check disk space.' });
     } else {
-      const saveData = await saveRes.json();
-      console.log(`[GPU Encode] Saved to: ${saveData.path} (${saveData.size_bytes} bytes)`);
-      const sizeMb = (saveData.size_bytes / (1024 * 1024)).toFixed(1);
+      if (!saveData && saveRes) {
+        saveData = await saveRes.json();
+      }
+      const savedPath = saveData?.path ?? saveData?.file_path;
+      const sizeBytes = saveData?.size_bytes ?? saveData?.file_size_bytes ?? saveData?.size ?? 0;
+      console.log(`[GPU Encode] Saved to: ${savedPath} (${sizeBytes} bytes)`);
+      const sizeMb = (sizeBytes / (1024 * 1024)).toFixed(1);
       showToast({ kind: 'success', message: `Video saved (${sizeMb} MB) → Videos/Strands Sound Studio`, durationMs: 5000 });
 
       // Register with Everywear Vault
       try {
-        await registerVideo?.({
+        if (!vaultAlreadyRegistered && savedPath) await registerVideo?.({
           title: videoTitle,
-          filePath: saveData.path,
+          filePath: savedPath,
           durationSeconds: typeof song.duration === 'number' ? song.duration : undefined,
           tags: [vaultTag, 'video', 'gpu-encode'],
         });

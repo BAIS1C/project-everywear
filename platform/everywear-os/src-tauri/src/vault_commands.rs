@@ -521,6 +521,102 @@ pub async fn vault_register_video(
     )
 }
 
+// CLAUDE_INTERFACE: Register a completed video-encoder session into vault
+// Command: "vault_register_video_from_encoder"
+// Args: { session_id: string, title: string, duration_seconds?: number, width?: number, height?: number, frame_rate?: number, model_id?: string, generation_mode?: string, prompt?: string, has_audio?: boolean, tags?: string[] }
+// Returns: VaultItem
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub async fn vault_register_video_from_encoder(
+    session_id: String,
+    title: String,
+    duration_seconds: Option<f64>,
+    width: Option<u64>,
+    height: Option<u64>,
+    frame_rate: Option<f64>,
+    model_id: Option<String>,
+    generation_mode: Option<String>,
+    prompt: Option<String>,
+    has_audio: Option<bool>,
+    tags: Vec<String>,
+    source_app_id: Option<String>,
+    vault_id: Option<String>,
+    storage_mode: Option<String>,
+    applet_scope: Option<String>,
+    library_scope: Option<String>,
+    vault: State<'_, VaultState>,
+    app_state: State<'_, AppState>,
+) -> Result<VaultItem, String> {
+    let session_id = session_id.trim();
+    if session_id.is_empty()
+        || !session_id
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-')
+    {
+        return Err("invalid video encoder session id".into());
+    }
+
+    let response = reqwest::get(format!("http://127.0.0.1:9877/download/{session_id}"))
+        .await
+        .map_err(|e| format!("failed to fetch encoder output: {e}"))?;
+    let status = response.status();
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!(
+            "encoder output fetch failed with HTTP {status}: {body}"
+        ));
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("failed to read encoder output: {e}"))?;
+    if bytes.is_empty() {
+        return Err("encoder output was empty".into());
+    }
+
+    let temp_path = std::env::temp_dir().join(format!(
+        "everywear-encoder-{}-{}.mp4",
+        now_timestamp(),
+        Uuid::new_v4()
+    ));
+    tokio::fs::write(&temp_path, &bytes)
+        .await
+        .map_err(|e| format!("failed to stage encoder output: {e}"))?;
+
+    let dirs = VaultDirs::default_paths()?;
+    let context = RegistrationContext::from_request(
+        app_state.inner(),
+        source_app_id,
+        vault_id,
+        storage_mode,
+        applet_scope,
+        library_scope,
+        "vid",
+        "videos",
+    );
+    let vault = vault.lock().await;
+    let result = register_video_with_dirs(
+        &vault,
+        &dirs,
+        &context,
+        title,
+        temp_path.clone(),
+        duration_seconds.unwrap_or_default(),
+        width.unwrap_or_default(),
+        height.unwrap_or_default(),
+        frame_rate.unwrap_or_default(),
+        model_id,
+        generation_mode,
+        prompt,
+        has_audio.unwrap_or(false),
+        tags,
+    );
+    if result.is_err() {
+        let _ = tokio::fs::remove_file(&temp_path).await;
+    }
+    result
+}
+
 fn parse_media_filter(value: Option<&str>) -> Result<MediaFilter, String> {
     match value.unwrap_or("all").to_ascii_lowercase().as_str() {
         "all" => Ok(MediaFilter::All),

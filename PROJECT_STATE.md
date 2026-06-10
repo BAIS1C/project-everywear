@@ -1,8 +1,23 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T15:47+08 SGT (Codex: Phase 1 P1/P2 proof pass).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:17+08 SGT (Codex: Phase 1 P3 Vid GPU save fix).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:17 SGT - Phase 1 P3 Vid GPU Encoder-to-Vault Save Fix (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- P3 SIDECAR-DOWN VERDICT: PARTIAL. With video-encoder down, Vid showed the WASM CTA and failed visibly with `Rendering failed: Failed to execute 'drawImage'... broken state.. Nothing was saved.` This satisfies no-silent-no-op, but WASM export completion remains broken.
+- P3 SIDECAR-UP INITIAL VERDICT: FAIL. With manual NVENC encoder healthy on 9877, Vid showed `RENDER 540P (16:9) (GPU)`, streamed 1440 frames, and the sidecar completed a 29.9MB MP4 in 5.5s, but the UI failed post-encode with `Rendering failed: Failed to fetch. Nothing was saved.`
+- ROOT CAUSE: post-encode save still depended on the legacy Gener8 shim API at 3001 while shell engine health honestly reports `gener8-shim` down. Encoder health, frame rendering, and NVENC were not the failing layer.
+- FIXED: `platform/everywear-os/src-tauri/src/vault_commands.rs` added `vault_register_video_from_encoder`, which validates an encoder session id, pulls `/download/{session}` from the local encoder, stages the MP4, and registers it through the existing Vault video path. `platform/everywear-os/src-tauri/src/lib.rs` registers the command. `packages/video-modal/src/components/VideoGeneratorModal.tsx` now uses that native save path for GPU `save-from-encoder` and skips duplicate wrapper registration when the shell already registered the video.
+- P3 POSTFIX VERDICT: PASS for GPU export + Vault registration. Native replay showed `video-encoder` online, `gener8-shim` still down, Vid rendered through GPU, UI displayed `Video saved (14.9 MB) -> Videos/Strands Sound Studio`, wrote `C:\Users\MAG MSI\Documents\Everywear Vault\Videos\everywear-encoder-1781079328-0f8d630d-14b7-4913-8456-4657598e7de0.mp4` at 15,636,134 bytes, and `vault_search(mediaFilter=videos)` indexed it as a 960x540 / 24fps video item with SHA256 `0d6b17b16a57d01cdf22bf079c80578d8f80beee082efd4b9fc282fa164c31e1`.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/video-modal`; `npm run build --workspace everywear-os`; `cargo check -p everywear-os`; `cargo build -p everywear-os`; native CDP Vid GPU export replay.
+- RECEIPTS: `screenshots/2026-06-10-proof-pass/p3-vid-sidecar-down-wasm-result.json`, `p3-vid-sidecar-up-gpu-result.json`, `p3-vid-gpu-postfix-result.json`, `p3-vid-gpu-postfix-vault-search.json`, and paired screenshots.
+- REMAINING P3 DEBT: shell `request_video_encoder` previously returned `{ ok: true, value: 9877 }` without leaving a listener on 9877. The passing replay kept the already-running manual encoder on 9877, so shell-owned encoder start still needs its own bug-hunt slice.
+
+---
 
 ## 2026-06-10 15:47 SGT - Phase 1 Proof Pass P1/P2 (Codex)
 

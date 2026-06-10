@@ -1,8 +1,29 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.67
-Last updated: 2026-06-10 (punch-list lane A: engine-health consumer migration)
+Version: 1.1.68
+Last updated: 2026-06-10 (Vid GPU encoder-to-Vault save path)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.68: Vid GPU export save path is now
+> shell-owned after native proof exposed the post-encode failure. The encoder
+> sidecar completed a 960x540 NVENC MP4, but `VideoGeneratorModal` failed with
+> `Failed to fetch` because the post-encode save still depended on the legacy
+> Gener8 shim API at port 3001 while shell engine health correctly reports
+> `gener8-shim` down. `platform/everywear-os/src-tauri/src/vault_commands.rs`
+> now exposes `vault_register_video_from_encoder`: it validates an encoder
+> session id, pulls `http://127.0.0.1:9877/download/{session}`, stages the MP4
+> to temp, and feeds it through the existing Vault video registration path.
+> `packages/video-modal/src/components/VideoGeneratorModal.tsx` uses that
+> native command for `save-from-encoder`, skips duplicate wrapper registration
+> when the shell already registered the item, and leaves the old shim save API
+> only as fallback. Verification passed: `npm run build --workspace
+> @everywear/video-modal`, `npm run build --workspace everywear-os`,
+> `cargo check -p everywear-os`, `cargo build -p everywear-os`, native Vid GPU
+> render through CDP, UI success toast, MP4 at `Documents\Everywear
+> Vault\Videos`, and `vault_search(mediaFilter=videos)` indexing the new
+> 960x540 / 24fps item. Remaining P3 debt: shell `request_video_encoder`
+> still returned a port without producing a listener in the earlier proof; the
+> passing save-path replay used the already-running manual encoder on 9877.
 
 > Current-state note, 2026-06-10 v1.1.67: punch-list Lane A landed.
 > `platform/everywear-os/src/shell/ShellLayout.tsx` now listens once to the

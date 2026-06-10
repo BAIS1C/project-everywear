@@ -1618,6 +1618,7 @@ pub fn run() {
             vault_commands::vault_register_image,
             vault_commands::vault_register_audio,
             vault_commands::vault_register_video,
+            vault_commands::vault_register_video_from_encoder,
             // MAIT bridge
             mait_bridge::kasai_load_avatar_manifest,
             // Platform
