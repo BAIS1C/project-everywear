@@ -1,8 +1,20 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:17+08 SGT (Codex: Phase 1 P3 Vid GPU save fix).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:23+08 SGT (Codex: Phase 1 P4 VRAM release proof).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:23 SGT - Phase 1 P4 BinaryLocal VRAM Release Proof (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- P4 VERDICT: PASS. My Mait / `kasai` was used as the BinaryLocal target. Baseline `get_vram_budget` showed no allocations and `get_active_applet` returned null.
+- PROVEN: Each of three `request_applet_switch("kasai")` launches allocated the same two budget rows: `kasai-orchestrator-qwen3-6-35b-a3b-q4km` as Primary at 20,500MB and `kasai-agent-qwen3-5-9b-q4km` as Encoder at 5,400MB, with `active_applet = kasai`.
+- PROVEN: killing the exact child PIDs (`everywear-kasai.exe`) emitted `applet-webview-closed { applet_id: "kasai" }`, cleared `active_applet`, emptied `get_vram_budget().allocations`, and left no remaining `everywear-kasai` process. Repeated x3 with no reservation stacking.
+- RECEIPTS: `screenshots/2026-06-10-proof-pass/p4-vram-baseline.json`, `p4-kasai-launch-1.json`, `p4-kasai-kill-1.json`, `p4-kasai-kill-cycles-2-3.json`, plus `p4-kasai-after-kill-1.png`, `p4-kasai-launch-2.png`, `p4-kasai-after-kill-2.png`, `p4-kasai-launch-3.png`, `p4-kasai-after-kill-3.png`.
+- PHASE 1 STATUS: P1 remains blocked pending safe seeded provisioning replay or approved cache mutation; P2 passed; P3 GPU save + Vault registration passed after native save-path fix, with shell encoder boot debt still open; P4 passed.
+
+---
 
 ## 2026-06-10 16:17 SGT - Phase 1 P3 Vid GPU Encoder-to-Vault Save Fix (Codex)
 

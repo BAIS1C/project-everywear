@@ -1,8 +1,23 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.68
-Last updated: 2026-06-10 (Vid GPU encoder-to-Vault save path)
+Version: 1.1.69
+Last updated: 2026-06-10 (P4 BinaryLocal VRAM release proof)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
+> passed against My Mait / kasai. Baseline budget had no allocations and
+> `active_applet = null`. Each of three `request_applet_switch("kasai")`
+> launches recorded the same two ledger rows: primary
+> `kasai-orchestrator-qwen3-6-35b-a3b-q4km` at 20500MB and encoder
+> `kasai-agent-qwen3-5-9b-q4km` at 5400MB, with `active_applet = kasai`.
+> Killing the exact `everywear-kasai.exe` child process emitted
+> `applet-webview-closed { applet_id: "kasai" }`, removed the process, cleared
+> `active_applet`, and returned `get_vram_budget().allocations` to empty each
+> time. No reservation stacking reproduced over three launch/kill cycles.
+> Receipts live under `screenshots/2026-06-10-proof-pass/` as
+> `p4-vram-baseline.json`, `p4-kasai-launch-1.json`,
+> `p4-kasai-kill-1.json`, and `p4-kasai-kill-cycles-2-3.json` with paired
+> screenshots.
 
 > Current-state note, 2026-06-10 v1.1.68: Vid GPU export save path is now
 > shell-owned after native proof exposed the post-encode failure. The encoder
