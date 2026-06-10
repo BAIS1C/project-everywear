@@ -331,6 +331,21 @@ async fn download_resource(
                         pct,
                     },
                 );
+                // Mirror onto the shared contract-v2 bus so the shell
+                // Lifecycle HUD shows Educ8 resource downloads too (download
+                // path consolidation, 2026-06-10). The legacy event above
+                // stays for Educ8Core's inline progress UI.
+                let _ = app.emit(
+                    "download-progress",
+                    serde_json::json!({
+                        "session_id": format!("educ8-{pack_id}"),
+                        "applet_id": "educ8",
+                        "model_key": resource.id.clone(),
+                        "downloaded": downloaded,
+                        "total": total,
+                        "pct": pct,
+                    }),
+                );
             }
         }
     }

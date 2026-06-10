@@ -282,6 +282,29 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
     };
   }, [clearHideTimer]);
 
+  // Standalone download sessions (e.g. educ8 resources, sidecar pulls that
+  // finish without a switch Ready stage) have nothing to close them: when
+  // every row is done and no stage event interrupts for 1.5s, settle to done
+  // and auto-hide.
+  useEffect(() => {
+    if (!hud.visible || hud.status !== 'active' || hud.rows.length === 0) return;
+    if (!hud.rows.every((row) => row.done)) return;
+    const settle = setTimeout(() => {
+      setHud((prev) => {
+        if (!prev.visible || prev.status !== 'active' || prev.rows.length === 0) return prev;
+        if (!prev.rows.every((row) => row.done)) return prev;
+        return { ...prev, status: 'done' };
+      });
+      hideTimerRef.current = setTimeout(() => {
+        ratesRef.current.clear();
+        setHud(IDLE_STATE);
+        setCollapsed(false);
+        hideTimerRef.current = null;
+      }, 4000);
+    }, 1500);
+    return () => clearTimeout(settle);
+  }, [hud]);
+
   const appletLabel = useMemo(() => {
     if (!hud.appletId) return null;
     return appletNames?.[hud.appletId] ?? hud.appletId;
