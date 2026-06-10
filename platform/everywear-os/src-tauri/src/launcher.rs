@@ -519,7 +519,12 @@ pub async fn provision_models(
 ///   2. `source_dir` exists on disk (local build): copy bundle
 ///   3. `source_url` provided: download and extract (TODO: Phase 2)
 ///   4. Error: cannot provision
-pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
+pub async fn provision_sidecar(
+    app: &tauri::AppHandle,
+    manifest: &AppletManifest,
+    session_id: &str,
+    applet_id: &str,
+) -> Result<()> {
     // Only relevant for server-backend applets with a sidecar declaration
     if manifest.engine.backend != "server" {
         return Ok(());
@@ -641,15 +646,19 @@ pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
         }
     }
 
-    // 3. Download from URL (Phase 2)
-    if let Some(ref _url) = sidecar.source_url {
-        // TODO: download archive, extract, verify SHA256
-        anyhow::bail!(
-            "Sidecar download not yet implemented. \
-             Expected {} at {} or a valid source_dir.",
-            sidecar.executable,
-            exe_target.display()
-        );
+    // 3. Download from URL (Phase 2, implemented 2026-06-10)
+    if let Some(ref url) = sidecar.source_url {
+        return provision_sidecar_from_url(
+            app,
+            sidecar,
+            url,
+            bundle_name,
+            &target_dir,
+            &exe_target,
+            session_id,
+            applet_id,
+        )
+        .await;
     }
 
     anyhow::bail!(
@@ -659,6 +668,184 @@ pub fn provision_sidecar(manifest: &AppletManifest) -> Result<()> {
         sidecar.executable,
         exe_target.display()
     )
+}
+
+/// Phase 2 (2026-06-10): download a sidecar release archive, verify, and
+/// atomically install it into `~/.everywear/bin/<name>/`.
+///
+/// Flow: resumable download to staging -> zip extract (slip-safe) -> locate
+/// executable (archive root or one subdir deep) -> verify its SHA256 against
+/// `[engine.sidecar].sha256` (warn-and-install if the manifest omits it,
+/// dev mode) -> clear target dir -> rename staged bundle into place. The
+/// sidecar is never running at provisioning time (step 5c precedes launch),
+/// so clearing the target is safe. Progress rides the contract-v2 events so
+/// the Lifecycle HUD shows engine downloads alongside model downloads.
+#[allow(clippy::too_many_arguments)]
+async fn provision_sidecar_from_url(
+    app: &tauri::AppHandle,
+    sidecar: &model_manager::manifest::SidecarBundle,
+    url: &str,
+    bundle_name: &str,
+    target_dir: &PathBuf,
+    exe_target: &PathBuf,
+    session_id: &str,
+    applet_id: &str,
+) -> Result<()> {
+    let staging_root = everywear_paths::bin_dir().join(".staging");
+    std::fs::create_dir_all(&staging_root)
+        .with_context(|| format!("failed to create staging dir {}", staging_root.display()))?;
+    let stamp = uuid::Uuid::new_v4().simple().to_string();
+    let archive_path = staging_root.join(format!("{bundle_name}-{stamp}.zip"));
+    let extract_dir = staging_root.join(format!("{bundle_name}-{stamp}"));
+
+    // Preflight manifest row so the Lifecycle HUD renders the engine download.
+    let engine_key = format!("engine:{bundle_name}");
+    let _ = app.emit(
+        "provision-manifest",
+        &ProvisionManifestPayload {
+            session_id: session_id.to_string(),
+            applet_id: applet_id.to_string(),
+            models: vec![ModelDownloadInfo {
+                key: engine_key.clone(),
+                name: format!("{bundle_name} engine"),
+                size_bytes: 0,
+            }],
+            total_bytes: 0,
+        },
+    );
+
+    // Download the archive (resumable). The manifest sha256 covers the
+    // primary executable, not the archive, so archive-level verify is
+    // skipped and the executable is verified after extraction.
+    let app_handle = app.clone();
+    let sid = session_id.to_string();
+    let aid = applet_id.to_string();
+    let progress_key = engine_key.clone();
+    model_manager::download::download_with_resume_and_progress(
+        url,
+        &archive_path,
+        &progress_key,
+        "",
+        move |progress| {
+            let _ = app_handle.emit(
+                "download-progress",
+                &DownloadProgressV2 {
+                    session_id: sid.clone(),
+                    applet_id: aid.clone(),
+                    model_index: 1,
+                    model_count: 1,
+                    progress,
+                },
+            );
+        },
+    )
+    .await
+    .with_context(|| format!("failed to download sidecar archive from {url}"))?;
+
+    // Extract + locate + verify on a blocking thread.
+    let exe_name = sidecar.executable.clone();
+    let expected_sha = sidecar.sha256.clone();
+    let archive_for_block = archive_path.clone();
+    let extract_for_block = extract_dir.clone();
+    let bundle_root = tokio::task::spawn_blocking(move || -> Result<PathBuf> {
+        let file = std::fs::File::open(&archive_for_block)
+            .with_context(|| format!("failed to open {}", archive_for_block.display()))?;
+        let mut archive =
+            zip::ZipArchive::new(file).context("sidecar archive is not a valid zip")?;
+        for i in 0..archive.len() {
+            let mut entry = archive.by_index(i)?;
+            let Some(rel_path) = entry.enclosed_name().map(PathBuf::from) else {
+                continue; // zip-slip / absolute path: skip hostile entries
+            };
+            let out_path = extract_for_block.join(rel_path);
+            if entry.is_dir() {
+                std::fs::create_dir_all(&out_path)?;
+                continue;
+            }
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let mut out_file = std::fs::File::create(&out_path)?;
+            std::io::copy(&mut entry, &mut out_file)?;
+        }
+
+        // Locate the executable: archive root first, then one subdir deep.
+        let direct = extract_for_block.join(&exe_name);
+        let exe_path = if direct.exists() {
+            direct
+        } else {
+            let mut found = None;
+            for dir_entry in std::fs::read_dir(&extract_for_block)? {
+                let path = dir_entry?.path();
+                if path.is_dir() && path.join(&exe_name).exists() {
+                    found = Some(path.join(&exe_name));
+                    break;
+                }
+            }
+            found.with_context(|| {
+                format!(
+                    "sidecar archive does not contain {exe_name} at root or one level deep"
+                )
+            })?
+        };
+
+        // Integrity: verify the primary executable against the manifest hash.
+        match expected_sha {
+            Some(expected) if !expected.is_empty() => {
+                let actual = model_manager::verify::sha256_file(&exe_path)?;
+                if !actual.eq_ignore_ascii_case(&expected) {
+                    anyhow::bail!(
+                        "sidecar executable SHA256 mismatch: expected {expected}, got {actual}"
+                    );
+                }
+            }
+            _ => {
+                warn!(
+                    executable = %exe_path.display(),
+                    "Sidecar manifest declares no sha256; installing UNVERIFIED (dev mode)"
+                );
+            }
+        }
+
+        Ok(exe_path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or(extract_for_block))
+    })
+    .await
+    .context("sidecar extract task panicked")??;
+
+    // Swap into place: clear the (pre-created, possibly empty) target dir,
+    // then rename the staged bundle in.
+    if target_dir.exists() {
+        std::fs::remove_dir_all(target_dir)
+            .with_context(|| format!("failed to clear {}", target_dir.display()))?;
+    }
+    std::fs::rename(&bundle_root, target_dir).with_context(|| {
+        format!(
+            "failed to move staged sidecar {} -> {}",
+            bundle_root.display(),
+            target_dir.display()
+        )
+    })?;
+
+    // Cleanup staging leftovers (best effort).
+    let _ = std::fs::remove_file(&archive_path);
+    let _ = std::fs::remove_dir_all(&extract_dir);
+
+    if !exe_target.exists() {
+        anyhow::bail!(
+            "sidecar install completed but {} is missing",
+            exe_target.display()
+        );
+    }
+    info!(
+        sidecar = bundle_name,
+        version = sidecar.version.as_deref().unwrap_or("unversioned"),
+        path = %exe_target.display(),
+        "Sidecar provisioned from URL"
+    );
+    Ok(())
 }
 
 fn discover_ace_server_binary(executable: &str) -> Option<PathBuf> {
