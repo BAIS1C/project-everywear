@@ -284,11 +284,29 @@ body[data-skin="carbon"] .imagen-output__meta span {
   box-shadow: 0 16px 30px color-mix(in oklab, var(--ew-primary) 28%, transparent);
 }
 
+.imagen-primary-btn--blocked {
+  background: color-mix(in oklab, var(--ew-surface-sunken) 72%, var(--ew-warning));
+  color: var(--ew-text-muted);
+  border: 1px solid color-mix(in oklab, var(--ew-warning) 45%, var(--ew-border));
+  box-shadow: none;
+}
+
 .imagen-action-bar {
   position: sticky;
   bottom: 0;
   padding-top: var(--ew-space-2);
   background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--ew-surface) 94%, black) 24%);
+}
+
+.imagen-runtime-note {
+  margin-bottom: var(--ew-space-2);
+  padding: 10px 12px;
+  border-radius: var(--ew-radius-lg);
+  border: 1px solid color-mix(in oklab, var(--ew-warning) 45%, var(--ew-border));
+  background: color-mix(in oklab, var(--ew-warning) 12%, var(--ew-surface));
+  color: color-mix(in oklab, var(--ew-warning) 82%, var(--ew-text));
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .imagen-primary-btn:hover,

@@ -111,8 +111,19 @@ export function ImagenCore() {
     return recommended.required_model_keys.every((key) => downloadedKeys.has(key));
   }, [downloadedKeys, recommended]);
 
+  const runtimeBlocked = runtimeCommandsReady === false;
+  const runtimeChecking = runtimeCommandsReady === null;
+  const generateDisabled = generating || !prompt.trim() || !outputDir || runtimeCommandsReady !== true;
+  const generateButtonLabel = generating
+    ? 'Generating...'
+    : runtimeBlocked
+      ? 'Runtime Handoff Pending'
+      : runtimeChecking
+        ? 'Checking Runtime'
+        : sourceImagePath ? 'Transform Image' : 'Generate Image';
+
   const provisionRecommendedStack = useCallback(async () => {
-    if (!recommended || provisioning) return;
+    if (!recommended || provisioning || runtimeCommandsReady !== true) return;
     setProvisioning(true);
     setError(null);
     try {
@@ -130,7 +141,7 @@ export function ImagenCore() {
     } finally {
       setProvisioning(false);
     }
-  }, [downloadedKeys, provisioning, recommended, refreshStatus]);
+  }, [downloadedKeys, provisioning, recommended, refreshStatus, runtimeCommandsReady]);
 
   const ensureModelLoaded = useCallback(async () => {
     const recommendation = recommended ?? await refreshRecommendation();
@@ -185,8 +196,8 @@ export function ImagenCore() {
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim() || !outputDir || generating) return;
-    if (runtimeCommandsReady === false) {
-      setError(runtimeBridgeError || 'The 1magen engine handoff is not connected yet.');
+    if (runtimeCommandsReady !== true) {
+      setError(runtimeBridgeError || 'The 1magen engine handoff is still being checked.');
       return;
     }
     setGenerating(true);
@@ -396,27 +407,29 @@ export function ImagenCore() {
             />
           </div>
 
-          <div className="imagen-action-bar">
-            <button
-              className="imagen-primary-btn imagen-primary-btn--hero"
-              onClick={handleGenerate}
-              disabled={generating || !prompt.trim() || !outputDir || runtimeCommandsReady !== true}
-            >
-              {generating ? 'Generating...' : sourceImagePath ? 'Transform Image' : 'Generate Image'}
-            </button>
-          </div>
-
-          {runtimeBridgeError && (
-            <div className="imagen-field__hint" style={{ color: 'var(--ew-status-amber, var(--ew-text-muted))' }}>
+          {runtimeBlocked && runtimeBridgeError && (
+            <div className="imagen-runtime-note" role="status">
               {runtimeBridgeError}
             </div>
           )}
-          {recommended && (
+
+          <div className="imagen-action-bar">
+            <button
+              className={`imagen-primary-btn imagen-primary-btn--hero ${runtimeBlocked ? 'imagen-primary-btn--blocked' : ''}`}
+              onClick={handleGenerate}
+              disabled={generateDisabled}
+              title={runtimeBlocked ? 'Generation unlocks when the local 1magen runtime process is connected.' : undefined}
+            >
+              {generateButtonLabel}
+            </button>
+          </div>
+
+          {recommended && !runtimeBlocked && (
             <div className="imagen-field__hint">
               {recommended.rationale}
             </div>
           )}
-          {downloadLabel && <div className="imagen-field__hint">{downloadLabel}</div>}
+          {downloadLabel && !runtimeBlocked && <div className="imagen-field__hint">{downloadLabel}</div>}
           {savedPath && <div className="imagen-field__hint">Saved to {savedPath}</div>}
           <label className="imagen-field__hint" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
             <input
