@@ -7,7 +7,12 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run bundle:prepare && npm run build"
+  },
+  "bundle": {
+    "resources": {
+      "resources/": ""
+    }
   },
   "app": {
     "withGlobalTauri": true,

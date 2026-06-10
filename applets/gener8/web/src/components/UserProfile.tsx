@@ -4,6 +4,7 @@ import { Song, Playlist } from '../types';
 import { usersApi, getAudioUrl, UserProfile as UserProfileType, songsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Play, Pause, Heart, Eye, Users, Music as MusicIcon, ChevronRight, Share2, MoreHorizontal, Edit3, X, Camera, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
+import { showToast } from './ToastHost';
 
 interface UserProfileProps {
     username: string;
@@ -147,7 +148,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ username, onBack, onPl
             loadUserProfile();
         } catch (error) {
             console.error('Failed to update profile:', error);
-            alert('Failed to update profile');
+            showToast({
+                kind: 'error',
+                eyebrow: 'Profile',
+                message: error instanceof Error ? error.message : 'Failed to update profile',
+            });
         } finally {
             setIsSaving(false);
             setUploadingAvatar(false);

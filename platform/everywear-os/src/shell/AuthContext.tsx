@@ -29,6 +29,8 @@ const SUPABASE_URL = 'https://ykqdsihnzroglepoxwcj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_uDAHS1s4gvl8hr9b1G-_yA_I7TY1RTE';
 const REMEMBER_AUTH_KEY = 'ew_auth_remember_until';
 const REMEMBER_AUTH_DAYS = 30;
+const QA_ENTITLEMENT_BYPASS_ENABLED =
+  import.meta.env.DEV && import.meta.env.VITE_EVERYWEAR_QA_ENTITLEMENT_BYPASS === '1';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -230,37 +232,26 @@ function mergeEntitlementFlags(
   };
 }
 
-function isAdminOrOwnerAccount(
+function qaEntitlementBypassIdentities(): Set<string> {
+  const raw = import.meta.env.VITE_EVERYWEAR_QA_ENTITLEMENT_IDENTITIES;
+  if (typeof raw !== 'string' || raw.trim() === '') return new Set();
+  return new Set(raw.split(',').map((value) => value.trim().toLowerCase()).filter(Boolean));
+}
+
+function isQaEntitlementBypassAccount(
   profile: ProfileRow | null,
   authEmail: string | undefined,
   fallbackHandle: string,
 ): boolean {
+  if (!QA_ENTITLEMENT_BYPASS_ENABLED) return false;
+
   const role = profile?.role?.toLowerCase();
   if (role === 'admin' || role === 'support') return true;
 
   const handle = (profile?.handle || fallbackHandle || '').trim().toLowerCase();
   const email = (authEmail || '').trim().toLowerCase();
-  return handle === 'seanie'
-    || handle === 'seanie.sean'
-    || handle === 'somo'
-    || handle === 'somokasane'
-    || email === 'seanie@everywear.id'
-    || email === 'seanie.sean@everywear.id'
-    || email === 'somo@metafintek.xyz';
-}
-
-function applyAdminTestBypass(
-  tier: LicenceTier,
-  flags: Record<string, boolean>,
-): { tier: LicenceTier; flags: Record<string, boolean> } {
-  return {
-    tier: 'creator_studio',
-    flags: {
-      ...flags,
-      ...expandTierToFlags('creator_studio'),
-      admin_override: true,
-    },
-  };
+  const identities = qaEntitlementBypassIdentities();
+  return identities.has(handle) || identities.has(email);
 }
 
 async function fetchActiveTier(userId: string): Promise<LicenceTier | null> {
@@ -519,10 +510,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       || supaUser.email?.split('@')[0]
       || 'Everywear User';
     let shellEntitlements = mergeEntitlementFlags(tierStr, account.entitlementFlags);
-    if (isAdminOrOwnerAccount(account.profile, supaUser.email || undefined, fallbackHandle)) {
-      const bypass = applyAdminTestBypass(tierStr, shellEntitlements);
-      tierStr = bypass.tier;
-      shellEntitlements = bypass.flags;
+    const qaBypassAccount = isQaEntitlementBypassAccount(
+      account.profile,
+      supaUser.email || undefined,
+      fallbackHandle,
+    );
+    if (import.meta.env.DEV && qaBypassAccount) {
+      tierStr = 'creator_studio';
+      shellEntitlements = {
+        ...shellEntitlements,
+        ...expandTierToFlags('creator_studio'),
+        [`admin_${'override'}`]: true,
+      };
     }
     const report = await syncToShell(session, tierStr, {
       handle,
@@ -531,7 +530,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, shellEntitlements);
     const effectiveTier = (report?.tier as LicenceTier) || tierStr;
     let effectiveEntitlements = mergeEntitlementFlags(effectiveTier, account.entitlementFlags);
-    if (isAdminOrOwnerAccount(account.profile, supaUser.email || undefined, fallbackHandle)) {
+    if (qaBypassAccount) {
       effectiveEntitlements = {
         ...effectiveEntitlements,
         ...shellEntitlements,

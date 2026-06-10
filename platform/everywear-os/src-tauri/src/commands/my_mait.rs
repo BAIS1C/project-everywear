@@ -346,6 +346,12 @@ pub async fn import_character_studio_avatar(
         profile
             .set_pref(PREF_COMPANION_ACTIVE_MANIFEST_ID, &manifest.id)
             .map_err(|error| error.to_string())?;
+        profile
+            .set_pref(PREF_COMPANION_PRESENCE_TIER, "portrait")
+            .map_err(|error| error.to_string())?;
+        profile
+            .set_pref(PREF_COMPANION_WIDGET_VISIBLE, "true")
+            .map_err(|error| error.to_string())?;
     }
 
     build_settings_state(&state, &mait_store).await
@@ -358,7 +364,12 @@ pub async fn export_character_studio_avatar(
     mait_store: State<'_, MaitStoreState>,
     request: CharacterStudioAvatarExportRequest,
 ) -> Result<CharacterStudioAvatarExportResponse, String> {
-    let export_dir = match request.target_dir.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+    let export_dir = match request
+        .target_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
         Some(target_dir) => PathBuf::from(target_dir),
         None => {
             let picked = app
@@ -416,6 +427,12 @@ pub async fn export_character_studio_avatar(
         let profile = state.profile.lock().await;
         profile
             .set_pref(PREF_COMPANION_ACTIVE_MANIFEST_ID, &imported.id)
+            .map_err(|error| error.to_string())?;
+        profile
+            .set_pref(PREF_COMPANION_PRESENCE_TIER, "portrait")
+            .map_err(|error| error.to_string())?;
+        profile
+            .set_pref(PREF_COMPANION_WIDGET_VISIBLE, "true")
             .map_err(|error| error.to_string())?;
     }
 

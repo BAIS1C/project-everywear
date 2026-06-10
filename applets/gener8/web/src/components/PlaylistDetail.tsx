@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Song, Playlist, playlistsApi, songsApi, getAudioUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Play, MoreHorizontal, Clock, Calendar, Shuffle, Trash2, Mic2, Music, Camera, Loader2 } from 'lucide-react';
+import ConfirmDialog from './ConfirmDialog';
 
 /**
  * Downscale + JPEG-encode an image File to a data URL the backend can
@@ -61,6 +62,7 @@ export const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlistId, onBa
     const [loading, setLoading] = useState(true);
     const [uploadingCover, setUploadingCover] = useState(false);
     const [coverError, setCoverError] = useState<string | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const coverInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -103,7 +105,6 @@ export const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlistId, onBa
 
     const handleDeletePlaylist = async () => {
         if (!token || !playlist) return;
-        if (!confirm('Are you sure you want to delete this playlist?')) return;
         try {
             await playlistsApi.delete(playlist.id, token);
             onBack();
@@ -325,7 +326,7 @@ export const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlistId, onBa
 
                 {isOwner && (
                     <button
-                        onClick={handleDeletePlaylist}
+                        onClick={() => setDeleteConfirmOpen(true)}
                         className="text-zinc-400 hover:text-red-500 transition-colors p-2"
                         title="Delete Playlist"
                     >
@@ -443,6 +444,19 @@ export const PlaylistDetail: React.FC<PlaylistDetailProps> = ({ playlistId, onBa
             >
                 <ArrowLeft size={18} />
             </button>
+
+            <ConfirmDialog
+                open={deleteConfirmOpen}
+                title="Delete playlist?"
+                body={`"${playlist.name}" will be removed. This cannot be undone.`}
+                confirmLabel="Delete"
+                destructive
+                onCancel={() => setDeleteConfirmOpen(false)}
+                onConfirm={() => {
+                    setDeleteConfirmOpen(false);
+                    void handleDeletePlaylist();
+                }}
+            />
         </div>
     );
 };

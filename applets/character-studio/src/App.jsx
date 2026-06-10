@@ -220,7 +220,7 @@ export default function App() {
   return (
     <Fragment>
       
-      <div className="generalTitle">STRANDS // Avatar Studio</div>
+      <div className="generalTitle">Avatar Studio</div>
 
       {/* <LanguageSwitch /> */}
       <MessageWindow

@@ -29,6 +29,8 @@ pub struct ModelRequirement {
     /// When present, downloads and "use this path" adoption must verify
     /// this digest before the model is trusted.
     pub sha256: Option<String>,
+    pub qa_only: bool,
+    pub release_manifest_excluded: bool,
 }
 
 /// Build requirements from applet.toml definitions.
@@ -389,6 +391,8 @@ fn collect_pack_requirements(
             hf_file: Some(file.hf_file.clone()),
             size_bytes: Some(file.size_bytes),
             sha256: file.sha256.clone(),
+            qa_only: false,
+            release_manifest_excluded: false,
         };
         push_unique(
             out,
@@ -407,6 +411,8 @@ fn collect_pack_requirements(
             hf_file: Some(quant.hf_file.clone()),
             size_bytes: Some(quant.size_bytes),
             sha256: quant.sha256.clone(),
+            qa_only: false,
+            release_manifest_excluded: false,
         };
         push_unique(
             out,
@@ -448,6 +454,8 @@ fn requirement_from_model(
         hf_file: model.hf_file.clone(),
         size_bytes: model.size_bytes,
         sha256: model.sha256.clone(),
+        qa_only: model.qa_only,
+        release_manifest_excluded: model.release_manifest_excluded,
     }
 }
 
@@ -500,6 +508,9 @@ fn merge_requirement(mut manifest: ModelRequirement, known: ModelRequirement) ->
     if manifest.sha256.is_none() {
         manifest.sha256 = known.sha256;
     }
+    manifest.qa_only = manifest.qa_only || known.qa_only;
+    manifest.release_manifest_excluded =
+        manifest.release_manifest_excluded || known.release_manifest_excluded;
     manifest
 }
 
@@ -639,6 +650,8 @@ fn gguf_requirement(
         hf_file: (!hf_file.is_empty()).then(|| hf_file.into()),
         size_bytes: Some(size_bytes),
         sha256: None,
+        qa_only: false,
+        release_manifest_excluded: false,
     }
 }
 
@@ -665,6 +678,8 @@ fn tensor_requirement(
         hf_file: None,
         size_bytes: None,
         sha256: None,
+        qa_only: false,
+        release_manifest_excluded: false,
     }
 }
 
@@ -756,5 +771,49 @@ size_bytes = 3530000000
         assert!(reqs
             .iter()
             .any(|req| req.everywear_model_id == "acestep-base-q5km"));
+    }
+
+    #[test]
+    fn manifest_requirements_preserve_qa_flags() {
+        let toml = r#"
+[applet]
+id = "kasai"
+name = "My Mait"
+version = "0.1.0"
+description = "x"
+icon = "x"
+transport = "ipc"
+
+[engine]
+type = "llm"
+backend = "ffi"
+server_binary = ""
+
+[[model_groups]]
+label = "QA"
+min_vram_mb = 0
+
+  [[model_groups.models]]
+  key = "qa-tiny-random-llama-q2k"
+  role = "Primary"
+  required = false
+  vram_mb = 0
+  filename = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  hf_repo = "tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF"
+  hf_file = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  size_bytes = 7581728
+  sha256 = "17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7"
+  qa_only = true
+  release_manifest_excluded = true
+"#;
+        let manifest: AppletManifest = toml::from_str(toml).unwrap();
+        let reqs = build_requirements_from_manifest("kasai", &manifest);
+        let qa = reqs
+            .iter()
+            .find(|req| req.everywear_model_id == "qa-tiny-random-llama-q2k")
+            .unwrap();
+
+        assert!(qa.qa_only);
+        assert!(qa.release_manifest_excluded);
     }
 }

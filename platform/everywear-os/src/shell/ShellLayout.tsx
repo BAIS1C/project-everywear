@@ -9,6 +9,7 @@ import {
   resolveAppletStatus,
   requestAppletSwitch,
   closeAppletWebview,
+  unloadInlineAppletModels as requestInlineAppletModelUnload,
   type AppletEntry,
   type ModelAssessment,
   type UserProfile,
@@ -265,6 +266,23 @@ interface PendingRustCrashReport {
   backtrace: string | null;
 }
 
+interface LifecycleDebugEvent {
+  timestamp: string;
+  event: string;
+  stage?: string;
+  message?: string;
+  applet_id?: string;
+  model_key?: string;
+  pct?: number;
+}
+
+interface LifecycleChromeStatus {
+  label: string;
+  pct?: number;
+  status: 'active' | 'done' | 'failed';
+  updatedAt: number;
+}
+
 function windowContentKey(content: ShellWindowContent): string {
   return content.kind === 'panel' ? `panel:${content.panel}` : `applet:${content.applet.id}`;
 }
@@ -289,10 +307,17 @@ function windowRuntimeLabel(
   inferencePhase: InferencePhase,
   health?: 'online' | 'offline' | 'checking',
   engineHealth?: EngineHealthPayload | null,
+  lifecycleStatus?: LifecycleChromeStatus,
 ) {
   if (content.kind === 'panel') return '● READY';
 
   const applet = content.applet;
+  if (lifecycleStatus?.status === 'failed') return '● FAILED';
+  if (lifecycleStatus?.status === 'active') {
+    return typeof lifecycleStatus.pct === 'number'
+      ? `● ${lifecycleStatus.label.toUpperCase()} ${Math.round(lifecycleStatus.pct)}%`
+      : `● ${lifecycleStatus.label.toUpperCase()}`;
+  }
   const engineStatus = engineHealthStatusFor(engineHealth ?? null, applet.id);
   // Status truthfulness: never show READY for an applet whose runtime health
   // check says it is offline. Avatar Studio and Layer U displayed READY while
@@ -935,6 +960,9 @@ export function ShellLayout() {
   const [inferencePhase, setInferencePhase] = useState<InferencePhase>('idle');
   const [pendingAppletSwitch, setPendingAppletSwitch] = useState<PendingAppletSwitch | null>(null);
   const inferenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lifecycleDebugRef = useRef<LifecycleDebugEvent[]>([]);
+  const diagnosticContextRef = useRef<Record<string, unknown>>({});
+  const [lifecycleChrome, setLifecycleChrome] = useState<Record<string, LifecycleChromeStatus>>({});
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [gpu, setGpu] = useState<SystemGpuState | null>(null);
@@ -965,8 +993,47 @@ export function ShellLayout() {
   const [bugReportSeed, setBugReportSeed] = useState<BugReportSeed | null>(null);
   const [errorBadgeCount, setErrorBadgeCount] = useState(0);
 
+  diagnosticContextRef.current = {
+    active_window_id: activeWindowId,
+    active_window: windows.find((win) => win.id === activeWindowId)?.title ?? null,
+    open_windows: windows.map((win) => ({
+      id: win.id,
+      title: win.title,
+      kind: win.content.kind,
+      applet_id: win.content.kind === 'applet' ? win.content.applet.id : null,
+      panel: win.content.kind === 'panel' ? win.content.panel : null,
+      minimized: win.isMinimized,
+      maximized: win.isMaximized,
+    })),
+    launching_id: launchingId,
+    active_inference_applet_id: activeInferenceAppletId,
+    inference_phase: inferencePhase,
+    tauri_applet: tauriApplet,
+    engine_health: engineHealth
+      ? {
+          checked_at_ms: engineHealth.checked_at_ms,
+          endpoints: engineHealth.endpoints.map((endpoint) => ({
+            id: endpoint.id,
+            applet_id: endpoint.applet_id,
+            kind: endpoint.kind,
+            port: endpoint.port,
+            online: endpoint.online,
+            latency_ms: endpoint.latency_ms ?? null,
+          })),
+        }
+      : null,
+    last_lifecycle_events: lifecycleDebugRef.current.slice(-12),
+  };
+
   const openBugReport = useCallback((seed?: BugReportSeed | null) => {
-    setBugReportSeed(seed ?? null);
+    const shellContext = diagnosticContextRef.current;
+    setBugReportSeed({
+      ...(seed ?? {}),
+      extra: {
+        shell_context: shellContext,
+        ...(seed?.extra ?? {}),
+      },
+    });
     setBugReportOpen(true);
   }, []);
 
@@ -1081,10 +1148,7 @@ export function ShellLayout() {
   const unloadInlineAppletModels = useCallback(async (applet: AppletEntry) => {
     if (!GENER8_SHARED_ENGINE_APPLET_IDS.has(applet.id)) return;
     try {
-      await fetch('http://127.0.0.1:3001/api/engine/unload-models', {
-        method: 'POST',
-        credentials: 'omit',
-      });
+      await requestInlineAppletModelUnload(applet.id);
     } catch (err) {
       console.warn(`Failed to request inline model unload for ${applet.id}:`, err);
     } finally {
@@ -1388,10 +1452,35 @@ export function ShellLayout() {
     // called refreshRuntimeReadouts() at ~1% increments (two IPC calls per
     // percent per model). The 3s readout poll that runs while a launch or
     // open applet is active covers readout freshness instead.
+    const rememberLifecycle = (entry: Omit<LifecycleDebugEvent, 'timestamp'>) => {
+      lifecycleDebugRef.current = [
+        ...lifecycleDebugRef.current,
+        { timestamp: new Date().toISOString(), ...entry },
+      ].slice(-24);
+    };
+
     const unlistenProgress = listen<{ stage?: string; message?: string }>('applet-switch-progress', (event) => {
       refreshRuntimeReadouts();
       const stage = event.payload?.stage ?? '';
       const message = event.payload?.message;
+      rememberLifecycle({ event: 'applet-switch-progress', stage, message });
+      if (launchingId) {
+        setLifecycleChrome((prev) => {
+          if (stage === 'Ready') {
+            const next = { ...prev };
+            delete next[launchingId];
+            return next;
+          }
+          return {
+            ...prev,
+            [launchingId]: {
+              label: stage === 'Failed' ? 'failed' : (stage || 'lifecycle'),
+              status: stage === 'Failed' ? 'failed' : 'active',
+              updatedAt: Date.now(),
+            },
+          };
+        });
+      }
       if (!message || stage !== 'Failed') return;
       showToast({
         kind: 'error',
@@ -1402,10 +1491,52 @@ export function ShellLayout() {
       });
     });
 
+    const unlistenManifest = listen<{ applet_id?: string; models?: unknown[] }>('provision-manifest', (event) => {
+      const appletId = event.payload?.applet_id ?? launchingId;
+      rememberLifecycle({
+        event: 'provision-manifest',
+        applet_id: appletId ?? undefined,
+        message: `${event.payload?.models?.length ?? 0} model requirement(s) declared`,
+      });
+      if (appletId) {
+        setLifecycleChrome((prev) => ({
+          ...prev,
+          [appletId]: {
+            label: 'models',
+            status: 'active',
+            updatedAt: Date.now(),
+          },
+        }));
+      }
+    });
+
+    const unlistenDownload = listen<{ applet_id?: string; model_key?: string; pct?: number }>('download-progress', (event) => {
+      const appletId = event.payload?.applet_id ?? launchingId;
+      rememberLifecycle({
+        event: 'download-progress',
+        applet_id: appletId ?? undefined,
+        model_key: event.payload?.model_key,
+        pct: event.payload?.pct,
+      });
+      if (appletId) {
+        setLifecycleChrome((prev) => ({
+          ...prev,
+          [appletId]: {
+            label: 'download',
+            pct: event.payload?.pct,
+            status: (event.payload?.pct ?? 0) >= 100 ? 'done' : 'active',
+            updatedAt: Date.now(),
+          },
+        }));
+      }
+    });
+
     return () => {
       unlistenProgress.then(fn => fn());
+      unlistenManifest.then(fn => fn());
+      unlistenDownload.then(fn => fn());
     };
-  }, [refreshRuntimeReadouts]);
+  }, [launchingId, refreshRuntimeReadouts]);
 
   const handleCloseTauriApplet = async () => {
     if (tauriApplet) {
@@ -1846,6 +1977,7 @@ export function ShellLayout() {
                 inferencePhase,
                 win.content.kind === 'applet' ? iconHealth[win.content.applet.id] : undefined,
                 engineHealth,
+                win.content.kind === 'applet' ? lifecycleChrome[win.content.applet.id] : undefined,
               )}
             >
               {renderWindowContent(win)}
@@ -1877,6 +2009,7 @@ export function ShellLayout() {
                 <span className="ew-taskitem__label">{win.title}</span>
               </button>
             ))}
+            <LifecycleHud appletNames={appletNameMap} />
           </div>
         </div>
         <div className="ew-taskbar__center">
@@ -1967,7 +2100,6 @@ export function ShellLayout() {
       )}
 
       <ToastHost />
-      <LifecycleHud appletNames={appletNameMap} />
       <FirstRunTourHost />
       <BugReportModal open={bugReportOpen} onClose={closeBugReport} seed={bugReportSeed} />
     </>

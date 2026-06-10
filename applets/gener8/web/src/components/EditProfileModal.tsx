@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Camera, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usersApi, UserProfile } from '../services/api';
+import { showToast } from './ToastHost';
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -115,7 +116,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             onSaved?.();
         } catch (error) {
             console.error('Failed to update profile:', error);
-            alert('Failed to update profile');
+            showToast({
+                kind: 'error',
+                eyebrow: 'Profile',
+                message: error instanceof Error ? error.message : 'Failed to update profile',
+            });
         } finally {
             setIsSaving(false);
             setUploadingAvatar(false);

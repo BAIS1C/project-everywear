@@ -27,6 +27,7 @@ const BAR_CHOICES = [4, 8, 16, 32] as const;
 
 type SnapMode = 'off' | 'beat' | 'bar' | '4bar' | '8bar';
 type RiffTab = 'bank' | 'layer' | 'mic' | 'midi';
+type DawStatus = { kind: 'info' | 'warning' | 'error'; message: string } | null;
 
 const DEFAULT_POSITION: DawPosition = {
   position_ms: 0,
@@ -652,6 +653,7 @@ export default function DawView() {
   const [snapMode, setSnapMode] = useState<SnapMode>('bar');
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<DawStatus>(null);
   const pollRef = useRef<number | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -676,6 +678,11 @@ export default function DawView() {
     setProject(next);
   }, []);
 
+  const reportDawError = useCallback((err: unknown, fallback: string) => {
+    const message = err instanceof Error ? err.message : String(err || fallback);
+    setStatus({ kind: 'error', message: `${fallback}: ${message}` });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     dawApi
@@ -690,9 +697,9 @@ export default function DawView() {
     return () => {
       cancelled = true;
       if (pollRef.current !== null) window.clearInterval(pollRef.current);
-      dawApi.destroy().catch(() => {});
+      dawApi.destroy().catch((err) => reportDawError(err, 'DAW teardown failed'));
     };
-  }, []);
+  }, [reportDawError]);
 
   useEffect(() => {
     if (pollRef.current !== null) {
@@ -701,25 +708,30 @@ export default function DawView() {
     }
     if (isPlaying) {
       pollRef.current = window.setInterval(() => {
-        dawApi.getPosition().then(setPosition).catch(() => {});
+        dawApi.getPosition().then(setPosition).catch((err) => {
+          reportDawError(err, 'DAW position polling failed');
+        });
       }, 1000 / 30);
     }
     return () => {
       if (pollRef.current !== null) window.clearInterval(pollRef.current);
     };
-  }, [isPlaying]);
+  }, [isPlaying, reportDawError]);
 
   const handlePlay = useCallback(async () => {
     setPosition(await dawApi.play());
+    setStatus(null);
   }, []);
 
   const handlePause = useCallback(async () => {
     setPosition(await dawApi.pause());
+    setStatus(null);
   }, []);
 
   const handleStop = useCallback(async () => {
     await dawApi.stop();
     setPosition(DEFAULT_POSITION);
+    setStatus(null);
   }, []);
 
   const handleSetTempo = useCallback(
@@ -788,10 +800,23 @@ export default function DawView() {
         onPause={handlePause}
         onStop={handleStop}
         onSetTempo={handleSetTempo}
-        onUndo={() => dawApi.undo().then(refreshProject).catch(() => {})}
-        onRedo={() => dawApi.redo().then(refreshProject).catch(() => {})}
+        onUndo={() => dawApi.undo().then(refreshProject).catch((err) => reportDawError(err, 'Undo failed'))}
+        onRedo={() => dawApi.redo().then(refreshProject).catch((err) => reportDawError(err, 'Redo failed'))}
         onSnapMode={setSnapMode}
       />
+
+      {status && (
+        <div
+          className="px-4 py-2 text-xs border-b"
+          style={{
+            borderColor: status.kind === 'error' ? 'color-mix(in oklab, var(--ew-status-red) 40%, var(--ew-border))' : 'var(--ew-border)',
+            background: status.kind === 'error' ? 'color-mix(in oklab, var(--ew-status-red) 10%, transparent)' : 'color-mix(in oklab, var(--ew-text) 5%, transparent)',
+            color: status.kind === 'error' ? 'var(--ew-status-red)' : 'var(--ew-text-muted)',
+          }}
+        >
+          {status.message}
+        </div>
+      )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden" onWheel={handleWheel}>
         <div className="w-[220px] flex-shrink-0 overflow-y-auto border-r border-s3-border scrollbar-hide">
@@ -812,13 +837,13 @@ export default function DawView() {
                 setProject((prev) =>
                   prev ? { ...prev, tracks: prev.tracks.map((item) => (item.id === track.id ? { ...item, volume_db: db } : item)) } : prev,
                 );
-                dawApi.setTrackVolume(track.id, db).catch(() => {});
+                dawApi.setTrackVolume(track.id, db).catch((err) => reportDawError(err, 'Volume update failed'));
               }}
               onPanChange={(pan) => {
                 setProject((prev) =>
                   prev ? { ...prev, tracks: prev.tracks.map((item) => (item.id === track.id ? { ...item, pan } : item)) } : prev,
                 );
-                dawApi.setTrackPan(track.id, pan).catch(() => {});
+                dawApi.setTrackPan(track.id, pan).catch((err) => reportDawError(err, 'Pan update failed'));
               }}
               onRemove={() => dawApi.removeTrack(track.id).then(refreshProject)}
             />

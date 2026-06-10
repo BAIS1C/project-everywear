@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { LogCategory, BugReportPayload, SystemInfo } from '@everywear/transport';
 import { LOG_CATEGORY_META } from '@everywear/transport';
-import { getAllBufferedEntries, getLastError } from '@everywear/shared';
+import { getLastError, getRecentLogEntries } from '@everywear/shared';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -268,7 +268,7 @@ export function BugReportModal({ open, onClose, seed }: BugReportModalProps) {
 
   // ── Category entry counts ─────────────────────────────────────
 
-  const allEntries = useMemo(() => getAllBufferedEntries(), [open]);
+  const allEntries = useMemo(() => getRecentLogEntries(200), [open]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};

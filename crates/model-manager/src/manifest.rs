@@ -109,6 +109,28 @@ pub struct ModelRequirement {
     /// manifest is still being drafted and the exact artifact is not pinned.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sha256: Option<String>,
+    /// Test-only artifact. Normal applet launch and release packaging must
+    /// ignore these rows unless a QA replay explicitly opts in.
+    #[serde(default)]
+    pub qa_only: bool,
+    /// Explicit release-manifest exclusion flag for QA fixtures and other
+    /// non-shipping artifacts.
+    #[serde(default)]
+    pub release_manifest_excluded: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct QaManifest {
+    #[serde(default)]
+    pub provisioning_replay: Vec<QaProvisioningReplay>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QaProvisioningReplay {
+    pub id: String,
+    pub description: String,
+    #[serde(default)]
+    pub models: Vec<ModelRequirement>,
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +312,8 @@ pub struct AppletManifest {
     pub upgrade_packs: std::collections::HashMap<String, UpgradePack>,
     #[serde(default)]
     pub requirements: Requirements,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub qa: Option<QaManifest>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -484,6 +508,25 @@ impl AppletManifest {
             .filter(|q| q.min_vram_mb <= vram_mb)
             .max_by_key(|q| q.min_vram_mb)
     }
+
+    /// Return QA-only provisioning fixtures. These rows are opt-in test
+    /// fixtures and must not be fed into normal applet launch provisioning.
+    pub fn qa_provisioning_models(&self) -> Vec<(&str, &ModelRequirement)> {
+        self.qa
+            .as_ref()
+            .map(|qa| {
+                qa.provisioning_replay
+                    .iter()
+                    .flat_map(|replay| {
+                        replay
+                            .models
+                            .iter()
+                            .map(move |model| (replay.id.as_str(), model))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
 }
 
 /// Select the highest-VRAM model group that fits the available VRAM budget.
@@ -560,6 +603,7 @@ mod tests {
             ],
             upgrade_packs: std::collections::HashMap::new(),
             requirements: Requirements::default(),
+            qa: None,
         }
     }
 
@@ -573,5 +617,57 @@ mod tests {
         assert_eq!(plan_for_vram(&manifest, 4_096).unwrap().label, "small");
         assert_eq!(plan_for_vram(&manifest, 10_000).unwrap().label, "medium");
         assert_eq!(plan_for_vram(&manifest, 24_000).unwrap().label, "large");
+    }
+
+    #[test]
+    fn parses_qa_only_provisioning_seed() {
+        let manifest: AppletManifest = toml::from_str(
+            r#"
+model_groups = []
+
+[applet]
+id = "kasai"
+name = "My Mait"
+version = "0.1.0"
+description = "x"
+icon = "x"
+transport = "ipc"
+
+[engine]
+type = "llm"
+backend = "ffi"
+server_binary = ""
+
+[qa]
+
+[[qa.provisioning_replay]]
+id = "p1-small-gguf"
+description = "QA-only tiny GGUF provisioning replay."
+
+  [[qa.provisioning_replay.models]]
+  key = "qa-tiny-random-llama-q2k"
+  role = "Primary"
+  required = true
+  vram_mb = 0
+  filename = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  hf_repo = "tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF"
+  hf_file = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  size_bytes = 7_581_728
+  sha256 = "17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7"
+  qa_only = true
+  release_manifest_excluded = true
+"#,
+        )
+        .unwrap();
+
+        let qa = manifest.qa.expect("qa section should parse");
+        assert_eq!(qa.provisioning_replay.len(), 1);
+        let seed = &qa.provisioning_replay[0].models[0];
+        assert!(seed.qa_only);
+        assert!(seed.release_manifest_excluded);
+        assert_eq!(
+            seed.sha256.as_deref(),
+            Some("17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7")
+        );
     }
 }

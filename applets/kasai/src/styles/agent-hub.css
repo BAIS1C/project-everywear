@@ -1665,6 +1665,10 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   border-top: 1px solid var(--ew-border, rgba(255,255,255,0.12));
 }
 
+.mm-manifest-row.active {
+  border-color: color-mix(in oklab, var(--ew-primary, #00c2ff) 48%, var(--ew-border, rgba(255,255,255,0.12)));
+}
+
 .mm-model-row span,
 .mm-model-row em,
 .mm-model-row small,
@@ -1824,6 +1828,61 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   margin: 12px 0;
 }
 
+.mm-companion-widget-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--ew-radius-md, 6px);
+  background: color-mix(in oklab, var(--ew-primary, #00c2ff) 10%, var(--ew-surface, #14161c));
+}
+
+.mm-companion-avatar {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--ew-primary, #00c2ff) 46%, transparent);
+  color: var(--mm-panel-text);
+  font: 900 16px var(--ew-font-display, system-ui);
+  background:
+    radial-gradient(circle at 35% 25%, color-mix(in oklab, var(--ew-primary, #00c2ff) 42%, transparent), transparent 42%),
+    var(--ew-bg, #080a0d);
+}
+
+.mm-companion-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mm-companion-copy span {
+  color: var(--mm-panel-faint);
+  font: 900 10px var(--ew-font-display, system-ui);
+  text-transform: uppercase;
+}
+
+.mm-companion-copy b {
+  color: var(--mm-panel-text);
+  overflow-wrap: anywhere;
+}
+
+.mm-companion-copy p {
+  margin: 0;
+  color: var(--mm-panel-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mm-manifest-empty--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .mm-settings-empty {
   height: 100%;
   display: grid;
@@ -1869,6 +1928,10 @@ body[data-skin="carbon"] .ah-composer-box textarea {
   .mm-model-row,
   .mm-manifest-row {
     grid-template-columns: 74px minmax(0, 1fr);
+  }
+  .mm-manifest-empty--action {
+    align-items: stretch;
+    flex-direction: column;
   }
   .mm-model-row em,
   .mm-model-row small {

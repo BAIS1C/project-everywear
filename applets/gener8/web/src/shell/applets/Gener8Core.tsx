@@ -14,6 +14,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { CreatePlaylistModal, AddToPlaylistModal } from '@/components/PlaylistModals';
 import { VideoGeneratorModal } from '@/components/VideoGeneratorModal';
 import { showToast as showToastImperative, type ToastKind } from '@/components/ToastHost';
+import ConfirmDialog from '@/components/ConfirmDialog';
 // Local alias kept for the legacy `type` parameter shape; the global
 // ToastHost (mounted in App.tsx) renders the actual stack.
 type ToastType = 'success' | 'error' | 'info';
@@ -354,6 +355,7 @@ export default function Gener8Core() {
   const [isCreatePlaylistModalOpen, setIsCreatePlaylistModalOpen] = useState(false);
   const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = useState(false);
   const [songToAddToPlaylist, setSongToAddToPlaylist] = useState<Song | null>(null);
+  const [songToDelete, setSongToDelete] = useState<Song | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [songForVideo, setSongForVideo] = useState<Song | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -810,17 +812,17 @@ export default function Gener8Core() {
 
   const handleDeleteSong = async (song: Song) => {
     if (!token) return;
-    const directConfirmed = (window as any).__s3DeleteConfirmedSongId === song.id;
-    if (directConfirmed) {
-      delete (window as any).__s3DeleteConfirmedSongId;
-    }
     const skipConfirm = localStorage.getItem('s3studio:skip_delete_confirm') === '1';
-    const confirmed =
-      directConfirmed ||
-      skipConfirm ||
-      window.confirm(`Are you sure you want to delete "${song.title}"?`);
-    if (!confirmed) return;
+    if (!skipConfirm) {
+      setSongToDelete(song);
+      return;
+    }
 
+    await executeDeleteSong(song);
+  };
+
+  const executeDeleteSong = async (song: Song) => {
+    if (!token) return;
     try {
       await songsApi.deleteSong(song.id, token);
       // Store's removeSong cascades the like / dislike set cleanup, so a
@@ -1073,6 +1075,19 @@ export default function Gener8Core() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+      <ConfirmDialog
+        open={Boolean(songToDelete)}
+        title="Delete song?"
+        body={songToDelete ? `"${songToDelete.title}" will be permanently removed.` : ''}
+        confirmLabel="Delete"
+        destructive
+        onCancel={() => setSongToDelete(null)}
+        onConfirm={() => {
+          const target = songToDelete;
+          setSongToDelete(null);
+          if (target) void executeDeleteSong(target);
+        }}
       />
       {/* Global EWDS ToastHost (mounted in App.tsx) renders this applet's
           toasts. No local stack needed — see showToast above. */}

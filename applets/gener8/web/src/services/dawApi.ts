@@ -1,31 +1,28 @@
 // @ts-nocheck
 /**
- * dawApi — Service layer for the Rust DAW engine running on localhost:3001.
+ * dawApi — Service layer for the Gener8 DAW shell command bridge.
  *
  * Used by DawCore to sync extracted stems into the Rust project,
  * and by StudioTab to read persisted project state.
  *
- * URL resolution matches the pattern in intentBus.ts: hosted origins
- * (s3studio.xyz, strandsnation.xyz, vercel.app) route to localhost:3001;
- * dev proxy mode uses relative paths.
+ * The legacy private shim URL is retired in Everywear native. Dev proxy mode
+ * can still use relative /api/daw paths, but packaged app builds must route
+ * through ShellLayout-owned commands.
  */
 
-const LOCAL_ENGINE = 'http://localhost:3001';
+import { invoke } from '@tauri-apps/api/core';
+
+const hasTauriRuntime = () =>
+  typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
 function dawUrl(path: string): string {
-  if (typeof window === 'undefined') return `/api/daw${path}`;
-  const host = window.location.hostname;
-  if (
-    host.includes('strandsnation.xyz') ||
-    host.includes('s3studio.xyz') ||
-    host.includes('vercel.app')
-  ) {
-    return `${LOCAL_ENGINE}/api/daw${path}`;
-  }
   return `/api/daw${path}`;
 }
 
 async function dawFetch<T>(endpoint: string, opts?: RequestInit): Promise<T> {
+  if (hasTauriRuntime()) {
+    return invoke<T>('daw_bridge_request', { endpoint, body: undefined });
+  }
   const res = await fetch(dawUrl(endpoint), {
     headers: { 'Content-Type': 'application/json' },
     ...opts,
@@ -38,6 +35,9 @@ async function dawFetch<T>(endpoint: string, opts?: RequestInit): Promise<T> {
 }
 
 async function dawPost<T>(endpoint: string, body?: unknown): Promise<T> {
+  if (hasTauriRuntime()) {
+    return invoke<T>('daw_bridge_request', { endpoint, body });
+  }
   return dawFetch<T>(endpoint, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,

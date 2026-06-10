@@ -676,9 +676,8 @@ pub async fn kasai_forward_chat(
                     .into_iter()
                     .filter(|slot| slot.status == "loaded")
                     .filter_map(|slot| {
-                        slot.model_name.map(|name| {
-                            format!("{name} ({})", portable_slot_label(&slot.slot_id))
-                        })
+                        slot.model_name
+                            .map(|name| format!("{name} ({})", portable_slot_label(&slot.slot_id)))
                     })
                     .collect::<Vec<_>>()
             })

@@ -2,10 +2,9 @@
 /**
  * DawPage — Full DAW timeline editor for Creator Studio.
  *
- * Two-layer architecture: all compute runs in the Rust backend via
- * localhost:3001/api/daw/* endpoints. This component is purely
- * presentational: waveform data, meters, and playback position come
- * from the backend over fetch/SSE.
+ * Two-layer architecture: all compute runs behind the Everywear shell DAW
+ * bridge. This component is purely presentational: waveform data, meters,
+ * and playback position come from the backend command surface.
  *
  * Layout (PROJECT-WIKI.md §9.10):
  *   HEADER:   Transport bar (play/stop/loop, tempo, position)
@@ -18,6 +17,7 @@
  * values to Tailwind s3/accent design tokens for skin-awareness.
  */
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Play, Pause, Square, Volume2, Plus,
   Trash2, Import, Undo2, Redo2,
@@ -26,21 +26,17 @@ import {
 
 // ─── API ────────────────────────────────────────────────────────────
 
-// Relative path works when vite dev proxy is active. When running from
-// a hosted origin (s3studio.xyz, vercel, strandsnation.xyz) the Tauri
-// shim lives at localhost:3001 so we need the full URL.
-const LOCAL_ENGINE = 'http://localhost:3001';
+const hasTauriRuntime = () =>
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 function dawApiUrl(path: string): string {
-  if (typeof window === 'undefined') return `/api/daw${path}`;
-  const host = window.location.hostname;
-  if (host.includes('strandsnation.xyz') || host.includes('s3studio.xyz') || host.includes('vercel.app')) {
-    return `${LOCAL_ENGINE}/api/daw${path}`;
-  }
   return `/api/daw${path}`;
 }
 
 async function dawFetch<T>(endpoint: string, opts?: RequestInit): Promise<T> {
+  if (hasTauriRuntime()) {
+    return invoke<T>("daw_bridge_request", { endpoint, body: undefined });
+  }
   const res = await fetch(dawApiUrl(endpoint), {
     headers: { "Content-Type": "application/json" },
     ...opts,
@@ -53,6 +49,9 @@ async function dawFetch<T>(endpoint: string, opts?: RequestInit): Promise<T> {
 }
 
 async function dawPost<T>(endpoint: string, body?: unknown): Promise<T> {
+  if (hasTauriRuntime()) {
+    return invoke<T>("daw_bridge_request", { endpoint, body });
+  }
   return dawFetch<T>(endpoint, {
     method: "POST",
     body: body ? JSON.stringify(body) : undefined,
@@ -714,7 +713,9 @@ export function DawPage() {
       .then(setProject)
       .catch((err) => setError(err.message));
     return () => {
-      dawPost("/destroy").catch(() => {});
+      dawPost("/destroy").catch((err) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
       if (positionPollRef.current) clearInterval(positionPollRef.current);
     };
   }, []);
@@ -725,7 +726,9 @@ export function DawPage() {
     if (positionPollRef.current) clearInterval(positionPollRef.current);
     if (isPlaying) {
       positionPollRef.current = setInterval(() => {
-        dawFetch<PositionEvent>("/position").then(setPosition).catch(() => {});
+        dawFetch<PositionEvent>("/position").then(setPosition).catch((err) => {
+          setError(err instanceof Error ? err.message : String(err));
+        });
       }, 1000 / 30);
     }
     return () => { if (positionPollRef.current) clearInterval(positionPollRef.current); };
@@ -761,11 +764,11 @@ export function DawPage() {
     await refreshProject();
   }, [refreshProject]);
   const handleUndo = useCallback(async () => {
-    await dawPost("/undo").catch(() => {});
+    await dawPost("/undo").catch((err) => setError(err instanceof Error ? err.message : String(err)));
     await refreshProject();
   }, [refreshProject]);
   const handleRedo = useCallback(async () => {
-    await dawPost("/redo").catch(() => {});
+    await dawPost("/redo").catch((err) => setError(err instanceof Error ? err.message : String(err)));
     await refreshProject();
   }, [refreshProject]);
 

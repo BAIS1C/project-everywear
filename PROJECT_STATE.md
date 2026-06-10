@@ -1,8 +1,38 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:49+08 SGT (Codex: Phase 2 H6 entitlement bypass audit).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-11T00:51+08 SGT (Codex: Swarm fixrun visual QA integration).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-11 00:51 SGT - Swarm Fixrun Visual QA Integration (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: shell-native applets use shell chrome without nested router headers. `1magen` now opens with a compact shell strip and no duplicated `Everywear Applet` / `1magen` header stack.
+- FIXED: My Mait opens through `KasaiApp`, Avatar Studio is labeled as Avatar Studio, and `FrontendInline` applets with no `frontend_port` open through `everywear://shell/{applet_id}` instead of erroring.
+- FIXED: Gener8 suite lifecycle status is persistent in shell chrome and the taskbar pill; zero-byte manifests show waiting state instead of fake 0 percent progress.
+- FIXED: shared Gener8 applet close/unload now routes through the Rust `unload_inline_applet_models` command. `ShellLayout.tsx` no longer performs a browser fetch to port 3001.
+- FIXED: DAW engine health no longer publishes the phantom `gener8-shim` 3001 endpoint. `engine_health.rs` now reports `daw-shell-bridge` as an internal shell capability.
+- FIXED: native DAW no longer throws the pending bridge error in Tauri. `dawApi.ts`, legacy Studio `DawPage.tsx`, and `DawTransportBar.tsx` route through the Rust `daw_bridge_request` command. `daw_bridge.rs` owns in-memory project state, stem URL/local-directory import into tracks/regions, transport, track/region edits, save/load, and waveform peak responses.
+- FIXED BY VISUAL QA: shell-mounted Vid is `applets/gener8/web/src/shell/VidApp.tsx`; its old persistent song sidebar and "Choose from your library on the left" copy are gone. Vid now exposes `Load from Vault` in the main flow.
+- VISUAL QA RECEIPTS: `screenshots/2026-06-11-fixrun-visual-qa/01-desktop.png` through `11-bug-report.png`, including fixed `08-vid-standalone-fixed.png`.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/shared`; `npm run build --workspace onemagen`; `npm run build --workspace kasai-applet`; `npm run build --workspace @everywear/character-studio`; `npm run build --workspace @everywear/video-modal`; `npm run build --workspace @everywear/vid-web`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `cargo check -p everywear-os`; `cargo test -p everywear-os daw_bridge --lib`; targeted `model-manager` tests; `git diff --check`.
+- REMAINING CARD: semantic stem separation still depends on the shell-managed Pro Model producing stem URLs. The DAW bridge now accepts those stems and makes timeline/transport/edit state operable; it does not fake extraction.
+
+---
+
+## 2026-06-10 23:55 SGT - Lane 3 Bug-Report Diagnostic Ring (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED: bug reports no longer depend only on unflushed in-memory logger buffers. `packages/shared/src/lib/logger.ts` now keeps a recent 200-entry diagnostic ring independent of backend flush.
+- FIXED: `platform/everywear-os/src/components/BugReportModal.tsx` uses the recent diagnostic ring, so a launch failure report can include the preceding applet/model/runtime chain instead of only the current post-flush residue.
+- FIXED: `platform/everywear-os/src/shell/ShellLayout.tsx` enriches bug-report seeds with active window, open applets, launching applet, active inference applet, inference phase, Tauri applet banner state, engine-health endpoints, and the last lifecycle events from `applet-switch-progress`, `provision-manifest`, and `download-progress`.
+- SCOPE: Lane 3 diagnostic pipeline only. This does not connect the 1magen BinaryLocal runtime handoff, generation commands, or save/Vault path.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/shared`; `npm run build --workspace everywear-os`; `npm run build --workspace onemagen`; `cargo check -p everywear-os`; `git diff --check`.
+- NOTE: `BUGHUNT_FINDINGS_2026-06-10.md` was already dirty before this patch; it was not edited in this lane.
+
+---
 
 ## 2026-06-10 16:49 SGT - Phase 2 H6 Entitlement Bypass Audit (Codex)
 

@@ -1,6 +1,6 @@
 // TODO, move to config file
 
-export const API_URL = "http://localhost:8081";
+export const API_URL = null;
 export const webaverseGenesisAddress = "0x543D43F390b7d681513045e8a85707438c463d80"
 
 export const CHAINS = {

@@ -12,6 +12,20 @@ const EMPTY_POSTURE: LayerUPosture = {
 };
 
 const EMPTY_ROLLUP: LayerUSourceRollup = { ok: 0, failed: 0, total: 0 };
+const SESSION_STORAGE_KEY = 'everywear.layeru-osint.session.v1';
+
+const EMPTY_SNAPSHOT: LayerUSnapshot = {
+  online: false,
+  health: null,
+  data: null,
+  posture: EMPTY_POSTURE,
+  feeds: [],
+  sourceRollup: EMPTY_ROLLUP,
+  updatedAt: null,
+  lastOnlineAt: null,
+  restoredFromSession: false,
+  error: null,
+};
 
 function asDisplay(value: unknown, prefix = '') {
   if (value === null || value === undefined || value === '') return '--';
@@ -58,17 +72,48 @@ function deriveRollup(health: LayerUSnapshot['health'], data: Record<string, any
   return { ok, failed, total };
 }
 
+function restoreSnapshot(): LayerUSnapshot {
+  if (typeof window === 'undefined') return EMPTY_SNAPSHOT;
+  try {
+    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return EMPTY_SNAPSHOT;
+    const stored = JSON.parse(raw) as Partial<LayerUSnapshot>;
+    return {
+      ...EMPTY_SNAPSHOT,
+      ...stored,
+      online: false,
+      posture: stored.posture ?? EMPTY_POSTURE,
+      feeds: Array.isArray(stored.feeds) ? stored.feeds : [],
+      sourceRollup: stored.sourceRollup ?? EMPTY_ROLLUP,
+      restoredFromSession: true,
+      error: 'Restored last Layer U session while Project SON reconnects',
+    };
+  } catch {
+    return EMPTY_SNAPSHOT;
+  }
+}
+
+function persistSnapshot(snapshot: LayerUSnapshot) {
+  if (typeof window === 'undefined') return;
+  const hasState = snapshot.data || snapshot.health || snapshot.updatedAt;
+  if (!hasState) return;
+  try {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+      health: snapshot.health,
+      data: snapshot.data,
+      posture: snapshot.posture,
+      feeds: snapshot.feeds,
+      sourceRollup: snapshot.sourceRollup,
+      updatedAt: snapshot.updatedAt,
+      lastOnlineAt: snapshot.lastOnlineAt ?? null,
+    }));
+  } catch {
+    // Best-effort session restore only. Do not block the applet on storage.
+  }
+}
+
 export function useLayerUOsint() {
-  const [snapshot, setSnapshot] = useState<LayerUSnapshot>({
-    online: false,
-    health: null,
-    data: null,
-    posture: EMPTY_POSTURE,
-    feeds: [],
-    sourceRollup: EMPTY_ROLLUP,
-    updatedAt: null,
-    error: null,
-  });
+  const [snapshot, setSnapshot] = useState<LayerUSnapshot>(() => restoreSnapshot());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -91,6 +136,8 @@ export function useLayerUOsint() {
         feeds: deriveFeeds(data),
         sourceRollup: deriveRollup(health, data),
         updatedAt: new Date().toISOString(),
+        lastOnlineAt: new Date().toISOString(),
+        restoredFromSession: false,
         error: null,
       });
     } catch (err) {
@@ -115,6 +162,10 @@ export function useLayerUOsint() {
     const id = window.setInterval(refresh, 30_000);
     return () => window.clearInterval(id);
   }, [refresh]);
+
+  useEffect(() => {
+    persistSnapshot(snapshot);
+  }, [snapshot]);
 
   return useMemo(() => ({ snapshot, isRefreshing, refresh, pullLive }), [snapshot, isRefreshing, refresh, pullLive]);
 }

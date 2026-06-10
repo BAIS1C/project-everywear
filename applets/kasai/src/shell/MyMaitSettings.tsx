@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getTransport,
+  type MaitManifestSummary,
+  type MyMaitCompanionStateInput,
   type MyMaitModelGroup,
   type MyMaitResidencyPolicy,
   type MyMaitSettingsState,
@@ -145,21 +147,54 @@ export function MyMaitSettings() {
     }
   }, [policy, saving, transport]);
 
-  const savePresence = useCallback(async (presence_tier: string) => {
+  const saveCompanionState = useCallback(async (input: MyMaitCompanionStateInput) => {
     if (saving) return;
     setSaving(true);
     try {
       const next = await transport.invoke<MyMaitSettingsState>('set_my_mait_companion_state', {
-        input: { presence_tier },
+        input,
       });
       setSettings(next);
       setPolicy(next.residency.policy);
     } catch (err) {
-      setError(settingError('Saving the presence setting failed.', err));
+      setError(settingError('Saving the companion setting failed.', err));
     } finally {
       setSaving(false);
     }
   }, [saving, transport]);
+
+  const savePresence = useCallback((presence_tier: string) => {
+    void saveCompanionState({
+      presence_tier,
+      widget_visible: presence_tier !== 'hidden',
+    });
+  }, [saveCompanionState]);
+
+  const activateManifest = useCallback((manifest: MaitManifestSummary) => {
+    void saveCompanionState({
+      manifest_id: manifest.id,
+      presence_tier: 'portrait',
+      widget_visible: true,
+    });
+  }, [saveCompanionState]);
+
+  const minimizeToAvatar = useCallback(() => {
+    if (!settings) return;
+    const manifestId = settings.companion.active_manifest_id || settings.manifests[0]?.id;
+    if (!manifestId) return;
+    void saveCompanionState({
+      manifest_id: manifestId,
+      presence_tier: 'desktop_widget',
+      widget_visible: true,
+    });
+  }, [saveCompanionState, settings]);
+
+  const openAvatarStudio = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('everywear:launch-applet', {
+      detail: { appletId: 'character-studio' },
+    }));
+  }, []);
 
   if (loading) {
     return <div className="mm-settings-empty">Loading My Mait settings</div>;
@@ -177,6 +212,11 @@ export function MyMaitSettings() {
 
   const residencyDescription = 'This decides what happens to your Mait model when you close the Everywear window.';
   const policyChanged = policy !== settings.residency.policy;
+  const activeManifest = settings.manifests.find(
+    manifest => manifest.id === settings.companion.active_manifest_id,
+  ) || null;
+  const hasManifest = settings.manifests.length > 0;
+  const presenceVisible = settings.companion.widget_visible && settings.companion.presence_tier !== 'hidden';
 
   return (
     <div className="mm-settings-root">
@@ -369,6 +409,21 @@ export function MyMaitSettings() {
             </div>
           </MmSettingRow>
 
+          {presenceVisible && (
+            <div className="mm-companion-widget-preview ew-v2-bevel" data-presence={settings.companion.presence_tier}>
+              <div className="mm-companion-avatar" aria-hidden="true">
+                {(activeManifest?.display_name || 'My Mait').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="mm-companion-copy">
+                <span>Active companion</span>
+                <b>{activeManifest?.display_name || 'Starter Mait'}</b>
+                <p>
+                  This is the saved applet-local presence preview. Shell-level desktop widget mounting is not built in this lane.
+                </p>
+              </div>
+            </div>
+          )}
+
           <MmSettingRow
             label="Active manifest"
             description="Avatar manifests come from Character Studio imports; no import means your Mait uses the starter presence."
@@ -382,13 +437,48 @@ export function MyMaitSettings() {
             </div>
             <div className="mm-manifest-list">
               {settings.manifests.length === 0 ? (
-                <p className="mm-manifest-empty">Import a Mait avatar from Character Studio to see it here.</p>
+                <div className="mm-manifest-empty mm-manifest-empty--action">
+                  <p>Import a Mait avatar from Character Studio to activate a visible companion.</p>
+                  <button type="button" className="ew-btn ew-btn--sm" onClick={openAvatarStudio}>
+                    Open Avatar Studio
+                  </button>
+                </div>
               ) : settings.manifests.map(manifest => (
-                <div key={manifest.id} className="mm-manifest-row">
+                <div key={manifest.id} className={`mm-manifest-row ${manifest.id === settings.companion.active_manifest_id ? 'active' : ''}`}>
                   <b>{manifest.display_name}</b>
                   <span>{manifest.shard_count} shards</span>
+                  <span>{manifest.id === settings.companion.active_manifest_id ? 'ACTIVE' : 'READY'}</span>
+                  <button
+                    type="button"
+                    className="ew-btn ew-btn--ghost ew-btn--sm"
+                    disabled={saving || manifest.id === settings.companion.active_manifest_id}
+                    onClick={() => activateManifest(manifest)}
+                  >
+                    {manifest.id === settings.companion.active_manifest_id ? 'Active' : 'Activate'}
+                  </button>
                 </div>
               ))}
+            </div>
+            <div className="mm-presence-actions">
+              {hasManifest ? (
+                <>
+                  <button type="button" className="ew-btn ew-btn--primary ew-btn--sm" disabled={saving} onClick={minimizeToAvatar}>
+                    Minimize to Avatar
+                  </button>
+                  <button
+                    type="button"
+                    className="ew-btn ew-btn--ghost ew-btn--sm"
+                    disabled={saving}
+                    onClick={() => saveCompanionState({ presence_tier: 'hidden', widget_visible: false })}
+                  >
+                    Hide Avatar
+                  </button>
+                </>
+              ) : (
+                <div className="mm-settings-note">
+                  Minimize-to-avatar needs one imported Character Studio manifest. No fake button, no pretend pet.
+                </div>
+              )}
             </div>
           </MmSettingRow>
         </MmSettingsSection>

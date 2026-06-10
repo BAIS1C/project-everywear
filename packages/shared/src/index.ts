@@ -28,6 +28,7 @@ export {
   getLogger,
   initLogger,
   getAllBufferedEntries,
+  getRecentLogEntries,
   getErrorCount,
   getLastError,
 } from './lib/logger';

@@ -4,14 +4,25 @@ import { useLayerUOsint } from './useLayerUOsint';
 import './styles/layer-u-osint.css';
 
 type LayerUTab = 'map' | 'feeds' | 'sources';
+const UI_STORAGE_KEY = 'everywear.layeru-osint.ui.v1';
 
 function formatSweepTime(value: string | null | undefined) {
   if (!value) return 'pending';
   return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function restoreTab(): LayerUTab {
+  if (typeof window === 'undefined') return 'map';
+  try {
+    const value = window.localStorage.getItem(UI_STORAGE_KEY);
+    return value === 'feeds' || value === 'sources' || value === 'map' ? value : 'map';
+  } catch {
+    return 'map';
+  }
+}
+
 export function LayerUOsintApplet() {
-  const [tab, setTab] = useState<LayerUTab>('map');
+  const [tab, setTab] = useState<LayerUTab>(() => restoreTab());
   const [iframeKey, setIframeKey] = useState(0);
   const { snapshot, isRefreshing, refresh, pullLive } = useLayerUOsint();
   const { posture, sourceRollup, feeds, health } = snapshot;
@@ -27,6 +38,14 @@ export function LayerUOsintApplet() {
       detail: { appletId: 'layeru-osint', status: snapshot.online ? 'online' : 'offline' },
     }));
   }, [snapshot.online]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(UI_STORAGE_KEY, tab);
+    } catch {
+      // Tab restore is convenience state only.
+    }
+  }, [tab]);
 
   const handlePullLive = async () => {
     try {
@@ -118,6 +137,12 @@ export function LayerUOsintApplet() {
           <div className="lu-worldview__offline">
             <h3>Project SON service offline</h3>
             <p>Start the local SON server on port 3117 to serve the worldview and live OSINT panes.</p>
+            {snapshot.restoredFromSession && (
+              <p>Restored last session. Live data resumes after SON reconnects.</p>
+            )}
+            {snapshot.lastOnlineAt && (
+              <p>Last live session {formatSweepTime(snapshot.lastOnlineAt)}.</p>
+            )}
             <button type="button" onClick={refresh} disabled={isRefreshing}>
               {isRefreshing ? 'Checking...' : 'Retry connection'}
             </button>

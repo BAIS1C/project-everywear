@@ -456,6 +456,8 @@ mod tests {
             hf_file: Some("Qwen3-4B-Q4_K_M.gguf".into()),
             size_bytes: Some(2_500_000_000),
             sha256: None,
+            qa_only: false,
+            release_manifest_excluded: false,
         }
     }
 

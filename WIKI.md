@@ -1,8 +1,47 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.75
-Last updated: 2026-06-10 (H6 entitlement bypass audit)
+Version: 1.1.77
+Last updated: 2026-06-11 (Swarm fixrun visual QA integration)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-11 v1.1.77: Swarm fixrun integration and
+> visual QA landed. Shell-native applets now rely on shell chrome instead of
+> nested router headers; 1magen uses a compact shell-hosted strip while its
+> BinaryLocal runtime bridge remains explicitly pending. My Mait routes
+> through `KasaiApp`, Avatar Studio is labeled as Avatar Studio, and
+> `FrontendInline` applets without `frontend_port` open through the shell URL
+> instead of failing. Gener8 suite lifecycle now surfaces persistent status in
+> shell chrome, the bug report modal uses the recent diagnostic ring, and
+> `ShellLayout.tsx` unloads shared Gener8 applets through the Rust
+> `unload_inline_applet_models` command instead of a browser fetch to port
+> 3001. DAW engine health no longer advertises the phantom `gener8-shim`
+> endpoint; it reports `daw-shell-bridge` as an internal shell capability.
+> Native DAW no longer throws the pending bridge error in Tauri: Gener8
+> `dawApi.ts`, legacy Studio `DawPage.tsx`, and the transport bar route
+> through the `daw_bridge_request` command. The Rust bridge owns in-memory
+> project state, stem URL/local-directory import into tracks/regions,
+> transport, edits, save/load, and waveform peak responses. Visual QA
+> receipts live in
+> `screenshots/2026-06-11-fixrun-visual-qa/`. Verification passed across
+> shared, 1magen, Kasai, Character Studio, Vid, Gener8 web, Everywear OS,
+> cargo check, model-manager targeted tests, and debug NSIS installer prep.
+> Boundary: the bridge accepts stems and makes DAW timeline/transport
+> operable, but it does not invent a semantic stem-separation model; actual
+> extraction still depends on the shell-managed Pro Model producing stem URLs.
+
+> Current-state note, 2026-06-10 v1.1.76: Lane 3 diagnostic starvation fix
+> landed for shell bug reports. `@everywear/shared` now keeps a recent
+> 200-entry diagnostic ring independent of the five-second backend flush;
+> `BugReportModal` reads that ring so reports retain the launch/error chain
+> even after buffered entries have been persisted. `ShellLayout.tsx` enriches
+> every report seed with active window, open applets, launching applet,
+> inference phase, engine-health snapshot, and the last lifecycle events from
+> `applet-switch-progress`, `provision-manifest`, and `download-progress`.
+> Verification passed: `npm run build --workspace @everywear/shared`,
+> `npm run build --workspace everywear-os`, `npm run build --workspace
+> onemagen`, `cargo check -p everywear-os`, and `git diff --check`.
+> Boundary: this fixes report usefulness, not the 1magen BinaryLocal runtime
+> bridge or generation path.
 
 > Current-state note, 2026-06-10 v1.1.75: Phase 2 H6 entitlement bypass
 > audit generated

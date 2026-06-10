@@ -629,6 +629,8 @@ export const requestAppletSwitch = async (appletId: string) => {
 };
 export const closeAppletWebview = (appletId: string) =>
   hasTauriRuntime() ? invoke<void>('close_applet_webview', { appletId }) : Promise.resolve();
+export const unloadInlineAppletModels = (appletId: string) =>
+  hasTauriRuntime() ? invoke<void>('unload_inline_applet_models', { appletId: canonicalAppletId(appletId) }) : Promise.resolve();
 
 // ─── Video Encoder Sidecar ──────────────────────────────────────────────────
 

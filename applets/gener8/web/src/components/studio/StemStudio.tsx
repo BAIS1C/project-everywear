@@ -12,7 +12,6 @@ import type { Song } from "../../types";
 import {
   studioApi,
   generateApi,
-  getApiBase,
   getAudioUrl,
   TRACK_NAMES,
   type TrackName,
@@ -20,6 +19,7 @@ import {
   type StemJob,
   type StemGroup,
 } from "../../services/api";
+import { gener8EngineModels } from "@everywear/transport";
 import { useAuth } from "../../context/AuthContext";
 import { analyseWaveformCached, type WaveformData } from "./waveformAnalyser";
 import { Knob, VolumeFader } from "./SvgControls";
@@ -38,6 +38,15 @@ interface LoadedTrack {
 }
 
 type StudioPhase = "empty" | "loaded" | "extracting" | "extracted" | "error";
+
+function inventoryHasProModel(inventory: unknown): boolean {
+  const text = JSON.stringify(inventory ?? {}).toLowerCase();
+  return text.includes('xl-base')
+    || text.includes('pro_base')
+    || text.includes('stem')
+    || text.includes('reference')
+    || text.includes('cover');
+}
 
 interface StemState {
   id: TrackName;
@@ -953,27 +962,22 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
   useEffect(() => {
     studioApi.listStemGroups()
       .then(res => setSavedStemGroups(res.stemGroups || []))
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('[StemStudio] Failed to list saved stem groups:', err);
+      });
   }, [phase]); // Re-fetch when phase changes (new extractions may have landed)
 
   const refreshProModelStatus = useCallback(async (): Promise<boolean> => {
     try {
-      const res = await fetch(`${getApiBase()}/api/engine/pack-status?pack_id=pro_base`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!res.ok) {
-        setProModelPresent(false);
-        return false;
-      }
-      const data = await res.json();
-      const present = !!data.present;
+      const present = inventoryHasProModel(await gener8EngineModels());
       setProModelPresent(present);
       return present;
-    } catch {
+    } catch (err) {
+      console.warn('[StemStudio] Shell model inventory check failed:', err);
       setProModelPresent(false);
       return false;
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (!token || !canUseProModel) {
@@ -990,32 +994,24 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
       return;
     }
     setProModelDownloading(true);
-    setExtractError('Downloading Pro Model...');
+    setExtractError('Checking shell Pro Model inventory...');
     showToast({
       kind: 'info',
       eyebrow: 'Everywear · model lifecycle',
-      message: 'Stem separation requested the Pro Model. Everywear is pulling the VRAM-fit pack now.',
-      durationMs: 9000,
+      message: 'Stem separation requested the Pro Model. Everywear is checking shell inventory.',
+      durationMs: 6500,
     });
     try {
-      const res = await fetch(`${getApiBase()}/api/engine/install-pack`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ pack_id: 'pro_base' }),
-      });
-      const text = await res.text();
-      if (!res.ok || text.includes('event: error')) {
-        throw new Error('Pro Model download failed. Check launcher logs for details.');
+      const present = await refreshProModelStatus();
+      if (!present) {
+        throw new Error('Pro Model is not visible in shell inventory. Provision it through LifecycleHud, then check again.');
       }
       setProModelPresent(true);
-      setExtractError('Pro Model installed. Stem extraction is ready.');
+      setExtractError('Pro Model visible in shell inventory. Stem extraction is ready.');
       showToast({
         kind: 'success',
         eyebrow: 'Everywear · model lifecycle',
-        message: 'Pro Model installed. Stem separation is ready.',
+        message: 'Pro Model visible in shell inventory. Stem separation is ready.',
         durationMs: 6500,
       });
       if (phase === "error") setPhase("loaded");
@@ -1032,7 +1028,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
     } finally {
       setProModelDownloading(false);
     }
-  }, [canUseProModel, phase, token]);
+  }, [canUseProModel, phase, refreshProModelStatus]);
 
   const ensureProModelPresent = useCallback(async (): Promise<boolean> => {
     if (!canUseProModel) {
@@ -1042,7 +1038,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
     }
     const present = proModelPresent ?? await refreshProModelStatus();
     if (!present) {
-      setExtractError('Download Pro Model. Stem extraction requires the Pro Model.');
+      setExtractError('Provision Pro Model through the shell. Stem extraction requires the Pro Model.');
       setPhase("error");
       return false;
     }
@@ -1364,7 +1360,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`[StemStudio] Extract API failed for ${trackName}:`, msg);
-        setExtractError(`Stem extraction failed: ${msg}. Ensure the engine is running on localhost:3001.`);
+        setExtractError(`Stem extraction failed: ${msg}. Ensure the shell Gener8 engine and Pro Model lifecycle are ready.`);
         setPhase("error");
         // Reset all stems to idle on total failure
         setStems(prev => prev.map(s => ({ ...s, extractStatus: 'idle' as const })));
@@ -1755,8 +1751,8 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                 color: "#FCD34D", fontSize: 12, fontFamily: "system-ui", flexShrink: 0,
               }}
             >
-              <span style={{ fontWeight: 700 }}>Download Pro Model.</span>
-              <span style={{ flex: 1 }}>Stem extraction requires the Pro Model.</span>
+              <span style={{ fontWeight: 700 }}>Provision Pro Model.</span>
+              <span style={{ flex: 1 }}>Stem extraction requires the shell-managed Pro Model.</span>
               {canUseProModel && (
                 <button
                   onClick={handleDownloadProModel}
@@ -1768,7 +1764,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                     opacity: proModelDownloading ? 0.75 : 1,
                   }}
                 >
-                  {proModelDownloading ? "Downloading..." : "Download Pro Model"}
+                  {proModelDownloading ? "Checking..." : "Check Pro Model"}
                 </button>
               )}
             </div>
@@ -1802,7 +1798,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
               {phase === "extracting"
                 ? `Extracting... ${extractProgress}%`
                 : proModelDownloading
-                ? "Downloading Pro Model..."
+                ? "Checking Pro Model..."
                 : sourceUploadPending
                 ? "Preparing audio..."
                 : !sourceAudioUrl

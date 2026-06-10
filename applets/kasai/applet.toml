@@ -140,3 +140,22 @@ min_vram_mb = 4096
 
 [requirements]
 cuda_compute = "7.0"
+
+[qa]
+
+[[qa.provisioning_replay]]
+id = "p1-small-gguf-resume"
+description = "QA-only tiny GGUF used to prove provisioning manifest, progress, failure, and resumable retry without touching production model cache."
+
+  [[qa.provisioning_replay.models]]
+  key = "qa-tiny-random-llama-q2k"
+  role = "Primary"
+  required = true
+  vram_mb = 0
+  filename = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  hf_repo = "tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF"
+  hf_file = "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf"
+  size_bytes = 7_581_728
+  sha256 = "17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7"
+  qa_only = true
+  release_manifest_excluded = true

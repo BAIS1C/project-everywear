@@ -8,6 +8,7 @@
   "workspaces": [
     "packages/*",
     "platform/everywear-os",
+    "platform/everywear-os/src-tauri/sidecar/video-encoder",
     "applets/1magen",
     "applets/3nvizen",
     "applets/kasai",

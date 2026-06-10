@@ -1,11 +1,9 @@
 // @ts-nocheck
 /**
- * DawTransportBar — play/pause/stop transport for Gener8 DAW shim.
+ * DawTransportBar — play/pause/stop transport for Gener8 DAW shell bridge.
  *
- * Calls the local Gener8 backend DAW routes:
- *   POST /api/daw/play
- *   POST /api/daw/pause
- *   POST /api/daw/stop
+ * The legacy private shim route is retired. Until ShellLayout exposes DAW
+ * transport commands, this bar reports the bridge gap through toast/status.
  *
  * Mounted at the bottom of the Gener8 App layout, always visible.
  * Uses EWDS tokens via Tailwind utility classes matching the Gener8 convention.
@@ -13,16 +11,24 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Play, Pause, Square, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useSongStore } from '../context/SongStoreContext';
-
-const DAW_BASE = 'http://localhost:3001';
+import { showToast } from './ToastHost';
+import { dawApi } from '../services/dawApi';
 
 type TransportState = 'stopped' | 'playing' | 'paused';
 
 async function dawCommand(action: 'play' | 'pause' | 'stop'): Promise<boolean> {
   try {
-    const res = await fetch(`${DAW_BASE}/api/daw/${action}`, { method: 'POST' });
-    return res.ok;
-  } catch {
+    if (action === 'play') await dawApi.play();
+    if (action === 'pause') await dawApi.pause();
+    if (action === 'stop') await dawApi.stop();
+    return true;
+  } catch (error) {
+    showToast({
+      kind: 'error',
+      eyebrow: 'Gener8 DAW',
+      message: error instanceof Error ? error.message : `Cannot ${action}: DAW bridge failed.`,
+      durationMs: 6000,
+    });
     return false;
   }
 }

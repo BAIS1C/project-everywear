@@ -1089,6 +1089,8 @@ mod tests {
             hf_file: None,
             size_bytes: Some(2_500_000_000),
             sha256: None,
+            qa_only: false,
+            release_manifest_excluded: false,
         };
         assert_eq!(
             scanner.check_compatibility(&discovered, &req),

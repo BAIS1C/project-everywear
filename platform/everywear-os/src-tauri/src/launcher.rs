@@ -459,9 +459,7 @@ pub async fn provision_models(
             let info = available.iter().find(|m| &m.key == key);
             ModelDownloadInfo {
                 key: key.clone(),
-                name: info
-                    .map(|m| m.name.clone())
-                    .unwrap_or_else(|| key.clone()),
+                name: info.map(|m| m.name.clone()).unwrap_or_else(|| key.clone()),
                 size_bytes: info.map(|m| m.size_bytes).unwrap_or(0),
             }
         })
@@ -783,9 +781,7 @@ async fn provision_sidecar_from_url(
                 }
             }
             found.with_context(|| {
-                format!(
-                    "sidecar archive does not contain {exe_name} at root or one level deep"
-                )
+                format!("sidecar archive does not contain {exe_name} at root or one level deep")
             })?
         };
 
@@ -855,17 +851,21 @@ fn discover_ace_server_binary(executable: &str) -> Option<PathBuf> {
             return Some(path);
         }
     }
+    if let Ok(path) = std::env::var("EVERYWEAR_ACE_SERVER_DIR") {
+        let path = PathBuf::from(path).join(executable);
+        if path.exists() {
+            return Some(path);
+        }
+    }
 
     let mut candidates = Vec::new();
+    candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(executable));
+    candidates.push(PathBuf::from(r"C:\ACE-Step").join(executable));
+
+    #[cfg(debug_assertions)]
     if let Ok(cwd) = std::env::current_dir() {
         candidates.push(cwd.join("engines").join("ace-server").join(executable));
     }
-    candidates.push(
-        PathBuf::from(r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release")
-            .join(executable),
-    );
-    candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(executable));
-    candidates.push(PathBuf::from(r"C:\ACE-Step").join(executable));
 
     for candidate in candidates {
         if candidate.exists() {
@@ -873,9 +873,17 @@ fn discover_ace_server_binary(executable: &str) -> Option<PathBuf> {
         }
     }
 
-    which::which(executable)
-        .or_else(|_| which::which(executable.trim_end_matches(".exe")))
-        .ok()
+    #[cfg(debug_assertions)]
+    {
+        return which::which(executable)
+            .or_else(|_| which::which(executable.trim_end_matches(".exe")))
+            .ok();
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        None
+    }
 }
 
 fn provision_binary_link_or_copy(source: &PathBuf, target: &PathBuf) -> Result<()> {

@@ -275,7 +275,9 @@ fn narration_line(topic: &str, keyword: &str, index: usize, segment_count: usize
         );
     }
     if index + 1 == segment_count {
-        return format!("So the takeaway is simple: {topic} becomes clearer when you track {keyword}.");
+        return format!(
+            "So the takeaway is simple: {topic} becomes clearer when you track {keyword}."
+        );
     }
     match index {
         1 => format!("The next piece is {keyword}, because it shows what changes first."),
@@ -369,7 +371,8 @@ fn first_string(value: &Value, keys: &[&str]) -> Option<String> {
 }
 
 fn first_u64(value: &Value, keys: &[&str]) -> Option<u64> {
-    keys.iter().find_map(|key| value.get(*key).and_then(Value::as_u64))
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(Value::as_u64))
 }
 
 fn keywords_from_value(value: &Value) -> Option<Vec<String>> {
@@ -448,11 +451,9 @@ mod tests {
         assert_eq!(plan.plan_type, "kasai_keyword_narrated_short");
         assert_eq!(plan.aspect, "9:16");
         assert!(plan.shots.len() >= 3);
-        assert!(plan
-            .render_handoff
-            .sequence
-            .iter()
-            .any(|step| matches!(step, RenderHandoffStep::Keyframe { engine, .. } if engine == "1magen")));
+        assert!(plan.render_handoff.sequence.iter().any(
+            |step| matches!(step, RenderHandoffStep::Keyframe { engine, .. } if engine == "1magen")
+        ));
         assert!(plan
             .render_handoff
             .sequence

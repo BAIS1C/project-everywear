@@ -5,22 +5,13 @@
    Authored 2026-05-03 LATE NIGHT SGT (handover P3.3 + P3.4 + P3.5).
 
    What it does
-     1. On mount + on tier transition, GET /api/engine/pack-status?pack_id
-        =pro_base to learn whether the XL Base DiT is on disk and how
-        big the download would be.
+     1. On mount + on tier transition, asks the shell-owned Gener8 model
+        inventory whether the Pro capability model is visible.
      2. If the user is on Pro+ AND the pack is missing, render an inline
-        banner inside the Reference / Cover panel: "Reference and Cover
-        require the Pro Model. [Download Pro Model]".
-     3. On Download Pro Model click, open a consent modal showing the byte
-        total + a confirm button. (Disk-space check via Tauri fs API
-        deferred; the launcher's models dir is in %LOCALAPPDATA% and
-        most modern installs have plenty of headroom. The modal shows
-        the total so the user can self-check.)
-     4. On confirm, POST /api/engine/install-pack with body { pack_id }
-        and parse the response as Server-Sent Events. Render a progress
-        bar driven by the `progress` events. On `done` / `pack_done`,
-        celebrate + auto-close after a short delay. On `error`, show
-        the message + a Retry button.
+        banner inside the Reference / Cover panel.
+     3. On action, re-check the shell inventory and hand provisioning back
+        to the shell lifecycle path. This applet no longer owns model
+        downloads or private shim endpoints.
 
    Why a single component: keeps the SSE parser, modal state, and banner
    render co-located. CreatePanel just drops `<BetterModelsBanner show=...
@@ -34,18 +25,16 @@
    a download whose entitlement expires in 60 minutes.
 
    Tier-mapping note: Reference + Cover are Gener8 Pro features; pro_base
-   is the public Pro capability pack id. The manifest still carries the
-   legacy better_models upgrade-pack key, and shim.rs aliases pro_base to
-   that manifest key so Gener8 Pro and Creator Studio keep the same
-   entitlement semantics.
+   is the public Pro capability pack id. The shell inventory is the source
+   of truth for whether the capability model is available.
    ═══════════════════════════════════════════════════════════════════ */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, AlertTriangle, X, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from './ToastHost';
+import { gener8EngineModels } from '@everywear/transport';
 
-const SHIM_BASE = 'http://127.0.0.1:3001';
 // 2026-05-21 SGT — pro_base means the true capability model. Do not
 // substitute the SFTTurbo50 song model or save it under a Base filename.
 const PACK_ID = 'pro_base';
@@ -90,6 +79,26 @@ const formatBytes = (bytes: number): string => {
   return `${bytes} B`;
 };
 
+function inventoryHasProModel(inventory: unknown): boolean {
+  const text = JSON.stringify(inventory ?? {}).toLowerCase();
+  return text.includes('xl-base')
+    || text.includes('pro_base')
+    || text.includes('stem')
+    || text.includes('reference')
+    || text.includes('cover');
+}
+
+async function readShellPackStatus(): Promise<PackStatus> {
+  const inventory = await gener8EngineModels();
+  return {
+    pack_id: PACK_ID,
+    present: inventoryHasProModel(inventory),
+    bytes_total: 0,
+    vram_mb: 0,
+    plan: [],
+  };
+}
+
 export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
   const { hasTier, isTrialActive } = useAuth();
   const isPaidPro = hasTier('gener8_pro') && !isTrialActive;
@@ -114,11 +123,8 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
     }
     let cancelled = false;
     setStatusLoading(true);
-    fetch(`${SHIM_BASE}/api/engine/pack-status?pack_id=${PACK_ID}`, {
-      credentials: 'omit',
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: PackStatus | null) => {
+    readShellPackStatus()
+      .then((data) => {
         if (cancelled) return;
         setStatus(data);
         setStatusLoading(false);
@@ -141,130 +147,38 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
       bytesDone: 0,
       bytesTotal: status.bytes_total,
       currentFile: '',
-      currentRole: 'Connecting',
+      currentRole: 'Checking shell inventory',
     });
     showToast({
       kind: 'info',
       eyebrow: 'Everywear · model lifecycle',
-      message: 'Gener8 Pro requested the Pro Model. Everywear is pulling the VRAM-fit pack now.',
-      durationMs: 9000,
+      message: 'Gener8 Pro requested the Pro Model. Everywear is checking the shell-owned model inventory.',
+      durationMs: 6500,
     });
 
     try {
-      const res = await fetch(`${SHIM_BASE}/api/engine/install-pack`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pack_id: PACK_ID }),
-        credentials: 'omit',
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
+      const nextStatus = await readShellPackStatus();
+      setStatus(nextStatus);
+      if (!nextStatus.present) {
         setPhase({
           kind: 'error',
-          message: `Install rejected (${res.status}): ${text || res.statusText}`,
+          message: 'The shell model inventory does not expose a Pro capability model yet. Open the shell model lifecycle path to provision it.',
+        });
+        showToast({
+          kind: 'warning',
+          eyebrow: 'Everywear · model lifecycle',
+          message: 'Pro Model is not visible in shell inventory. LifecycleHud must provision it outside this applet.',
+          durationMs: 9000,
         });
         return;
       }
-
-      const reader = res.body?.getReader();
-      if (!reader) {
-        setPhase({ kind: 'error', message: 'No response body from launcher.' });
-        return;
-      }
-
-      // Minimal SSE parser. Frames are delimited by \n\n; within a frame
-      // each line is `event: <name>` or `data: <json>`.
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentEvent = 'message';
-
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let frameEnd = buffer.indexOf('\n\n');
-        while (frameEnd !== -1) {
-          const frame = buffer.slice(0, frameEnd);
-          buffer = buffer.slice(frameEnd + 2);
-
-          let frameEvent = 'message';
-          const dataLines: string[] = [];
-          for (const line of frame.split('\n')) {
-            if (line.startsWith(':')) continue; // comment
-            if (line.startsWith('event:')) {
-              frameEvent = line.slice(6).trim();
-            } else if (line.startsWith('data:')) {
-              dataLines.push(line.slice(5).trim());
-            }
-          }
-          currentEvent = frameEvent;
-          if (dataLines.length > 0) {
-            const payload = dataLines.join('\n');
-            try {
-              const data = JSON.parse(payload);
-              if (currentEvent === 'progress') {
-                setPhase({
-                  kind: 'downloading',
-                  pct: typeof data.overall_pct === 'number' ? data.overall_pct : 0,
-                  bytesDone:
-                    typeof data.bytes_done_global === 'number'
-                      ? data.bytes_done_global
-                      : 0,
-                  bytesTotal:
-                    typeof data.bytes_total_global === 'number'
-                      ? data.bytes_total_global
-                      : status.bytes_total,
-                  currentFile: data.file ?? '',
-                  currentRole: data.role ?? '',
-                });
-              } else if (currentEvent === 'done' || currentEvent === 'pack_done') {
-                setPhase({ kind: 'done' });
-                showToast({
-                  kind: 'success',
-                  eyebrow: 'Everywear · model lifecycle',
-                  message: 'Pro Model installed. Gener8 Pro capability tasks are ready.',
-                  durationMs: 6500,
-                });
-              } else if (currentEvent === 'error') {
-                setPhase({
-                  kind: 'error',
-                  message: data.error || 'Install failed.',
-                });
-                showToast({
-                  kind: 'error',
-                  eyebrow: 'Everywear · model lifecycle',
-                  message: data.error || 'Pro Model install failed.',
-                  durationMs: 9000,
-                });
-              }
-              // 'plan' and 'file_done' events are informational; the
-              // progress handler covers UI updates.
-            } catch {
-              // Ignore frames we can't parse — the next progress tick
-              // will refresh the state.
-            }
-          }
-
-          frameEnd = buffer.indexOf('\n\n');
-        }
-      }
-
-      // Stream ended without a 'done' event — treat as success if we
-      // got any progress at all, error otherwise.
-      setPhase((prev) =>
-        prev.kind === 'downloading' && prev.pct >= 99
-          ? { kind: 'done' }
-          : prev.kind === 'downloading'
-          ? {
-              kind: 'error',
-              message: 'Connection ended before download finished.',
-            }
-          : prev,
-      );
+      setPhase({ kind: 'done' });
+      showToast({
+        kind: 'success',
+        eyebrow: 'Everywear · model lifecycle',
+        message: 'Pro Model is visible in shell inventory. Capability tasks are ready.',
+        durationMs: 6500,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setPhase({
@@ -305,8 +219,8 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
           <div className="flex items-start gap-2">
             <Download size={14} className="text-cyan-400 shrink-0 mt-0.5" />
             <p className="text-[10px]" style={{ color: 'var(--ew-text)' }}>
-              <span className="font-semibold">Download Pro Model.</span>{' '}
-              Reference and Cover require the Pro Model.
+              <span className="font-semibold">Provision Pro Model.</span>{' '}
+              Reference and Cover require the shell-managed Pro Model.
             </p>
           </div>
           <button
@@ -314,7 +228,7 @@ export const BetterModelsBanner: React.FC<Props> = ({ show, onInstalled }) => {
             onClick={() => setModalOpen(true)}
             className="ew-btn ew-btn--sm ew-btn--primary w-full justify-center mt-2"
           >
-            Download Pro Model
+            Check Pro Model
           </button>
         </div>
       </div>
@@ -403,8 +317,8 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
               : isError
               ? 'Download Failed'
               : isDownloading
-              ? 'Downloading Pro Model'
-              : 'Download Pro Model'}
+      ? 'Checking Pro Model'
+              : 'Check Pro Model'}
           </h2>
         </div>
 
@@ -414,18 +328,18 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
               className="text-xs mb-4"
               style={{ color: 'var(--ew-text-muted)' }}
             >
-              Install the Pro capability model for full-quality Cover,
+              Provision the Pro capability model for full-quality Cover,
               Reference, DAW stems, Lego, Complete, and Creator Studio
-              rendering. Song generation can keep using the faster Gener8
-              model; the app swaps automatically for capability tasks.
-              Stays on disk; works offline once installed.
+              rendering through the Everywear shell lifecycle path. Song
+              generation can keep using the faster Gener8 model; the app
+              swaps automatically for capability tasks.
             </p>
             <p
               className="text-[10px] mb-4 italic"
               style={{ color: 'var(--ew-text-muted)' }}
             >
-              This is a one-time download of about {sizeLabel}. You can keep
-              working in S³ Studio while it runs in the background.
+              This applet only verifies inventory. LifecycleHud owns the
+              install path and disk-space checks.
             </p>
             <div className="flex gap-2 justify-end">
               <button
@@ -440,7 +354,7 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
                 onClick={onConfirm}
                 className="ew-btn ew-btn--sm ew-btn--primary"
               >
-                Confirm &amp; Download
+                Check Inventory
               </button>
             </div>
           </>
@@ -454,7 +368,7 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
             >
               {phase.currentRole
                 ? `Fetching ${phase.currentRole}...`
-                : 'Connecting to model server…'}
+                : 'Checking shell inventory...'}
             </p>
             <div
               className="w-full h-2 rounded-full overflow-hidden mb-2"
@@ -480,8 +394,7 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
               className="text-[10px] mt-3 italic"
               style={{ color: 'var(--ew-text-muted)' }}
             >
-              Don't close the launcher. The download resumes automatically if
-              the connection blips.
+              The shell publishes model inventory and progress outside this applet.
             </p>
           </>
         )}
@@ -493,8 +406,8 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
               style={{ color: 'var(--ew-text)' }}
             >
               Full-quality Cover, Reference, and stem workflows are now
-              available. The app will use the Pro Model automatically for
-              capability tasks.
+              available in the shell inventory. The app will use the Pro
+              Model automatically for capability tasks.
             </p>
             <div className="flex justify-end mt-4">
               <button
@@ -524,8 +437,8 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
               <code className="font-mono">
                 %LOCALAPPDATA%\S3-Gener8\logs\s3-gener8.log
               </code>{' '}
-              have the full error trace. Common causes: launcher not running,
-              insufficient disk space, network drop.
+              have the full error trace. Common causes: launcher not running
+              or model lifecycle not publishing inventory yet.
             </p>
             <div className="flex gap-2 justify-end">
               <button
@@ -540,7 +453,7 @@ const ConsentProgressModal: React.FC<ModalProps> = ({
                 onClick={onConfirm}
                 className="ew-btn ew-btn--sm ew-btn--primary"
               >
-                Retry
+                Check Again
               </button>
             </div>
           </>

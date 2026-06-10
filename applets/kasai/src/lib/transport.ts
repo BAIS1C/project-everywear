@@ -150,6 +150,13 @@ export interface MyMaitCompanionState {
   voice_enabled: boolean;
 }
 
+export interface MyMaitCompanionStateInput {
+  manifest_id?: string | null;
+  presence_tier?: 'hidden' | 'portrait' | 'desktop_widget' | string;
+  widget_visible?: boolean;
+  voice_enabled?: boolean;
+}
+
 export interface MaitManifestSummary {
   id: string;
   display_name: string;

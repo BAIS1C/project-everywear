@@ -537,6 +537,26 @@ function extractAudioKey(value: string | null | undefined): string {
   return value;
 }
 
+const STANDALONE_DEFAULT_DURATION_SECONDS = 180;
+
+function durationSecondsFromValue(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const clock = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+}
+
+function generationDurationSeconds(params: unknown): number | undefined {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return undefined;
+  return durationSecondsFromValue((params as Record<string, unknown>).duration);
+}
+
 async function currentUserId(): Promise<string | undefined> {
   try {
     const { data } = await supabase.auth.getUser();
@@ -597,7 +617,7 @@ export const songsApi = {
       style: song.style ?? '',
       lyrics: song.lyrics ?? '',
       audioKey,
-      duration: song.duration ?? 0,
+      duration: durationSecondsFromValue(song.duration) ?? generationDurationSeconds(song.generation_params) ?? 0,
       bpm: song.bpm ?? null,
       keyScale: song.key_scale ?? null,
       timeSignature: song.time_signature ?? null,
@@ -728,7 +748,7 @@ function vaultItemToTrack(item: VaultItem): LibraryTrackWire {
     style: item.genre ?? '',
     lyrics: item.lyrics_text ?? '',
     audioKey: item.file_path,
-    duration: item.duration_seconds,
+    duration: durationSecondsFromValue(item.duration_seconds) ?? generationDurationSeconds(item.generation_params),
     bpm: item.bpm ?? null,
     keyScale: undefined,
     timeSignature: undefined,
@@ -845,19 +865,24 @@ async function handleLocalPlaylists<T>(_endpoint: string, method: string, body: 
 }
 
 function normalizeGenerationParams(params: GenerationParams): GenerationParams {
+  const normalized = { ...params } as GenerationParams & Record<string, unknown>;
+  const requestedDuration = Number(normalized.duration);
+  if (!Number.isFinite(requestedDuration) || requestedDuration <= 0) {
+    normalized.duration = STANDALONE_DEFAULT_DURATION_SECONDS;
+  }
   if (params.mode === 'reference') {
     return {
-      ...params,
+      ...normalized,
       referenceAudioUrl: getAudioRequestPath(params.referenceAudioUrl) || params.referenceAudioUrl,
     };
   }
   if (params.mode === 'cover') {
     return {
-      ...params,
+      ...normalized,
       sourceAudioUrl: getAudioRequestPath(params.sourceAudioUrl) || params.sourceAudioUrl,
     };
   }
-  return params;
+  return normalized;
 }
 
 export const generateApi = {

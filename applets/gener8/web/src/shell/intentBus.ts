@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { intentBus } from '../context/intentBus';
 import { showToast } from '../components/ToastHost';
-import { getApiBase } from '../services/api';
 import { findEngineEndpoint, formatEngineLastChecked, readEngineHealth } from '@everywear/shared';
+import { gener8EngineModels } from '@everywear/transport';
 
 export { intentBus, openVidWithSong } from '../context/intentBus';
 
@@ -17,65 +17,35 @@ export function sendToStudio(sourceApp: string, songId: string, songTitle?: stri
 
 const PRO_PACK_ID = 'pro_base';
 
-function gener8ShimDownMessage(): string | null {
+function aceServerDownMessage(): string | null {
   const payload = readEngineHealth();
-  const endpoint = findEngineEndpoint(payload, 'gener8-shim');
+  const endpoint = findEngineEndpoint(payload, 'ace-server');
   if (!payload || !endpoint || endpoint.online) return null;
   const checked = formatEngineLastChecked(payload);
-  return `Could not verify the Pro Model because the local Gener8 shim is offline on localhost:3001${checked ? `, last checked ${checked}` : ''}.`;
+  return `Could not verify the Pro Model because the shell Gener8 engine is offline${checked ? `, last checked ${checked}` : ''}.`;
+}
+
+function inventoryHasProModel(inventory: unknown): boolean {
+  const text = JSON.stringify(inventory ?? {}).toLowerCase();
+  return text.includes('xl-base')
+    || text.includes('pro_base')
+    || text.includes('stem')
+    || text.includes('reference')
+    || text.includes('cover');
 }
 
 async function proModelPresent(): Promise<boolean> {
-  const response = await fetch(`${getApiBase()}/api/engine/pack-status?pack_id=${PRO_PACK_ID}`, {
-    credentials: 'omit',
-  });
-  if (!response.ok) return false;
-  const status = await response.json();
-  return status?.present === true;
-}
-
-async function pullProModel(): Promise<boolean> {
-  showToast({
-    kind: 'info',
-    eyebrow: 'Everywear · model lifecycle',
-    message: 'DAW requested the Pro Model. Everywear is pulling the VRAM-fit pack now.',
-    durationMs: 9000,
-  });
-
-  const response = await fetch(`${getApiBase()}/api/engine/install-pack`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pack_id: PRO_PACK_ID }),
-    credentials: 'omit',
-  });
-  const text = await response.text().catch(() => '');
-  if (!response.ok || text.includes('event: error')) {
-    showToast({
-      kind: 'error',
-      eyebrow: 'Everywear · model lifecycle',
-      message: 'Pro Model pull failed. Check the local engine logs before retrying stem separation.',
-      durationMs: 9000,
-    });
-    return false;
-  }
-
-  showToast({
-    kind: 'success',
-    eyebrow: 'Everywear · model lifecycle',
-    message: 'Pro Model is available for DAW stem separation.',
-    durationMs: 6500,
-  });
-  return true;
+  return inventoryHasProModel(await gener8EngineModels());
 }
 
 export async function ensureModel(model: string): Promise<boolean> {
   if (model !== 'base' && model !== 'pro_base') return true;
-  const shimDown = gener8ShimDownMessage();
-  if (shimDown) {
+  const engineDown = aceServerDownMessage();
+  if (engineDown) {
     showToast({
       kind: 'error',
       eyebrow: 'Everywear · model lifecycle',
-      message: shimDown,
+      message: engineDown,
       durationMs: 8000,
     });
     return false;
@@ -90,13 +60,19 @@ export async function ensureModel(model: string): Promise<boolean> {
       });
       return true;
     }
-    return await pullProModel();
+    showToast({
+      kind: 'warning',
+      eyebrow: 'Everywear · model lifecycle',
+      message: `DAW requested ${PRO_PACK_ID}, but the shell model inventory does not expose a Pro capability model yet.`,
+      durationMs: 9000,
+    });
+    return false;
   } catch (err) {
     showToast({
       kind: 'error',
       eyebrow: 'Everywear · model lifecycle',
-      message: gener8ShimDownMessage()
-        ?? 'Could not verify the Pro Model because the local Gener8 engine is offline on localhost:3001.',
+      message: aceServerDownMessage()
+        ?? 'Could not verify the Pro Model from the shell-owned Gener8 inventory.',
       durationMs: 8000,
     });
     return false;

@@ -43,5 +43,7 @@ export interface LayerUSnapshot {
   feeds: LayerUFeedItem[];
   sourceRollup: LayerUSourceRollup;
   updatedAt: string | null;
+  lastOnlineAt?: string | null;
+  restoredFromSession?: boolean;
   error: string | null;
 }

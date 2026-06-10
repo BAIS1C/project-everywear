@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "bundle:prepare": "node scripts/prepare-tauri-resources.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

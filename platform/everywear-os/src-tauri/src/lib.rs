@@ -10,6 +10,7 @@ mod auth;
 mod budget;
 mod commands;
 mod crash;
+mod daw_bridge;
 #[cfg(feature = "discourse-native")]
 mod discourse;
 mod engine_health;
@@ -186,9 +187,30 @@ async fn request_applet_switch(
             return Ok(());
         }
         registry::AppletLaunchKind::FrontendInline => {
-            let port = applet
-                .frontend_port
-                .ok_or("FrontendInline applet is missing frontend_port")?;
+            let Some(port) = applet.frontend_port else {
+                let frontend_url = format!("everywear://shell/{}", applet_id);
+                tracing::info!(
+                    applet = %applet_id,
+                    url = %frontend_url,
+                    "Shell-native frontend applet opened through shell router"
+                );
+                let _ = app.emit(
+                    "applet-webview-opened",
+                    serde_json::json!({
+                        "applet_id": applet_id,
+                        "name": applet.name,
+                        "url": frontend_url,
+                    }),
+                );
+                let _ = app.emit(
+                    "applet-switch-progress",
+                    launcher::SwitchProgressPayload {
+                        stage: launcher::SwitchStage::Ready,
+                        message: format!("{} is ready", applet.name),
+                    },
+                );
+                return Ok(());
+            };
             let route = applet.frontend_route.as_deref().unwrap_or("");
             let frontend_url = format!("http://127.0.0.1:{}{}", port, route);
 
@@ -1344,6 +1366,48 @@ async fn close_applet_webview(
     Ok(())
 }
 
+/// Ask the local Gener8 shared engine to unload model-backed state for a
+/// shell-native inline applet. The browser shell must not address shim ports
+/// directly; centralise that bridge here until the engine router owns it.
+#[tauri::command]
+async fn unload_inline_applet_models(applet_id: String) -> Result<(), String> {
+    let canonical = registry::canonical_applet_id(&applet_id);
+    let uses_gener8_shared_engine = matches!(
+        canonical,
+        "gener8-4ever" | "gener8-pro" | "ai-director" | "daw"
+    );
+    if !uses_gener8_shared_engine {
+        return Ok(());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .map_err(|error| format!("Failed to create unload client: {error}"))?;
+    let response = client
+        .post("http://127.0.0.1:3001/api/engine/unload-models")
+        .send()
+        .await
+        .map_err(|error| format!("Failed to request Gener8 model unload: {error}"))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "Gener8 model unload returned HTTP {}",
+            response.status()
+        ));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn daw_bridge_request(
+    state: tauri::State<'_, AppState>,
+    endpoint: String,
+    body: Option<serde_json::Value>,
+) -> Result<serde_json::Value, String> {
+    let mut daw = state.daw_bridge.lock().await;
+    daw.handle(&endpoint, body)
+}
+
 /// Legacy launch_applet: now delegates to request_applet_switch for binary
 /// applets and handles web applets directly.
 #[tauri::command]
@@ -1518,6 +1582,7 @@ pub fn run() {
             user_session: Arc::new(Mutex::new(None)),
             video_encoder: Arc::new(Mutex::new(video_encoder::VideoEncoderService::new())),
             gener8_engine: Arc::new(Mutex::new(gener8_engine::Gener8EngineState::default())),
+            daw_bridge: Arc::new(Mutex::new(daw_bridge::DawBridgeState::default())),
             vault: vault_state.clone(),
         })
         .manage::<vault_commands::VaultState>(vault_state)
@@ -1581,6 +1646,8 @@ pub fn run() {
             check_applet_requirements,
             request_applet_switch,
             close_applet_webview,
+            unload_inline_applet_models,
+            daw_bridge_request,
             submit_engine_job,
             commands::kasai::get_engine_status,
             commands::kasai::send_message,

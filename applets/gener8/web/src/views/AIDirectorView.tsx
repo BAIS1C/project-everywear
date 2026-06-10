@@ -1,9 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Clapperboard, Film, ListVideo, Lock, Music, Sparkles, Wand2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Activity, Clapperboard, Film, ListVideo, Lock, Sparkles, Wand2 } from 'lucide-react';
 import { AI_DIRECTOR_SAPI_PLANNER_CONTRACT } from '@everywear/transport';
+import { findEngineEndpoint, formatEngineLastChecked, readEngineHealth, subscribeEngineHealth, type EngineHealthPayload } from '@everywear/shared';
 import { useAuth } from '../context/AuthContext';
-import { useSongStore } from '../context/SongStoreContext';
-import type { Song } from '../types';
 
 interface DirectorShot {
   time: string;
@@ -18,7 +17,14 @@ const SUBJECTS = ['performer silhouette', 'lyric environment', 'abstract stage',
 const MOTION_CUES = ['kick pulses', 'vocal cuts', 'bass swells', 'snare flashes', 'chorus bloom', 'breakdown drift'];
 const GRADES = ['neon black', 'warm film', 'chrome cyan', 'deep magenta', 'soft tungsten', 'high contrast'];
 
-function parseDurationSeconds(duration: Song['duration']): number {
+interface DirectorSeed {
+  id?: string;
+  title?: string;
+  style?: string;
+  duration?: number | string;
+}
+
+function parseDurationSeconds(duration: DirectorSeed['duration']): number {
   if (typeof duration === 'number' && Number.isFinite(duration)) return Math.max(15, duration);
   if (typeof duration !== 'string') return 180;
   const parts = duration.split(':').map((part) => Number.parseInt(part, 10));
@@ -26,7 +32,7 @@ function parseDurationSeconds(duration: Song['duration']): number {
   return 180;
 }
 
-function songSeed(song: Song | null): number {
+function songSeed(song: DirectorSeed | null): number {
   const text = `${song?.id || 'director'}:${song?.title || ''}:${song?.style || ''}`;
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
@@ -41,7 +47,7 @@ function formatTime(seconds: number): string {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-function makeShotPlan(song: Song | null): DirectorShot[] {
+function makeShotPlan(song: DirectorSeed | null): DirectorShot[] {
   const seed = songSeed(song);
   const duration = parseDurationSeconds(song?.duration);
   const shotCount = 6;
@@ -60,53 +66,23 @@ function makeShotPlan(song: Song | null): DirectorShot[] {
 
 export default function AIDirectorView() {
   const { hasTier } = useAuth();
-  const { songs } = useSongStore();
-  const [selectedSongId, setSelectedSongId] = useState<string | null>(songs[0]?.id ?? null);
+  const [engineHealth, setEngineHealth] = useState<EngineHealthPayload | null>(() => readEngineHealth());
   const canUseDirector = hasTier('creator_studio');
 
-  const selectedSong = useMemo(
-    () => songs.find((song) => song.id === selectedSongId) ?? songs[0] ?? null,
-    [selectedSongId, songs],
-  );
-  const shotPlan = useMemo(() => makeShotPlan(selectedSong), [selectedSong]);
+  useEffect(() => subscribeEngineHealth(setEngineHealth), []);
+
+  const videoEndpoint = findEngineEndpoint(engineHealth, 'video-encoder');
+  const musicEndpoint = findEngineEndpoint(engineHealth, 'ace-server');
+  const videoReady = Boolean(videoEndpoint?.online);
+  const canDraftPlan = canUseDirector && videoReady;
+  const shotPlan = useMemo(() => makeShotPlan(null), []);
   const plannerProviders = AI_DIRECTOR_SAPI_PLANNER_CONTRACT.providers
     .map((provider) => provider === 'external_api' ? 'external API' : provider.replace('_', ' '))
     .join(', ');
+  const lastChecked = formatEngineLastChecked(engineHealth);
 
   return (
-    <div className="s3-family-route h-full bg-s3 text-[color:var(--ew-text)] overflow-hidden flex">
-      <aside className="w-64 shrink-0 border-r border-[color:var(--ew-border)] ew-v2-bevel flex flex-col text-slate-300">
-        <div className="px-3 py-3 border-b border-[color:var(--ew-border)]">
-          <div className="flex items-center gap-2">
-            <Clapperboard size={15} className="text-accent-400" />
-            <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">AI Director</h3>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {songs.length === 0 ? (
-            <div className="px-4 py-8 text-center">
-              <Music size={22} className="mx-auto mb-3 text-slate-500" />
-              <p className="text-xs text-slate-400">No tracks in the vault yet</p>
-            </div>
-          ) : (
-            songs.map((song) => (
-              <button
-                key={song.id}
-                onClick={() => setSelectedSongId(song.id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-[color:var(--ew-border)] transition-colors ${
-                  selectedSong?.id === song.id
-                    ? 'bg-accent-500/10 border-l-2 border-l-accent-500'
-                    : 'hover:bg-[color:var(--ew-primary-soft)]'
-                }`}
-              >
-                <p className="text-xs font-medium text-slate-100 truncate">{song.title}</p>
-                <p className="text-[10px] text-slate-400 truncate mt-0.5">{song.style || 'Generated track'}</p>
-              </button>
-            ))
-          )}
-        </div>
-      </aside>
-
+    <div className="s3-family-route h-full bg-s3 text-[color:var(--ew-text)] overflow-hidden flex flex-col">
       <main className="flex-1 min-w-0 overflow-y-auto">
         <div className="px-6 py-5 border-b border-[color:var(--ew-border)] flex items-center justify-between gap-4">
           <div>
@@ -114,9 +90,9 @@ export default function AIDirectorView() {
             <h2 className="text-xl font-semibold text-[color:var(--ew-text)] mt-1">AI Director</h2>
           </div>
           <button
-            disabled={!canUseDirector || !selectedSong}
+            disabled={!canDraftPlan}
             className={`ew-btn ew-btn--sm inline-flex items-center gap-2 text-xs font-semibold transition-colors ${
-              canUseDirector && selectedSong
+              canDraftPlan
                 ? 'ew-btn--primary'
                 : 'ew-btn--ghost opacity-50'
             }`}
@@ -124,6 +100,33 @@ export default function AIDirectorView() {
             {canUseDirector ? <Wand2 size={14} /> : <Lock size={14} />}
             Draft Plan
           </button>
+        </div>
+
+        <div
+          className="mx-6 mt-5 rounded-lg border px-4 py-3 flex flex-wrap items-center gap-3 text-xs"
+          style={{
+            borderColor: videoReady ? 'color-mix(in oklab, var(--ew-status-green) 35%, var(--ew-border))' : 'color-mix(in oklab, var(--ew-status-amber) 40%, var(--ew-border))',
+            background: videoReady ? 'color-mix(in oklab, var(--ew-status-green) 9%, transparent)' : 'color-mix(in oklab, var(--ew-status-amber) 10%, transparent)',
+            color: 'var(--ew-text)',
+          }}
+        >
+          <Activity size={15} className={videoReady ? 'text-emerald-300' : 'text-amber-300'} />
+          <span className="font-semibold">{videoReady ? 'Video engine ready' : 'Video engine offline'}</span>
+          <span style={{ color: 'var(--ew-text-muted)' }}>
+            {videoEndpoint
+              ? `${videoEndpoint.id} ${videoEndpoint.online ? 'online' : 'offline'}${videoEndpoint.port ? `, port ${videoEndpoint.port}` : ''}`
+              : 'No video-encoder endpoint published by the shell'}
+          </span>
+          <span className="opacity-40">|</span>
+          <span style={{ color: 'var(--ew-text-muted)' }}>
+            Music engine: {musicEndpoint ? `${musicEndpoint.id} ${musicEndpoint.online ? 'online' : 'offline'}` : 'not published'}
+          </span>
+          {lastChecked && (
+            <>
+              <span className="opacity-40">|</span>
+              <span style={{ color: 'var(--ew-text-muted)' }}>Checked {lastChecked}</span>
+            </>
+          )}
         </div>
 
         {!canUseDirector && (
@@ -141,7 +144,7 @@ export default function AIDirectorView() {
             <div className="px-4 py-3 border-b border-[color:var(--ew-border)] flex items-center gap-2">
               <ListVideo size={15} className="text-accent-400" />
               <h3 className="text-sm font-semibold text-slate-100">
-                {selectedSong?.title || 'Shot Plan'}
+                Shot Plan
               </h3>
             </div>
             <div className="divide-y divide-[color:var(--ew-border)]">
@@ -169,11 +172,11 @@ export default function AIDirectorView() {
             </div>
             <div className="space-y-3">
               {[
-                ['Track', selectedSong?.title || 'No track selected'],
-                ['Duration', String(selectedSong?.duration || '0:00')],
-                ['Visual Aim', selectedSong?.style || 'Music-led video'],
+                ['Track', 'No song sidebar required'],
+                ['Duration', '3:00 storyboard draft'],
+                ['Visual Aim', 'Music-led video'],
                 ['Planner Route', `SAPI: ${plannerProviders}`],
-                ['Export', canUseDirector ? 'Storyboard ready' : 'Locked'],
+                ['Readiness', canDraftPlan ? 'Shell engine ready' : 'Waiting for shell engine'],
               ].map(([label, value]) => (
                 <div key={label}>
                   <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{label}</p>
@@ -187,7 +190,7 @@ export default function AIDirectorView() {
                 Vid Studio handoff
               </div>
               <p className="text-[11px] text-slate-400 mt-2">
-                Plans stay local until the shell video engine is connected.
+                Plans stay local until the shell video engine reports online.
               </p>
             </div>
           </aside>

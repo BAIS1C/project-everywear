@@ -8,6 +8,10 @@ import { vaultRegisterImage } from '@everywear/transport';
 
 const log = getLogger('1magen');
 
+interface ImagenCoreProps {
+  shellHosted?: boolean;
+}
+
 function joinPath(dir: string, filename: string) {
   if (dir.endsWith('\\') || dir.endsWith('/')) return `${dir}${filename}`;
   return `${dir}\\${filename}`;
@@ -17,7 +21,7 @@ function fileNameFromPath(path: string) {
   return path.split(/[\\/]/).pop() || path;
 }
 
-export function ImagenCore() {
+export function ImagenCore({ shellHosted = false }: ImagenCoreProps) {
   const [prompt, setPrompt] = useState(
     'A cinematic editorial portrait of Kasai, local-first AI consigliere, sharp gaze, subtle half-smile, black technical jacket with amber and cyan interface glows, rain-sheened city bokeh, premium concept art, grounded dramatic lighting, highly detailed skin and eyes.',
   );
@@ -281,28 +285,37 @@ export function ImagenCore() {
   }, [ensureModelLoaded, generating, negativePrompt, outputDir, prompt, resolution, runtimeBridgeError, runtimeCommandsReady, seedText, sourceImagePath]);
 
   const modeLabel = sourceImagePath ? 'Image to Image / Edit' : 'Text to Image';
+  const statusBadges = (
+    <div className="imagen-workbench__status">
+      <span className={`imagen-badge ${stackReady ? 'imagen-badge--ready' : 'imagen-badge--warn'}`}>
+        {runtimeCommandsReady === false
+          ? 'Runtime handoff pending'
+          : runtimeCommandsReady === null
+            ? 'Checking runtime'
+            : stackReady ? 'Local stack ready' : provisioning ? 'Provisioning local stack' : 'Will auto-provision'}
+      </span>
+      <span className="imagen-badge">{modeLabel}</span>
+    </div>
+  );
 
   return (
-    <div className="imagen-workbench">
-      <div className="imagen-workbench__header">
-        <div>
-          <div className="imagen-workbench__eyebrow">Everywear Applet</div>
-          <h1 className="imagen-workbench__title">1magen</h1>
-          <p className="imagen-workbench__subtitle">
-            Prompt, optional source image, resolution, output. The machine logic stays behind the scenes.
-          </p>
+    <div className={`imagen-workbench ${shellHosted ? 'imagen-workbench--shell-hosted' : ''}`}>
+      {shellHosted ? (
+        <div className="imagen-workbench__shell-strip" aria-label="1magen runtime status">
+          {statusBadges}
         </div>
-        <div className="imagen-workbench__status">
-          <span className={`imagen-badge ${stackReady ? 'imagen-badge--ready' : 'imagen-badge--warn'}`}>
-            {runtimeCommandsReady === false
-              ? 'Runtime handoff pending'
-              : runtimeCommandsReady === null
-                ? 'Checking runtime'
-                : stackReady ? 'Local stack ready' : provisioning ? 'Provisioning local stack' : 'Will auto-provision'}
-          </span>
-          <span className="imagen-badge">{modeLabel}</span>
+      ) : (
+        <div className="imagen-workbench__header">
+          <div>
+            <div className="imagen-workbench__eyebrow">Everywear Applet</div>
+            <h1 className="imagen-workbench__title">1magen</h1>
+            <p className="imagen-workbench__subtitle">
+              Prompt, optional source image, resolution, output. The machine logic stays behind the scenes.
+            </p>
+          </div>
+          {statusBadges}
         </div>
-      </div>
+      )}
 
       <div className="imagen-workbench__body">
         <section className="imagen-controls">

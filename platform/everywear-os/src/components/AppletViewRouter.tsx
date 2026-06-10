@@ -55,6 +55,7 @@ interface AppletComponentProps {
   skin?: string;
   mode?: string;
   appletId?: string;
+  shellHosted?: boolean;
   launchManifest?: AppletLaunchManifest | null;
 }
 
@@ -66,7 +67,7 @@ const APPLET_COMPONENTS: Record<string, {
 }> = {
   kasai: {
     component: React.lazy(() =>
-      import('@applets/kasai/src/shell/KasaiCore').then(m => ({ default: m.KasaiCore }))
+      import('@applets/kasai/src/shell/KasaiApp').then(m => ({ default: m.KasaiApp }))
     ),
     displayName: 'My Mait',
   },
@@ -139,7 +140,7 @@ const APPLET_COMPONENTS: Record<string, {
       await setCharacterStudioAssetBase();
       return import('@applets/character-studio/src/index');
     }),
-    displayName: 'Character Studio',
+    displayName: 'Avatar Studio',
   },
   loom: {
     component: React.lazy(() => import('@applets/educ8/src/index')),
@@ -288,23 +289,14 @@ export function AppletViewRouter({ appletId, applet, skin, mode, onClose, onCras
         skin={skin}
         mode={mode}
         appletId={appletId}
+        shellHosted
         launchManifest={launchManifest}
       />
     </Suspense>
   );
 
   return (
-    <div className="avr-container">
-      <div className="avr-toolbar">
-        <span className="avr-toolbar__name">{entry.displayName}</span>
-        <button
-          className="avr-toolbar__close"
-          onClick={onClose}
-          title="Close applet"
-        >
-          {'✕'}
-        </button>
-      </div>
+    <div className="avr-container avr-container--single-chrome">
       <div className="avr-viewport">
         <AppletErrorBoundary
           appletId={appletId}

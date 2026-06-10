@@ -1,4 +1,4 @@
-export const API_URL = "http://localhost:8081";
+export const API_URL = null;
 export const Contract = {
   owner: "0x634B0510C5062CFf8009eAAc2435eB93bc4764ad",
   address: "0xAdB05de6171954541D832E6E40303FEE0420B20c", // Polygon mainet

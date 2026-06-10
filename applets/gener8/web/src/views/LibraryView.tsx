@@ -5,7 +5,7 @@
  * Features: media filter tabs, sort dropdown, pagination, stats bar,
  * thumbnail display, and item detail navigation.
  */
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Music, Image, Film, FileAudio, Star, Search, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { useVault, type VaultMediaFilter, type VaultSortBy } from '../context/VaultProvider';
 import { vaultFileUrl, type VaultItem } from '@everywear/transport';
@@ -119,6 +119,24 @@ function safeNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(numberValue) ? numberValue : fallback;
 }
 
+function durationSecondsFromValue(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const clock = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+}
+
+function generationDurationSeconds(params: unknown): number | undefined {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return undefined;
+  return durationSecondsFromValue((params as Record<string, unknown>).duration);
+}
+
 function normalizeVaultItem(item: VaultItem): VaultItem {
   const mediaType = item.media_type === 'image' || item.media_type === 'video' || item.media_type === 'audio'
     ? item.media_type
@@ -129,6 +147,9 @@ function normalizeVaultItem(item: VaultItem): VaultItem {
   const generationParams = item.generation_params && typeof item.generation_params === 'object' && !Array.isArray(item.generation_params)
     ? item.generation_params
     : {};
+  const durationSeconds =
+    durationSecondsFromValue(item.duration_seconds)
+    ?? generationDurationSeconds(generationParams);
 
   return {
     ...item,
@@ -144,7 +165,7 @@ function normalizeVaultItem(item: VaultItem): VaultItem {
     mime_type: typeof item.mime_type === 'string' ? item.mime_type : '',
     favorite: Boolean(item.favorite),
     asset_kind: item.asset_kind,
-    duration_seconds: safeNumber(item.duration_seconds),
+    duration_seconds: durationSeconds,
     generation_params: generationParams,
   };
 }
@@ -531,13 +552,62 @@ export default function LibraryView() {
   const audio = useShellAudio();
   const [deleteTarget, setDeleteTarget] = useState<VaultItem | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const items = useMemo(() => dedupeVaultItems(vault.items.map(normalizeVaultItem)), [vault.items]);
-  const selectedItem = vault.selectedItem ? normalizeVaultItem(vault.selectedItem) : null;
+  const [durationOverrides, setDurationOverrides] = useState<Record<string, number>>({});
+  const baseItems = useMemo(() => dedupeVaultItems(vault.items.map(normalizeVaultItem)), [vault.items]);
+  const items = useMemo(
+    () => baseItems.map((item) => {
+      const duration = durationOverrides[item.id];
+      return duration ? { ...item, duration_seconds: duration } : item;
+    }),
+    [baseItems, durationOverrides],
+  );
+  const selectedItem = vault.selectedItem
+    ? {
+        ...normalizeVaultItem(vault.selectedItem),
+        duration_seconds: durationOverrides[vault.selectedItem.id] ?? normalizeVaultItem(vault.selectedItem).duration_seconds,
+      }
+    : null;
 
   const totalPages = Math.max(1, Math.ceil(vault.total / vault.pageSize));
   const showingFrom = vault.total > 0 ? vault.page * vault.pageSize + 1 : 0;
   const showingTo = Math.min((vault.page + 1) * vault.pageSize, vault.total);
   const isVideoGallery = vault.filter === 'video';
+
+  useEffect(() => {
+    const pending = baseItems
+      .filter(isPlayableAudioItem)
+      .filter((item) => !durationSecondsFromValue(item.duration_seconds))
+      .filter((item) => !durationOverrides[item.id])
+      .slice(0, 16);
+
+    if (!pending.length) return undefined;
+
+    let cancelled = false;
+    const audioElements: HTMLAudioElement[] = [];
+
+    pending.forEach((item) => {
+      const audioElement = new Audio();
+      audioElement.preload = 'metadata';
+      audioElement.src = vaultFileUrl(item.file_path);
+      audioElement.onloadedmetadata = () => {
+        if (cancelled) return;
+        const duration = durationSecondsFromValue(audioElement.duration);
+        if (!duration) return;
+        setDurationOverrides((current) => (
+          current[item.id] ? current : { ...current, [item.id]: duration }
+        ));
+      };
+      audioElements.push(audioElement);
+    });
+
+    return () => {
+      cancelled = true;
+      audioElements.forEach((audioElement) => {
+        audioElement.removeAttribute('src');
+        audioElement.load();
+      });
+    };
+  }, [baseItems, durationOverrides]);
 
   const handleItemClick = useCallback((item: VaultItem) => {
     if (isPlayableAudioItem(item)) {

@@ -103,8 +103,8 @@ companions = [
     "neural-codec.exe",
     "mp3-codec.exe",
 ]
-# Local build path (dev machines with acestep.cpp checked out)
-source_dir = "C:\\Users\\MAG MSI\\Project Ace\\S3 STUDIO\\acestep.cpp\\build\\Release"
+# Release installs/provisions this bundle into ~/.everywear/bin/ace-server.
+# Dev builders can seed from ACE_SERVER_PATH or EVERYWEAR_ACE_SERVER_DIR.
 version = "0.1.0-acestep-1.5"
 
 # ── Base install model groups ────────────────────────────────────────

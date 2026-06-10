@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::state::AppState;
+use crate::video_encoder;
 
 pub type VaultState = Arc<Mutex<VaultIndex>>;
 
@@ -556,9 +557,11 @@ pub async fn vault_register_video_from_encoder(
         return Err("invalid video encoder session id".into());
     }
 
-    let response = reqwest::get(format!("http://127.0.0.1:9877/download/{session_id}"))
-        .await
-        .map_err(|e| format!("failed to fetch encoder output: {e}"))?;
+    let response = reqwest::get(video_encoder::encoder_http_url(format!(
+        "/download/{session_id}"
+    )))
+    .await
+    .map_err(|e| format!("failed to fetch encoder output: {e}"))?;
     let status = response.status();
     if !status.is_success() {
         let body = response.text().await.unwrap_or_default();

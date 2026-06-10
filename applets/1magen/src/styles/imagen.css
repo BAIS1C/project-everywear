@@ -23,6 +23,18 @@
   overflow: hidden;
 }
 
+.imagen-workbench--shell-hosted {
+  min-height: 0;
+  padding: var(--ew-space-4);
+}
+
+.imagen-workbench__shell-strip {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 34px;
+}
+
 .imagen-workbench__header {
   display: flex;
   justify-content: space-between;

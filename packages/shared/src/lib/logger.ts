@@ -38,6 +38,16 @@ async function resolveInvoke() {
 // ── Logger class ────────────────────────────────────────────────────
 
 const MAX_BUFFER_SIZE = 500;
+const MAX_RECENT_ENTRIES = 200;
+
+const recentEntries: LogEntry[] = [];
+
+function rememberRecentEntry(entry: LogEntry): void {
+  recentEntries.push(entry);
+  if (recentEntries.length > MAX_RECENT_ENTRIES) {
+    recentEntries.splice(0, recentEntries.length - MAX_RECENT_ENTRIES);
+  }
+}
 
 export class EverywearLogger {
   private buffer: LogEntry[] = [];
@@ -95,6 +105,7 @@ export class EverywearLogger {
     }
 
     this.buffer.push(entry);
+    rememberRecentEntry(entry);
 
     // Cap buffer size to prevent memory leaks if flush is failing
     if (this.buffer.length > MAX_BUFFER_SIZE) {
@@ -190,6 +201,10 @@ export class EverywearLogger {
         entry.trace_id = this.traceIdStack[this.traceIdStack.length - 1];
       }
       this.buffer.push(entry);
+      rememberRecentEntry(entry);
+      if (this.buffer.length > MAX_BUFFER_SIZE) {
+        this.buffer = this.buffer.slice(-MAX_BUFFER_SIZE);
+      }
     };
   }
 
@@ -270,13 +285,24 @@ export function getAllBufferedEntries(): LogEntry[] {
 }
 
 /**
- * Count errors across all loggers' buffers.
+ * Retrieve the recent diagnostic ring, including entries already flushed to
+ * the backend. Bug reports use this so the five-second flush does not starve
+ * reports of the launch/error chain that just happened.
+ */
+export function getRecentLogEntries(limit = MAX_RECENT_ENTRIES): LogEntry[] {
+  return recentEntries
+    .slice(-Math.max(1, limit))
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+/**
+ * Count recent errors across the diagnostic ring.
  */
 export function getErrorCount(): number {
   let count = 0;
-  for (const logger of loggers.values()) {
-    for (const entry of logger.getBufferedEntries()) {
-      if (entry.level === "error" || entry.level === "fatal") count++;
+  for (const entry of recentEntries) {
+    if (entry.level === "error" || entry.level === "fatal") {
+      count++;
     }
   }
   return count;
@@ -287,14 +313,12 @@ export function getErrorCount(): number {
  */
 export function getLastError(): LogEntry | null {
   let latest: LogEntry | null = null;
-  for (const logger of loggers.values()) {
-    for (const entry of logger.getBufferedEntries()) {
-      if (
-        (entry.level === "error" || entry.level === "fatal") &&
-        (!latest || entry.timestamp > latest.timestamp)
-      ) {
-        latest = entry;
-      }
+  for (const entry of recentEntries) {
+    if (
+      (entry.level === "error" || entry.level === "fatal") &&
+      (!latest || entry.timestamp > latest.timestamp)
+    ) {
+      latest = entry;
     }
   }
   return latest;

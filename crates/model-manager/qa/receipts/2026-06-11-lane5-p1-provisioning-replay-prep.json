@@ -1,0 +1,38 @@
+{
+  "id": "lane5-p1-provisioning-replay-prep",
+  "created_sgt": "2026-06-11T00:13+08:00",
+  "location": "C:\\Users\\MAG MSI\\Project Everywear",
+  "status": "prepared",
+  "reason_not_full_native_replay": "The visible failure and retry sequence requires an interactive Everywear shell run with a deliberate network kill during download. This receipt prepares the pinned QA-only seed and replay steps without mutating the production model cache.",
+  "qa_seed": {
+    "applet_manifest": "applets/kasai/applet.toml",
+    "qa_replay_id": "p1-small-gguf-resume",
+    "model_key": "qa-tiny-random-llama-q2k",
+    "hf_repo": "tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF",
+    "hf_file": "llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf",
+    "size_bytes": 7581728,
+    "sha256": "17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7",
+    "qa_only": true,
+    "release_manifest_excluded": true
+  },
+  "source_verification": {
+    "huggingface_api": "https://huggingface.co/api/models/tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF?blobs=true",
+    "resolve_url": "https://huggingface.co/tensorblock/llama-2-tiny-4kv-heads-4layers-random-GGUF/resolve/main/llama-2-tiny-4kv-heads-4layers-random-Q2_K.gguf",
+    "headers_seen": {
+      "x-linked-size": "7581728",
+      "x-linked-etag": "17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7"
+    }
+  },
+  "native_replay_steps": [
+    "Use a QA replay command or harness that loads AppletManifest::qa_provisioning_models from applets/kasai/applet.toml and writes to a temporary QA cache, not the working model cache.",
+    "Emit provision-manifest before first byte with model_key qa-tiny-random-llama-q2k, size_bytes 7581728, and total_bytes 7581728.",
+    "Start download and confirm download-progress includes live downloaded, total, pct, rate, and ETA in the shell Lifecycle HUD.",
+    "Kill network mid-download or block huggingface.co temporarily, confirm visible failure and retained .part file.",
+    "Restore network and retry, confirm Range resume from the .part file, SHA256 verification, final success, and no release manifest entry."
+  ],
+  "expected_verification": [
+    "cargo test -p model-manager qa_provisioning_seed_is_excluded_from_release_manifests",
+    "npm run build --workspace everywear-os",
+    "cargo check -p everywear-os"
+  ]
+}

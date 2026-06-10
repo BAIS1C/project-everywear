@@ -1,31 +1,46 @@
 .buttonContainer {
     position: absolute;
-    left: 0;
-    width: calc(100% - 64px);
-    width: -webkit-calc(100% - 64px);
-    top: 50%;
-    transform: translateY(-50%);
-    -webkit-transform: translateY(-50%);
-    text-align: center;
-    height: 320px;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%);
+    -webkit-transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: min(520px, calc(100% - 48px));
+    min-height: 52px;
+    padding: 8px;
+    border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.16));
+    border-radius: var(--ew-radius-md, 6px);
+    background: color-mix(in oklab, var(--ew-bg, #080a0d) 72%, transparent);
+    backdrop-filter: blur(14px);
 }
-.buttonContainer .button {
-    background: none !important;
-    border: none !important;
+.buttonContainer .actionButton {
+    min-width: 0;
+    flex: 1;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border: 1px solid var(--ew-border, rgba(255, 255, 255, 0.18));
+    border-radius: var(--ew-radius-sm, 4px);
+    background: color-mix(in oklab, var(--ew-surface, #161b22) 82%, transparent);
+    color: var(--ew-text, #e5eef6);
     cursor: pointer;
-    margin: 0 32px;
-    height: 320px;
-    width: 126px;
-    position: relative;
+    font: 800 12px var(--ew-font-display, system-ui);
+    text-transform: uppercase;
 }
-.buttonContainer .button img {
-    height: 100%;
-    transition: all 0.3s ease-in-out;
-    position: absolute;
-    left: 0;
-    top: 0;
+
+.buttonContainer .actionButton span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.buttonContainer .button:hover img {
-    top: -8px;
+
+.buttonContainer .actionButton:hover {
+    border-color: color-mix(in oklab, var(--ew-primary, #00c2ff) 54%, var(--ew-border, rgba(255, 255, 255, 0.18)));
+    background: color-mix(in oklab, var(--ew-primary, #00c2ff) 12%, var(--ew-surface, #161b22));
 }
 

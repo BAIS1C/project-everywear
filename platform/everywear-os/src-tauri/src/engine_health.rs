@@ -2,8 +2,9 @@
 //!
 //! Today engine ports and health checks are ad-hoc: ace-server on 8080
 //! (/props), the LTX sidecar on 8787 (/health), the video-encoder sidecar
-//! on 9877 (/health), and a Gener8 shim that DAW expects on 3001 but which
-//! nothing serves (standing blocker). Each consumer probes its own port
+//! on 9877 (/health), Project SON on 3117 (/api/health), and DAW shell bridge
+//! capability status for the shell-owned DAW bridge.
+//! Each consumer probes its own port
 //! with its own timeout and failure semantics.
 //!
 //! Slice 1 centralises the truth: one shell-owned prober sweeps the known
@@ -27,6 +28,7 @@ pub struct EngineEndpoint {
     /// "sidecar" = a local engine process the shell can expect to manage;
     /// "expected" = declared/probed by an applet but nothing is known to
     /// serve it yet. Expected endpoints are reported honestly as down.
+    /// "internal" = shell-owned capability status with no HTTP prober.
     pub kind: &'static str,
 }
 
@@ -54,15 +56,19 @@ pub const KNOWN_ENDPOINTS: &[EngineEndpoint] = &[
         health_path: "/health",
         kind: "sidecar",
     },
-    // DAW probes a Gener8 shim here; nothing serves it today (standing
-    // blocker, PROJECT_STATE 2026-06-10 01:26). Reported honestly as down
-    // until the shim exists or DAW is repointed at a real engine.
     EngineEndpoint {
-        id: "gener8-shim",
-        applet_id: "daw",
-        port: 3001,
-        health_path: "/api/engine/pack-status?pack_id=better_models",
+        id: "project-son",
+        applet_id: "layeru-osint",
+        port: 3117,
+        health_path: "/api/health",
         kind: "expected",
+    },
+    EngineEndpoint {
+        id: "daw-shell-bridge",
+        applet_id: "daw",
+        port: 0,
+        health_path: "",
+        kind: "internal",
     },
 ];
 
@@ -100,23 +106,29 @@ pub fn spawn_engine_health_prober(app: tauri::AppHandle) {
         loop {
             let mut endpoints = Vec::with_capacity(KNOWN_ENDPOINTS.len());
             for ep in KNOWN_ENDPOINTS {
-                let url = format!("http://127.0.0.1:{}{}", ep.port, ep.health_path);
-                let started = std::time::Instant::now();
-                let online = matches!(
-                    client.get(&url).send().await,
-                    Ok(resp) if resp.status().is_success()
-                );
+                let (online, latency_ms) = if ep.kind == "internal" {
+                    (true, None)
+                } else {
+                    let url = format!("http://127.0.0.1:{}{}", ep.port, ep.health_path);
+                    let started = std::time::Instant::now();
+                    let online = matches!(
+                        client.get(&url).send().await,
+                        Ok(resp) if resp.status().is_success()
+                    );
+                    let latency_ms = if online {
+                        Some(started.elapsed().as_millis() as u64)
+                    } else {
+                        None
+                    };
+                    (online, latency_ms)
+                };
                 endpoints.push(EndpointHealth {
                     id: ep.id,
                     applet_id: ep.applet_id,
                     port: ep.port,
                     kind: ep.kind,
                     online,
-                    latency_ms: if online {
-                        Some(started.elapsed().as_millis() as u64)
-                    } else {
-                        None
-                    },
+                    latency_ms,
                 });
             }
             debug!(?endpoints, "engine health sweep");

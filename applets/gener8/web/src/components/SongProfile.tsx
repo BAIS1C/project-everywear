@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { ShareModal } from './ShareModal';
 import { SongDropdownMenu } from './SongDropdownMenu';
+import ConfirmDialog from './ConfirmDialog';
+import { showToast } from './ToastHost';
 
 interface SongProfileProps {
     songId: string;
@@ -97,6 +99,7 @@ export const SongProfile: React.FC<SongProfileProps> = ({
     const [loading, setLoading] = useState(true);
     const [shareModalOpen, setShareModalOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const dropdownAnchorRef = useRef<HTMLDivElement>(null);
 
     // Inline title editing
@@ -205,7 +208,11 @@ export const SongProfile: React.FC<SongProfileProps> = ({
         // Validate: images only, max 5MB
         if (!file.type.startsWith('image/')) return;
         if (file.size > 5 * 1024 * 1024) {
-            alert('Thumbnail must be under 5MB');
+            showToast({
+                kind: 'warning',
+                eyebrow: 'Artwork',
+                message: 'Thumbnail must be under 5 MB.',
+            });
             return;
         }
 
@@ -249,6 +256,21 @@ export const SongProfile: React.FC<SongProfileProps> = ({
 
     const handleReuseBoth = () => {
         if (song && onReusePrompt) onReusePrompt(song);
+    };
+
+    const handleDeleteSong = async () => {
+        if (!token || !song) return;
+        try {
+            await songsApi.deleteSong(song.id, token);
+            onBack();
+        } catch (err) {
+            console.error('Failed to delete song:', err);
+            showToast({
+                kind: 'error',
+                eyebrow: 'Song',
+                message: err instanceof Error ? err.message : 'Failed to delete song',
+            });
+        }
     };
 
     if (loading) {
@@ -475,17 +497,7 @@ export const SongProfile: React.FC<SongProfileProps> = ({
                                     onReusePrompt={() => handleReusePrompts()}
                                     onCover={() => onCover?.(song)}
                                     onShare={() => setShareModalOpen(true)}
-                                    onDelete={async () => {
-                                        if (!token) return;
-                                        if (confirm('Delete this song permanently?')) {
-                                            try {
-                                                await songsApi.deleteSong(song.id, token);
-                                                onBack();
-                                            } catch (err) {
-                                                console.error('Failed to delete song:', err);
-                                            }
-                                        }
-                                    }}
+                                    onDelete={() => setDeleteConfirmOpen(true)}
                                 />
                             </div>
                         </div>
@@ -562,6 +574,21 @@ export const SongProfile: React.FC<SongProfileProps> = ({
                     isOpen={shareModalOpen}
                     onClose={() => setShareModalOpen(false)}
                     song={song}
+                />
+            )}
+
+            {song && (
+                <ConfirmDialog
+                    open={deleteConfirmOpen}
+                    title="Delete song?"
+                    body={`"${song.title}" will be permanently removed.`}
+                    confirmLabel="Delete"
+                    destructive
+                    onCancel={() => setDeleteConfirmOpen(false)}
+                    onConfirm={() => {
+                        setDeleteConfirmOpen(false);
+                        void handleDeleteSong();
+                    }}
                 />
             )}
 

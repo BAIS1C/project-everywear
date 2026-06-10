@@ -183,10 +183,9 @@ fn discover_local_ace_candidates(bin_name: &str) -> Vec<PathBuf> {
     if let Ok(path) = std::env::var("ACE_SERVER_PATH") {
         candidates.push(PathBuf::from(path));
     }
-    candidates.push(
-        PathBuf::from(r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release")
-            .join(bin_name),
-    );
+    if let Ok(path) = std::env::var("EVERYWEAR_ACE_SERVER_DIR") {
+        candidates.push(PathBuf::from(path).join(bin_name));
+    }
     candidates.push(PathBuf::from(r"C:\Program Files\ACE-Step").join(bin_name));
     candidates.push(PathBuf::from(r"C:\ACE-Step").join(bin_name));
     candidates
@@ -331,7 +330,26 @@ fn find_node() -> Result<PathBuf> {
     } else {
         "node"
     };
-    which::which(bin).map_err(|_| anyhow!("node runtime not found for ACE silence stub"))
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let resource_node = parent.join("resources").join(bin);
+            if resource_node.exists() {
+                return Ok(resource_node);
+            }
+        }
+    }
+    #[cfg(debug_assertions)]
+    {
+        return which::which(bin)
+            .map_err(|_| anyhow!("node runtime not found for ACE silence stub"));
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        Err(anyhow!(
+            "node runtime not found for ACE silence stub. Expected packaged resource at current_exe/resources/{bin}."
+        ))
+    }
 }
 
 async fn wait_for_ready(url: &str) -> Result<()> {

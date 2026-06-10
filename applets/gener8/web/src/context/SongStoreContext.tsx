@@ -52,6 +52,24 @@ function vaultDisplayTitle(item: VaultItem): string {
   return fileStem(item.file_path) || item.title || 'Untitled';
 }
 
+function durationSecondsFromValue(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const clock = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+}
+
+function generationDurationSeconds(params: unknown): number | undefined {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return undefined;
+  return durationSecondsFromValue((params as Record<string, unknown>).duration);
+}
+
 // -- Faux peaks (deterministic placeholder waveform) --------------------------
 
 function seededFauxPeaks(id: string, opts: { bins: number }): number[] {
@@ -70,7 +88,10 @@ function seededFauxPeaks(id: string, opts: { bins: number }): number[] {
 // -- Wire mapping -------------------------------------------------------------
 
 function mapWireSong(s: any): Song {
-  const durationSeconds = Number(s.duration_seconds ?? s.duration ?? 0);
+  const durationSeconds =
+    durationSecondsFromValue(s.duration_seconds)
+    ?? durationSecondsFromValue(s.duration)
+    ?? generationDurationSeconds(s.generation_params);
   const createdAtRaw = s.created_at ?? s.createdAt ?? s.created_at_ms ?? Date.now();
   const createdAtMs = typeof createdAtRaw === 'number' && createdAtRaw < 10_000_000_000
     ? createdAtRaw * 1000
@@ -82,9 +103,9 @@ function mapWireSong(s: any): Song {
     lyrics: s.lyrics ?? s.lyrics_text ?? '',
     style: s.style ?? s.genre ?? '',
     coverUrl: `https://picsum.photos/seed/${s.id}/400/400`,
-    duration: durationSeconds > 0
+    duration: durationSeconds
       ? `${Math.floor(durationSeconds / 60)}:${String(Math.floor(durationSeconds % 60)).padStart(2, '0')}`
-      : '0:00',
+      : undefined,
     createdAt: new Date(createdAtMs),
     tags: s.tags || [],
     audioUrl: getAudioUrl(s.audio_url || s.file_path, s.id),

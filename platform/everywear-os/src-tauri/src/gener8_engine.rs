@@ -561,6 +561,24 @@ async fn wait_for_props() -> Result<()> {
 }
 
 fn start_ace_server(bin: &Path, models_dir: &Path) -> Result<Child> {
+    let is_stub = bin
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == "ace-server-stub.js");
+
+    if is_stub {
+        let node = locate_bundled_node()?;
+        let mut cmd = Command::new(node);
+        cmd.args([
+            bin.to_string_lossy().as_ref(),
+            "--port",
+            &ACE_PORT.to_string(),
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+        return spawn_drained(cmd);
+    }
+
     let mut cmd = Command::new(bin);
     cmd.args([
         "--models",
@@ -615,21 +633,68 @@ fn locate_ace_binary() -> Result<PathBuf> {
     if platform.exists() {
         return Ok(platform);
     }
-    if let Ok(path) = std::env::var("ACE_SERVER_PATH") {
-        let path = PathBuf::from(path);
-        if path.exists() {
+    let stub = everywear_paths::bin_dir()
+        .join("ace-server")
+        .join("ace-server-stub.js");
+    if stub.exists() {
+        tracing::warn!(
+            path = %stub.display(),
+            "ace-server binary missing; using silence stub"
+        );
+        return Ok(stub);
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        if let Ok(path) = std::env::var("ACE_SERVER_PATH") {
+            let path = PathBuf::from(path);
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+        if let Ok(path) = std::env::var("EVERYWEAR_ACE_SERVER_DIR") {
+            let path = PathBuf::from(path).join(bin_name);
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+        if let Ok(path) = which::which(bin_name.trim_end_matches(".exe")) {
+            tracing::warn!(
+                "ace-server not in platform dir; using PATH copy at {} (DEV ONLY)",
+                path.display()
+            );
             return Ok(path);
         }
     }
-    let local = PathBuf::from(r"C:\Users\MAG MSI\Project Ace\S3 STUDIO\acestep.cpp\build\Release")
-        .join(bin_name);
-    if local.exists() {
-        return Ok(local);
+
+    Err(anyhow!(
+        "ace-server binary not found. Expected {}. Launch Gener8 through the shell provisioning path, \
+         or install the ACE sidecar into ~/.everywear/bin/ace-server.",
+        platform.display()
+    ))
+}
+
+fn locate_bundled_node() -> Result<PathBuf> {
+    let bin_name = if cfg!(target_os = "windows") {
+        "node.exe"
+    } else {
+        "node"
+    };
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let resource_node = parent.join("resources").join(bin_name);
+            if resource_node.exists() {
+                return Ok(resource_node);
+            }
+        }
     }
-    if let Ok(path) = which::which(bin_name.trim_end_matches(".exe")) {
+    #[cfg(debug_assertions)]
+    if let Ok(path) = which::which(bin_name) {
         return Ok(path);
     }
-    Err(anyhow!("ace-server binary not found"))
+    Err(anyhow!(
+        "node runtime not found for ACE silence stub. Expected packaged resource at current_exe/resources/{bin_name}."
+    ))
 }
 
 fn resolve_models_dir() -> PathBuf {

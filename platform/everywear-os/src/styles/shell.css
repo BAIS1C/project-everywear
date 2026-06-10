@@ -2430,6 +2430,10 @@ body[data-skin="carbon"] .ew-section {
   overflow: hidden;
 }
 
+.avr-container--single-chrome .avr-viewport {
+  flex: 1 1 auto;
+}
+
 .avr-toolbar {
   display: flex;
   align-items: center;
@@ -2673,8 +2677,8 @@ body[data-skin="carbon"] .avr-viewport {
 
 /* ═══════════════════════════════════════════════════════
    Lifecycle HUD (2026-06-10) — persistent model
-   provisioning progress. Docked bottom-left above the
-   taskbar; ToastHost owns bottom-right. Replaces
+   provisioning progress. Collapsed pill docks in the
+   taskbar; expanded panel floats above it. ToastHost owns bottom-right. Replaces
    download-progress toasts.
    ═══════════════════════════════════════════════════════ */
 
@@ -2827,6 +2831,28 @@ body[data-skin="carbon"] .avr-viewport {
   gap: 7px;
   cursor: pointer;
   font-size: 12px;
+}
+
+.ew-taskbar .ew-lifecycle-hud--pill {
+  position: static;
+  left: auto;
+  bottom: auto;
+  width: auto;
+  max-width: 260px;
+  height: 30px;
+  padding: 5px 9px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: none;
+  background: color-mix(in oklab, var(--ew-surface) 88%, transparent);
+}
+
+.ew-taskbar .ew-lifecycle-hud:not(.ew-lifecycle-hud--pill) {
+  position: fixed;
+  left: 16px;
+  bottom: 56px;
 }
 
 .ew-lifecycle-hud__pill-dot {

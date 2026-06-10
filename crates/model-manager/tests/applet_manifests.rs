@@ -64,3 +64,27 @@ fn frontend_only_manifests_are_zero_model_web_manifests() {
         );
     }
 }
+
+#[test]
+fn qa_provisioning_seed_is_excluded_from_release_manifests() {
+    let manifest_path = workspace_root()
+        .join("applets")
+        .join("kasai")
+        .join("applet.toml");
+    let manifest = AppletManifest::load(&manifest_path)
+        .unwrap_or_else(|err| panic!("{} failed canonical parse: {err}", manifest_path.display()));
+    let seeds = manifest.qa_provisioning_models();
+
+    let (_, seed) = seeds
+        .iter()
+        .find(|(_, seed)| seed.key == "qa-tiny-random-llama-q2k")
+        .expect("kasai applet should carry the Lane 5 QA provisioning seed");
+
+    assert!(seed.qa_only);
+    assert!(seed.release_manifest_excluded);
+    assert_eq!(
+        seed.sha256.as_deref(),
+        Some("17b638445eb0272abd5c524b69c8cf84dcf23b20142db309595218b93a4424e7")
+    );
+    assert_eq!(seed.size_bytes, Some(7_581_728));
+}

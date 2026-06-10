@@ -121,7 +121,7 @@ interface RateSample {
 
 export function LifecycleHud({ appletNames }: { appletNames?: Record<string, string> }) {
   const [hud, setHud] = useState<HudState>(IDLE_STATE);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const ratesRef = useRef<Map<string, RateSample>>(new Map());
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Rate map is read at render time; bump to re-render on sample updates.
@@ -138,7 +138,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
     clearHideTimer();
     ratesRef.current.clear();
     setHud(IDLE_STATE);
-    setCollapsed(false);
+    setCollapsed(true);
   }, [clearHideTimer]);
 
   useEffect(() => {
@@ -162,7 +162,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
         hideTimerRef.current = setTimeout(() => {
           ratesRef.current.clear();
           setHud(IDLE_STATE);
-          setCollapsed(false);
+          setCollapsed(true);
           hideTimerRef.current = null;
         }, 4000);
         return;
@@ -170,6 +170,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
 
       if (stage === 'Failed') {
         clearHideTimer();
+        setCollapsed(false);
         setHud((prev) => ({
           ...prev,
           visible: true,
@@ -298,7 +299,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
       hideTimerRef.current = setTimeout(() => {
         ratesRef.current.clear();
         setHud(IDLE_STATE);
-        setCollapsed(false);
+        setCollapsed(true);
         hideTimerRef.current = null;
       }, 4000);
     }, 1500);
@@ -314,6 +315,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
     const sized = hud.rows.filter((row) => row.total > 0);
     const totalBytes = sized.reduce((sum, row) => sum + row.total, 0);
     const doneBytes = sized.reduce((sum, row) => sum + Math.min(row.downloaded, row.total), 0);
+    const hasStartedBytes = hud.rows.some((row) => row.downloaded > 0 || row.pct > 0 || row.done);
     const pct = totalBytes > 0
       ? Math.round((doneBytes / totalBytes) * 100)
       : hud.rows.length > 0
@@ -326,7 +328,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
     const remaining = totalBytes - doneBytes;
     const eta = rate > 0 && remaining > 0 ? remaining / rate : null;
     const doneCount = hud.rows.filter((row) => row.done).length;
-    return { totalBytes, doneBytes, pct, rate: rate > 0 ? rate : null, eta, doneCount };
+    return { totalBytes, doneBytes, hasStartedBytes, pct, rate: rate > 0 ? rate : null, eta, doneCount };
   }, [hud.rows]);
 
   if (!hud.visible) return null;
@@ -347,7 +349,7 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
       >
         <span className="ew-lifecycle-hud__pill-dot" aria-hidden="true" />
         {headline}
-        {hasRows && hud.status === 'active' ? ` · ${aggregate.pct}%` : ''}
+        {hasRows && hud.status === 'active' && aggregate.hasStartedBytes ? ` · ${aggregate.pct}%` : ''}
       </button>
     );
   }
@@ -404,7 +406,8 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
                   : ''}
               </span>
               <span>
-                {[aggregateRate, aggregateEta].filter(Boolean).join(' · ') || `${aggregate.pct}%`}
+                {[aggregateRate, aggregateEta].filter(Boolean).join(' · ')
+                  || (aggregate.hasStartedBytes ? `${aggregate.pct}%` : 'Waiting for download')}
               </span>
             </div>
           </div>
@@ -416,7 +419,9 @@ export function LifecycleHud({ appletNames }: { appletNames?: Record<string, str
                 <li key={row.key} className={`ew-lifecycle-hud__row ${row.done ? 'ew-lifecycle-hud__row--done' : ''}`}>
                   <div className="ew-lifecycle-hud__row-top">
                     <span className="ew-lifecycle-hud__row-name" title={row.key}>{row.name}</span>
-                    <span className="ew-lifecycle-hud__row-pct">{row.done ? 'done' : `${Math.round(row.pct)}%`}</span>
+                    <span className="ew-lifecycle-hud__row-pct">
+                      {row.done ? 'done' : row.downloaded > 0 || row.pct > 0 ? `${Math.round(row.pct)}%` : 'waiting'}
+                    </span>
                   </div>
                   <div className="ew-lifecycle-hud__bar ew-lifecycle-hud__bar--row" aria-hidden="true">
                     <span style={{ width: `${Math.min(100, row.pct)}%` }} />
