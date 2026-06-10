@@ -96,6 +96,18 @@ First-run beta machine checklist:
 - No release path depends on `C:\Users\MAG MSI\...` absolute directories.
 - No release path depends on running from `target\debug` or repo cwd.
 
+## Phase 2 H6 - Entitlement Bypass Audit
+
+Artifact: `screenshots/2026-06-10-proof-pass/h6-entitlement-bypass-audit.json`
+
+| ID | Class | Finding | Evidence | Tier | Status |
+| --- | --- | --- | --- | --- | --- |
+| H6-001 | Owner/admin local effective-state bypass | `AuthContext.tsx` promotes admin/support or Sean-owned identities to local `creator_studio`, merges every `expandTierToFlags('creator_studio')` flag, and adds `admin_override: true` before `syncToShell`. | `isAdminOrOwnerAccount()` plus `applyAdminTestBypass()` in `platform/everywear-os/src/shell/AuthContext.tsx`. | Tier 3 by prompt | Read-only. Carded for pre-paid-release closure. |
+| H6-002 | Scope of unlock | The bypass unlocks `gener8_base`, `gener8`, `gener8.audio`, `1magen`, `1magen.image`, `vid`, `vid_pro`, `3nvizen`, `3nvizen.video`, `gener8_pro`, `creator_studio`, `daw_pro`, `ai_director`, `ai_director.planner`, `creator_pro`, plus free/default `loom`, `loom.teacher_agent`, `character_studio`, and `mymaits_lite_runtime`. | `expandTierToFlags('creator_studio')`. | Tier 3 | Documented. |
+| H6-003 | Consumer surface | Launcher badges and pre-launch gates consume `authUser.entitlements ?? authUser.tiers`, so the promoted flags affect visible lock state and applet launch permission. | `LauncherGrid.tsx` uses `resolveAppletStatus(...)`; `ShellLayout.tsx` uses `appletLaunchBlocked(applet, tier, authUser?.entitlements ?? authUser?.tiers)`. | Tier 3 | Documented. |
+| H6-004 | Server guard remains owner-bound | No SQL RLS bypass found in this audit. `active_tier(p_user)` returns null for non-self users, `entitlement_flags(p_user)` only reads when `p_user = auth.uid()`, and `user_entitlements` has own-user select RLS. | `supabase/migrations/20260528140643_everywear_identity_entitlement_vault_contract.sql`; `20260530175000_correct_vid_tier_contract.sql`. | Tier 3 | Documented. |
+| H6-005 | Browser preview bypass | Separate dev bypass exists for non-Tauri localhost/127/::1 with `?preview=1`, creating a `creator_studio` preview user. It is not native runtime behavior. | `isLocalPreviewBypass()` in `AuthContext.tsx`. | Tier 3 | Documented. Keep dev-only or env-gate before release. |
+
 ## Decision Cards
 
 CARD: P1 cache mutation or seeded test model
@@ -120,4 +132,12 @@ RECOMMEND: Split launcher into plan and commit phases. Build immutable launch/pu
 ALTERNATIVE: Add tactical drops around the existing command, but that risks state drift between check and commit without a launch transaction.
 COST OF DELAY: Rare deadlocks and long stalls remain possible during applet switching, especially around purge/download/launch failure paths.
 REVERSAL: Medium. A plan/commit split is invasive but local to shell launcher ownership.
+-> "ok" locks it; one-line redirect re-routes it
+
+CARD: H6 close owner-QA local entitlement bypass before paid release
+CONTEXT: The current owner/admin bypass is useful for QA because it proves paid surfaces without payment setup friction, but it lives in `AuthContext.tsx` as local effective-state promotion. It can mask paid-release regressions because launcher status and shell launch gates see `creator_studio` even if persisted entitlements, provider subscriptions, or checkout backfill are broken.
+RECOMMEND: Replace the local promotion before paid release with one of two explicit mechanisms: persisted `admin_override`/`user_entitlements` rows seeded by service-role tooling, or a build-gated QA-only switch that cannot exist in production builds.
+ALTERNATIVE: Keep the bypass only in dev/preview builds and add a paid-release smoke account with real provider entitlement rows for beta gating.
+COST OF DELAY: Owner QA keeps proving the app surface while bypassing the monetization truth path, which is exactly how paid-release bugs hide in plain sight.
+REVERSAL: Easy if done as an auth-state adapter removal plus seeded admin entitlement path; medium if launch gates have accumulated assumptions around `admin_override`.
 -> "ok" locks it; one-line redirect re-routes it

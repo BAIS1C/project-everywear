@@ -1,8 +1,23 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:43+08 SGT (Codex: Phase 2 H5 fresh-machine manifest).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-10T16:49+08 SGT (Codex: Phase 2 H6 entitlement bypass audit).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-10 16:49 SGT - Phase 2 H6 Entitlement Bypass Audit (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- H6 ARTIFACT: `screenshots/2026-06-10-proof-pass/h6-entitlement-bypass-audit.json` records the read-only bypass map.
+- H6 SCOPE: `platform/everywear-os/src/shell/AuthContext.tsx` promotes admin/support profile roles or Sean-owned handles/emails to local `creator_studio`, merges `expandTierToFlags('creator_studio')`, and adds `admin_override: true` before `syncToShell`.
+- H6 UNLOCKS: the owner/admin bypass unlocks Gener8, 1magen, Vid/Vid Pro, 3nvizen, Gener8 Pro, Creator Studio, DAW Pro, AI Director/planner, Creator Pro, plus default free surfaces through the effective auth state.
+- H6 CONSUMERS: `ShellLayout.tsx` and `LauncherGrid.tsx` consume `authUser.entitlements ?? authUser.tiers`, so promoted flags alter launcher badges and pre-launch gate decisions.
+- H6 GUARD: Supabase `active_tier(p_user)`, `entitlement_flags(p_user)`, and `user_entitlements` RLS remain owner-bound. No server-side RLS bypass was found in this audit.
+- H6 SEPARATE DEV BYPASS: browser-only preview mode still creates a `creator_studio` preview user only outside Tauri on localhost/127/::1 with `?preview=1`.
+- PAID-RELEASE VERDICT: close the local owner-QA bypass before paid release by seeding persisted `admin_override`/`user_entitlements` rows or by moving QA promotion behind a dev-build-only switch. Do not use owner QA as proof that the monetization entitlement path works.
+- VERIFICATION: read-only audit/docs pass. Entitlement behavior was not changed by design.
+
+---
 
 ## 2026-06-10 16:43 SGT - Phase 2 H5 Fresh-Machine Manifest (Codex)
 

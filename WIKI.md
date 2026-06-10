@@ -1,8 +1,19 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.74
-Last updated: 2026-06-10 (H5 fresh-machine manifest)
+Version: 1.1.75
+Last updated: 2026-06-10 (H6 entitlement bypass audit)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-10 v1.1.75: Phase 2 H6 entitlement bypass
+> audit generated
+> `screenshots/2026-06-10-proof-pass/h6-entitlement-bypass-audit.json`.
+> No entitlement behavior changed. The owner/admin QA bypass lives in
+> `platform/everywear-os/src/shell/AuthContext.tsx`: admin/support roles or
+> Sean-owned handles/emails are promoted locally to `creator_studio`, merged
+> with creator-studio flags, and pushed to the Tauri shell before launcher
+> gates consume `authUser.entitlements`. SQL entitlement RPCs remain
+> owner-bound by `auth.uid()`. Close this before paid release with persisted
+> `admin_override` entitlements or a dev-build-only QA switch.
 
 > Current-state note, 2026-06-10 v1.1.74: Phase 2 H5 fresh-machine trap
 > sweep generated
@@ -136,6 +147,18 @@ First-run beta machine checklist:
 - FFmpeg/NVENC health reports actionable failure if unavailable.
 - 3nvizen LTX install/bootstrap has a visible health gate.
 - No release path depends on `target\debug` or the source checkout cwd.
+
+## Phase 2 H6 Entitlement Bypass Registry
+
+Source artifact: `screenshots/2026-06-10-proof-pass/h6-entitlement-bypass-audit.json`
+
+| Bypass/guard | Location | Scope | Release decision |
+| --- | --- | --- | --- |
+| Owner/admin local effective-state bypass | `platform/everywear-os/src/shell/AuthContext.tsx` | `isAdminOrOwnerAccount()` matches `admin`/`support` profile roles, owner handles `seanie`, `seanie.sean`, `somo`, `somokasane`, or owner emails. `applyAdminTestBypass()` promotes the effective tier to `creator_studio`, merges creator flags, and sets `admin_override: true`. | Close before paid release. Do not let owner QA stand in for real paid-entitlement smoke. |
+| Creator-studio flag expansion | `expandTierToFlags('creator_studio')` | Unlocks Gener8 base/audio, 1magen/image, Vid/Vid Pro, 3nvizen/video, Gener8 Pro, Creator Studio, DAW Pro, AI Director/planner, Creator Pro, plus default free surfaces. | Persist these via entitlement rows for admin accounts, or keep only behind dev-build QA. |
+| Shell and launcher consumers | `ShellLayout.tsx`, `LauncherGrid.tsx` | Launcher badges and applet launch blocking consume `authUser.entitlements ?? authUser.tiers`, so promoted local flags alter visible lock state and launch permission. | Paid-release tests must include at least one non-bypass account with real provider or entitlement rows. |
+| Browser preview bypass | `isLocalPreviewBypass()` in `AuthContext.tsx` | Non-Tauri localhost/127/::1 only, requires `?preview=1`, creates a creator-studio preview user. | Acceptable as dev preview only if production builds cannot hit it; otherwise env-gate. |
+| SQL owner-bound guard | Supabase entitlement migrations | `active_tier(p_user)` and `entitlement_flags(p_user)` are self-user constrained, and `user_entitlements` RLS is own-user select. | No SQL RLS bypass found. The defect risk is client/shell masking, not server leakage. |
 
 > Current-state note, 2026-06-10 v1.1.69: P4 BinaryLocal VRAM release proof
 > passed against My Mait / kasai. Baseline budget had no allocations and
