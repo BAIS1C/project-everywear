@@ -5674,49 +5674,44 @@ Updated contract:
 
 Verification:
 
-- Python compile passed for `server.py`, `config.py`, `adapter/generate.py`, and `adapter/models.py`.
-- `_frame_count_for_duration(10, 24)` returns `241`.
-- `npm run build --workspace @everywear/3nvizen` passed.
-
-Boundary: this did not manually download model weights and did not prove live generation. Model download remains owned by Everywear model-manager and applet manifest provisioning.
-
+- Python compile passed for `server.py`, `config.py`, 
 ---
 
-## Addendum 2026-06-10 01:45 SGT: First-run tour architecture lock
+## Current-state note 2026-06-12T00:05+08 SGT — Smoke-test fixrun (Claude Cowork)
 
-Location: `C:\Users\MAG MSI\Project Everywear`
+Location: C:\Users\MAG MSI\Project Everywear
+Trigger: Sean live smoke test 23:14-23:31 SGT 06-11. Root-cause audit receipts in chat;
+ACE-Step client settings ground truth filed at docs/wiki/gener8/ace-step-settings.md.
 
-Architecture decision:
+Landed this pass:
+- NVENC/9877 root cause: encoder sidecar resources (node.exe + sidecar/video-encoder/dist)
+  were absent from {exe_dir}/resources; release fallbacks compiled out; dev fallbacks
+  pointed at paths missing the resources/ segment. Staged files into target/release/resources
+  and target/debug/resources; fixed dev candidate paths in video_encoder.rs. The bundle
+  staging step MUST be welded into the build pipeline (open item).
+- StemStudio inventoryHasProModel: loose substring match replaced with fail-closed parse
+  (installed/local-path evidence required). Kills the false "Pro Model ready" toast before
+  12/12 extraction failures.
+- Pro double-row per generation: engine-side vault registration (synthetic "Gener8 output" /
+  genre "Gener8") + web songsApi.createSong both surfaced. SongStoreContext now dedupes by
+  audio file path preferring the metadata-rich record (read-time, non-destructive; also hides
+  pre-existing orphans). gener8_engine.rs no longer writes the fake "Gener8" genre.
+  DEEPER FIX OWED: single-writer persistence (decision card).
+- Generation FIFO in Gener8Core: one engine job in flight, queue pumped on finish/cleanup;
+  1.5s same-payload double-fire guard. Fixes 3rd-generation silent drop.
+- Sparkle style-enhancer crash: missing lucide X import in CreatePanel (commit 2ff3cb8).
+- Bottom transport play/pause: #i-play/#i-pause sprite symbols don't exist in the gener8
+  bundle; glyphs inlined.
 
-- `platform/everywear-os/src/tour/FirstRunTourHost.tsx` owns overlay state, target measurement, missing-target fallback, keyboard navigation, Start/Back/Next/Skip/Done, and tour preference persistence.
-- `platform/everywear-os/src/tour/tourManifests.ts` owns the first-run manifest and verified selector/copy boundary.
-- `platform/everywear-os/src/shell/ShellLayout.tsx` mounts one host component and does not absorb tour state or copy.
-- Existing EWDS tour CSS (`.ew-tour-host`, `.ew-tour-halo`, `.ew-tour-card`, `.ew-tour-card__*`) remains the visual system for the first slice.
-
-Persistence:
-
-- Completed key: `tour.firstRun.completed`
-- Step key: `tour.firstRun.step`
-- Native path: existing `getPreference` / `setPreference` IPC in `platform/everywear-os/src/lib/transport.ts`
-- Browser/dev fallback: `localStorage`
-
-Selector contract:
-
-- Shell: desktop applet buttons via `button[data-applet-id="..."]`, S3 folder via `button[aria-label="S3 Studio folder"]`, Settings/Vault via system button aria labels.
-- Applets: Gener8, DAW, and Vid use verified `data-tour` anchors from the manifest sheets.
-- 3nvizen: current applet-local anchor count is `0`; first slice may describe it from shell entry only or use guarded text/class selectors, but automation-safe 3nvizen steps require a later anchor patch.
-
-Product promise contract:
-
-- Verified promise: Gener8 4ever can create a first song, write it to Everywear Vault, and play the local Vault MP3.
-- Verified promise: S3 Library can act as the receipt/review stop.
-- Verified promise: Avatar Studio can send the verified Drophunter Create path into My Mait companion store.
-- Setup-only promise: 1magen is runtime-aware and blocks generation while handoff is pending.
-- Orientation-only promise: DAW, Vid, and 3nvizen are tourable surfaces with explicit runtime/export blockers.
-
-Phase gates:
-
-- Phase 1: shell host plus verified first-run manifest, no applet generation side effects.
+Open, blocked, or decision-pending:
+- Cover/source-influence cliff (75% no change, 70% rewrite): client provably linear; cause is
+  inside the ace-server fork. BLOCKED on Project Ace mount. See ace-step-settings.md findings.
+- Gener8 4ever advanced-controls reachability: entangled with tier gating product call (T2 card).
+- Audio session shows msedgewebview2 in mixers: no WebView2 fix exists upstream
+  (WebView2Feedback #2236); plan is cross-process IAudioSessionControl::SetDisplayName from
+  the Rust host (~1-2 days) or native playback long-term (T1, queued).
+- Style-influence availability in cover mode: pending server truth (Sean conditional rule 06-11).
+.
 - Phase 2: add missing applet anchors, starting with 3nvizen.
 - Phase 3: add guided launch/open actions only where selectors and runtime claims are verified.
 - Phase 4: add Settings replay/reset control after the host preference path is stable.
