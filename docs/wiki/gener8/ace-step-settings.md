@@ -73,3 +73,27 @@ audioCodes for extract/lego/complete tasks, track/trackName for stems.
 - guidance_scale UI range derived from loaded-model name pattern (CreatePanel.tsx:605-681);
   backend model swap without reload desyncs the slider range.
 - Repaint controls render regardless of task_type support; shim does not reject mismatches.
+
+## SERVER SIDE GROUND TRUTH (added 2026-06-12T00:35+08 SGT)
+
+Source: C:\Users\MAG MSI\Project S3StudioGener8\S3 STUDIO\acestep.cpp (original working
+tree, per Sean). Key mechanics:
+
+- audio_cover_strength (request.h:46): "fraction of DiT steps using source context".
+  pipeline-synth-ops.cpp:530: cover_steps = (int)(num_steps * cover_strength), then the
+  context switches to SILENCE for the remaining steps (Context-Silence switching).
+- THE CLIFF EXPLAINED: integer truncation quantizes the slider into 1/num_steps buckets.
+  On turbo at 8 steps: 75% -> 6 source-steps, 70% -> 5; one bucket = drastic output change.
+  On xl-base at 50 steps: 2% buckets -> smooth. Unqualified cover requests were being
+  dispatched to turbo (preferred_dit never selects xl-base; same bug that broke stem
+  extraction); fixed 2026-06-12 in shim.rs (route base-only tasks to installed xl-base dit).
+- extract/lego/complete force audio_cover_strength=1.0 internally (pipeline-synth.cpp:431-449).
+- cover_noise_strength default 0.0 (request.cpp:39); logged at request.cpp:412.
+- The ORIGINAL s-gener8 shim carried a model-resolution layer the Everywear migration
+  dropped: resolve_dit_filename, "xl-base masquerade" rejection (stale SFTTurbo50 file named
+  base-Q8_0), task-aware model gating (original shim.rs:594-1917). The Everywear shim's
+  preferred_dit fallback replaced it and silently broke every base-only task. Consider
+  porting the masquerade guard.
+
+UI FOLLOW-UP (open): surface the quantization honestly — display source influence as
+"N of M steps hear the source" so users see the real granularity instead of a fake-smooth %.
