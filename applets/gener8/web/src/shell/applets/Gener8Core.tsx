@@ -151,8 +151,21 @@ function Gener8Transport({ audio }: { audio: import('../ShellAudioPlayer').Shell
         style={{ padding: 0, width: 36, height: 36, justifyContent: 'center' }}
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
+        {/* 2026-06-12 SGT: the #i-play / #i-pause sprite symbols are not
+            defined anywhere in the gener8 web bundle, so the <use> resolved
+            to nothing and the button rendered as a blank square (Sean smoke
+            test 06-11). Inlined the glyphs; no sprite dependency. */}
         <span className="ew-icon ew-icon--16" aria-hidden="true">
-          <svg><use href={isPlaying ? '#i-pause' : '#i-play'}/></svg>
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+            {isPlaying ? (
+              <>
+                <rect x="3" y="2" width="3.5" height="12" rx="1" />
+                <rect x="9.5" y="2" width="3.5" height="12" rx="1" />
+              </>
+            ) : (
+              <path d="M4.5 2.6v10.8a.6.6 0 0 0 .92.5l8.5-5.4a.6.6 0 0 0 0-1l-8.5-5.4a.6.6 0 0 0-.92.5z" />
+            )}
+          </svg>
         </span>
       </button>
 
@@ -555,6 +568,16 @@ export default function Gener8Core() {
     setCurrentView('playlist');
   };
 
+  // 2026-06-12 SGT: generation FIFO — one engine job in flight at a time.
+  // Fixes the 3rd-generation silent drop (there was NO concurrency guard;
+  // overlapping jobs against the single-GPU ace engine were dropped without
+  // any user feedback) and the same-click double-fire that produced duplicate
+  // submissions (B-series A.1). Queue is pumped from finishJob/cleanupJob.
+  const pendingGenerationsRef = useRef<GenerationParams[]>([]);
+  const submissionInFlightRef = useRef(false);
+  const lastEnqueueRef = useRef<{ sig: string; at: number } | null>(null);
+  const pumpGenerationQueueRef = useRef<() => void>(() => {});
+
   const cleanupJob = useCallback((jobId: string, tempId: string) => {
     const jobData = activeJobsRef.current.get(jobId);
     if (jobData) {
@@ -564,6 +587,7 @@ export default function Gener8Core() {
     songStore.removeSong(tempId);
     setActiveJobCount(activeJobsRef.current.size);
     if (activeJobsRef.current.size === 0) setIsGenerating(false);
+    pumpGenerationQueueRef.current();
   }, [songStore]);
 
   const finishJob = useCallback((jobId: string) => {
@@ -574,6 +598,7 @@ export default function Gener8Core() {
     }
     setActiveJobCount(activeJobsRef.current.size);
     if (activeJobsRef.current.size === 0) setIsGenerating(false);
+    pumpGenerationQueueRef.current();
   }, []);
 
   // Trigger a refresh from the shim through the shared store. Replaces
@@ -583,22 +608,11 @@ export default function Gener8Core() {
     await songStore.refetch();
   }, [songStore]);
 
-  const handleGenerate = async (params: GenerationParams) => {
-    if (!isAuthenticated || !token) {
-      setShowUsernameModal(true);
-      return;
-    }
-
-    // 2026-05-05 SGT — If models were unloaded (e.g. for Video export),
-    // bail early with an actionable toast instead of failing silently.
-    if (areModelsUnloaded()) {
-      showToast('Models unloaded (Video used GPU). Go to Settings → System and click Reload Models.', 'error');
-      return;
-    }
-
+  // 2026-06-12 SGT: handleGenerate split into enqueue (handleGenerate, below
+  // the pump) + dispatch (runGeneration). One job at a time; see refs above
+  // cleanupJob.
+  const runGeneration = async (params: GenerationParams) => {
     setIsGenerating(true);
-    setCurrentView('create');
-    setMobileShowList(false);
 
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const tempSong: Song = {
@@ -752,6 +766,49 @@ export default function Gener8Core() {
         showToast('Generation failed. Please try again.', 'error');
       }
     }
+  };
+
+  pumpGenerationQueueRef.current = () => {
+    if (submissionInFlightRef.current || activeJobsRef.current.size > 0) return;
+    const next = pendingGenerationsRef.current.shift();
+    if (!next) return;
+    submissionInFlightRef.current = true;
+    void runGeneration(next).finally(() => {
+      submissionInFlightRef.current = false;
+      // If submission failed before a job registered, keep the queue moving.
+      if (activeJobsRef.current.size === 0) pumpGenerationQueueRef.current();
+    });
+  };
+
+  const handleGenerate = async (params: GenerationParams) => {
+    if (!isAuthenticated || !token) {
+      setShowUsernameModal(true);
+      return;
+    }
+
+    // 2026-05-05 SGT — If models were unloaded (e.g. for Video export),
+    // bail early with an actionable toast instead of failing silently.
+    if (areModelsUnloaded()) {
+      showToast('Models unloaded (Video used GPU). Go to Settings → System and click Reload Models.', 'error');
+      return;
+    }
+
+    // 2026-06-12 SGT: identical payload enqueued twice within 1.5s is the
+    // same click firing twice (the double-fire window before isGenerating
+    // state landed), not a second request. Drop it. Bulk variations carry
+    // a distinct index in the payload, so they pass.
+    const sig = JSON.stringify(params);
+    const now = Date.now();
+    if (lastEnqueueRef.current && lastEnqueueRef.current.sig === sig && now - lastEnqueueRef.current.at < 1500) {
+      return;
+    }
+    lastEnqueueRef.current = { sig, at: now };
+
+    pendingGenerationsRef.current.push(params);
+    setIsGenerating(true);
+    setCurrentView('create');
+    setMobileShowList(false);
+    pumpGenerationQueueRef.current();
   };
 
   const playSong = (song: Song, list?: Song[]) => {

@@ -291,7 +291,15 @@ fn find_encoder_entry() -> Result<PathBuf> {
     // Dev candidates
     #[cfg(debug_assertions)]
     {
+        // 2026-06-12 SGT: the original candidates omitted the resources/
+        // segment, but the sidecar actually lives under
+        // src-tauri/resources/sidecar/. Dev runs therefore never found the
+        // entry and the encoder failed with "did not respond on port 9877"
+        // on every Vid Studio entry path. Originals kept as fallback.
         let candidates = [
+            "resources/sidecar/video-encoder/dist/index.js",
+            "src-tauri/resources/sidecar/video-encoder/dist/index.js",
+            "platform/everywear-os/src-tauri/resources/sidecar/video-encoder/dist/index.js",
             "sidecar/video-encoder/dist/index.js",
             "src-tauri/sidecar/video-encoder/dist/index.js",
             "platform/everywear-os/src-tauri/sidecar/video-encoder/dist/index.js",

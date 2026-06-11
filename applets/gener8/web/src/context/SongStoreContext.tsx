@@ -27,10 +27,43 @@ function getAudioUrl(audioUrl?: string, songId?: string): string | undefined {
 async function fetchMySongs(): Promise<VaultItem[]> {
   try {
     const response = await vaultSearch('', 'gener8_song', 'newest', 500, 0);
-    return response.items.filter((item) => item.media_type === 'audio' && item.asset_kind === 'gener8_song');
+    const items = response.items.filter((item) => item.media_type === 'audio' && item.asset_kind === 'gener8_song');
+    return dedupeVaultSongs(items);
   } catch {
     return [];
   }
+}
+
+// 2026-06-12 SGT: one generation was producing TWO vault rows — the
+// engine-side registration in gener8_engine.rs (synthetic title
+// "Gener8 output", genre "Gener8", no generation params) plus the web
+// persist via songsApi.createSong with full metadata. Same audio file,
+// two records; the list rendered both, the bare one showing "Gener8" as
+// its style (Sean smoke test 06-11, B-series A.1). Collapse by audio
+// file path and prefer the metadata-rich record. Non-destructive: hides
+// duplicates at read time, deletes nothing.
+function vaultSongMetadataScore(item: VaultItem): number {
+  const x = item as unknown as Record<string, unknown>;
+  let score = 0;
+  if (x.generation_params) score += 4;
+  if (x.lyrics || x.lyrics_text) score += 2;
+  if (x.style || (typeof x.genre === 'string' && x.genre !== 'Gener8')) score += 1;
+  if (!looksSyntheticTitle(item.title)) score += 1;
+  return score;
+}
+
+function dedupeVaultSongs(items: VaultItem[]): VaultItem[] {
+  const byPath = new Map<string, VaultItem>();
+  for (const item of items) {
+    const key = (item.file_path || item.id || '').replace(/\\/g, '/').toLowerCase();
+    const prev = byPath.get(key);
+    if (!prev) {
+      byPath.set(key, item);
+    } else if (vaultSongMetadataScore(item) > vaultSongMetadataScore(prev)) {
+      byPath.set(key, item);
+    }
+  }
+  return Array.from(byPath.values());
 }
 
 function fileStem(filePath?: string): string | undefined {
@@ -101,7 +134,9 @@ function mapWireSong(s: any): Song {
     id: s.id,
     title: 'file_path' in s ? vaultDisplayTitle(s as VaultItem) : (s.title || 'Untitled'),
     lyrics: s.lyrics ?? s.lyrics_text ?? '',
-    style: s.style ?? s.genre ?? '',
+    // 2026-06-12 SGT: never surface the engine's hardcoded "Gener8" genre
+    // as if it were the user's style prompt.
+    style: s.style ?? (s.genre && s.genre !== 'Gener8' ? s.genre : '') ?? '',
     coverUrl: `https://picsum.photos/seed/${s.id}/400/400`,
     duration: durationSeconds
       ? `${Math.floor(durationSeconds / 60)}:${String(Math.floor(durationSeconds % 60)).padStart(2, '0')}`

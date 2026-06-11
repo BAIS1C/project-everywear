@@ -40,12 +40,37 @@ interface LoadedTrack {
 type StudioPhase = "empty" | "loaded" | "extracting" | "extracted" | "error";
 
 function inventoryHasProModel(inventory: unknown): boolean {
-  const text = JSON.stringify(inventory ?? {}).toLowerCase();
-  return text.includes('xl-base')
-    || text.includes('pro_base')
-    || text.includes('stem')
-    || text.includes('reference')
-    || text.includes('cover');
+  // 2026-06-12 SGT: replaced the loose JSON.stringify substring match. It
+  // reported the Pro pack present whenever ANY inventory key contained
+  // "stem"/"reference"/"cover", which produced a false "Pro Model ready"
+  // toast followed by 12/12 extraction failures (Sean smoke test 06-11).
+  // Fail CLOSED: only report present when a concrete model entry both
+  // matches a stem-capable id AND carries an installed/local-path signal.
+  // Ambiguous inventory = not present = honest gate.
+  const STEM_PACK_IDS = ['xl-base', 'pro_base', 'better_models'];
+  const entries: Record<string, unknown>[] = [];
+  const collect = (node: unknown) => {
+    if (Array.isArray(node)) { node.forEach(collect); return; }
+    if (node && typeof node === 'object') {
+      const obj = node as Record<string, unknown>;
+      if (typeof obj.id === 'string' || typeof obj.name === 'string' || typeof obj.pack_id === 'string') {
+        entries.push(obj);
+      }
+      Object.values(obj).forEach(collect);
+    }
+  };
+  collect(inventory);
+  return entries.some((e) => {
+    const ident = `${e.id ?? ''} ${e.name ?? ''} ${e.pack_id ?? ''}`.toLowerCase();
+    if (!STEM_PACK_IDS.some((s) => ident.includes(s))) return false;
+    return e.installed === true
+      || e.present === true
+      || e.downloaded === true
+      || e.status === 'installed' || e.status === 'ready'
+      || e.state === 'installed' || e.state === 'ready'
+      || (typeof e.path === 'string' && e.path.length > 0)
+      || (typeof e.local_path === 'string' && e.local_path.length > 0);
+  });
 }
 
 interface StemState {

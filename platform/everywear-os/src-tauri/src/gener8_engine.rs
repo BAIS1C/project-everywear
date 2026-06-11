@@ -319,7 +319,11 @@ pub async fn gener8_generation_status(
                     duration_seconds,
                     None,
                     None,
-                    Some("Gener8".to_string()),
+                    // 2026-06-12 SGT: was Some("Gener8") — the literal app name
+                    // leaked into the UI as the song's style/prompt on records
+                    // registered without params (Sean smoke test 06-11). No
+                    // genre is more honest than a fake one.
+                    None,
                     None,
                     false,
                     None,
