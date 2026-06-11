@@ -1,8 +1,19 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-11T13:09+08 SGT (Codex: B-Series partial fixrun).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-11T13:16+08 SGT (Codex: B3 placeholder hardening).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-11 13:16 SGT - B3 Placeholder Hardening (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- FIXED B3 dead-row class: `Gener8Core.tsx` no longer leaves a finished-but-unregistered temporary generation row in the library. If Vault registration fails after the engine reports success, the temp row is removed, the selected temp row is cleared, and the user still gets the registration-failed toast.
+- HARDENED B3 refetch: `SongStoreContext.tsx` preserves only live generating placeholders with a `generationStartedAt` timestamp inside the 15-minute safety window. Stale or malformed `isGenerating` rows are no longer carried across library refetches indefinitely.
+- VERIFIED: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `git diff --check` passed with only Git's existing CRLF normalization warning.
+- BOUNDARY: this closes blank/dead placeholder persistence. It does not prove B2 audio quality, B3 exact live output count under the ACE engine, B5 Vid encoder spawn, B7b health truth, B1 visual chrome/generate proof, or the full true-launch matrix.
+
+---
 
 ## 2026-06-11 13:09 SGT - B-Series Partial Fixrun (Codex)
 

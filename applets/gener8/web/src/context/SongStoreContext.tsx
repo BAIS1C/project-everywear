@@ -161,6 +161,13 @@ const SongStoreContext = createContext<SongStoreContextValue>({
 });
 
 const HAS_SONGS_CACHE_KEY = 'gener8.has_songs';
+const GENERATING_PLACEHOLDER_TTL_MS = 15 * 60 * 1000;
+
+function isLiveGeneratingPlaceholder(song: Song, now = Date.now()): boolean {
+  if (!song.isGenerating) return false;
+  if (!song.generationStartedAt) return false;
+  return now - song.generationStartedAt <= GENERATING_PLACEHOLDER_TTL_MS;
+}
 
 export function SongStoreProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -199,7 +206,7 @@ export function SongStoreProvider({ children }: { children: React.ReactNode }) {
       const wireSongs = await fetchMySongs();
       const mapped = wireSongs.map(mapWireSong);
       _setSongs(prev => {
-        const generating = prev.filter(s => s.isGenerating);
+        const generating = prev.filter(s => isLiveGeneratingPlaceholder(s));
         const byId = new Map(mapped.map(s => [s.id, s]));
         return [...generating, ...Array.from(byId.values())];
       });

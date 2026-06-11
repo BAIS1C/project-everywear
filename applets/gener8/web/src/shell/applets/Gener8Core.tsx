@@ -692,10 +692,8 @@ export default function Gener8Core() {
               console.error(`Failed to persist track for job ${job.jobId}:`, persistErr);
             } finally {
               if (!persisted) {
-                songStore.updateSong(tempId, {
-                  isGenerating: false,
-                  statusMessage: 'Generation finished, but Vault registration did not complete.',
-                } as Partial<Song>);
+                songStore.removeSong(tempId);
+                setSelectedSong(current => current?.id === tempId ? null : current);
                 showToast('Generation finished, but Vault registration failed. Check logs before retrying.', 'error');
               }
             }

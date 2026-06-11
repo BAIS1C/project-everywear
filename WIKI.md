@@ -1,8 +1,24 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.78
-Last updated: 2026-06-11 (B-Series partial fixrun: honest DAW gating, UI name strip, binary mtime logging)
+Version: 1.1.79
+Last updated: 2026-06-11 (B3 placeholder hardening: dead Gener8 rows removed)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-11 v1.1.79: B3 placeholder hardening landed.
+> Location: `C:\Users\MAG MSI\Project Everywear`. `Gener8Core.tsx` already
+> removed the temporary generation row before adding a persisted Vault song,
+> so the live duplicate-id theory was stale. The remaining dead-row class was
+> terminal failure: a completed generation whose Vault registration failed left
+> a non-generating placeholder in the library. That path now removes the temp
+> row and clears selection if it was selected, while preserving the error toast.
+> `SongStoreContext.tsx` also only preserves live generating placeholders
+> during refetch when they have a `generationStartedAt` timestamp and are within
+> the 15-minute safety window, preventing stale or malformed placeholders from
+> being carried forward indefinitely. Verification passed: `npm run build
+> --workspace @everywear/gener8-web`, `npm run build --workspace
+> everywear-os`, and `git diff --check` with only Git's existing CRLF warning.
+> Boundary: this closes the blank/dead-row failure class, not B2 audio quality,
+> B3 live output-count proof, or the full true-launch generation matrix.
 
 > Current-state note, 2026-06-11 v1.1.78: B-Series partial fixrun slice
 > landed. Location: `C:\Users\MAG MSI\Project Everywear`. Step 0 repo
