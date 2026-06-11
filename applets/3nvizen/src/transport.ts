@@ -122,9 +122,11 @@ export interface GapPromptRequest {
 // ── Known model display names ────────────────────────────────────
 
 export const KNOWN_MODELS: Record<string, { label: string; sizeGb: number }> = {
-  "ltx-2.3-22b-distilled": { label: "LTX 2.3 22B Distilled", sizeGb: 43 },
-  "ltx-2.3-spatial-upscaler-x2-1.0": { label: "Spatial Upscaler 2x", sizeGb: 1.9 },
-  "gemma-3-12b-it-qat-q4_0": { label: "Gemma 3 12B (Text Encoder)", sizeGb: 25 },
+  "ltxv-13b-0.9.8-distilled-fp8": { label: "LTXV 13B 0.9.8 Distilled FP8", sizeGb: 14.62 },
+  "ltxv-13b-0.9.8-distilled": { label: "LTXV 13B 0.9.8 Distilled", sizeGb: 26.62 },
+  "ltxv-2b-0.9.8-distilled-fp8": { label: "LTXV 2B 0.9.8 Distilled FP8", sizeGb: 4.16 },
+  "ltxv-spatial-upscaler-0.9.8": { label: "LTXV Spatial Upscaler 0.9.8", sizeGb: 0.47 },
+  "ltxv-temporal-upscaler-0.9.8": { label: "LTXV Temporal Upscaler 0.9.8", sizeGb: 0.49 },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────

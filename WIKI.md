@@ -5620,6 +5620,29 @@ Functional boundary: sidecar readiness, model status/download/load, generation, 
 
 ---
 
+## Addendum 2026-06-11 10:58 SGT: 3nvizen model manifest and frame-count repair
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+Codex tested the 3nvizen sidecar in diagnostic mode only, with no real model downloads. The sidecar boots on `127.0.0.1:8787` and detects the RTX 5090, but its previous catalogue referenced stale or invalid artifacts: `ltx-2.3-22b-distilled.safetensors`, `ltx-2.3-spatial-upscaler-x2-1.0.safetensors`, and `google/gemma-3-12b-it-qat-q4_0`.
+
+Updated contract:
+
+- `applets/3nvizen/src-tauri/sidecar/ltx-runtime/config.py` now tracks current public `Lightricks/LTX-Video` safetensor names: `ltxv-13b-0.9.8-distilled-fp8`, `ltxv-13b-0.9.8-distilled`, `ltxv-2b-0.9.8-distilled-fp8`, `ltxv-spatial-upscaler-0.9.8`, and `ltxv-temporal-upscaler-0.9.8`.
+- `applets/3nvizen/applet.toml` model groups now use the current LTXV model keys so Everywear-owned provisioning can resolve the right ladder.
+- `applets/3nvizen/src/transport.ts` and `UpscaleToggle.tsx` now show the current model labels and sizes.
+- `applets/3nvizen/src-tauri/sidecar/ltx-runtime/adapter/generate.py` now rounds LTX frame counts up to the nearest legal `8n+1` value. A 10 second 24fps request now yields 241 frames instead of silently shortening to 233.
+
+Verification:
+
+- Python compile passed for `server.py`, `config.py`, `adapter/generate.py`, and `adapter/models.py`.
+- `_frame_count_for_duration(10, 24)` returns `241`.
+- `npm run build --workspace @everywear/3nvizen` passed.
+
+Boundary: this did not manually download model weights and did not prove live generation. Model download remains owned by Everywear model-manager and applet manifest provisioning.
+
+---
+
 ## Addendum 2026-06-10 01:45 SGT: First-run tour architecture lock
 
 Location: `C:\Users\MAG MSI\Project Everywear`
@@ -5691,3 +5714,68 @@ Verification:
 Current surface truth: native shell shows the first tour card at `1/8 Home Node`, with a desktop halo, enabled Skip and Start Tour, disabled Back, and no bug modal. Start Tour advances to `2/8 Companion` and highlights My Mait; Back returns to the first step. The host remains open at step one after verification.
 
 Boundary: this slice does not launch applets, add Settings replay/reset, add 3nvizen anchors, or execute any applet generation/export actions. Next tour work should add 3nvizen anchors and a user-facing replay/reset control before deeper guided applet actions.
+
+## Addendum 2026-06-11: Fake-frontend audit fixes + 1magen EWDS chrome (bug #10)
+
+Location: `C:\Users\MAG MSI\Project Everywear` (Cowork/Fable session, follows the
+2026-06-10/11 Codex bug inventory.)
+
+Fleet audit result (fake-placeholder / handoff-pending class, all seven applets):
+
+- `3nvizen/applet.toml`: model entries carried bare keys with no download metadata,
+  the exact bug-#1 class. FIXED: both LTXV model groups now carry
+  filename/hf_repo/hf_file/size_bytes sourced from the sidecar's KNOWN_MODELS
+  (`src-tauri/sidecar/ltx-runtime/config.py`). Codex's 06-10 manifest patch had not
+  completed this.
+- `3nvizen` port wiring is CORRECT as-is: vite serves 3004 matching registry
+  `frontend_port: Some(3004)`; the applet has a genuine web frontend plus sidecar,
+  no tauri.conf.json. The reported 5178 collision with kasai was a misread (5178 is
+  kasai's vite port; no collision).
+- `character-studio`, `educ8` (wire id `loom`), `vid`: genuinely web-frontend,
+  manifests clean. `gener8`: shell-integrated IPC, clean. `kasai`: headless, clean.
+- `ShellLayout.tsx`: REMOVED the catch-block headless-iframe fallback that opened a
+  working-looking surface, toasted a soft "handoff finishes" message, and called
+  `markAppletReady` after a FAILED `requestAppletSwitch`. This was the surface that
+  defeated three days of visual QA (bug #9 root). All bridge launch failures now
+  route to `markLaunchError` + error toast + bug report, for every applet.
+  Exposure path was character-studio/loom when frontend registry drift made
+  `isRegisteredApplet()` false and they fell through the FrontendInline branch.
+
+Bug #10 (1magen plain native window), Lane A implemented:
+
+- `applets/1magen/src/components/WindowFrame.tsx` (NEW): EWDS chrome adapted from
+  the gener8 reference component. Differences: calls `@tauri-apps/api/window`
+  directly (the reference's `__TAURI_BRIDGE__` shim was never landed anywhere in
+  the repo; gener8 does not actually mount its WindowFrame, OS shell provides its
+  chrome), TrafficLights-only per the Mac-style-everywhere brand contract
+  (2026-05-03), 1magen glyph, E/S/SE resize handles, focus-dim, web fallback
+  renders children chromeless.
+- `applets/1magen/src/main.tsx`: wraps `ImagenApp` in `WindowFrame`, imports
+  `@everywear/ewds/css/window-frame[-component].css`, pre-render darwin
+  `data-platform` stamp.
+- `applets/1magen/src-tauri/tauri.conf.json`: `decorations: false`.
+- `applets/1magen/src-tauri/capabilities/default.json` (NEW): window permission
+  grants (start-dragging, start-resize-dragging, minimize/maximize/unmaximize/
+  toggle-maximize/is-maximized, close, set-focus). Generated capabilities were
+  previously `{}`; without these the custom controls are silent no-ops.
+
+Verified: `npx tsc --noEmit -p platform/everywear-os/tsconfig.json` clean;
+`npm run build --workspace onemagen` clean (both on host). Runtime QA pending:
+onemagen.exe rebuild was blocked earlier by a locked exe; visual chrome check on
+next launch.
+
+Tooling caution for agent sessions: the Cowork sandbox mount served stale views of
+recently-modified files in this repo (trailing NUL padding, mid-file truncation).
+Host-side Read/Edit and host PowerShell are authoritative; do not "repair" or
+validate this repo through the sandbox mount.
+
+PUNCH LIST (not yet implemented, structural):
+
+1. `requestAppletSwitch` is fire-and-forget: no pid/ack/health return. The shell
+   cannot distinguish "runtime launched" from "never started". Add a launch ack
+   (pid or health-check handshake) before any `markAppletReady` on bridge paths.
+2. QA gate redesign (bug #9): visual QA must include one scripted true-launch test
+   per applet: real click -> real runtime spawn -> one real generation/completion.
+   Screenshot-only QA is structurally blind to fake surfaces.
+3. Consolidate WindowFrame into `packages/ewds` as a React export (gener8 and
+   1magen now have sibling copies; vid/3nvizen will want it next).

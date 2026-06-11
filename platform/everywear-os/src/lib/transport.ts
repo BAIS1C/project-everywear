@@ -260,7 +260,7 @@ const BROWSER_APPLET_REGISTRY: AppletEntry[] = [
     launch_binary: 'onemagen',
     required_tier: 'gener8',
     required_entitlements: ['1magen', '1magen.image'],
-    frontend_port: 3002,
+    frontend_port: null,
     frontend_route: null,
     shares_backend: null,
   },

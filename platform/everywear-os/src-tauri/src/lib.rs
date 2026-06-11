@@ -96,14 +96,11 @@ async fn check_applet_requirements(
         }
     }
 
-    let gpu_state = state.gpu.lock().await;
-    let b = state.budget.lock().await;
-    let model_mgr = state.model_mgr.lock().await;
-
-    let policy = budget::PurgePolicy::from_tier(gpu_state.vram_tier);
-
-    // Try to load manifest from applets/<id>/applet.toml
-    let manifest_path = PathBuf::from(format!("applets/{}/applet.toml", applet_id));
+    let manifest_path = {
+        let monorepo =
+            registry::find_monorepo_root_from_exe().unwrap_or_else(|| PathBuf::from("."));
+        monorepo.join(format!("applets/{}/applet.toml", applet_id))
+    };
     let manifest = match model_manager::AppletManifest::load(&manifest_path) {
         Ok(m) => m,
         Err(e) => {
@@ -118,6 +115,22 @@ async fn check_applet_requirements(
             });
         }
     };
+
+    {
+        let mut mgr = state.model_mgr.lock().await;
+        let infos = launcher::manifest_info_from_groups(&manifest);
+        if !infos.is_empty() {
+            mgr.add_models(infos);
+            mgr.scan();
+        }
+    }
+
+    let gpu_state = state.gpu.lock().await;
+    let policy = budget::PurgePolicy::from_tier(gpu_state.vram_tier);
+    drop(gpu_state);
+
+    let b = state.budget.lock().await;
+    let model_mgr = state.model_mgr.lock().await;
 
     Ok(launcher::check_requirements(
         &manifest, &b, &policy, &model_mgr,
@@ -619,6 +632,21 @@ async fn request_applet_switch(
                 "applet_id": applet_id,
                 "name": applet.name,
                 "url": frontend_url,
+            }),
+        );
+    } else {
+        let managed_url = format!("managed://{}", applet_id);
+        tracing::info!(
+            applet = %applet_id,
+            url = %managed_url,
+            "Binary applet owns its own UI window"
+        );
+        let _ = app.emit(
+            "applet-webview-opened",
+            serde_json::json!({
+                "applet_id": applet_id,
+                "name": applet.name,
+                "url": managed_url,
             }),
         );
     }

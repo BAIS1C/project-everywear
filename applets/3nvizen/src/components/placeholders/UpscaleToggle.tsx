@@ -4,7 +4,7 @@ import React from 'react';
  * UpscaleToggle — P2 Placeholder
  * ───────────────────────────────
  * Checkbox to enable spatial upscaling (2x) as a post-processing step.
- * Would trigger the `ltx-2.3-spatial-upscaler-x2-1.0` model (~1.9 GB).
+ * Would trigger the `ltxv-spatial-upscaler-0.9.8` model (~0.47 GB).
  *
  * P2: Enable when Codex implements upscaler pipeline in the adapter layer.
  * The upscaler model needs to be downloaded and loaded separately from
@@ -29,7 +29,7 @@ export function UpscaleToggle() {
           <span className="tv-badge tv-badge--ghost">Coming Soon</span>
         </label>
         <div className="tv-field__hint">
-          Post-process with ltx-2.3-spatial-upscaler-x2-1.0 (~1.9 GB).
+          Post-process with ltxv-spatial-upscaler-0.9.8 (~0.47 GB).
           Doubles output resolution after generation.
         </div>
       </div>

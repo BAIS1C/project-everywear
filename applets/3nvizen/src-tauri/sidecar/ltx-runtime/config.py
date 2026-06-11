@@ -25,26 +25,40 @@ FORCE_API_MODE_VRAM_GB = 31
 LOCAL_ATTEMPT_VRAM_GB = 12
 
 KNOWN_MODELS: dict[str, dict[str, Any]] = {
-    "ltx-2.3-22b-distilled": {
+    "ltxv-13b-0.9.8-distilled-fp8": {
         "repo_id": "Lightricks/LTX-Video",
-        "size_gb": 43,
-        "filename": "ltx-2.3-22b-distilled.safetensors",
+        "size_gb": 14.62,
+        "filename": "ltxv-13b-0.9.8-distilled-fp8.safetensors",
         "min_vram_gb": 12,
         "type": "video_generator",
     },
-    "ltx-2.3-spatial-upscaler-x2-1.0": {
+    "ltxv-13b-0.9.8-distilled": {
         "repo_id": "Lightricks/LTX-Video",
-        "size_gb": 1.9,
-        "filename": "ltx-2.3-spatial-upscaler-x2-1.0.safetensors",
+        "size_gb": 26.62,
+        "filename": "ltxv-13b-0.9.8-distilled.safetensors",
+        "min_vram_gb": 24,
+        "type": "video_generator",
+    },
+    "ltxv-2b-0.9.8-distilled-fp8": {
+        "repo_id": "Lightricks/LTX-Video",
+        "size_gb": 4.16,
+        "filename": "ltxv-2b-0.9.8-distilled-fp8.safetensors",
+        "min_vram_gb": 8,
+        "type": "video_generator",
+    },
+    "ltxv-spatial-upscaler-0.9.8": {
+        "repo_id": "Lightricks/LTX-Video",
+        "size_gb": 0.47,
+        "filename": "ltxv-spatial-upscaler-0.9.8.safetensors",
         "min_vram_gb": 4,
         "type": "upscaler",
     },
-    "gemma-3-12b-it-qat-q4_0": {
-        "repo_id": "google/gemma-3-12b-it-qat-q4_0",
-        "size_gb": 25,
-        "filename": "gemma-3-12b-it-q4_0-unquantized.safetensors",
-        "min_vram_gb": 8,
-        "type": "text_encoder",
+    "ltxv-temporal-upscaler-0.9.8": {
+        "repo_id": "Lightricks/LTX-Video",
+        "size_gb": 0.49,
+        "filename": "ltxv-temporal-upscaler-0.9.8.safetensors",
+        "min_vram_gb": 4,
+        "type": "upscaler",
     },
 }
 

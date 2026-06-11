@@ -33,18 +33,32 @@ min_vram_mb = 10240
   role = "Primary"
   required = true
   vram_mb = 7200
+  filename = "z_image_turbo-Q8_0.gguf"
+  hf_repo = "leejet/Z-Image-Turbo-GGUF"
+  hf_file = "z_image_turbo-Q8_0.gguf"
+  size_bytes = 6577440704
+  sha256 = "df1c5baa86d1398c979495a6072dbcee79444fdb884a2445582ba0769c44e9a1"
 
   [[model_groups.models]]
   key = "qwen3-4b-encoder-q4"
   role = "Encoder"
   required = true
   vram_mb = 2400
+  filename = "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-4B-Instruct-2507-GGUF"
+  hf_file = "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+  size_bytes = 2497281120
 
   [[model_groups.models]]
   key = "pig-flux-vae"
   role = "Vae"
   required = true
   vram_mb = 200
+  filename = "diffusion_pytorch_model.safetensors"
+  hf_repo = "diffusers/FLUX.1-vae"
+  hf_file = "diffusion_pytorch_model.safetensors"
+  size_bytes = 168000000
+  sha256 = "f5b59a26851551b67ae1fe58d32e76486e1e812def4696a4bea97f16604d40a3"
 
 [[model_groups]]
 label = "Standard"
@@ -55,18 +69,31 @@ min_vram_mb = 7400
   role = "Primary"
   required = true
   vram_mb = 4800
+  filename = "z_image_turbo-Q4_K.gguf"
+  hf_repo = "leejet/Z-Image-Turbo-GGUF"
+  hf_file = "z_image_turbo-Q4_K.gguf"
+  size_bytes = 4511501376
 
   [[model_groups.models]]
   key = "qwen3-4b-encoder-q4"
   role = "Encoder"
   required = true
   vram_mb = 2400
+  filename = "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+  hf_repo = "unsloth/Qwen3-4B-Instruct-2507-GGUF"
+  hf_file = "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+  size_bytes = 2497281120
 
   [[model_groups.models]]
   key = "pig-flux-vae"
   role = "Vae"
   required = true
   vram_mb = 200
+  filename = "diffusion_pytorch_model.safetensors"
+  hf_repo = "diffusers/FLUX.1-vae"
+  hf_file = "diffusion_pytorch_model.safetensors"
+  size_bytes = 168000000
+  sha256 = "f5b59a26851551b67ae1fe58d32e76486e1e812def4696a4bea97f16604d40a3"
 
 [requirements]
 cuda_compute = "7.0"

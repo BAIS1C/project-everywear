@@ -21,8 +21,8 @@ min_tier = "creator_studio"
 enforced_by = ["everywear_shell", "3nvizen_runtime"]
 features = ["3nvizen", "3nvizen.video"]
 
-# Model groups remain provisional until measured on the actual official LTX
-# runtime. These should map to user-facing quality ladders in Everywear rather
+# Model groups track the current public Lightricks/LTX-Video safetensors
+# catalogue. They should map to user-facing quality ladders in Everywear rather
 # than exposing raw model names in the UI.
 
 [[model_groups]]
@@ -30,68 +30,28 @@ label = "Draft Local 540p"
 min_vram_mb = 8192
 
   [[model_groups.models]]
-  key = "ltx-2.3-22b-distilled-1.1"
+  key = "ltxv-2b-0.9.8-distilled-fp8"
   role = "Primary"
   required = true
-  vram_mb = 6400
-
-  [[model_groups.models]]
-  key = "ltx-2.3-text-projection"
-  role = "Projection"
-  required = true
-  vram_mb = 384
-
-  [[model_groups.models]]
-  key = "ltx-2.3-video-vae"
-  role = "VideoVae"
-  required = true
-  vram_mb = 384
-
-  [[model_groups.models]]
-  key = "ltx-2.3-audio-vae"
-  role = "AudioVae"
-  required = true
-  vram_mb = 384
-
-  [[model_groups.models]]
-  key = "gemma-3-video-text-encoder"
-  role = "TextEncoder"
-  required = true
-  vram_mb = 640
+  vram_mb = 4096
+  filename = "ltxv-2b-0.9.8-distilled-fp8.safetensors"
+  hf_repo = "Lightricks/LTX-Video"
+  hf_file = "ltxv-2b-0.9.8-distilled-fp8.safetensors"
+  size_bytes = 4160000000
 
 [[model_groups]]
 label = "Standard Local 540p"
 min_vram_mb = 12288
 
   [[model_groups.models]]
-  key = "ltx-2.3-22b-distilled-1.1"
+  key = "ltxv-13b-0.9.8-distilled-fp8"
   role = "Primary"
   required = true
-  vram_mb = 8448
-
-  [[model_groups.models]]
-  key = "ltx-2.3-text-projection"
-  role = "Projection"
-  required = true
-  vram_mb = 512
-
-  [[model_groups.models]]
-  key = "ltx-2.3-video-vae"
-  role = "VideoVae"
-  required = true
-  vram_mb = 512
-
-  [[model_groups.models]]
-  key = "ltx-2.3-audio-vae"
-  role = "AudioVae"
-  required = true
-  vram_mb = 512
-
-  [[model_groups.models]]
-  key = "gemma-3-video-text-encoder"
-  role = "TextEncoder"
-  required = true
-  vram_mb = 1024
+  vram_mb = 14976
+  filename = "ltxv-13b-0.9.8-distilled-fp8.safetensors"
+  hf_repo = "Lightricks/LTX-Video"
+  hf_file = "ltxv-13b-0.9.8-distilled-fp8.safetensors"
+  size_bytes = 14620000000
 
 [requirements]
 cuda_compute = "7.0"

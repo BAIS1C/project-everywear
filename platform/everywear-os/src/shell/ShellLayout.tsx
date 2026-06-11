@@ -69,10 +69,9 @@ const S3_FOLDER_ORDER = ['gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'da
 const S3_SUITE_APPLET_IDS = new Set(['s3studio', 'gener8-4ever', 'gener8-pro', 'vid', 'ai-director', 'daw']);
 const MODEL_BACKED_ENGINE_TYPES = new Set(['diffusion', 'audio', 'llm', 'video', 'tts']);
 const LOCAL_MODEL_APPLET_IDS = new Set(['1magen', 'gener8-4ever', 'gener8-pro', 'ai-director', 'daw', '3nvizen', 'kasai']);
-// Applets whose models are provisioned by their OWN runtime (onemagen binary,
-// LTX sidecar), not by the shell pipeline. Shell-side "preparing model" copy
-// for these promises work the shell does not do (the "Downloading 3 models"
-// ghost, WIKI v1.1.57). The LifecycleHud reports actual stages instead.
+// Applets whose generation runtime must be live before their UI can honestly
+// be called ready. Do not pre-open their shell-hosted surfaces as a fallback:
+// a blocked prompt form is worse than a clear launch failure.
 const RUNTIME_OWNED_MODEL_APPLET_IDS = new Set(['1magen', '3nvizen']);
 const GENER8_SHARED_ENGINE_APPLET_IDS = new Set(['gener8-4ever', 'gener8-pro', 'ai-director', 'daw']);
 const TIER_RANK: Record<string, number> = {
@@ -297,7 +296,8 @@ function panelLabel(panel: Exclude<PanelView, null>) {
 function isShellNativeBridgeApplet(applet: AppletEntry) {
   return applet.launch_kind === 'BinaryLocal'
     && isRegisteredApplet(applet.id)
-    && !applet.frontend_port;
+    && !applet.frontend_port
+    && !RUNTIME_OWNED_MODEL_APPLET_IDS.has(applet.id);
 }
 
 function windowRuntimeLabel(
@@ -1407,15 +1407,15 @@ export function ShellLayout() {
       const { applet_id, name, url } = event.payload;
       log.info('ui', `Applet webview opened: ${applet_id} at ${url}`);
 
-      // If the applet has a frontend_port, show it inline via HeadlessAppletView.
-      // If it opened a studio window (url != headless), show the banner.
       const entry = registryApplets.find((a) => a.id === applet_id);
       if (entry) markAppletReady(entry);
-      if (entry && isRegisteredApplet(entry.id)) {
+      if (entry && isRegisteredApplet(entry.id) && !RUNTIME_OWNED_MODEL_APPLET_IDS.has(entry.id)) {
         openShellWindow({ kind: 'applet', applet: entry, renderMode: 'inline' });
       } else if (entry?.frontend_port) {
         // Fallback for applets not registered as shell-native React views.
         openShellWindow({ kind: 'applet', applet: entry, renderMode: 'embedded' });
+      } else if (RUNTIME_OWNED_MODEL_APPLET_IDS.has(applet_id)) {
+        setTauriApplet(null);
       } else {
         // Studio window: show overlay banner
         setTauriApplet({ applet_id, name, url });
@@ -1624,18 +1624,6 @@ export function ShellLayout() {
 
     // BinaryLocal applets go through the runtime bridge.
     log.info('ui', `Launching applet via runtime bridge: ${applet.id}`);
-    const hasIntegratedFrontendFallback = Boolean(applet.frontend_port && isRegisteredApplet(applet.id));
-    if (hasIntegratedFrontendFallback) {
-      openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
-      showToast({
-        kind: 'info',
-        eyebrow: `${applet.name} · runtime handoff`,
-        message: 'Opening the studio surface now. Everywear will finish local engine handoff in the background.',
-        durationMs: 7000,
-      });
-      markAppletReady(applet);
-      refreshRuntimeReadouts();
-    }
     try {
       await requestAppletSwitch(applet.id);
       if (isShellNativeBridgeApplet(applet)) {
@@ -1663,26 +1651,17 @@ export function ShellLayout() {
         applet_id: applet.id,
         message,
       });
-      // If launch fails but the applet has a frontend_port, fall through
-      // to headless view (dev mode: sidecar may not be needed)
-      if (applet.frontend_port) {
-        log.warn('ui', `Launch bridge failed for ${applet.id}, falling back to headless iframe`);
-        if (isRegisteredApplet(applet.id)) {
-          openShellWindow({ kind: 'applet', applet, renderMode: 'inline' });
-        } else {
-          openShellWindow({ kind: 'applet', applet, renderMode: 'embedded' });
-        }
-        showToast({
-          kind: 'warning',
-          eyebrow: `${applet.name} · runtime handoff`,
-          message: 'Opened the studio surface while the local engine handoff finishes. Generation may still need model setup.',
-          durationMs: 8000,
-        });
-        markAppletReady(applet);
-        refreshRuntimeReadouts();
-        return;
-      }
+      // 2026-06-11: removed the headless-iframe fallback that opened a
+      // working-looking surface and marked the applet READY after a FAILED
+      // bridge launch (fake-frontend bug class, QA blindness root cause).
+      // A failed launch is a failed launch: error state, toast, bug report.
       markLaunchError();
+      showToast({
+        kind: 'error',
+        eyebrow: `${applet.name} · launch failed`,
+        message,
+        durationMs: 10000,
+      });
       openBugReport({
         source: applet.id,
         crashKind: 'frontend',

@@ -116,7 +116,7 @@ impl AppletRegistry {
                 launch_binary: Some("onemagen".into()),
                 required_tier: Some("gener8".into()),
                 required_entitlements: vec!["1magen".into(), "1magen.image".into()],
-                frontend_port: Some(3002),
+                frontend_port: None,
                 frontend_route: None,
                 shares_backend: None,
                 locked_model: None,

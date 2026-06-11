@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import gc
+import math
 import os
 import traceback
 from pathlib import Path
@@ -52,7 +53,7 @@ def _enforce_geometry(width: int, height: int) -> tuple[int, int]:
 def _frame_count_for_duration(duration_seconds: float, fps: int) -> int:
     """LTX requires frame count = 8n + 1."""
     raw = max(1, int(duration_seconds * fps))
-    n = max(0, (raw - 1) // 8)
+    n = max(0, math.ceil((raw - 1) / 8))
     return 8 * n + 1
 
 
