@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Cpu, Zap, AlertTriangle, Layers, Loader2 } from 'lucide-react';
+import { Sparkles, ChevronDown, Settings2, Trash2, Music2, Sliders, Dices, Hash, RefreshCw, Plus, Cpu, Zap, AlertTriangle, Layers, Loader2, X } from 'lucide-react';
 import { GenerationParams, Song } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import type { Gener8AudioMode, Gener8LaunchManifest, Gener8LockedModel } from '@/context/LaunchManifestContext';
