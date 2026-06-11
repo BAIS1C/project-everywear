@@ -336,7 +336,13 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
   // Licence-gated controls must flow through AuthContext. Demo is an
   // authenticated base tier; Pro capability paths require paid Pro+ because
   // the native shim now enforces the same boundary.
-  const canUseAdvancedControls = hasTier('gener8_pro');
+  // 2026-06-12 SGT (Sean decision, reaffirming 05-21 canon: vault
+  // ace/2026-05-21_s3_model_role_manifest_correction): Gener8 4ever is
+  // text-to-music only with NO advanced panel, for EVERY account including
+  // admin/Creator Pro. The tier-only gate leaked the toggle into 4ever for
+  // high-tier accounts, rendering a dropdown that could never usefully open
+  // (Sean smoke test 06-11). Gate on the launch manifest as well as tier.
+  const canUseAdvancedControls = hasTier('gener8_pro') && launchManifest?.id !== 'gener8-4ever';
 
   // Model selector state
   const [ditModels, setDitModels] = useState<ModelInfo[]>([]);

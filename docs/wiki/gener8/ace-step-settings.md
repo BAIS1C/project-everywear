@@ -90,10 +90,14 @@ tree, per Sean). Key mechanics:
 - extract/lego/complete force audio_cover_strength=1.0 internally (pipeline-synth.cpp:431-449).
 - cover_noise_strength default 0.0 (request.cpp:39); logged at request.cpp:412.
 - The ORIGINAL s-gener8 shim carried a model-resolution layer the Everywear migration
-  dropped: resolve_dit_filename, "xl-base masquerade" rejection (stale SFTTurbo50 file named
-  base-Q8_0), task-aware model gating (original shim.rs:594-1917). The Everywear shim's
-  preferred_dit fallback replaced it and silently broke every base-only task. Consider
-  porting the masquerade guard.
+  dropped: resolve_dit_filename, "xl-base masquerade" rejection, task-aware model gating
+  (original shim.rs:594-1917). The base-named SFTTurbo50 file was NOT a mislabel: it was an
+  intentional substitution in the old S3Studio build, later reverted to the true models after
+  artifacting on capability tasks. Full history: vault notes
+  ace/2026-05-21_s3_model_role_manifest_correction and
+  ace/2026-06-12_xl_base_masquerade_history_and_everywear_base_task_regression.
+  The Everywear shim's preferred_dit fallback replaced that layer and silently broke every
+  base-only task. OWED: port the hash/size masquerade guard (current fix routes by name only).
 
 UI FOLLOW-UP (open): surface the quantization honestly — display source influence as
 "N of M steps hear the source" so users see the real granularity instead of a fake-smooth %.
