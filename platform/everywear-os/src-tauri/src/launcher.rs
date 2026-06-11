@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
+use std::time::UNIX_EPOCH;
 use tauri::Emitter;
 use tracing::{info, warn};
 
@@ -1161,9 +1162,15 @@ pub async fn launch_applet_process(
     } else if let Some(binary) = launch_binary {
         // Tauri applets: spawn as child process with IPC channel
         let resolved = resolve_binary_path(applet_id, binary);
+        let binary_mtime_unix = std::fs::metadata(&resolved)
+            .and_then(|metadata| metadata.modified())
+            .ok()
+            .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_secs());
         info!(
             applet = applet_id,
             binary = %resolved.display(),
+            binary_mtime_unix = ?binary_mtime_unix,
             "Launching binary applet"
         );
 

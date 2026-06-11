@@ -1,8 +1,31 @@
 # Everywear OS: Developer Wiki
 
-Version: 1.1.77
-Last updated: 2026-06-11 (Swarm fixrun visual QA integration)
+Version: 1.1.78
+Last updated: 2026-06-11 (B-Series partial fixrun: honest DAW gating, UI name strip, binary mtime logging)
 Maintainer: Sean Uddin / Somo Kasane
+
+> Current-state note, 2026-06-11 v1.1.78: B-Series partial fixrun slice
+> landed. Location: `C:\Users\MAG MSI\Project Everywear`. Step 0 repo
+> hygiene was live-checked: the promptpack's 73-file dirty-tree warning was
+> stale against disk; only the generated `1magen` capability schema remained
+> dirty after the CUDA_PATH-injected debug rebuild, and it was committed as a
+> schema refresh. Lane D: DAW stem extraction now stays visible but disabled
+> unless the Pro Model stem capability is explicitly available. The old
+> auto-extract-on-load path no longer fires 12 doomed extraction jobs, and the
+> action no longer offers `Retry Extraction` for an unshipped capability.
+> AI Director now shows neutral product labels (`Music engine`, `Video
+> engine`, `Local planner, External API`) instead of internal server/provider
+> names. Lane E hardening: `launcher.rs` logs the resolved applet binary path
+> plus `binary_mtime_unix` at BinaryLocal launch time, so stale `onemagen.exe`
+> launches are diagnosable. Launch-failure toasts now use product-language
+> messages while raw diagnostics stay in logs and bug reports. 3nvizen code was
+> verified to already accept `StartInference`; live 540p generation remains
+> blocked on the HTTP LTX sidecar proof, not the Rust IPC command enum.
+> Verification passed: `npm run build --workspace @everywear/gener8-web`,
+> `npm run build --workspace everywear-os`, `npm run build --workspace
+> @everywear/3nvizen`, `cargo check -p everywear-os`, and `cargo check -p
+> everywear-3nvizen`. Boundary: Gener8 B2/B3 output-count/audio-quality and Vid
+> B5 encoder lifecycle were not closed in this slice.
 
 > Current-state note, 2026-06-11 v1.1.77: Swarm fixrun integration and
 > visual QA landed. Shell-native applets now rely on shell chrome instead of

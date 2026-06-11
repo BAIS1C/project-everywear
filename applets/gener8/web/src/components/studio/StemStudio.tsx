@@ -1128,7 +1128,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
       audioRef.current = audio;
       setPhase("loaded");
 
-      if (autoExtract) {
+      if (autoExtract && stemsCapabilityAvailable) {
         setTimeout(() => handleExtract(initialSong.audioUrl!, initialSong.title || "Untitled"), 500);
       }
     });
@@ -1389,8 +1389,6 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
       setSourceAudioUrl(songData.audioUrl);
       audioRef.current = audio;
       setPhase("loaded");
-      // Auto-extract after drop
-      setTimeout(() => handleExtract(songData.audioUrl, songData.title || "Untitled"), 500);
     });
 
     audio.addEventListener("error", () => {
@@ -1643,7 +1641,14 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
 
   const completedStems = stems.filter(s => s.extractStatus === 'done').length;
   const hasSolo = stems.some(s => s.solo);
-  const extractionUnavailable = phase === "extracting" || sourceUploadPending || proModelDownloading || !sourceAudioUrl;
+  const stemsCapabilityAvailable = canUseProModel && proModelPresent === true;
+  const stemsCapabilityPending = canUseProModel && proModelPresent === null;
+  const stemsCapabilityBlocked = !stemsCapabilityAvailable;
+  const extractionUnavailable = phase === "extracting"
+    || sourceUploadPending
+    || proModelDownloading
+    || !sourceAudioUrl
+    || stemsCapabilityBlocked;
 
   // ── Render ──
   return (
@@ -1743,7 +1748,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
             </div>
           )}
 
-          {phase !== "extracting" && proModelPresent === false && (
+          {phase !== "extracting" && stemsCapabilityBlocked && (
             <div
               style={{
                 display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
@@ -1751,8 +1756,8 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                 color: "#FCD34D", fontSize: 12, fontFamily: "system-ui", flexShrink: 0,
               }}
             >
-              <span style={{ fontWeight: 700 }}>Provision Pro Model.</span>
-              <span style={{ flex: 1 }}>Stem extraction requires the shell-managed Pro Model.</span>
+              <span style={{ fontWeight: 700 }}>Stem extraction gated.</span>
+              <span style={{ flex: 1 }}>Requires Pro Model stems, coming with the shell-managed model pack.</span>
               {canUseProModel && (
                 <button
                   onClick={handleDownloadProModel}
@@ -1764,7 +1769,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                     opacity: proModelDownloading ? 0.75 : 1,
                   }}
                 >
-                  {proModelDownloading ? "Checking..." : "Check Pro Model"}
+                  {proModelDownloading ? "Checking..." : stemsCapabilityPending ? "Check Model Pack" : "Recheck Model Pack"}
                 </button>
               )}
             </div>
@@ -1805,8 +1810,8 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                 ? "Audio not ready"
                 : phase === "extracted"
                 ? `${completedStems} Stems Extracted`
-                : phase === "error"
-                ? "Retry Extraction"
+                : stemsCapabilityBlocked
+                ? "Model Pack Required"
                 : "Extract Stems"}
             </button>
 
@@ -1932,8 +1937,10 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
                 <p style={{ color: "#64748B", fontSize: 14 }}>
                   {sourceUploadPending ? (
                     "Preparing uploaded audio for the local engine. Stem extraction will unlock in a moment."
-                  ) : sourceAudioUrl ? (
+                  ) : sourceAudioUrl && stemsCapabilityAvailable ? (
                     <>Track loaded. Click <strong style={{ color: "#00C2FF" }}>Extract Stems</strong> to separate into 12 tracks.</>
+                  ) : sourceAudioUrl ? (
+                    "Track loaded for preview. Stem extraction requires Pro Model stems, coming with the shell-managed model pack."
                   ) : (
                     "Track loaded for preview, but extraction needs a server-accessible audio source."
                   )}

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, Clapperboard, Film, ListVideo, Lock, Sparkles, Wand2 } from 'lucide-react';
-import { AI_DIRECTOR_SAPI_PLANNER_CONTRACT } from '@everywear/transport';
 import { findEngineEndpoint, formatEngineLastChecked, readEngineHealth, subscribeEngineHealth, type EngineHealthPayload } from '@everywear/shared';
 import { useAuth } from '../context/AuthContext';
 
@@ -76,9 +75,7 @@ export default function AIDirectorView() {
   const videoReady = Boolean(videoEndpoint?.online);
   const canDraftPlan = canUseDirector && videoReady;
   const shotPlan = useMemo(() => makeShotPlan(null), []);
-  const plannerProviders = AI_DIRECTOR_SAPI_PLANNER_CONTRACT.providers
-    .map((provider) => provider === 'external_api' ? 'external API' : provider.replace('_', ' '))
-    .join(', ');
+  const plannerRoute = 'Local planner, External API';
   const lastChecked = formatEngineLastChecked(engineHealth);
 
   return (
@@ -114,12 +111,12 @@ export default function AIDirectorView() {
           <span className="font-semibold">{videoReady ? 'Video engine ready' : 'Video engine offline'}</span>
           <span style={{ color: 'var(--ew-text-muted)' }}>
             {videoEndpoint
-              ? `${videoEndpoint.id} ${videoEndpoint.online ? 'online' : 'offline'}${videoEndpoint.port ? `, port ${videoEndpoint.port}` : ''}`
-              : 'No video-encoder endpoint published by the shell'}
+              ? `Video engine ${videoEndpoint.online ? 'online' : 'offline'}${videoEndpoint.port ? `, port ${videoEndpoint.port}` : ''}`
+              : 'Video engine not available from the shell'}
           </span>
           <span className="opacity-40">|</span>
           <span style={{ color: 'var(--ew-text-muted)' }}>
-            Music engine: {musicEndpoint ? `${musicEndpoint.id} ${musicEndpoint.online ? 'online' : 'offline'}` : 'not published'}
+            Music engine: {musicEndpoint ? (musicEndpoint.online ? 'online' : 'offline') : 'not available'}
           </span>
           {lastChecked && (
             <>
@@ -134,7 +131,7 @@ export default function AIDirectorView() {
             <Lock size={16} className="text-accent-300" />
             <div>
               <p className="text-sm font-semibold text-slate-100">Creator Studio required</p>
-              <p className="text-xs text-slate-300 mt-0.5">AI Director follows the Everywear shell entitlement state. Provider-routed SAPI is used when reachable; fallback planning stays local.</p>
+              <p className="text-xs text-slate-300 mt-0.5">AI Director follows the Everywear shell entitlement state. Local planning is used when available; fallback planning stays on this machine.</p>
             </div>
           </div>
         )}
@@ -175,7 +172,7 @@ export default function AIDirectorView() {
                 ['Track', 'No song sidebar required'],
                 ['Duration', '3:00 storyboard draft'],
                 ['Visual Aim', 'Music-led video'],
-                ['Planner Route', `SAPI: ${plannerProviders}`],
+                ['Planner Route', plannerRoute],
                 ['Readiness', canDraftPlan ? 'Shell engine ready' : 'Waiting for shell engine'],
               ].map(([label, value]) => (
                 <div key={label}>

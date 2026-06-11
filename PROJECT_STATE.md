@@ -1,8 +1,23 @@
 # PROJECT_STATE.md - Everywear / Gener8 Port
 
-Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-11T00:51+08 SGT (Codex: Swarm fixrun visual QA integration).
+Single source of live state for surgical work. Read this first, every session. Last updated: 2026-06-11T13:09+08 SGT (Codex: B-Series partial fixrun).
 
 Canonical context remains `CONTEXT.md` (history) and the Mymory vault. This file is the WORKING STATE: what is true right now, what is broken, what is the next smallest move. Update it after every patch.
+
+## 2026-06-11 13:09 SGT - B-Series Partial Fixrun (Codex)
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+- STEP 0: live repo state contradicted the promptpack's stale 73-file dirty-tree warning. No `.git/index.lock`; only `applets/1magen/src-tauri/gen/schemas/capabilities.json` was dirty after the CUDA_PATH-injected debug rebuild. Committed as `be763fc chore: refresh 1magen capability schema`.
+- FIXED B6: DAW stems surface is visible but disabled unless the Pro Model stem capability reports available. `StemStudio.tsx` no longer auto-fires extraction after load/drop and no longer offers `Retry Extraction` for an unshipped capability.
+- FIXED B7a: AI Director rendered copy no longer exposes `ace-server`, `lm studio`, `ollama`, or `SAPI:`. Public labels are now `Music engine`, `Video engine`, and `Local planner, External API`; internal ids remain in diagnostics/wire lookups.
+- FIXED B8 toast class: shell launch-failure toasts now use product-language recovery copy; raw bridge/detail text remains in logs and bug-report extras.
+- HARDENED B1/E3: `launcher.rs` logs resolved BinaryLocal path plus `binary_mtime_unix` before spawning an applet, so stale `onemagen.exe` launches are visible in diagnostics.
+- VERIFIED B8 code truth: `applets/3nvizen/src-tauri/src/runtime_ipc.rs` already accepts `CommandKind::StartInference`; `npm run build --workspace @everywear/3nvizen` and `cargo check -p everywear-3nvizen` passed. Live 540p clip generation remains blocked on LTX HTTP sidecar proof, not the Rust IPC enum.
+- VERIFICATION PASSED: `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace everywear-os`; `npm run build --workspace @everywear/3nvizen`; `cargo check -p everywear-os`; `cargo check -p everywear-3nvizen`.
+- STILL OPEN: B2/B3 Gener8 output-count/audio-quality regression, B5 Vid encoder spawn on Pro song-list entry, B7b live health truth after Gener8 close, B1 visual chrome launch/generate proof, B4 quality decision card, and the full true-launch matrix.
+
+---
 
 ## 2026-06-11 00:51 SGT - Swarm Fixrun Visual QA Integration (Codex)
 

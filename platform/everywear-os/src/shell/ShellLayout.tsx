@@ -95,6 +95,20 @@ function engineEndpointForApplet(
   return null;
 }
 
+function launchFailureMessage(applet: AppletEntry, detail: string): string {
+  const lower = detail.toLowerCase();
+  if (lower.includes('startinference') || lower.includes('ipc')) {
+    return `${applet.name} could not complete its local runtime handoff. Rebuild or relaunch the applet, then send the bug report if it repeats.`;
+  }
+  if (lower.includes('resolve') || lower.includes('spawn') || lower.includes('not found')) {
+    return `${applet.name} could not find its local applet binary. Rebuild the applet, then try launching it again.`;
+  }
+  if (lower.includes('model') || lower.includes('provision')) {
+    return `${applet.name} could not prepare its local model pack. Check the model lifecycle panel, then retry.`;
+  }
+  return `${applet.name} could not launch. Try again after rebuilding the applet; the bug report contains the diagnostic detail.`;
+}
+
 function engineHealthStatusFor(
   payload: EngineHealthPayload | null,
   appletId: string | null | undefined,
@@ -1646,10 +1660,11 @@ export function ShellLayout() {
       // Our event listener above handles the rest.
     } catch (err) {
       console.error(`Failed to launch ${applet.id}:`, err);
-      const message = err instanceof Error ? err.message : String(err);
+      const diagnosticMessage = err instanceof Error ? err.message : String(err);
+      const message = launchFailureMessage(applet, diagnosticMessage);
       log.error('ui', `Failed to launch ${applet.id}`, {
         applet_id: applet.id,
-        message,
+        message: diagnosticMessage,
       });
       // 2026-06-11: removed the headless-iframe fallback that opened a
       // working-looking surface and marked the applet READY after a FAILED
@@ -1666,13 +1681,14 @@ export function ShellLayout() {
         source: applet.id,
         crashKind: 'frontend',
         occurredAt: new Date().toISOString(),
-        errorMessage: message,
+        errorMessage: diagnosticMessage,
         description: `${applet.name} failed to launch.`,
         extra: {
           applet_id: applet.id,
           launch_kind: applet.launch_kind,
           frontend_port: applet.frontend_port,
           launch_binary: applet.launch_binary,
+          public_message: message,
         },
       });
     }
