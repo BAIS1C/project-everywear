@@ -1286,10 +1286,52 @@ async fn generate(
         .or_else(|| s(&raw, "model"))
         .unwrap_or_default();
     let synth_model = if synth_model_raw.is_empty() {
-        st.preferred_dit
+        let preferred = st
+            .preferred_dit
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .clone()
+            .clone();
+        // 2026-06-12 SGT: extract/lego/complete/cover are xl-base-only tasks
+        // (see supported_task_types), but preferred_dit deliberately prefers
+        // turbo and never selects xl-base. Unqualified requests for these
+        // tasks were therefore dispatched to a model that cannot run them —
+        // this is what broke DAW stem extraction (12/12 instant failures,
+        // Sean smoke test 06-11; the xl-base pack was installed and working
+        // the whole time). Resolve the installed xl-base dit from the engine
+        // itself. NOTE: this also routes unqualified cover requests to
+        // xl-base, per the engine's own capability table.
+        let needs_base = matches!(
+            effective_task_type.as_str(),
+            "cover" | "cover-nofsq" | "repaint" | "extract" | "lego" | "complete" | "reference"
+        );
+        if needs_base && !preferred.to_ascii_lowercase().contains("xl-base") {
+            let base_name = match st
+                .client
+                .get(format!("{}/props", st.ace_url))
+                .timeout(Duration::from_millis(1500))
+                .send()
+                .await
+            {
+                Ok(resp) if resp.status().is_success() => {
+                    resp.json::<Value>().await.ok().and_then(|props| {
+                        props
+                            .get("models")
+                            .and_then(|m| m.get("dit"))
+                            .and_then(Value::as_array)
+                            .and_then(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str())
+                                    .find(|n| n.to_ascii_lowercase().contains("xl-base"))
+                                    .map(str::to_string)
+                            })
+                    })
+                }
+                _ => None,
+            };
+            base_name.unwrap_or(preferred)
+        } else {
+            preferred
+        }
     } else {
         synth_model_raw
     };

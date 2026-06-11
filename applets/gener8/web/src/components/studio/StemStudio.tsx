@@ -40,36 +40,24 @@ interface LoadedTrack {
 type StudioPhase = "empty" | "loaded" | "extracting" | "extracted" | "error";
 
 function inventoryHasProModel(inventory: unknown): boolean {
-  // 2026-06-12 SGT: replaced the loose JSON.stringify substring match. It
-  // reported the Pro pack present whenever ANY inventory key contained
-  // "stem"/"reference"/"cover", which produced a false "Pro Model ready"
-  // toast followed by 12/12 extraction failures (Sean smoke test 06-11).
-  // Fail CLOSED: only report present when a concrete model entry both
-  // matches a stem-capable id AND carries an installed/local-path signal.
-  // Ambiguous inventory = not present = honest gate.
-  const STEM_PACK_IDS = ['xl-base', 'pro_base', 'better_models'];
-  const entries: Record<string, unknown>[] = [];
-  const collect = (node: unknown) => {
-    if (Array.isArray(node)) { node.forEach(collect); return; }
-    if (node && typeof node === 'object') {
-      const obj = node as Record<string, unknown>;
-      if (typeof obj.id === 'string' || typeof obj.name === 'string' || typeof obj.pack_id === 'string') {
-        entries.push(obj);
-      }
-      Object.values(obj).forEach(collect);
-    }
-  };
-  collect(inventory);
-  return entries.some((e) => {
-    const ident = `${e.id ?? ''} ${e.name ?? ''} ${e.pack_id ?? ''}`.toLowerCase();
-    if (!STEM_PACK_IDS.some((s) => ident.includes(s))) return false;
-    return e.installed === true
-      || e.present === true
-      || e.downloaded === true
-      || e.status === 'installed' || e.status === 'ready'
-      || e.state === 'installed' || e.state === 'ready'
-      || (typeof e.path === 'string' && e.path.length > 0)
-      || (typeof e.local_path === 'string' && e.local_path.length > 0);
+  // 2026-06-12 SGT rev 2: the inventory ground truth is the engine's /props
+  // normalization (gener8_engine.rs normalize_model_inventory):
+  //   { models: [{ name, is_default, is_loaded, supported_task_types }], ... }
+  // The engine only lists models that exist on disk, so an entry that
+  // supports "extract" (the xl-base dit) IS the capability signal. The
+  // earlier substring match over the whole JSON could false-positive on
+  // unrelated keys; the rev-1 installed-field check false-NEGATIVED against
+  // this shape (fields don't exist) and gated Sean off his installed pack.
+  // This version matches the real shape and still fails closed on anything
+  // unrecognizable.
+  const inv = inventory as { models?: unknown } | null | undefined;
+  const models = Array.isArray(inv?.models) ? (inv!.models as unknown[]) : [];
+  return models.some((m) => {
+    if (!m || typeof m !== 'object') return false;
+    const entry = m as { name?: unknown; supported_task_types?: unknown };
+    const name = typeof entry.name === 'string' ? entry.name.toLowerCase() : '';
+    const tasks = Array.isArray(entry.supported_task_types) ? (entry.supported_task_types as unknown[]) : [];
+    return tasks.includes('extract') || name.includes('xl-base');
   });
 }
 
