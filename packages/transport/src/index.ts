@@ -25,6 +25,7 @@ export {
   vaultRegisterImage,
   vaultRegisterAudio,
   vaultRegisterVideo,
+  vaultOpenPathFolder,
   vaultFileUrl,
   vaultThumbnailUrl,
 } from './vault';

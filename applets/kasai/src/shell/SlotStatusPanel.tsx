@@ -122,6 +122,7 @@ export function SlotStatusPanel() {
     ...s,
     size: (i === 0 ? 'big' : 'small') as 'big' | 'small',
   }));
+  const isWarming = status.runtime_status === 'warming';
 
   // Parse VRAM from GPU info
   const vramTotal = status.gpu.vram_mb;
@@ -138,6 +139,7 @@ export function SlotStatusPanel() {
       </div>
 
       <div className="ssp-tier">{status.tier}</div>
+      {isWarming && <div className="ssp-event">Model warming up...</div>}
       {recentEvent && <div className="ssp-event">{recentEvent}</div>}
 
       {/* Slot visualizations */}

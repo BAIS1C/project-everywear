@@ -1164,3 +1164,38 @@ State now:
 - Open punch list: shim masquerade hash guard, ace sidecar teardown (C.2),
   VideoGeneratorModal split (5,067 lines, grew past every ceiling), Sonar
   audio-session naming, cover-strength step-quantization UI.
+
+---
+
+## 2026-06-12 13:28 SGT: C-Series QA Fixrun Applied, Built, Runtime QA Deferred
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+
+- CURRENT PHASE: C-Series QA bugfix pass is implemented in source and rebuilt into both debug and release artifacts. Runtime/user QA remains intentionally deferred for Sean to run later.
+- LOCKED FIXES: Gener8 shell now treats the backend as the writer for completed generations, preserves Vault IDs, and carries title/style/lyrics metadata through shell Vault registration. Shell ACE requests now resolve xl-base-only task types from live `/props` inventory instead of falling through to the preferred song model.
+- LOCKED FIXES: Gener8 cover reuse parses string durations such as `6:24` into seconds instead of producing `NaN`. Vault detail actions now call Tauri `vault_open_item_file` and `vault_open_item_folder`.
+- LOCKED FIXES: 1magen has dialog/fs permissions for image picking and vault/output paths, regenerated Tauri capability schema, hidden-window `nvidia-smi` probing on Windows, and Creator Pro wording for upcoming style/task shard locks.
+- LOCKED FIXES: Kasai/My Mait preserves `waiting_for_models` as `warming`, exposes `Model warming up...`, disables chat input during warmup, and loads skill context with a local confirmation instead of sending raw skill instructions through normal chat.
+- VERIFICATION PASSED: `git diff --check`; `npm run build --workspace @everywear/shared`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace kasai-applet`; `npm run build --workspace onemagen`; `npm run build --workspace everywear-os`; `cargo build -p everywear-os`; `cargo build --release -p everywear-os`; `cargo build -p onemagen`; `cargo build --release -p onemagen`.
+- ARTIFACT PROOF: `target\debug\everywear-os.exe` last written `2026-06-12 13:08:32`; `target\release\everywear-os.exe` last written `2026-06-12 13:11:21`; `target\debug\onemagen.exe` last written `2026-06-12 13:11:59`; `target\release\onemagen.exe` last written `2026-06-12 13:16:06`.
+- PROCESS HYGIENE: stopped pre-existing Everywear/Vite/ACE processes before the pass. Final sweep found no matching Everywear/server processes and no watched listeners on `3001`, `3117`, `5173-5176`, `8080`, `8081`, `8787`, `9223`, or `9877`.
+- BLOCKERS: no runtime smoke was run after build. Sean will test later: Gener8 three-generation row count, cover 65/70/75, stems, Pro workspace rows, Vault Open File/Open Folder, 1magen picker/save, Kasai warmup/skill-load UX.
+- CARRY: `rebuild-shell-20260612c.ps1` remains untracked and untouched. Treat it as local helper material unless Sean explicitly promotes or deletes it.
+
+---
+
+## 2026-06-12 14:50 SGT: OODA Sibling Bug-Class Fixrun Applied, Built, Runtime QA Deferred
+
+Project location: `C:\Users\MAG MSI\Project Everywear`
+Project Mymory note: `C:\Users\MAG MSI\Project Mymory\everywear\2026-06-12_ooda_sibling_bugclass_fixrun_codex.md`
+
+- CURRENT PHASE: post-C-Series sibling-bug sweep is implemented in source and rebuilt into both debug and release artifacts for `everywear-os` and `gener8`. Runtime/user QA remains intentionally deferred for Sean.
+- LOCKED FIXES: `3nvizen` video preview now registers completed outputs into Everywear Vault, uses the returned Vault file path for playback/download after save, and calls a real Tauri folder-open command instead of leaving Open Folder as a visible no-op.
+- LOCKED FIXES: shared transport now exports `vaultOpenPathFolder`; `everywear-os` registers `vault_open_path_folder` in the invoke handler and opens the containing directory for either file or folder paths.
+- LOCKED FIXES: duration parsing now accepts numeric seconds plus colon strings such as `6:24` and `01:02:03` in Gener8 library registration, cover source initialization, stem source duration, SRT fallback timing, and confirmed video-modal register/timing paths.
+- LOCKED FIXES: remaining confirmed Windows subprocess probes in Gener8 ACE/stub and tier-reconciler paths apply `CREATE_NO_WINDOW`.
+- VERIFICATION PASSED: `git diff --check`; `npm run build --workspace @everywear/transport`; `npm run build --workspace @everywear/gener8-web`; `npm run build --workspace @everywear/video-modal`; `npm run build --workspace @everywear/3nvizen`; `npm run build --workspace everywear-os`; `cargo check -p everywear-os`; `cargo check -p gener8`; `cargo build -p everywear-os -p gener8`; `cargo build --release -p everywear-os -p gener8`.
+- ARTIFACT PROOF: `target\debug\everywear-os.exe` last written `2026-06-12 14:14:50`, `68061184` bytes; `target\debug\gener8.exe` `2026-06-12 14:13:59`, `28105216` bytes; `target\release\everywear-os.exe` `2026-06-12 14:24:53`, `17047040` bytes; `target\release\gener8.exe` `2026-06-12 14:15:44`, `6328320` bytes.
+- PROCESS HYGIENE: final sweep found no `cargo`, `rustc`, `node`, `npm`, or `vite` build workers left running.
+- BLOCKERS: no runtime smoke was run after build. Sean will test later.
+- CARRY: `packages/video-modal/src/components/VideoGeneratorModal.tsx` remains over the context budget at roughly 5k lines. This pass only applied surgical repairs; the dedicated split lane remains mandatory before further architectural work.

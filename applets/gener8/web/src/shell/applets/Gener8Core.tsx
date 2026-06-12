@@ -660,22 +660,19 @@ export default function Gener8Core() {
           if (status.status === 'succeeded' && status.result) {
             finishJob(job.jobId);
 
-            // Persist generation result into Everywear Vault.
-            // Shim already wrote audio to the Vault-backed music path and
-            // returned audioUrls + audioKey in the status envelope. Without
-            // this POST the Vault-backed song list has nothing to show.
+            // Engine-as-writer persistence. The shell registers the audio file
+            // and returns a vault id in the status envelope. Creating another
+            // song here was the remaining structural double-writer that
+            // produced a shadow row per generation after the poll race was
+            // fixed.
             let persisted = false;
             try {
-              const audioRef =
-                status.result.audioKey
-                  ? `/audio/${status.result.audioKey}`
-                  : (status.result.audioUrls && status.result.audioUrls[0]) || '';
-              if (audioRef) {
-                const persistResult = await songsApi.createSong({
+              const existingVaultId = (status.result as any).vaultId || (status as any).vault_id;
+              if (existingVaultId) {
+                const persistResult = await songsApi.updateSong(existingVaultId, {
                   title: params.title || 'Untitled',
                   style: params.style || '',
                   lyrics: params.lyrics || '',
-                  audio_url: audioRef,
                   duration: typeof status.result.duration === 'number'
                     ? status.result.duration
                     : undefined,
@@ -701,7 +698,42 @@ export default function Gener8Core() {
                   addSongToWorkspace(persistResult.song.id, activeWorkspaceId);
                 }
               } else {
-                console.warn(`Job ${job.jobId} succeeded but no audio reference; skipping library write`);
+                const audioRef =
+                  status.result.audioKey
+                    ? `/audio/${status.result.audioKey}`
+                    : (status.result.audioUrls && status.result.audioUrls[0]) || '';
+                if (!audioRef) {
+                  console.warn(`Job ${job.jobId} succeeded but no audio reference; skipping library write`);
+                } else {
+                  const persistResult = await songsApi.createSong({
+                    title: params.title || 'Untitled',
+                    style: params.style || '',
+                    lyrics: params.lyrics || '',
+                    audio_url: audioRef,
+                    duration: typeof status.result.duration === 'number'
+                      ? status.result.duration
+                      : undefined,
+                    bpm: (status.result as any).bpm ?? undefined,
+                    key_scale: (status.result as any).keyScale ?? undefined,
+                    time_signature: (status.result as any).timeSignature ?? undefined,
+                    tags: ['custom'],
+                    is_public: false,
+                    generation_params: params as unknown as Record<string, unknown>,
+                  }, token);
+                  if (persistResult?.song) {
+                    songStore.removeSong(tempId);
+                    songStore.addSong({
+                      ...persistResult.song,
+                      fauxPeaks: (persistResult.song as any).fauxPeaks ?? seededFauxPeaks(persistResult.song.id, { bins: 400 }),
+                      peaksAttempted: false,
+                    } as any);
+                    setSelectedSong(persistResult.song);
+                    persisted = true;
+                  }
+                  if (activeWorkspaceId && persistResult?.song?.id) {
+                    addSongToWorkspace(persistResult.song.id, activeWorkspaceId);
+                  }
+                }
               }
             } catch (persistErr) {
               console.error(`Failed to persist track for job ${job.jobId}:`, persistErr);

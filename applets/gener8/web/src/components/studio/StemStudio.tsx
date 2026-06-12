@@ -11,6 +11,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import type { Song } from "../../types";
 import {
   studioApi,
+  durationSecondsFromValue,
   generateApi,
   getAudioUrl,
   TRACK_NAMES,
@@ -1413,7 +1414,7 @@ export default function StemStudio({ initialSong, autoExtract, onStemsExtracted,
     setShowLibraryPicker(false);
     const audioUrl = song.audioUrl ? getAudioUrl(song.audioUrl, song.id) : null;
     if (!audioUrl) return;
-    handleDroppedSong({ audioUrl, title: song.title, duration: typeof song.duration === 'string' ? parseFloat(song.duration) : undefined });
+    handleDroppedSong({ audioUrl, title: song.title, duration: durationSecondsFromValue(song.duration) });
   }, [handleDroppedSong]);
 
   // ── Load saved stem group back into workspace ──

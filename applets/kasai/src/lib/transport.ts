@@ -30,6 +30,7 @@ export interface EngineStatus {
   gpu: { name: string; vram_mb: number };
   tier: string;
   loaded_slots: Array<{ slot: string; model_name: string }>;
+  runtime_status: string;
   version: string;
 }
 
@@ -233,6 +234,7 @@ const MOCK_RESPONSES: Record<string, unknown> = {
       { slot: 'Primary', model_name: 'Qwen3.6 35B-A3B Q4' },
       { slot: 'Encoder', model_name: 'Qwen3.5 9B Q8' },
     ],
+    runtime_status: 'running',
     version: '0.1.0',
   },
   list_installed_skills: [

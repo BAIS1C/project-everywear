@@ -449,20 +449,23 @@ function Composer({
   onSend,
   isGenerating,
   transportMode,
+  disabledReason,
 }: {
   onSend: (text: string) => void;
   isGenerating: boolean;
   transportMode: string;
+  disabledReason?: string | null;
 }) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const disabled = isGenerating || Boolean(disabledReason);
 
   const handleSend = useCallback(() => {
-    if (!value.trim() || isGenerating) return;
+    if (!value.trim() || disabled) return;
     onSend(value.trim());
     setValue('');
     textareaRef.current?.focus();
-  }, [isGenerating, onSend, value]);
+  }, [disabled, onSend, value]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -482,14 +485,14 @@ function Composer({
             onChange={event => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
             rows={3}
-            disabled={isGenerating}
+            disabled={disabled}
           />
           <div className="ah-composer-row">
             <div className="ah-ctx-chips">
               <button type="button" className="ah-ctx-chip" onClick={() => { setValue(prev => `${prev}@skill `); textareaRef.current?.focus(); }}>@ SKILL</button>
               <button type="button" className="ah-ctx-chip" onClick={() => { setValue(prev => `${prev}#vault `); textareaRef.current?.focus(); }}># VAULT</button>
             </div>
-            <button className="ah-send" onClick={handleSend} disabled={!value.trim() || isGenerating} aria-label="Send message">
+            <button className="ah-send" onClick={handleSend} disabled={!value.trim() || disabled} aria-label="Send message">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M22 2L11 13" />
                 <path d="M22 2l-7 20-4-9-9-4 20-7z" />
@@ -499,7 +502,7 @@ function Composer({
         </div>
         <div className="ah-composer-foot">
           <span><b>Enter</b> send / <b>Shift+Enter</b> new line</span>
-          <span>{transportMode === 'tauri' ? 'LOCAL IPC' : 'BROWSER PREVIEW'} / HOME-NODE</span>
+          <span>{disabledReason || `${transportMode === 'tauri' ? 'LOCAL IPC' : 'BROWSER PREVIEW'} / HOME-NODE`}</span>
         </div>
       </div>
     </div>
@@ -656,6 +659,7 @@ export function KasaiCore() {
   const [activeSkillId, setActiveSkillId] = useState<string | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
+  const [runtimeStatus, setRuntimeStatus] = useState<string>('unknown');
   const [mymoryStatus, setMymoryStatus] = useState<MymoryStatus | null>(null);
   const [watchedProjects, setWatchedProjects] = useState<WatchedProject[]>([]);
   const [runningSkillId, setRunningSkillId] = useState<string | null>(null);
@@ -688,8 +692,10 @@ export function KasaiCore() {
           gpu: { name: string; vram_mb: number } | null;
           tier: string | null;
           loaded_slots: LoadedSlotInfo[];
+          runtime_status?: string;
         }>('get_engine_status');
 
+        setRuntimeStatus(status?.runtime_status || 'unknown');
         if (status?.gpu) {
           const models = (status.loaded_slots || [])
             .filter(slot => slot.slot !== 'Embedder')
@@ -706,6 +712,7 @@ export function KasaiCore() {
         }
       } catch {
         setNodeInfo(null);
+        setRuntimeStatus('offline');
       }
     };
 
@@ -932,7 +939,13 @@ export function KasaiCore() {
     setRunningSkillId(skill.id);
     const startedAt = Date.now();
     try {
-      await handleSend(`Prepare the "${skill.name}" skill.\n\n${skill.description}`);
+      setMessages(prev => [...prev.filter(message => message.type !== 'tool-calls'), {
+        type: 'assistant',
+        id: crypto.randomUUID(),
+        role: 'agent',
+        content: `Loaded ${skill.name}. ${skill.summary || 'Skill context is ready.'} Send the target input and I will run it.`,
+        timestamp: Date.now(),
+      }]);
     } finally {
       const remaining = MIN_SKILL_RUN_VISIBLE_MS - (Date.now() - startedAt);
       if (remaining > 0) {
@@ -940,9 +953,10 @@ export function KasaiCore() {
       }
       setRunningSkillId(null);
     }
-  }, [handleSend, isGenerating]);
+  }, [isGenerating]);
 
   const activeChatTitle = activeSkill ? activeSkill.name : 'Current session';
+  const composerDisabledReason = runtimeStatus === 'warming' ? 'Model warming up...' : null;
 
   return (
     <div className="ah-root">
@@ -1048,7 +1062,12 @@ export function KasaiCore() {
             )}
           </div>
 
-          <Composer onSend={handleSend} isGenerating={isGenerating} transportMode={transport.mode} />
+          <Composer
+            onSend={handleSend}
+            isGenerating={isGenerating}
+            transportMode={transport.mode}
+            disabledReason={composerDisabledReason}
+          />
         </div>
       </main>
 

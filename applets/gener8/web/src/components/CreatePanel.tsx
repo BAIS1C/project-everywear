@@ -133,6 +133,19 @@ const KEY_SIGNATURES = [
 
 const TIME_SIGNATURES = ['', '2/4', '3/4', '4/4', '6/8'];
 
+function durationSecondsFromValue(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const clock = trimmed.match(/^(\d+):([0-5]?\d)$/);
+  if (clock) return Number(clock[1]) * 60 + Number(clock[2]);
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
+}
+
 const VOCAL_LANGUAGES = [
   { value: 'unknown', label: 'Auto / Instrumental' },
   { value: 'ar', label: 'Arabic' },
@@ -565,9 +578,8 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
 
     if (mode === 'cover') {
       if (canUseAdvancedControls) setShowAdvanced(true);
-      if (song.duration) {
-        setDuration(Math.round(Number(song.duration)));
-      }
+      const sourceDuration = durationSecondsFromValue(song.duration);
+      setDuration(sourceDuration ? Math.round(sourceDuration) : -1);
     }
 
     // 2026-05-04 SGT (Sean directive): Reuse Prompt scope is now strictly
@@ -1481,7 +1493,7 @@ export const CreatePanel: React.FC<CreatePanelProps> = ({ onGenerate, isGenerati
               <div className="flex items-center justify-between">
                 <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Duration</label>
                 <span className="text-xs font-mono text-zinc-900 dark:text-white bg-zinc-100 dark:bg-black/20 px-2 py-0.5 rounded">
-                  {duration === -1 ? 'Auto' : `${duration}s`}
+                  {duration === -1 || !Number.isFinite(duration) ? 'Auto' : `${duration}s`}
                 </span>
               </div>
               <input

@@ -293,6 +293,10 @@ export async function vaultRegisterVideo(params: RegisterVideoParams): Promise<V
   });
 }
 
+export async function vaultOpenPathFolder(filePath: string): Promise<void> {
+  return invoke('vault_open_path_folder', { filePath });
+}
+
 // ── File URL helpers ──────────────────────────────────────────────────
 
 /**

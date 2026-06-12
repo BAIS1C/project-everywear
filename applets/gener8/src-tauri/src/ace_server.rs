@@ -231,6 +231,11 @@ fn start(bin: &Path, models_dir: &Path, port: u16) -> Result<Child> {
         cmd.args([bin.to_string_lossy().as_ref(), "--port", &port.to_string()])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        }
         return spawn_drained(cmd);
     }
 

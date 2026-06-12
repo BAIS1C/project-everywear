@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { GenerationProgress, GenerateVideoResponse } from '../transport';
 import { getVideoSrc } from '../transport';
-import { vaultRegisterVideo } from '@everywear/transport';
+import { vaultFileUrl, vaultOpenPathFolder, vaultRegisterVideo, type VaultItem } from '@everywear/transport';
 
 export type VideoPreviewState =
   | { kind: "idle" }
@@ -26,56 +26,73 @@ function formatTime(seconds?: number): string {
 export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
   const [vaultSaveState, setVaultSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [vaultSaveError, setVaultSaveError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [savedVaultItem, setSavedVaultItem] = useState<VaultItem | null>(null);
   const [autoSaveToVault, setAutoSaveToVault] = useState<boolean>(() => {
     try { return localStorage.getItem('3nvizen:auto_save_vault') === '1'; } catch { return false; }
   });
 
-  const handleSaveToVault = useCallback(async () => {
-    if (state.kind !== 'done') return;
+  const saveToVault = useCallback(async (outputPath: string, response: GenerateVideoResponse) => {
     setVaultSaveState('saving');
     setVaultSaveError(null);
+    setActionError(null);
     try {
-      await vaultRegisterVideo({
+      const item = await vaultRegisterVideo({
         title: `Video ${new Date().toISOString().slice(0, 10)}`,
-        filePath: state.outputPath,
-        durationSeconds: state.response.duration_seconds,
+        filePath: outputPath,
+        durationSeconds: response.duration_seconds,
         tags: ['3nvizen', 'video'],
         sourceAppId: '3nvizen',
         appletScope: '3nvizen',
         libraryScope: 'videos',
       });
+      setSavedVaultItem(item);
       setVaultSaveState('saved');
-      setTimeout(() => setVaultSaveState('idle'), 3000);
     } catch (err) {
       setVaultSaveState('error');
       setVaultSaveError(err instanceof Error ? err.message : 'Vault save failed');
     }
-  }, [state]);
+  }, []);
+
+  const handleSaveToVault = useCallback(() => {
+    if (state.kind !== 'done') return;
+    if (vaultSaveState === 'saving' || savedVaultItem) return;
+    void saveToVault(state.outputPath, state.response);
+  }, [saveToVault, savedVaultItem, state, vaultSaveState]);
 
   // Auto-save to vault when generation completes
-  const prevStateKind = useRef(state.kind);
+  const prevOutputPath = useRef<string | null>(null);
   useEffect(() => {
-    if (prevStateKind.current !== 'done' && state.kind === 'done' && autoSaveToVault) {
-      handleSaveToVault();
+    const outputPath = state.kind === 'done' ? state.outputPath : null;
+    if (prevOutputPath.current !== outputPath) {
+      setVaultSaveState('idle');
+      setVaultSaveError(null);
+      setActionError(null);
+      setSavedVaultItem(null);
+      if (outputPath && state.kind === 'done' && autoSaveToVault) {
+        void saveToVault(outputPath, state.response);
+      }
     }
-    prevStateKind.current = state.kind;
-  }, [state.kind, autoSaveToVault, handleSaveToVault]);
+    prevOutputPath.current = outputPath;
+  }, [autoSaveToVault, saveToVault, state]);
 
   const handleDownload = useCallback(() => {
     if (state.kind !== "done") return;
-    // Backend serving is available; save-as remains a future Tauri shell polish.
-    const src = getVideoSrc(state.outputPath);
+    const src = savedVaultItem?.file_path
+      ? vaultFileUrl(savedVaultItem.file_path)
+      : getVideoSrc(state.outputPath);
     window.open(src, "_blank");
-  }, [state]);
+  }, [savedVaultItem, state]);
 
-  const handleOpenFolder = useCallback(() => {
+  const handleOpenFolder = useCallback(async () => {
     if (state.kind !== "done") return;
-    // Future UI polish: use Tauri shell.open to open the containing folder.
-    // import { open } from '@tauri-apps/plugin-shell';
-    // const dir = state.outputPath.replace(/[\\/][^\\/]+$/, '');
-    // open(dir);
-    console.warn("[3nvizen] Open folder not yet wired to Tauri shell.open");
-  }, [state]);
+    setActionError(null);
+    try {
+      await vaultOpenPathFolder(savedVaultItem?.file_path ?? state.outputPath);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Open folder failed');
+    }
+  }, [savedVaultItem, state]);
 
   // ── Idle ──
   if (state.kind === "idle") {
@@ -160,7 +177,9 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
 
   // ── Done ──
   if (state.kind === "done") {
-    const videoSrc = getVideoSrc(state.outputPath);
+    const videoSrc = savedVaultItem?.file_path
+      ? vaultFileUrl(savedVaultItem.file_path)
+      : getVideoSrc(state.outputPath);
 
     return (
       <div className="tv-preview tv-preview--done" data-tour="3nvizen.preview">
@@ -195,6 +214,11 @@ export function VideoPreview({ state, onCancel, onRetry }: VideoPreviewProps) {
         {vaultSaveState === 'error' && vaultSaveError && (
           <div style={{ color: 'var(--ew-status-red, #f87171)', fontSize: '11px', marginTop: '4px' }}>
             {vaultSaveError}
+          </div>
+        )}
+        {actionError && (
+          <div style={{ color: 'var(--ew-status-red, #f87171)', fontSize: '11px', marginTop: '4px' }}>
+            {actionError}
           </div>
         )}
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--ew-text-muted)', fontSize: '11px', marginTop: '6px' }}>

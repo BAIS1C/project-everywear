@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useRef, useState } from 'react';
 import { Song } from '../types';
-import { getApiBase } from '../services/api';
+import { durationSecondsFromValue, getApiBase } from '../services/api';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { showToast } from './ToastHost';
 import { lrcToSrt, isLrcData, naiveLrcFromLyrics } from '../lib/lrcParser';
@@ -237,9 +237,7 @@ export const SongDropdownMenu: React.FC<SongDropdownMenuProps> = ({
             srtContent = lrcToSrt(lrcData);
         } else if (lyrics) {
             // Naive fallback: distribute lines evenly across track duration
-            const dur = typeof song.duration === 'number'
-                ? song.duration
-                : parseFloat(String(song.duration || '0')) || 180;
+            const dur = durationSecondsFromValue(song.duration) ?? 180;
             const naiveLrc = naiveLrcFromLyrics(lyrics, dur);
             srtContent = naiveLrc ? lrcToSrt(naiveLrc) : '';
         } else {

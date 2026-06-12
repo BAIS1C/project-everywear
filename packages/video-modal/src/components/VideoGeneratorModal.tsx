@@ -92,6 +92,22 @@ import {
   videoEncoderWsUrl,
 } from "../lib/videoEncoderEndpoint";
 
+function durationSecondsFromValue(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parts = trimmed.split(":").map((part) => Number(part));
+  if (parts.length >= 2 && parts.every(Number.isFinite)) {
+    const seconds = parts.reduce((total, part) => total * 60 + part, 0);
+    return seconds > 0 ? seconds : undefined;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
   isOpen,
   onClose,
@@ -1692,8 +1708,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
           await registerVideo({
             title: `${song.title || "Video"} ${new Date().toISOString().slice(0, 10)}`,
             filePath: shimData.path,
-            durationSeconds:
-              typeof song.duration === "number" ? song.duration : undefined,
+            durationSeconds: durationSecondsFromValue(song.duration),
             tags: [vaultTag, "video", "cpu-encode"],
           });
         }
@@ -2423,8 +2438,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
         }>("vault_register_video_from_encoder", {
           sessionId: encoderSessionId,
           title: videoTitle,
-          durationSeconds:
-            typeof song.duration === "number" ? song.duration : undefined,
+          durationSeconds: durationSecondsFromValue(song.duration),
           width: renderRes.w,
           height: renderRes.h,
           frameRate: 24,
@@ -2496,8 +2510,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
           await registerVideo?.({
             title: videoTitle,
             filePath: savedPath,
-            durationSeconds:
-              typeof song.duration === "number" ? song.duration : undefined,
+            durationSeconds: durationSecondsFromValue(song.duration),
             tags: [vaultTag, "video", "gpu-encode"],
           });
       } catch (vaultErr) {
@@ -4047,11 +4060,7 @@ export const VideoGeneratorModal: React.FC<VideoGeneratorModalProps> = ({
                           });
                           // If no lrc_data, silently generate naive time-split
                           if (!lrcDataRef.current && song?.lyrics) {
-                            const dur =
-                              typeof song.duration === "number"
-                                ? song.duration
-                                : parseFloat(String(song.duration || "0")) ||
-                                  180;
+                            const dur = durationSecondsFromValue(song.duration) ?? 180;
                             lrcDataRef.current = naiveLrcFromLyrics(
                               song.lyrics,
                               dur,

@@ -23,10 +23,14 @@ struct RecommendedStack {
 }
 
 fn detect_total_vram_mb() -> Option<u64> {
-    let output = std::process::Command::new("nvidia-smi")
-        .args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"])
-        .output()
-        .ok()?;
+    let mut command = std::process::Command::new("nvidia-smi");
+    command.args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let output = command.output().ok()?;
 
     if !output.status.success() {
         return None;

@@ -17,6 +17,7 @@ export interface LockedFeatureCardProps {
   description: string;
   icon?: string;
   tier?: FeatureTier;
+  tierLabel?: string;
   progress?: FeatureProgress;
   learnMoreHref?: string;
   className?: string;
@@ -40,6 +41,7 @@ export function LockedFeatureCard({
   description,
   icon,
   tier,
+  tierLabel,
   progress = 'coming-soon',
   learnMoreHref,
   className,
@@ -56,7 +58,7 @@ export function LockedFeatureCard({
         {tier && tier !== 'free' && (
           <span className="lfc-card__tier">
             <span className="lfc-card__lock">{'\u{1F512}'}</span>
-            {TIER_LABELS[tier]}
+            {tierLabel ?? TIER_LABELS[tier]}
           </span>
         )}
       </div>

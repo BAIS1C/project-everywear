@@ -14,6 +14,7 @@
  * Same as vault.ts — convertFileSrc needs vault dirs in Tauri scope
  */
 import React, { useState, useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { ArrowLeft, Star, Trash2, X, Plus, Download, FolderOpen, Music, Film, Image } from 'lucide-react';
 import { useVault } from '../context/VaultProvider';
 import type { VaultItem } from '@everywear/transport';
@@ -231,6 +232,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [thumbError, setThumbError] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fileUrl = vault.getFileUrl(item.file_path);
   const thumbnailUrl = vault.getThumbnailUrl(item.id);
@@ -255,9 +257,23 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
     }
   }, [vault, item.id, onBack]);
 
-  const handleDownload = useCallback(() => {
-    window.open(fileUrl, '_blank');
-  }, [fileUrl]);
+  const handleDownload = useCallback(async () => {
+    setActionError(null);
+    try {
+      await invoke('vault_open_item_file', { id: item.id });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err || 'Download failed'));
+    }
+  }, [item.id]);
+
+  const handleOpenFolder = useCallback(async () => {
+    setActionError(null);
+    try {
+      await invoke('vault_open_item_folder', { id: item.id });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err || 'Open folder failed'));
+    }
+  }, [item.id]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -411,10 +427,7 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
             Download
           </button>
           <button
-            onClick={() => {
-              // CODEX_NEEDED: use Tauri shell.open to open containing folder
-              console.warn('[Vault] Open folder not yet wired to Tauri shell.open');
-            }}
+            onClick={handleOpenFolder}
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded transition-colors"
             style={{
               background: 'transparent',
@@ -426,6 +439,18 @@ export function VaultDetailPanel({ item, onBack }: { item: VaultItem; onBack: ()
             Open Folder
           </button>
         </div>
+
+        {actionError && (
+          <div
+            className="mt-3 text-xs p-2 rounded"
+            style={{
+              background: 'color-mix(in oklab, var(--ew-status-red) 10%, transparent)',
+              color: 'var(--ew-status-red)',
+            }}
+          >
+            {actionError}
+          </div>
+        )}
 
         {deleteError && (
           <div

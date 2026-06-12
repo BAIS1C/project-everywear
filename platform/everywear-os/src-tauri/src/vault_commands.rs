@@ -347,6 +347,65 @@ pub async fn vault_delete_item(id: String, vault: State<'_, VaultState>) -> Resu
     vault.lock().await.delete(&id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub async fn vault_open_item_file(id: String, vault: State<'_, VaultState>) -> Result<(), String> {
+    let item = vault
+        .lock()
+        .await
+        .get_by_id(&id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Vault item not found.".to_string())?;
+    let file_path = vault_item_file_path(&item);
+    if !file_path.exists() {
+        return Err(format!("Vault file is missing: {}", file_path.display()));
+    }
+    open::that(&file_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn vault_open_item_folder(
+    id: String,
+    vault: State<'_, VaultState>,
+) -> Result<(), String> {
+    let item = vault
+        .lock()
+        .await
+        .get_by_id(&id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Vault item not found.".to_string())?;
+    let file_path = vault_item_file_path(&item);
+    let folder = file_path.parent().ok_or_else(|| {
+        format!(
+            "Vault file has no containing folder: {}",
+            file_path.display()
+        )
+    })?;
+    if !folder.exists() {
+        return Err(format!("Vault folder is missing: {}", folder.display()));
+    }
+    open::that(folder).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn vault_open_path_folder(file_path: String) -> Result<(), String> {
+    let trimmed = file_path.trim();
+    if trimmed.is_empty() {
+        return Err("No file path supplied.".into());
+    }
+    let path = PathBuf::from(trimmed);
+    let folder = if path.is_dir() {
+        path
+    } else {
+        path.parent()
+            .ok_or_else(|| format!("File has no containing folder: {}", path.display()))?
+            .to_path_buf()
+    };
+    if !folder.exists() {
+        return Err(format!("Folder is missing: {}", folder.display()));
+    }
+    open::that(folder).map_err(|e| e.to_string())
+}
+
 // CLAUDE_INTERFACE: Get vault stats
 // Command: "vault_get_stats"
 // Args: {}
@@ -852,6 +911,14 @@ fn resolve_audio_asset_kind(asset_kind: Option<String>, is_stem: bool, tags: &[S
         return "stem".to_string();
     }
     "gener8_song".to_string()
+}
+
+fn vault_item_file_path(item: &VaultItem) -> PathBuf {
+    match item {
+        VaultItem::Image(doc) => PathBuf::from(&doc.file_path),
+        VaultItem::Audio(doc) => PathBuf::from(&doc.file_path),
+        VaultItem::Video(doc) => PathBuf::from(&doc.file_path),
+    }
 }
 
 #[allow(clippy::too_many_arguments)]

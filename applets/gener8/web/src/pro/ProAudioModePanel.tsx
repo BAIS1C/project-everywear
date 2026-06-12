@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Loader2, Music2, Pause, Play, Upload, X } from 'lucide-react';
 import { vaultFileUrl, type VaultAssetKind } from '@everywear/transport';
-import { engineApi, generateApi, getAudioRequestPath, type ModelInfo } from '@/services/api';
+import { durationSecondsFromValue, engineApi, generateApi, getAudioRequestPath, type ModelInfo } from '@/services/api';
 import type { Song } from '@/types';
 import { BetterModelsBanner } from '@/components/BetterModelsBanner';
 import { showToast } from '@/components/ToastHost';
@@ -103,7 +103,7 @@ export function ProAudioModePanel({
       type: 'setSource',
       url: sourceUrl,
       label: initialData.song.title || 'Cover source',
-      duration: Number(initialData.song.duration || 0),
+      duration: durationSecondsFromValue(initialData.song.duration) ?? 0,
     });
   }, [dispatch, initialData]);
 

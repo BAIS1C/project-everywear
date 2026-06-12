@@ -237,11 +237,14 @@ impl Reconciler {
 /// The shell owns the authoritative GPU state; this is just for local
 /// manifest resolution when the shell hasn't sent us explicit VRAM info.
 fn detect_vram_mb() -> u32 {
-    // Try nvidia-smi as a quick probe
-    if let Ok(output) = std::process::Command::new("nvidia-smi")
-        .args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"])
-        .output()
+    let mut command = std::process::Command::new("nvidia-smi");
+    command.args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"]);
+    #[cfg(windows)]
     {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    if let Ok(output) = command.output() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         if let Ok(mb) = stdout.trim().parse::<u32>() {
             return mb;

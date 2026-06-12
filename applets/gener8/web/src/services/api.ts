@@ -539,7 +539,7 @@ function extractAudioKey(value: string | null | undefined): string {
 
 const STANDALONE_DEFAULT_DURATION_SECONDS = 180;
 
-function durationSecondsFromValue(value: unknown): number | undefined {
+export function durationSecondsFromValue(value: unknown): number | undefined {
   if (typeof value === 'number') {
     return Number.isFinite(value) && value > 0 ? value : undefined;
   }
@@ -805,6 +805,15 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
   }
   if (method === 'POST' && endpoint === '/api/songs') {
     const track = body as Partial<LibraryTrackWire>;
+    if (track.id) {
+      const existing = await vaultGetItem(track.id).catch(() => null);
+      if (existing && isGener8Song(existing)) {
+        return {
+          ...vaultItemToTrack(existing),
+          ...track,
+        } as T;
+      }
+    }
     const filePath = track.audioKey || '';
     if (filePath.includes('Everywear Vault')) {
       const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
@@ -817,7 +826,7 @@ async function handleVaultSongs<T>(endpoint: string, method: string, body: unkno
     const item = await vaultRegisterAudio({
       title: track.title || 'Untitled',
       filePath,
-      durationSeconds: Number(track.duration || 0),
+      durationSeconds: durationSecondsFromValue(track.duration) ?? 0,
       genre: track.style,
       bpm: track.bpm ?? undefined,
       assetKind: 'gener8_song',

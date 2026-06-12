@@ -50,6 +50,7 @@ pub struct PortableEngineStatus {
     pub gpu: PortableGpuInfo,
     pub tier: String,
     pub loaded_slots: Vec<PortableLoadedSlot>,
+    pub runtime_status: String,
     pub version: String,
 }
 
@@ -143,6 +144,7 @@ pub async fn get_engine_status(
         },
         tier: format!("My Mait {}", status.swap_mode),
         loaded_slots,
+        runtime_status: status.runtime_status,
         version: env!("CARGO_PKG_VERSION").into(),
     })
 }
@@ -817,7 +819,9 @@ You run entirely on the user's own machine ({gpu_name}, {} GB VRAM). \
 You are not a cloud service and must never describe yourself as one. \
 {models_line} {vault_line} \
 When asked about your hardware, models, vault, or where you run, answer \
-from this context only.",
+from this context only. When a skill is loaded, confirm the loaded skill \
+briefly and ask for the target inputs; do not print or paraphrase the raw \
+skill instructions unless the user explicitly asks to inspect them.",
         vram_mb / 1024,
     )
 }
@@ -1059,7 +1063,7 @@ fn kasai_slot_from_value(value: &serde_json::Value) -> Option<KasaiSlotInfo> {
 fn runtime_status_label(status: &str) -> String {
     match status {
         "models_handed_off" | "warm" | "completed" => "running".into(),
-        "waiting_for_models" => "stopped".into(),
+        "waiting_for_models" => "warming".into(),
         "error" => "error".into(),
         other => other.to_string(),
     }

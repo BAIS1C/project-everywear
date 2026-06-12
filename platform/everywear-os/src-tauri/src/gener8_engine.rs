@@ -25,6 +25,7 @@ pub struct Gener8EngineState {
     child: Option<Child>,
     bin_path: Option<PathBuf>,
     pending_titles: HashMap<String, String>,
+    pending_metadata: HashMap<String, PendingGenerationMetadata>,
     // 2026-06-12 SGT: job_id -> completed status envelope. register_audio used
     // to run on EVERY poll that saw "succeeded"; two overlapping 2s polls both
     // hit the branch, the second one after pending_titles was consumed, so it
@@ -34,6 +35,13 @@ pub struct Gener8EngineState {
     // idempotent per job: first success registers and caches, repeats replay
     // the cached envelope.
     completed_jobs: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, Default)]
+struct PendingGenerationMetadata {
+    title: Option<String>,
+    style: Option<String>,
+    lyrics: Option<String>,
 }
 
 impl Gener8EngineState {
@@ -156,7 +164,16 @@ pub async fn gener8_generate(
     ensure_ace_ready(state.gener8_engine.clone()).await?;
 
     let client = reqwest::Client::new();
-    let ace_req = normalize_ace_request(&params);
+    let model_inventory = match client
+        .get(format!("{ACE_URL}/props"))
+        .timeout(std::time::Duration::from_millis(1500))
+        .send()
+        .await
+    {
+        Ok(resp) if resp.status().is_success() => resp.json::<Value>().await.ok(),
+        _ => None,
+    };
+    let ace_req = normalize_ace_request(&params, model_inventory.as_ref());
     let content_type = string_field(&params, &["audioFormat", "audio_format"])
         .unwrap_or_else(|| "mp3".into())
         .to_ascii_lowercase();
@@ -230,14 +247,16 @@ pub async fn gener8_generate(
                 .map(|n| n.to_string())
         })
         .ok_or_else(|| "ace-server did not return a job id".to_string())?;
-    if let Some(title) = string_field(&params, &["title"]) {
-        state
-            .gener8_engine
-            .lock()
-            .await
-            .pending_titles
-            .insert(id.clone(), title);
+    let metadata = PendingGenerationMetadata {
+        title: string_field(&params, &["title"]),
+        style: string_field(&params, &["style", "prompt", "caption"]),
+        lyrics: string_field(&params, &["lyrics"]),
+    };
+    let mut engine = state.gener8_engine.lock().await;
+    if let Some(title) = metadata.title.clone() {
+        engine.pending_titles.insert(id.clone(), title);
     }
+    engine.pending_metadata.insert(id.clone(), metadata);
 
     Ok(json!({
         "id": id,
@@ -297,7 +316,10 @@ pub async fn gener8_generation_status(
                     // Claimed by an in-flight poll: report running so the
                     // frontend re-polls. Claims expire after 15s so a failed
                     // result fetch can never wedge the job at "running".
-                    let claimed_at = cached.get("claimed_at").and_then(|v| v.as_i64()).unwrap_or(0);
+                    let claimed_at = cached
+                        .get("claimed_at")
+                        .and_then(|v| v.as_i64())
+                        .unwrap_or(0);
                     if now_ms - claimed_at < 15_000 {
                         return Ok(json!({ "jobId": job_id, "status": "running" }));
                     }
@@ -328,7 +350,16 @@ pub async fn gener8_generation_status(
                 .to_string();
             let bytes = result_resp.bytes().await.unwrap_or_default().to_vec();
             let ext = extension_for_content_type(Some(&content_type));
-            let title = state.gener8_engine.lock().await.pending_titles.remove(&id);
+            let metadata = {
+                let mut engine = state.gener8_engine.lock().await;
+                let title = engine.pending_titles.remove(&id);
+                let mut metadata = engine.pending_metadata.remove(&id).unwrap_or_default();
+                if metadata.title.is_none() {
+                    metadata.title = title;
+                }
+                metadata
+            };
+            let title = metadata.title.clone();
             let filename = format!("{}.{}", build_track_filename(title.as_deref(), &id), ext);
             let out_dir = gener8_data_dir().join("outputs").join("gener8");
             tokio::fs::create_dir_all(&out_dir)
@@ -357,15 +388,11 @@ pub async fn gener8_generation_status(
                     duration_seconds,
                     None,
                     None,
-                    // 2026-06-12 SGT: was Some("Gener8") — the literal app name
-                    // leaked into the UI as the song's style/prompt on records
-                    // registered without params (Sean smoke test 06-11). No
-                    // genre is more honest than a fake one.
-                    None,
+                    metadata.style.clone(),
                     None,
                     false,
                     None,
-                    None,
+                    metadata.lyrics.clone(),
                     Some("gener8_song".to_string()),
                     vec!["gener8".to_string()],
                 )?
@@ -381,6 +408,8 @@ pub async fn gener8_generation_status(
                 "file_path": vault_path.clone(),
                 "vault_id": vault_id.clone(),
                 "title": title,
+                "style": metadata.style,
+                "lyrics": metadata.lyrics,
                 "result": {
                     "filePath": vault_path.clone(),
                     "audioUrls": [vault_path],
@@ -625,6 +654,11 @@ fn start_ace_server(bin: &Path, models_dir: &Path) -> Result<Child> {
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            cmd.creation_flags(0x08000000);
+        }
         return spawn_drained(cmd);
     }
 
@@ -760,7 +794,7 @@ fn resolve_models_dir() -> PathBuf {
     everywear_paths::models_dir()
 }
 
-fn normalize_ace_request(raw: &Value) -> Value {
+fn normalize_ace_request(raw: &Value, model_inventory: Option<&Value>) -> Value {
     let task_type = string_field(raw, &["taskType", "task_type"]).unwrap_or_default();
     let effective_task_type = if task_type.eq_ignore_ascii_case("cover") {
         "cover-nofsq".to_string()
@@ -770,8 +804,16 @@ fn normalize_ace_request(raw: &Value) -> Value {
         task_type
     };
 
+    let synth_model = resolve_request_synth_model(raw, &effective_task_type, model_inventory);
+    tracing::info!(
+        target: "gener8.ace.request",
+        task_type = %effective_task_type,
+        synth_model = %synth_model,
+        "resolved ACE request model"
+    );
+
     json!({
-        "synth_model": string_field(raw, &["synth_model", "model"]).unwrap_or_default(),
+        "synth_model": synth_model,
         "lm_model": string_field(raw, &["lm_model", "lmModel"]).unwrap_or_default(),
         "caption": string_field(raw, &["style", "prompt", "caption"]).unwrap_or_default(),
         "lyrics": string_field(raw, &["lyrics"]).unwrap_or_default(),
@@ -800,6 +842,46 @@ fn normalize_ace_request(raw: &Value) -> Value {
         "repainting_end": number_field(raw, &["repaintingEnd", "repainting_end"]).unwrap_or(-1.0),
         "use_cot_caption": raw.get("useCot").or_else(|| raw.get("use_cot")).and_then(|v| v.as_bool()).unwrap_or(true),
     })
+}
+
+fn resolve_request_synth_model(
+    raw: &Value,
+    effective_task_type: &str,
+    model_inventory: Option<&Value>,
+) -> String {
+    let synth_model_raw =
+        string_field(raw, &["synth_model", "synthModel", "model"]).unwrap_or_default();
+    if !synth_model_raw.is_empty() {
+        return synth_model_raw;
+    }
+
+    // 2026-06-12 SGT: extract/lego/complete/cover/repaint are xl-base-only
+    // tasks, but preferred_dit_model intentionally selects the song model.
+    // Shell-owned requests must mirror the standalone shim fix from dd8f2e6:
+    // unqualified base-task requests resolve the installed xl-base DiT from
+    // the live ACE inventory before dispatch.
+    let needs_base = matches!(
+        effective_task_type,
+        "cover" | "cover-nofsq" | "repaint" | "extract" | "lego" | "complete" | "reference"
+    );
+    if !needs_base {
+        return String::new();
+    }
+
+    model_inventory
+        .and_then(|props| {
+            props
+                .get("models")
+                .and_then(|models| models.get("dit"))
+                .and_then(Value::as_array)
+                .and_then(|arr| {
+                    arr.iter()
+                        .filter_map(Value::as_str)
+                        .find(|name| name.to_ascii_lowercase().contains("xl-base"))
+                        .map(str::to_string)
+                })
+        })
+        .unwrap_or_default()
 }
 
 fn string_field(raw: &Value, keys: &[&str]) -> Option<String> {

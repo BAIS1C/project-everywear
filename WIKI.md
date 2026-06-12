@@ -5813,3 +5813,121 @@ PUNCH LIST (not yet implemented, structural):
    Screenshot-only QA is structurally blind to fake surfaces.
 3. Consolidate WindowFrame into `packages/ewds` as a React export (gener8 and
    1magen now have sibling copies; vid/3nvizen will want it next).
+
+## Current-state note 2026-06-12T13:28+08 SGT — C-Series QA fixrun applied
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+This note records the Codex C-Series QA fixrun after the 2026-06-12 midday
+promptpack. It is build-verified but not runtime-smoke-verified; Sean will run
+the functional tests later.
+
+Architecture locks landed:
+
+- Gener8 shell-side generation completion remains engine-as-writer. The shell
+  registers the completed audio into Everywear Vault, returns the Vault ID, and
+  the frontend updates/uses that record instead of creating a second shadow row.
+- Gener8 shell now stores pending generation metadata by job ID so title, style,
+  and lyrics survive through shell Vault registration.
+- Gener8 shell ACE request normalization now resolves xl-base-only task families
+  from live `/props` inventory when no explicit synth model is supplied. This
+  mirrors the standalone shim lane fix from the morning Claude pass.
+- Vault detail file actions are shell-owned Tauri commands:
+  `vault_open_item_file` and `vault_open_item_folder`.
+- 1magen Tauri permissions now include dialog/fs access for image picking and
+  Everywear output/vault paths. The generated capability schema was refreshed.
+- 1magen Windows VRAM probing hides the `nvidia-smi` console window.
+- 1magen locked feature copy now distinguishes Creator Pro from generic Pro.
+- Kasai/My Mait preserves runtime `waiting_for_models` as `warming`, renders
+  `Model warming up...`, and disables the composer while the model is warming.
+- Kasai skill preparation is a local context-load confirmation instead of a
+  normal model prompt containing raw skill instructions.
+
+Verification passed:
+
+- `git diff --check`
+- `npm run build --workspace @everywear/shared`
+- `npm run build --workspace @everywear/gener8-web`
+- `npm run build --workspace kasai-applet`
+- `npm run build --workspace onemagen`
+- `npm run build --workspace everywear-os`
+- `cargo build -p everywear-os`
+- `cargo build --release -p everywear-os`
+- `cargo build -p onemagen`
+- `cargo build --release -p onemagen`
+
+Artifact proof:
+
+- `target\debug\everywear-os.exe`: `2026-06-12 13:08:32 SGT`
+- `target\release\everywear-os.exe`: `2026-06-12 13:11:21 SGT`
+- `target\debug\onemagen.exe`: `2026-06-12 13:11:59 SGT`
+- `target\release\onemagen.exe`: `2026-06-12 13:16:06 SGT`
+
+Process hygiene:
+
+- Pre-existing Everywear/Vite/ACE processes were stopped before implementation.
+- Final sweep found no matching Everywear/server processes.
+- Final watched-port sweep found no listeners on `3001`, `3117`, `5173-5176`,
+  `8080`, `8081`, `8787`, `9223`, or `9877`.
+
+Boundary:
+
+- Runtime smoke is still owed. Do not treat this note as functional proof for
+  Gener8 three-generation row count, cover 65/70/75, stems, Pro workspace rows,
+  Vault Open File/Open Folder, 1magen picker/save, or Kasai warmup/skill-load UX.
+- `rebuild-shell-20260612c.ps1` remains untracked local helper material.
+
+## Current-state note 2026-06-12T14:50+08 SGT - OODA sibling bug-class fixrun applied
+
+Location: `C:\Users\MAG MSI\Project Everywear`
+
+This note records the post-C-Series Codex OODA sibling-bug fixrun. It is
+build-verified but not runtime-smoke-verified; Sean will run the functional
+tests later.
+
+Architecture locks landed:
+
+- `3nvizen` video preview now treats Vault registration as a lifecycle
+  transition. After save, playback and download use the returned Vault file
+  path rather than the pre-save output path.
+- `3nvizen` Open Folder now calls a shell-owned Tauri command,
+  `vault_open_path_folder`, via the shared transport wrapper
+  `vaultOpenPathFolder`.
+- `vault_open_path_folder` accepts either a file path or folder path and opens
+  the containing directory when given a file.
+- Gener8 duration parsing now accepts numeric seconds and colon strings such as
+  `6:24` or `01:02:03` before Vault registration, cover source initialization,
+  stem source setup, and naive SRT timing.
+- Confirmed video-modal registration and naive lyric timing paths use the same
+  duration parsing behavior for colon durations.
+- Remaining confirmed Windows subprocess probes in the Gener8 ACE/stub and
+  tier-reconciler paths apply `CREATE_NO_WINDOW`.
+
+Verification passed:
+
+- `git diff --check`
+- `npm run build --workspace @everywear/transport`
+- `npm run build --workspace @everywear/gener8-web`
+- `npm run build --workspace @everywear/video-modal`
+- `npm run build --workspace @everywear/3nvizen`
+- `npm run build --workspace everywear-os`
+- `cargo check -p everywear-os`
+- `cargo check -p gener8`
+- `cargo build -p everywear-os -p gener8`
+- `cargo build --release -p everywear-os -p gener8`
+
+Artifact proof:
+
+- `target\debug\everywear-os.exe`: `2026-06-12 14:14:50 SGT`
+- `target\debug\gener8.exe`: `2026-06-12 14:13:59 SGT`
+- `target\release\everywear-os.exe`: `2026-06-12 14:24:53 SGT`
+- `target\release\gener8.exe`: `2026-06-12 14:15:44 SGT`
+
+Boundary:
+
+- Runtime smoke is still owed. Do not treat this note as functional proof for
+  3nvizen Vault playback/download/open-folder, Gener8 duration-sensitive
+  generation metadata, cover/stems, or video-modal timing behavior.
+- `packages/video-modal/src/components/VideoGeneratorModal.tsx` remains over the
+  context budget at roughly 5k lines. This pass only applied surgical bug-class
+  repairs; the dedicated video-modal split lane remains mandatory.

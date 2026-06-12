@@ -376,9 +376,10 @@ export function ImagenCore({ shellHosted = false }: ImagenCoreProps) {
             <label className="imagen-field__label">Style Patch (LoRA)</label>
             <LockedFeatureCard
               title="LoRA Style Patches"
-              description="Drag-and-drop style patches for LoRA-flavoured generation modifiers. Train and apply custom aesthetic presets."
+              description="Coming soon to Creator Pro users. Drag-and-drop style patches for LoRA-flavoured generation modifiers."
               icon="🎨"
               tier="pro"
+              tierLabel="Creator Pro"
               progress="in-development"
             />
           </div>
@@ -387,9 +388,10 @@ export function ImagenCore({ shellHosted = false }: ImagenCoreProps) {
             <label className="imagen-field__label">Task Shard (Workflow)</label>
             <LockedFeatureCard
               title="Task Shard Workflows"
-              description="Drop a task shard to inject structured generation instructions. Workflow thumbnails drive multi-step generation pipelines."
+              description="Coming soon to Creator Pro users. Task shards will inject structured generation instructions into multi-step pipelines."
               icon="🔧"
               tier="pro"
+              tierLabel="Creator Pro"
               progress="planned"
             />
           </div>
