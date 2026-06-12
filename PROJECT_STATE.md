@@ -1140,3 +1140,27 @@ Project location: `C:\Users\MAG MSI\Project Everywear`
 - VERIFIED TARGETS: send targets were Everywear Team via Email, Local Kasai for diagnostics, and Save to this computer only. No failed-load text appeared.
 - TUTORIAL STATUS: the first-run platform tutorial can teach the bell as the recovery/reporting path: describe the problem, include relevant logs, choose team/Kasai/local target, copy report if needed, then send.
 - BOUNDARY: this proves modal visibility, log-category controls, target choices, and action buttons across themes. It does not prove clipboard write, email client launch, local-file save, Kasai diagnostic handoff, backend `submit_bug_report`, or report persistence.
+
+## 2026-06-12 02:05 SGT: Smoke-test fixrun + true capability model landed (Claude Cowork)
+
+Location: C:\Users\MAG MSI\Project Everywear
+Catch-up note: 06-10 punchlist waves and 06-11 B-series lanes are documented in
+WIKI.md current-state notes and CONTEXT.md; this entry restores PROJECT_STATE
+live-state coverage after a 3-day gap (stale since 06-09, flagged by OODA).
+
+State now:
+- Gener8 web + shell fixes landed (commits 2ff3cb8, 8dea011, dd8f2e6, f8cb767):
+  sparkle crash, play glyph, generation FIFO + double-fire guard, vault row
+  dedupe, stems probe rev2, 4ever advanced panel removed per canon.
+- shim.rs routes base-only tasks to installed xl-base (dd8f2e6); WIKI + shim.md updated.
+- Encoder sidecar resources staged at target/release/resources (NVENC/9877 root
+  cause); resolver dev-paths fixed. OWED: weld staging into build pipeline.
+- Model dir truth restored: installed "xl-base" was hash-proven SFTTurbo50
+  masquerade; true xl-base Q8_0 downloaded, SHA-verified, swapped 01:25 SGT.
+  Receipts: vault ace wing 2026-06-12 note.
+- Binaries rebuilt: everywear-os.exe 00:16, gener8.exe 00:50, gener8-web dist 01:05.
+- PENDING Sean morning QA: stems, cover 65/70/75 sweep, 3 consecutive gens,
+  Pro workspace rows, NVENC both entry paths, sparkle, 4ever panel absence.
+- Open punch list: shim masquerade hash guard, ace sidecar teardown (C.2),
+  VideoGeneratorModal split (5,067 lines, grew past every ceiling), Sonar
+  audio-session naming, cover-strength step-quantization UI.

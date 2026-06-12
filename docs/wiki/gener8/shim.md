@@ -45,3 +45,15 @@ graph LR
 **Last verified**: 2026-05-22, Codex post-modularisation repair pass.
 
 **Backlog**: Extract remaining route groups from `shim.rs`: engine, inference, audio, library, playlists, director, video, settings, shell, and diagnostics.
+
+## Model selection (added 2026-06-12T02:05+08 SGT)
+
+Requests carrying no explicit synth_model fall back to st.preferred_dit, whose
+selection order is sftturbo50 > xl-turbo > any-non-base (it NEVER picks xl-base;
+see preferred_dit_model). Since 2026-06-12, base-only task types (cover,
+cover-nofsq, repaint, extract, lego, complete, reference) resolve the installed
+xl-base dit live from the engine's /props instead (shim.rs synth_model block,
+~1284). History and rationale: docs/wiki/gener8/ace-step-settings.md and vault
+ace/2026-06-12_xl_base_masquerade_history_and_everywear_base_task_regression.md.
+OWED: hash/size masquerade guard port from original s-gener8 shim (a filename
+must never decide capability routing alone).
