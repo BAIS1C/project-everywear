@@ -121,6 +121,37 @@ impl ModelResolver {
             .collect()
     }
 
+    /// Resolution WITHOUT content-hash verification, for UI surfaces.
+    ///
+    /// 2026-06-12 SGT: `resolve_all` SHA256-hashes every pinned model file
+    /// (gigabytes of GGUF) synchronously inside the resolver mutex.
+    /// `get_my_mait_settings` called it on every settings open, freezing the
+    /// My Mait settings surface for the duration of a full model-library
+    /// hash pass (Sean QA 06-12: "settings doesn't show anything at all").
+    /// Presence/compatibility is enough for DISPLAY; pinned-hash verification
+    /// stays mandatory at model LOAD/launch gating (`resolve_all`), per the
+    /// manifest-truth rule. This skips only the hash, not the discovery.
+    pub fn resolve_all_quick(&self) -> Result<Vec<ResolutionResult>> {
+        let discovered = self.scanner.scan_all()?;
+        self.requirements
+            .iter()
+            .map(|req| {
+                if let Some(path) = self.find_in_vault(req) {
+                    return Ok(ResolutionResult {
+                        everywear_model_id: req.everywear_model_id.clone(),
+                        status: ResolutionStatus::Available,
+                        source: ModelSource::EverywearVault,
+                        details: format!(
+                            "Found at {} (hash verified at load, not display)",
+                            path.display()
+                        ),
+                    });
+                }
+                self.resolve_single(req, &discovered)
+            })
+            .collect()
+    }
+
     /// Resolve a single model requirement.
     pub fn resolve_single(
         &self,

@@ -597,7 +597,13 @@ async fn model_resolution_for_manifest(
 ) -> Result<Vec<MyMaitModelResolution>, String> {
     let keys = manifest_model_keys(manifest);
     let resolver = state.model_resolver.lock().await;
-    let results = resolver.resolve_all().map_err(|error| error.to_string())?;
+    // 2026-06-12 SGT: quick (no-hash) resolution for the settings surface;
+    // resolve_all SHA256-hashed every pinned GGUF on each settings open and
+    // froze the My Mait settings view blank for the whole pass. Hash
+    // verification remains at model load gating. See resolve_all_quick.
+    let results = resolver
+        .resolve_all_quick()
+        .map_err(|error| error.to_string())?;
     Ok(results
         .into_iter()
         .filter(|result| keys.contains(&result.everywear_model_id))
