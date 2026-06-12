@@ -25,6 +25,15 @@ pub struct Gener8EngineState {
     child: Option<Child>,
     bin_path: Option<PathBuf>,
     pending_titles: HashMap<String, String>,
+    // 2026-06-12 SGT: job_id -> completed status envelope. register_audio used
+    // to run on EVERY poll that saw "succeeded"; two overlapping 2s polls both
+    // hit the branch, the second one after pending_titles was consumed, so it
+    // registered a SECOND vault row with the "Gener8 output" default and a
+    // different filename. One generation = one real row + one empty shadow
+    // twin (Sean QA 06-12, batch of 3 -> 3 twins). Registration is now
+    // idempotent per job: first success registers and caches, repeats replay
+    // the cached envelope.
+    completed_jobs: HashMap<String, Value>,
 }
 
 impl Gener8EngineState {
@@ -270,6 +279,35 @@ pub async fn gener8_generation_status(
     let state_str = status.get("status").and_then(|v| v.as_str()).unwrap_or("");
     match state_str {
         "done" | "complete" | "completed" | "succeeded" => {
+            // 2026-06-12 SGT idempotency guard (see completed_jobs field note):
+            // claim the job under the engine mutex before the heavy result
+            // fetch. A cached real envelope replays; a claim placeholder tells
+            // an overlapping poll "still running" so it re-polls instead of
+            // double-registering a shadow vault row.
+            {
+                let now_ms = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0);
+                let mut engine = state.gener8_engine.lock().await;
+                if let Some(cached) = engine.completed_jobs.get(&id) {
+                    if cached.get("status").and_then(|v| v.as_str()) == Some("succeeded") {
+                        return Ok(cached.clone());
+                    }
+                    // Claimed by an in-flight poll: report running so the
+                    // frontend re-polls. Claims expire after 15s so a failed
+                    // result fetch can never wedge the job at "running".
+                    let claimed_at = cached.get("claimed_at").and_then(|v| v.as_i64()).unwrap_or(0);
+                    if now_ms - claimed_at < 15_000 {
+                        return Ok(json!({ "jobId": job_id, "status": "running" }));
+                    }
+                    // stale claim: fall through and re-claim
+                }
+                engine.completed_jobs.insert(
+                    id.clone(),
+                    json!({ "jobId": job_id, "status": "running", "claimed_at": now_ms }),
+                );
+            }
             let result_resp = client
                 .get(format!("{ACE_URL}/job?id={id}&result=1"))
                 .send()
@@ -337,7 +375,7 @@ pub async fn gener8_generation_status(
                 _ => (String::new(), String::new()),
             };
 
-            Ok(json!({
+            let envelope = json!({
                 "jobId": job_id,
                 "status": "succeeded",
                 "file_path": vault_path.clone(),
@@ -351,7 +389,14 @@ pub async fn gener8_generation_status(
                     "duration": status.get("duration").cloned(),
                     "warnings": status.get("warnings").cloned().unwrap_or_else(|| json!([]))
                 }
-            }))
+            });
+            state
+                .gener8_engine
+                .lock()
+                .await
+                .completed_jobs
+                .insert(id.clone(), envelope.clone());
+            Ok(envelope)
         }
         "error" | "failed" => Ok(json!({
             "jobId": job_id,
