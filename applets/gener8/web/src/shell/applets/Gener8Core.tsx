@@ -34,7 +34,15 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 // Lucide subset retained where the sprite alternative reads as a regression
 // (mobile drawer chevron). Transport icons swapped to .ew-icon + sprite refs
 // during EWDS retheme 2026-04-25 SGT — see Gener8Transport / Gener8Nav.
-import { List } from 'lucide-react';
+// 2026-06-12 SGT: the `#i-*` SVG sprite the EWDS retheme pointed transport and
+// nav icons at is defined NOWHERE in the repo (no symbol definitions in gener8
+// web, the shell, or @everywear/ewds), so every <use href="#i-*"> has rendered
+// EMPTY since the retheme. Additionally icons.css forces `.ew-icon svg
+// { fill: none; stroke: currentColor }`, which blanks filled inline SVGs too.
+// Lucide icons are stroke-based monoline — exactly what that CSS expects, with
+// per-skin overrides already present (svg.lucide rules) — so they are the
+// design-system-correct replacement.
+import { List, Play, Pause, Volume2, VolumeX, Zap, Music2, Search } from 'lucide-react';
 import { seededFauxPeaks } from '@/shell/applets/seededFauxPeaks';
 
 /**
@@ -151,21 +159,11 @@ function Gener8Transport({ audio }: { audio: import('../ShellAudioPlayer').Shell
         style={{ padding: 0, width: 36, height: 36, justifyContent: 'center' }}
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
-        {/* 2026-06-12 SGT: the #i-play / #i-pause sprite symbols are not
-            defined anywhere in the gener8 web bundle, so the <use> resolved
-            to nothing and the button rendered as a blank square (Sean smoke
-            test 06-11). Inlined the glyphs; no sprite dependency. */}
+        {/* 2026-06-12 SGT rev 2: sprite was phantom AND icons.css forces
+            fill:none on .ew-icon children, which also blanked the first
+            inline-SVG fix. Lucide = stroke-based, matches the CSS contract. */}
         <span className="ew-icon ew-icon--16" aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-            {isPlaying ? (
-              <>
-                <rect x="3" y="2" width="3.5" height="12" rx="1" />
-                <rect x="9.5" y="2" width="3.5" height="12" rx="1" />
-              </>
-            ) : (
-              <path d="M4.5 2.6v10.8a.6.6 0 0 0 .92.5l8.5-5.4a.6.6 0 0 0 0-1l-8.5-5.4a.6.6 0 0 0-.92.5z" />
-            )}
-          </svg>
+          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
         </span>
       </button>
 
@@ -231,7 +229,7 @@ function Gener8Transport({ audio }: { audio: import('../ShellAudioPlayer').Shell
         aria-label={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
       >
         <span className="ew-icon ew-icon--14">
-          <svg><use href={isMuted || volume === 0 ? '#i-volume-mute' : '#i-volume'}/></svg>
+          {isMuted || volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </span>
       </button>
       <input
@@ -265,10 +263,13 @@ function Gener8Nav({
   currentView: Gener8View;
   onNavigate: (v: Gener8View) => void;
 }) {
-  const items: { view: Gener8View; iconId: string; label: string }[] = [
-    { view: 'create',  iconId: 'i-zap',    label: 'Create'  },
-    { view: 'library', iconId: 'i-music',  label: 'Library' },
-    { view: 'search',  iconId: 'i-search', label: 'Search'  },
+  // 2026-06-12 SGT: iconId sprite refs replaced with lucide components — the
+  // #i-* sprite never existed, these nav glyphs rendered empty (see note at
+  // the lucide import).
+  const items: { view: Gener8View; Icon: React.ComponentType<{ size?: number }>; label: string }[] = [
+    { view: 'create',  Icon: Zap,    label: 'Create'  },
+    { view: 'library', Icon: Music2, label: 'Library' },
+    { view: 'search',  Icon: Search, label: 'Search'  },
   ];
 
   return (
@@ -327,7 +328,7 @@ function Gener8Nav({
             }}
           >
             <span className="ew-icon ew-icon--16" aria-hidden="true">
-              <svg><use href={`#${item.iconId}`}/></svg>
+              <item.Icon size={16} />
             </span>
           </button>
         );
